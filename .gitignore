@@ -1,6 +1,9 @@
 /target
 /web/node_modules
 /web/dist
+/web/src/wasm
+/macos/ConceptLLM.xcodeproj
+/macos/Resources/web
 .env
 .DS_Store
 concept\ library.md

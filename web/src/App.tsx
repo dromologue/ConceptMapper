@@ -6,6 +6,7 @@ import { NotesPane } from "./ui/NotesPane";
 import { Toolbar } from "./ui/Toolbar";
 import { AddNodeModal } from "./ui/AddNodeModal";
 import { AddEdgeModal } from "./ui/AddEdgeModal";
+import { initParser, parseMarkdown, parseJsonFile } from "./parser";
 import "./App.css";
 
 export type ViewMode = "full" | "people" | "concepts";
@@ -44,12 +45,79 @@ function App() {
   const [notesOpen, setNotesOpen] = useState(false);
   const [activeStreams, setActiveStreams] = useState<Set<string> | null>(null);
 
+  const [parserReady, setParserReady] = useState(false);
+
+  // Initialize WASM parser on startup
   useEffect(() => {
-    fetch("/graph.json")
-      .then((res) => res.json())
-      .then((data: GraphIR) => setGraphData(data))
-      .catch((err) => setError(err.message));
+    initParser()
+      .then(() => setParserReady(true))
+      .catch((err) => setError(`Failed to load parser: ${err.message}`));
   }, []);
+
+  // Load file content — called from Swift bridge or internal file input
+  const loadFileContent = useCallback(
+    (content: string, filename: string) => {
+      try {
+        let data: GraphIR;
+        if (filename.endsWith(".json")) {
+          data = parseJsonFile(content);
+        } else {
+          const result = parseMarkdown(content);
+          data = result.graph;
+          if (result.warnings.length > 0) {
+            console.warn(
+              "Parse warnings:",
+              result.warnings.map((w) => `line ${w.line}: ${w.message}`)
+            );
+          }
+        }
+        setGraphData(data);
+        setSelectedNode(null);
+        setRevealedNodes(new Set());
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    },
+    []
+  );
+
+  // Expose bridge functions for Swift WKWebView
+  useEffect(() => {
+    // Swift → JS: load file content after NSOpenPanel
+    (window as unknown as Record<string, unknown>).loadFileContent = (
+      content: string,
+      filename: string
+    ) => {
+      loadFileContent(content, filename);
+    };
+
+    // Swift → JS: get current graph as JSON (for Save)
+    (window as unknown as Record<string, unknown>).getGraphJSON = (): string => {
+      if (!graphData) return "";
+      return JSON.stringify(graphData, null, 2);
+    };
+
+    // Swift → JS: get current graph as markdown (for Export Markdown)
+    (window as unknown as Record<string, unknown>).getGraphMarkdown = (): string => {
+      if (!graphData) return "";
+      return exportToMarkdown(graphData);
+    };
+
+    // Swift → JS: get canvas data URL (for Export Image)
+    (window as unknown as Record<string, unknown>).getCanvasImage = (): string => {
+      const canvas = document.querySelector("canvas");
+      if (!canvas) return "";
+      return canvas.toDataURL("image/png");
+    };
+
+    return () => {
+      delete (window as unknown as Record<string, unknown>).loadFileContent;
+      delete (window as unknown as Record<string, unknown>).getGraphJSON;
+      delete (window as unknown as Record<string, unknown>).getGraphMarkdown;
+      delete (window as unknown as Record<string, unknown>).getCanvasImage;
+    };
+  }, [loadFileContent, graphData]);
 
   // Clear revealed nodes when view mode changes
   useEffect(() => {
@@ -226,9 +294,23 @@ function App() {
     return () => window.removeEventListener("keydown", handler);
   }, [interactionMode, handleCancelAddEdge]);
 
-  const handleImportFile = useCallback(() => {
-    fileInputRef.current?.click();
+  // Check if running inside a WKWebView (macOS app)
+  const isNativeApp = !!(window as unknown as Record<string, unknown>).webkit;
+
+  const sendToSwift = useCallback((handler: string, payload?: unknown) => {
+    const webkit = (window as unknown as Record<string, unknown>).webkit as
+      | { messageHandlers?: Record<string, { postMessage: (msg: unknown) => void }> }
+      | undefined;
+    webkit?.messageHandlers?.[handler]?.postMessage(payload ?? {});
   }, []);
+
+  const handleImportFile = useCallback(() => {
+    if (isNativeApp) {
+      sendToSwift("openFile");
+    } else {
+      fileInputRef.current?.click();
+    }
+  }, [isNativeApp, sendToSwift]);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -236,21 +318,14 @@ function App() {
       if (!file) return;
       const reader = new FileReader();
       reader.onload = (ev) => {
-        try {
-          const imported = JSON.parse(ev.target?.result as string) as GraphIR;
-          setGraphData(imported);
-          setSelectedNode(null);
-          setRevealedNodes(new Set());
-          setError(null);
-        } catch {
-          setError("Invalid JSON file");
-        }
+        const content = ev.target?.result as string;
+        loadFileContent(content, file.name);
       };
       reader.readAsText(file);
       // Reset the input so the same file can be re-imported
       e.target.value = "";
     },
-    []
+    [loadFileContent]
   );
 
   // Close notes when node deselected
@@ -319,31 +394,40 @@ function App() {
   );
 
   const handleDownloadImage = useCallback(() => {
-    const canvas = document.querySelector("canvas");
-    if (!canvas) return;
-    const link = document.createElement("a");
-    const title = graphData?.metadata.title?.replace(/\s+/g, "-") || "concept-map";
-    const date = new Date().toISOString().split("T")[0];
-    link.download = `${title}-${date}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  }, [graphData]);
+    if (isNativeApp) {
+      sendToSwift("exportImage");
+    } else {
+      const canvas = document.querySelector("canvas");
+      if (!canvas) return;
+      const link = document.createElement("a");
+      const title = graphData?.metadata.title?.replace(/\s+/g, "-") || "concept-map";
+      const date = new Date().toISOString().split("T")[0];
+      link.download = `${title}-${date}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+  }, [graphData, isNativeApp, sendToSwift]);
 
   const handleDownloadFile = useCallback(() => {
-    if (!graphData) return;
-    const md = exportToMarkdown(graphData);
-    const blob = new Blob([md], { type: "text/markdown" });
-    const link = document.createElement("a");
-    const title = graphData.metadata.title?.replace(/\s+/g, "-") || "concept-map";
-    const date = new Date().toISOString().split("T")[0];
-    link.download = `${title}-${date}.md`;
-    link.href = URL.createObjectURL(blob);
-    link.click();
-    URL.revokeObjectURL(link.href);
-  }, [graphData]);
+    if (isNativeApp) {
+      sendToSwift("exportMarkdown");
+    } else {
+      if (!graphData) return;
+      const md = exportToMarkdown(graphData);
+      const blob = new Blob([md], { type: "text/markdown" });
+      const link = document.createElement("a");
+      const title = graphData.metadata.title?.replace(/\s+/g, "-") || "concept-map";
+      const date = new Date().toISOString().split("T")[0];
+      link.download = `${title}-${date}.md`;
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+  }, [graphData, isNativeApp, sendToSwift]);
 
   if (error) return <div className="error">Failed to load graph: {error}</div>;
-  if (!graphData) return <div className="loading">Loading graph...</div>;
+  if (!parserReady) return <div className="loading">Loading parser...</div>;
+  if (!graphData) return <div className="loading">Open a .md or .json file to begin.</div>;
 
   return (
     <div className="app">
@@ -489,7 +573,7 @@ function App() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".json"
+        accept=".json,.md"
         style={{ display: "none" }}
         onChange={handleFileChange}
       />

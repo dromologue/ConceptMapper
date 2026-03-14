@@ -1,6 +1,6 @@
 # Architecture Principles
 
-> Clean separation between data processing (Rust) and visualization (React), designed for local-first with a clear path to web deployment. Two-stage pipeline for rich prose sources.
+> Clean separation between data processing (Rust) and visualization (React), packaged as a macOS App Store application. SwiftUI shell + WKWebView hosts the React/D3 SPA + Rust parser compiled to WASM. Two-stage pipeline for rich prose sources.
 
 ## Core Principles
 
@@ -10,8 +10,14 @@ The Rust backend owns taxonomy parsing, graph data model construction, and any s
 ### 2. Data Format as Contract
 The intermediate representation (IR) — the JSON graph structure passed from Rust to React — is the central contract. Both sides depend on this schema, not on each other's internals. Changes to the IR require spec updates.
 
-### 3. Local-First, Web-Ready
-The initial build runs locally (Rust CLI produces JSON, React dev server renders it). But all architectural decisions must support future deployment: Rust becomes an API server, React becomes a hosted SPA, the IR contract stays the same.
+### 3. macOS Native App (SwiftUI + WKWebView + WASM)
+The app is a sandboxed macOS application distributed via the App Store. Architecture:
+- **SwiftUI shell**: Window management, native menu bar (File > Open/Save/Export), NSOpenPanel/NSSavePanel
+- **WKWebView**: Hosts the React SPA loaded from bundled static assets (`file://`)
+- **Rust WASM parser**: Compiled via `wasm-pack`, loaded by the React app in-browser
+- **Swift ↔ JS bridge**: `WKScriptMessageHandler` (JS→Swift) and `evaluateJavaScript` (Swift→JS)
+- **Sandbox entitlements**: `files.user-selected.read-write` only — no network access needed
+- The `web/` directory is a build-time dependency producing static assets, not a runtime server
 
 ### 4. Stateless Pipeline with Mutation Layer
 The processing pipeline is stateless: Taxonomy Markdown → Parse → Graph IR → Render. Each stage is a pure transformation with no hidden state. This makes the pipeline testable, cacheable, and easy to distribute across client/server later.
@@ -26,11 +32,13 @@ The GUI introduces a **mutation layer** that sits on top of the pipeline-produce
 This means the frontend maintains two conceptual states: the **base IR** (immutable, from pipeline) and the **working IR** (base + applied edits). The working IR is what the renderer displays and what export serializes.
 
 ### 5. Module Boundaries
-- `parser/` — Taxonomy markdown parsing and validation (Rust)
-- `graph/` — Graph data model, IR generation, and enrichment (Rust)
+- `src/parser/` — Taxonomy markdown parsing and validation (Rust)
+- `src/graph/` — Graph data model, IR generation, and enrichment (Rust)
+- `src/wasm.rs` — WASM entry point via `wasm-bindgen` (Rust, compiled to `.wasm`)
 - `extractor/` — Workflowy outline → taxonomy conversion (separate tool, likely LLM-assisted)
-- `api/` — HTTP/WASM interface layer (Rust, future)
-- `web/` — React app, D3 layout, interaction (TypeScript/React)
+- `web/` — React app, D3 layout, interaction (TypeScript/React) — builds to static SPA
+- `web/src/parser.ts` — WASM loader, exposes `parseMarkdown()` to React
+- `macos/` — SwiftUI macOS app (WKWebView shell, file handling, bridge)
 
 ### 6. Dual Source of Truth
 Two distinct source-of-truth roles exist:
@@ -96,19 +104,22 @@ Concepts may contain sub-concepts (e.g., Cynefin contains Clear, Complicated, Co
 
 ## Patterns to Follow
 - Pass data across the Rust/React boundary as typed JSON matching a shared schema
-- Keep the Rust CLI and future API server as thin wrappers around the same core library
-- Use feature flags or build targets (not code forks) to differentiate local vs. web mode
+- Keep the Rust CLI and WASM entry point as thin wrappers around the same core library
+- Use Cargo features (`wasm`) to gate WASM-specific code, keeping the core lib clean
 - Run the extraction pipeline as a separate pre-processing step, not inline with parsing
 - Design IR fields for progressive enhancement: basic metadata always present, rich content optional
+- All native file I/O goes through Swift; JS never touches the filesystem directly
+- The React SPA must work both in WKWebView (production) and a browser (development/testing)
 
 ## Anti-Patterns to Avoid
 - Rust code that knows about React rendering concerns
-- React code that parses markdown directly
+- React code that parses markdown directly (use the WASM parser)
 - Storing graph state in the frontend that diverges from the parsed source
 - Tight coupling between the CLI interface and the core parsing/graph logic
 - Attempting to parse Workflowy-style prose outlines in the taxonomy parser
 - Treating the taxonomy as the intellectual source (it's derived, not primary)
 - Embedding all prose content as a single `notes` string (use structured content fields)
+- Direct network calls from the app (it must remain fully offline/sandboxed)
 
 ## See Also
 - [Development Principles](principles-development.md)

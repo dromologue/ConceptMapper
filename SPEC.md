@@ -662,14 +662,15 @@ The user can download a high-resolution image of the current graph view.
 - Graph is rendered (REQ-009)
 
 **Trigger:**
-- User clicks "Export Image" button or uses keyboard shortcut
+- User selects File > Export Image (⌘E) from the menu bar, or clicks "Export Image" in the toolbar
 
 **Expected Behavior:**
+- In the macOS app, NSSavePanel is presented for the user to choose the save location
 - The current canvas state (including current zoom, pan, visible nodes, and cluster state) is exported as a PNG image
 - The image resolution is suitable for printing or embedding in documents
 
 **Acceptance Criteria:**
-- [ ] AC-019-01: "Download Image" button is prominently visible in the toolbar (REQ-023 AC-023-09) with PNG/SVG dropdown
+- [ ] AC-019-01: "Export Image" is available via File > Export Image menu (⌘E) and as a toolbar button
 - [ ] AC-019-02: Exported image is PNG format
 - [ ] AC-019-03: Image captures the current visible graph state (respecting zoom, pan, LOD, collapsed clusters)
 - [ ] AC-019-04: Image resolution is at least 2x the canvas display size (retina-quality)
@@ -694,9 +695,10 @@ The user can export the current graph state (including all GUI edits) as a forma
 - Graph IR is loaded (with or without edits from REQ-018)
 
 **Trigger:**
-- User clicks "Download File" button in the toolbar (REQ-023 AC-023-10)
+- User selects File > Export Markdown (⇧⌘E) from the menu bar, or clicks "Download File" in the toolbar
 
 **Expected Behavior:**
+- In the macOS app, NSSavePanel is presented for the user to choose the save location
 - The current in-memory Graph IR (including all GUI edits and notes) is serialized back to Collins taxonomy markdown format
 - The output follows the exact structure of the Collins taxonomy schema: header sections, fenced KV blocks for nodes, fenced edge blocks with from/to/type
 - All edits made in the GUI are reflected in the export
@@ -913,35 +915,38 @@ The user can search for nodes by name and navigate to them.
 
 ---
 
-## REQ-025: File Import
+## REQ-025: File Open
 
-The user can load their own taxonomy files or graph JSON files into the visualization.
+The user can open taxonomy files or graph JSON files into the visualization via the native macOS File menu.
 
 **Preconditions:**
-- App is loaded
+- App is loaded, WASM parser is initialized
 
 **Trigger:**
-- User clicks "Import" button or drags a file onto the canvas
+- User selects File > Open (⌘O) from the menu bar, or clicks "Import" in the toolbar
 
 **Expected Behavior:**
-- Accepts `.json` (Graph IR format) or `.md` (Collins taxonomy format — parsed via the Rust CLI or client-side)
+- macOS NSOpenPanel is presented, filtered to `.md` and `.json` files
+- `.md` files are parsed in-browser via the Rust WASM parser
+- `.json` files are loaded directly as Graph IR
 - The imported data replaces the current graph
-- Import errors are shown to the user
+- Parse errors and warnings are shown to the user
 
 **Acceptance Criteria:**
-- [ ] AC-025-01: An "Import" button is visible in the toolbar
-- [ ] AC-025-02: Clicking Import opens a file picker accepting `.json` and `.md` files
-- [ ] AC-025-03: Drag-and-drop onto the canvas area also triggers import
+- [ ] AC-025-01: File > Open menu item (⌘O) is available in the macOS menu bar
+- [ ] AC-025-02: NSOpenPanel filters to `.md` and `.json` files
+- [ ] AC-025-03: `.md` files are parsed via the bundled WASM parser (no network required)
 - [ ] AC-025-04: `.json` files are loaded directly as Graph IR (validated against expected structure)
-- [ ] AC-025-05: Invalid JSON shows an error message without crashing the app
-- [ ] AC-025-06: Successfully imported graph replaces the current visualization
+- [ ] AC-025-05: Invalid files show an error message without crashing the app
+- [ ] AC-025-06: Successfully opened graph replaces the current visualization
 - [ ] AC-025-07: The graph title, node count, and edge count update in the header
-- [ ] AC-025-08: Previous unsaved edits are warned about before import replaces them
+- [ ] AC-025-08: Parse warnings from the WASM parser are logged to the console
 
 **Edge Cases:**
 - Empty JSON file: shows error "No data found"
 - JSON with missing required fields: shows specific validation error
 - Very large file (1000+ nodes): imported without freezing (async processing with loading indicator)
+- Malformed markdown: parser returns errors which are displayed to the user
 
 ---
 
@@ -1164,3 +1169,54 @@ A summary panel shows network-level metadata: structural observations, external 
 - [ ] AC-032-05: External shocks are listed with dates
 - [ ] AC-032-06: Network stats (node count, edge count, chain depth) are shown
 - [ ] AC-032-07: The panel is dismissible via a close button or clicking outside
+
+---
+
+## REQ-033: macOS File Menu
+
+The macOS app provides a native File menu with Open, Save As, Export Image, and Export Markdown commands.
+
+**Preconditions:**
+- App is running
+
+**Trigger:**
+- User accesses the File menu or uses keyboard shortcuts
+
+**Expected Behavior:**
+- File > Open (⌘O): Opens NSOpenPanel for .md/.json files, content sent to WKWebView via Swift→JS bridge
+- File > Save As (⌘S): Requests current graph JSON from JS, presents NSSavePanel
+- File > Export Image (⌘E): Requests canvas data URL from JS, presents NSSavePanel for PNG
+- File > Export Markdown (⇧⌘E): Requests markdown from JS, presents NSSavePanel for .md
+
+**Acceptance Criteria:**
+- [ ] AC-033-01: File menu contains Open, Save As, Export Image, Export Markdown items
+- [ ] AC-033-02: Each menu item has a keyboard shortcut
+- [ ] AC-033-03: Open presents NSOpenPanel filtered to .md and .json
+- [ ] AC-033-04: Save As presents NSSavePanel with .json extension
+- [ ] AC-033-05: Export Image presents NSSavePanel with .png extension
+- [ ] AC-033-06: Export Markdown presents NSSavePanel with .md extension
+- [ ] AC-033-07: All file operations work within the App Sandbox (user-selected files only)
+
+---
+
+## REQ-034: macOS App Lifecycle
+
+The macOS app manages window lifecycle, quit handling, and App Store sandboxing requirements.
+
+**Preconditions:**
+- App is built and signed for macOS
+
+**Expected Behavior:**
+- App quits when the last window is closed
+- App is sandboxed with minimal entitlements (user-selected file access only)
+- No network entitlements — the app is fully offline
+- App supports macOS 14.0 (Sonoma) and later
+
+**Acceptance Criteria:**
+- [ ] AC-034-01: App terminates when the last window is closed
+- [ ] AC-034-02: App sandbox is enabled with com.apple.security.app-sandbox
+- [ ] AC-034-03: Only com.apple.security.files.user-selected.read-write entitlement is present
+- [ ] AC-034-04: No network-related entitlements
+- [ ] AC-034-05: Minimum deployment target is macOS 14.0
+- [ ] AC-034-06: WKWebView loads bundled HTML/JS/WASM from the app bundle (file:// protocol)
+- [ ] AC-034-07: Info.plist declares .md and .json as supported document types
