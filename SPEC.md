@@ -878,3 +878,180 @@ A persistent toolbar provides quick access to view modes, node/edge creation, ex
 - Toolbar on small screens: buttons collapse into an overflow menu
 - "Add Edge" mode: pressing Escape cancels edge drawing
 - Toolbar actions while detail panel is open: both remain functional
+
+---
+
+## REQ-024: Search
+
+The user can search for nodes by name and navigate to them.
+
+**Preconditions:**
+- Graph is rendered (REQ-009)
+
+**Trigger:**
+- User types in the search input field
+
+**Expected Behavior:**
+- Type-ahead search filters nodes by name (case-insensitive substring match)
+- Matching results appear in a dropdown
+- Selecting a result centers and zooms the canvas on that node, selects it, and opens the detail panel
+
+**Acceptance Criteria:**
+- [ ] AC-024-01: A search input field is visible in the header or toolbar
+- [ ] AC-024-02: Typing filters nodes by name with case-insensitive substring matching
+- [ ] AC-024-03: A dropdown shows up to 10 matching results with node type indicator (thinker/concept)
+- [ ] AC-024-04: Selecting a result pans and zooms the canvas to center on the matched node
+- [ ] AC-024-05: The matched node is selected and the detail panel opens
+- [ ] AC-024-06: Pressing Enter selects the first match
+- [ ] AC-024-07: Pressing Escape closes the search dropdown
+- [ ] AC-024-08: Search works across all nodes regardless of current view mode (searching for a concept in People view switches to Full Network view)
+
+**Edge Cases:**
+- No matches: dropdown shows "No results"
+- Empty search: dropdown hidden
+- Search while detail panel is open: detail panel updates to show new selection
+
+---
+
+## REQ-025: File Import
+
+The user can load their own taxonomy files or graph JSON files into the visualization.
+
+**Preconditions:**
+- App is loaded
+
+**Trigger:**
+- User clicks "Import" button or drags a file onto the canvas
+
+**Expected Behavior:**
+- Accepts `.json` (Graph IR format) or `.md` (Collins taxonomy format — parsed via the Rust CLI or client-side)
+- The imported data replaces the current graph
+- Import errors are shown to the user
+
+**Acceptance Criteria:**
+- [ ] AC-025-01: An "Import" button is visible in the toolbar
+- [ ] AC-025-02: Clicking Import opens a file picker accepting `.json` and `.md` files
+- [ ] AC-025-03: Drag-and-drop onto the canvas area also triggers import
+- [ ] AC-025-04: `.json` files are loaded directly as Graph IR (validated against expected structure)
+- [ ] AC-025-05: Invalid JSON shows an error message without crashing the app
+- [ ] AC-025-06: Successfully imported graph replaces the current visualization
+- [ ] AC-025-07: The graph title, node count, and edge count update in the header
+- [ ] AC-025-08: Previous unsaved edits are warned about before import replaces them
+
+**Edge Cases:**
+- Empty JSON file: shows error "No data found"
+- JSON with missing required fields: shows specific validation error
+- Very large file (1000+ nodes): imported without freezing (async processing with loading indicator)
+
+---
+
+## REQ-026: Generation and Stream Labels on Canvas
+
+The canvas displays visible generation bands and stream column headers to orient the researcher.
+
+**Preconditions:**
+- Graph is rendered with generations and streams defined in metadata (REQ-009)
+
+**Trigger:**
+- Always visible when graph is loaded
+
+**Expected Behavior:**
+- Horizontal bands for each generation are drawn behind the nodes with labels
+- Vertical stream regions are labeled at the top of the canvas
+- Labels remain visible during pan/zoom, positioned relative to the graph coordinate system
+
+**Acceptance Criteria:**
+- [ ] AC-026-01: Horizontal bands are drawn for each generation, alternating between slightly different background shades
+- [ ] AC-026-02: Each generation band has a label on the left edge: "Gen N: Label (Period)" (e.g., "Gen 3: Flowering (~1960–1985)")
+- [ ] AC-026-03: Stream names are displayed as column headers at the top, positioned at the stream's X-axis center
+- [ ] AC-026-04: Stream headers are colored with the stream's assigned color
+- [ ] AC-026-05: Labels scale with zoom but remain readable (minimum 10px)
+- [ ] AC-026-06: Labels are drawn behind nodes and edges (background layer)
+- [ ] AC-026-07: Labels are visible in all view modes (Full, People, Concepts)
+
+**Edge Cases:**
+- Graph with only one generation: single band fills the canvas
+- Graph with no stream metadata: no stream headers shown
+- Very wide zoom out: labels may overlap — show only generation numbers at low zoom
+
+---
+
+## REQ-027: Edge Hover Tooltips
+
+Hovering over an edge on the canvas shows a tooltip with the relationship type and note.
+
+**Preconditions:**
+- Graph is rendered with edges (REQ-009)
+
+**Trigger:**
+- User hovers the mouse within proximity of an edge line on the canvas
+
+**Expected Behavior:**
+- A tooltip appears near the cursor showing the edge type label and the edge note (if present)
+- The hovered edge is visually highlighted
+
+**Acceptance Criteria:**
+- [ ] AC-027-01: Mouse proximity within 8px of an edge line triggers the tooltip
+- [ ] AC-027-02: Tooltip shows the edge type as a human-readable label (e.g., "Teacher → Pupil")
+- [ ] AC-027-03: Tooltip shows the edge note below the type label if present
+- [ ] AC-027-04: Tooltip is styled with a semi-transparent dark background and light text
+- [ ] AC-027-05: The hovered edge is drawn thicker (2px) and at full opacity
+- [ ] AC-027-06: Tooltip follows the cursor position
+- [ ] AC-027-07: Moving away from the edge hides the tooltip
+- [ ] AC-027-08: Edge hover works in all view modes
+
+**Edge Cases:**
+- Multiple overlapping edges: show tooltip for the nearest edge
+- Edge with no note: tooltip shows only the type label
+- Edge hover while a node is also near the cursor: node hover takes priority
+
+---
+
+## REQ-028: State Persistence
+
+The user's work (notes, node positions, view state) persists across page reloads.
+
+**Preconditions:**
+- Graph is loaded and user has made edits
+
+**Trigger:**
+- Automatic on every edit; restored on page load
+
+**Expected Behavior:**
+- Notes, added nodes, added edges, and node positions are saved to localStorage
+- On reload, the saved state is merged with the base graph data
+- A "Reset" button clears saved state and reloads from the original source
+
+**Acceptance Criteria:**
+- [ ] AC-028-01: Notes edits are saved to localStorage within 1 second of change
+- [ ] AC-028-02: Added nodes and edges are saved to localStorage
+- [ ] AC-028-03: Node positions (fx/fy from drag) are saved to localStorage
+- [ ] AC-028-04: Current view mode is saved to localStorage
+- [ ] AC-028-05: On page reload, saved state is loaded and applied to the graph
+- [ ] AC-028-06: A "Reset" button in the toolbar clears all saved state
+- [ ] AC-028-07: The localStorage key is namespaced by graph title to support multiple graphs
+- [ ] AC-028-08: Corrupted localStorage data is handled gracefully (ignored, not crash)
+
+**Edge Cases:**
+- localStorage full: graceful degradation, warn user
+- Graph structure changed (new source file) but old state exists: merge what matches, discard what doesn't
+
+---
+
+## REQ-029: Visual Accessibility
+
+The visualization meets accessibility standards for color, contrast, and readability.
+
+**Preconditions:**
+- Graph is rendered
+
+**Trigger:**
+- Always applies
+
+**Acceptance Criteria:**
+- [ ] AC-029-01: All text meets WCAG AA contrast ratio (4.5:1) against its background
+- [ ] AC-029-02: Edge note text in the detail panel uses color `#aaa` or lighter (not `#666`)
+- [ ] AC-029-03: Stream colors use a colorblind-safe palette with luminance variation (not just hue)
+- [ ] AC-029-04: Edge styles (solid/dashed/dotted) are distinguishable at all zoom levels, reinforced by color differences
+- [ ] AC-029-05: The detail panel width is at least 400px to accommodate relationship note text
+- [ ] AC-029-06: Node labels scale proportionally with zoom (larger at high zoom, not clamped at 13px)

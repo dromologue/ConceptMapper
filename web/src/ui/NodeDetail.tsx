@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { GraphNode, GraphEdge, Stream } from "../types/graph-ir";
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
   streams: Stream[];
   onClose: () => void;
   onNotesChange: (nodeId: string, notes: string) => void;
+  onNavigateToNode: (nodeId: string) => void;
 }
 
 const EDGE_LABELS: Record<string, string> = {
@@ -28,24 +29,26 @@ const EDGE_LABELS: Record<string, string> = {
   reframes: "Reframes",
 };
 
-export function NodeDetail({ node, edges, nodes, streams, onClose, onNotesChange }: Props) {
+export function NodeDetail({ node, edges, nodes, streams, onClose, onNotesChange, onNavigateToNode }: Props) {
   const stream = streams.find((s) => s.id === node.stream);
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
   const [localNotes, setLocalNotes] = useState(node.notes ?? "");
 
-  const handleNotesBlur = () => {
-    onNotesChange(node.id, localNotes);
+  // Sync local notes when selected node changes
+  useEffect(() => {
+    setLocalNotes(node.notes ?? "");
+  }, [node.id, node.notes]);
+
+  const handleNotesChange = (value: string) => {
+    setLocalNotes(value);
+    onNotesChange(node.id, value);
   };
 
   return (
     <div className="node-detail">
-      <button className="close-btn" onClick={onClose}>
-        &times;
-      </button>
+      <button className="close-btn" onClick={onClose}>&times;</button>
       <h2>{node.name}</h2>
-      <span
-        className={`node-type-badge ${node.node_type === "thinker" ? "badge-thinker" : "badge-concept"}`}
-      >
+      <span className={`node-type-badge ${node.node_type === "thinker" ? "badge-thinker" : "badge-concept"}`}>
         {node.node_type}
       </span>
 
@@ -65,15 +68,7 @@ export function NodeDetail({ node, edges, nodes, streams, onClose, onNotesChange
             <div className="field">
               <div className="field-label">Stream</div>
               <div className="field-value">
-                <span
-                  className="legend-dot"
-                  style={{
-                    backgroundColor: stream.color ?? "#999",
-                    display: "inline-block",
-                    marginRight: 6,
-                    verticalAlign: "middle",
-                  }}
-                />
+                <span className="legend-dot" style={{ backgroundColor: stream.color ?? "#999", display: "inline-block", marginRight: 6, verticalAlign: "middle" }} />
                 {stream.name}
               </div>
             </div>
@@ -87,9 +82,7 @@ export function NodeDetail({ node, edges, nodes, streams, onClose, onNotesChange
           {node.thinker_fields.structural_roles.length > 0 && (
             <div className="field">
               <div className="field-label">Structural Roles</div>
-              <div className="field-value">
-                {node.thinker_fields.structural_roles.join(", ")}
-              </div>
+              <div className="field-value">{node.thinker_fields.structural_roles.join(", ")}</div>
             </div>
           )}
           {node.thinker_fields.active_period && (
@@ -131,8 +124,9 @@ export function NodeDetail({ node, edges, nodes, streams, onClose, onNotesChange
             <div className="field">
               <div className="field-label">Originator</div>
               <div className="field-value">
-                {nodeMap.get(node.concept_fields.originator_id)?.name ??
-                  node.concept_fields.originator_id}
+                <button className="link-btn" onClick={() => onNavigateToNode(node.concept_fields!.originator_id)}>
+                  {nodeMap.get(node.concept_fields.originator_id)?.name ?? node.concept_fields.originator_id}
+                </button>
               </div>
             </div>
           )}
@@ -140,15 +134,7 @@ export function NodeDetail({ node, edges, nodes, streams, onClose, onNotesChange
             <div className="field">
               <div className="field-label">Stream</div>
               <div className="field-value">
-                <span
-                  className="legend-dot"
-                  style={{
-                    backgroundColor: stream.color ?? "#999",
-                    display: "inline-block",
-                    marginRight: 6,
-                    verticalAlign: "middle",
-                  }}
-                />
+                <span className="legend-dot" style={{ backgroundColor: stream.color ?? "#999", display: "inline-block", marginRight: 6, verticalAlign: "middle" }} />
                 {stream.name}
               </div>
             </div>
@@ -161,9 +147,8 @@ export function NodeDetail({ node, edges, nodes, streams, onClose, onNotesChange
         <textarea
           className="notes-editor"
           value={localNotes}
-          onChange={(e) => setLocalNotes(e.target.value)}
-          onBlur={handleNotesBlur}
-          placeholder="Add notes..."
+          onChange={(e) => handleNotesChange(e.target.value)}
+          placeholder="Add notes about this node..."
           rows={4}
         />
       </div>
@@ -180,7 +165,9 @@ export function NodeDetail({ node, edges, nodes, streams, onClose, onNotesChange
               <div key={i} className="edge-item">
                 <span className="edge-type">{label}</span>{" "}
                 {direction}{" "}
-                <span className="edge-target">{otherNode?.name ?? otherId}</span>
+                <button className="link-btn" onClick={() => onNavigateToNode(otherId)}>
+                  {otherNode?.name ?? otherId}
+                </button>
                 {e.note && <div className="edge-note">{e.note}</div>}
               </div>
             );
