@@ -11,6 +11,7 @@ interface Props {
   revealedNodes: Set<string>;
   interactionMode: InteractionMode;
   edgeSourceId: string | null;
+  activeStreams: Set<string> | null;
 }
 
 const EMINENCE_RADIUS: Record<string, number> = { dominant: 20, major: 14, secondary: 10, minor: 6 };
@@ -41,7 +42,7 @@ function isNodePrimary(node: SimNode, viewMode: ViewMode): boolean {
   return true;
 }
 
-export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId }: Props) {
+export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, activeStreams }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const transformRef = useRef(d3.zoomIdentity);
@@ -55,10 +56,17 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const revealedRef = useRef(revealedNodes);
   const interactionRef = useRef(interactionMode);
   const edgeSourceRef = useRef(edgeSourceId);
+  const activeStreamsRef = useRef(activeStreams);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown> | null>(null);
   const onSelectNodeRef = useRef(onSelectNode);
   const dataRef = useRef(data);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const marqueeRef = useRef<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
+  const isMarqueeRef = useRef(false);
+  const canvasSizeRef = useRef({ width: 800, height: 600 });
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  // Track whether simulation has been initialized
+  const simInitializedRef = useRef(false);
 
   useEffect(() => { onSelectNodeRef.current = onSelectNode; }, [onSelectNode]);
   useEffect(() => { dataRef.current = data; }, [data]);
@@ -66,29 +74,55 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { revealedRef.current = revealedNodes; redraw(); }, [revealedNodes]);
   useEffect(() => { interactionRef.current = interactionMode; redraw(); }, [interactionMode]);
   useEffect(() => { edgeSourceRef.current = edgeSourceId; redraw(); }, [edgeSourceId]);
+  useEffect(() => { activeStreamsRef.current = activeStreams; redraw(); }, [activeStreams]);
   useEffect(() => { redraw(); }, [selectedNodeId]);
 
   function redraw() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d")!;
-    const width = parseInt(canvas.style.width);
-    const height = parseInt(canvas.style.height);
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    const { width, height } = canvasSizeRef.current;
     if (width && height) draw(ctx, width, height);
   }
 
-  useEffect(() => {
+  // Resize canvas to fit container
+  function resizeCanvas() {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
-    const width = canvas.parentElement?.clientWidth ?? 800;
-    const height = canvas.parentElement?.clientHeight ?? 600;
+    const container = canvas.parentElement;
+    if (!container) return;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    if (width === 0 || height === 0) return;
     canvas.width = width * 2;
     canvas.height = height * 2;
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
+    canvasSizeRef.current = { width, height };
     const ctx = canvas.getContext("2d")!;
     ctx.scale(2, 2);
+    ctxRef.current = ctx;
+    redraw();
+  }
+
+  // ResizeObserver to watch container size
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !canvas.parentElement) return;
+    const observer = new ResizeObserver(() => {
+      resizeCanvas();
+    });
+    observer.observe(canvas.parentElement);
+    return () => observer.disconnect();
+  }, []);
+
+  // Initial simulation setup (once)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    resizeCanvas();
+    const { width, height } = canvasSizeRef.current;
+    const ctx = ctxRef.current!;
 
     const nodes: SimNode[] = data.nodes.map((n) => ({
       ...n, x: width / 2 + (Math.random() - 0.5) * 200, y: height / 2 + (Math.random() - 0.5) * 200,
@@ -118,14 +152,15 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       .alphaDecay(0.02);
 
     simRef.current = simulation;
+    simInitializedRef.current = true;
     simulation.on("tick", () => draw(ctx, width, height));
 
-    // Zoom behavior — we'll disable it during node drags
+    // Zoom behavior
     const zoomBehavior = d3.zoom<HTMLCanvasElement, unknown>()
       .scaleExtent([0.1, 5])
       .filter(() => {
-        // Disable zoom drag when we're dragging a node
         if (dragNodeRef.current) return false;
+        if (isMarqueeRef.current) return false;
         return true;
       })
       .on("zoom", (event) => {
@@ -137,7 +172,6 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     d3.select(canvas).call(zoomBehavior);
 
     // --- Unified pointer handling ---
-
     let pointerDownPos = { x: 0, y: 0 };
     let pointerDownNode: SimNode | null = null;
 
@@ -148,20 +182,43 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const node = findNodeAt(event.offsetX, event.offsetY);
       pointerDownNode = node;
 
+      // Shift+drag on empty space = marquee zoom
+      if (!node && event.shiftKey) {
+        isMarqueeRef.current = true;
+        const t = transformRef.current;
+        marqueeRef.current = {
+          startX: (event.offsetX - t.x) / t.k,
+          startY: (event.offsetY - t.y) / t.k,
+          endX: (event.offsetX - t.x) / t.k,
+          endY: (event.offsetY - t.y) / t.k,
+        };
+        event.preventDefault();
+        canvas.setPointerCapture(event.pointerId);
+        return;
+      }
+
       if (node) {
-        // Start node drag
         dragNodeRef.current = node;
         node.fx = node.x;
         node.fy = node.y;
         simulation.alphaTarget(0.3).restart();
-
-        // Prevent zoom from stealing this gesture
         event.stopPropagation();
         canvas.setPointerCapture(event.pointerId);
       }
     });
 
     canvas.addEventListener("pointermove", (event) => {
+      // Marquee zoom drag
+      if (isMarqueeRef.current && marqueeRef.current) {
+        const t = transformRef.current;
+        marqueeRef.current.endX = (event.offsetX - t.x) / t.k;
+        marqueeRef.current.endY = (event.offsetY - t.y) / t.k;
+        const currentCtx = ctxRef.current;
+        const size = canvasSizeRef.current;
+        if (currentCtx) draw(currentCtx, size.width, size.height);
+        return;
+      }
+
       if (dragNodeRef.current) {
         const dx = event.offsetX - pointerDownPos.x;
         const dy = event.offsetY - pointerDownPos.y;
@@ -170,13 +227,15 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         const t = transformRef.current;
         dragNodeRef.current.fx = (event.offsetX - t.x) / t.k;
         dragNodeRef.current.fy = (event.offsetY - t.y) / t.k;
-        draw(ctx, width, height);
+        const currentCtx = ctxRef.current;
+        const size = canvasSizeRef.current;
+        if (currentCtx) draw(currentCtx, size.width, size.height);
         return;
       }
 
-      // Hover detection — nodes first, then edges
-      const node = findNodeAt(event.offsetX, event.offsetY);
-      const newHovered = node?.id ?? null;
+      // Hover detection
+      const hitNode = findNodeAt(event.offsetX, event.offsetY);
+      const newHovered = hitNode?.id ?? null;
       let needsRedraw = false;
 
       if (newHovered !== hoveredRef.current) {
@@ -212,28 +271,64 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         tooltip.style.display = "none";
       }
 
-      if (needsRedraw) draw(ctx, width, height);
+      if (needsRedraw) {
+        const currentCtx = ctxRef.current;
+        const size = canvasSizeRef.current;
+        if (currentCtx) draw(currentCtx, size.width, size.height);
+      }
     });
 
     canvas.addEventListener("pointerup", (event) => {
+      // Marquee zoom complete
+      if (isMarqueeRef.current && marqueeRef.current) {
+        isMarqueeRef.current = false;
+        const m = marqueeRef.current;
+        marqueeRef.current = null;
+        canvas.releasePointerCapture(event.pointerId);
+
+        const mw = Math.abs(m.endX - m.startX);
+        const mh = Math.abs(m.endY - m.startY);
+        if (mw > 10 && mh > 10) {
+          const mx = Math.min(m.startX, m.endX);
+          const my = Math.min(m.startY, m.endY);
+          const size = canvasSizeRef.current;
+          const scale = Math.min(size.width / mw, size.height / mh) * 0.9;
+          const cx = mx + mw / 2;
+          const cy = my + mh / 2;
+          const newTransform = d3.zoomIdentity
+            .translate(size.width / 2, size.height / 2)
+            .scale(scale)
+            .translate(-cx, -cy);
+
+          if (zoomBehaviorRef.current) {
+            d3.select(canvas)
+              .transition()
+              .duration(500)
+              .call(zoomBehaviorRef.current.transform, newTransform);
+          }
+        } else {
+          const currentCtx = ctxRef.current;
+          const size = canvasSizeRef.current;
+          if (currentCtx) draw(currentCtx, size.width, size.height);
+        }
+        return;
+      }
+
       if (dragNodeRef.current) {
         simulation.alphaTarget(0);
 
         if (!isDraggingRef.current) {
-          // It was a click, not a drag — unpin and handle as click
           dragNodeRef.current.fx = null;
           dragNodeRef.current.fy = null;
           const clickedNode = pointerDownNode;
           dragNodeRef.current = null;
           canvas.releasePointerCapture(event.pointerId);
 
-          // Fire click logic
           if (clickedNode) {
             const originalNode = dataRef.current.nodes.find((n) => n.id === clickedNode.id) ?? null;
             onSelectNodeRef.current(originalNode);
           }
         } else {
-          // It was a drag — keep node pinned at new position
           dragNodeRef.current = null;
           canvas.releasePointerCapture(event.pointerId);
         }
@@ -250,7 +345,66 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       pointerDownNode = null;
     });
 
-    return () => { simulation.stop(); };
+    return () => { simulation.stop(); simInitializedRef.current = false; };
+  }, []);
+
+  // Refactor: update simulation in-place when data changes (after initial setup)
+  useEffect(() => {
+    if (!simInitializedRef.current) return;
+    const simulation = simRef.current;
+    if (!simulation) return;
+
+    const existingMap = new Map(nodesRef.current.map((n) => [n.id, n]));
+    const newNodeIds = new Set(data.nodes.map((n) => n.id));
+    const existingNodeIds = new Set(nodesRef.current.map((n) => n.id));
+
+    // Update existing nodes in place (preserve positions)
+    for (const n of data.nodes) {
+      const existing = existingMap.get(n.id);
+      if (existing) {
+        // Update data fields but keep position
+        existing.name = n.name;
+        existing.node_type = n.node_type;
+        existing.generation = n.generation;
+        existing.stream = n.stream;
+        existing.thinker_fields = n.thinker_fields;
+        existing.concept_fields = n.concept_fields;
+        existing.content = n.content;
+        existing.notes = n.notes;
+      }
+    }
+
+    // Add new nodes
+    const { width, height } = canvasSizeRef.current;
+    const addedNodes: SimNode[] = data.nodes
+      .filter((n) => !existingNodeIds.has(n.id))
+      .map((n) => ({
+        ...n,
+        x: width / 2 + (Math.random() - 0.5) * 200,
+        y: height / 2 + (Math.random() - 0.5) * 200,
+      }));
+
+    // Remove deleted nodes
+    const updatedNodes = nodesRef.current.filter((n) => newNodeIds.has(n.id)).concat(addedNodes);
+    nodesRef.current = updatedNodes;
+
+    // Rebuild links
+    const nodeMap = new Map(updatedNodes.map((n) => [n.id, n]));
+    const newLinks: SimLink[] = data.edges
+      .filter((e) => nodeMap.has(e.from) && nodeMap.has(e.to))
+      .map((e) => ({ source: e.from, target: e.to, edge: e }));
+    linksRef.current = newLinks;
+
+    // Update simulation
+    simulation.nodes(updatedNodes);
+    const linkForce = simulation.force("link") as d3.ForceLink<SimNode, SimLink>;
+    if (linkForce) linkForce.links(newLinks);
+
+    if (addedNodes.length > 0 || updatedNodes.length !== existingNodeIds.size) {
+      simulation.alpha(0.3).restart();
+    } else {
+      redraw();
+    }
   }, [data]);
 
   function findNodeAt(canvasX: number, canvasY: number): SimNode | null {
@@ -263,7 +417,6 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
     for (let i = nodesRef.current.length - 1; i >= 0; i--) {
       const node = nodesRef.current[i];
-      // When adding edges, ALL nodes are clickable regardless of view mode
       if (!isAdding && !isNodePrimary(node, mode) && !revealed.has(node.id)) continue;
       const r = getNodeRadius(node, mode);
       const dx = x - node.x;
@@ -277,12 +430,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const t = transformRef.current;
     const x = (canvasX - t.x) / t.k;
     const y = (canvasY - t.y) / t.k;
-    const threshold = 8 / t.k; // 8px in screen space
+    const threshold = 8 / t.k;
 
     for (const l of linksRef.current) {
       const source = l.source as SimNode;
       const target = l.target as SimNode;
-      // Point-to-line-segment distance
       const dx = target.x - source.x;
       const dy = target.y - source.y;
       const lenSq = dx * dx + dy * dy;
@@ -305,75 +457,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const isAdding = interactionRef.current !== "normal";
     const currentData = dataRef.current;
     const hoveredEdge = hoveredEdgeRef.current;
+    const streams = activeStreamsRef.current;
     ctx.clearRect(0, 0, width, height);
     ctx.save();
     ctx.translate(t.x, t.y);
     ctx.scale(t.k, t.k);
-
-    // --- Background: Generation bands ---
-    const gens = currentData.metadata.generations;
-    if (gens.length > 0) {
-      const allGenYs = gens.map((g) => {
-        const nodesInGen = nodesRef.current.filter((n) => n.generation === g.number);
-        if (nodesInGen.length === 0) return null;
-        const avgY = nodesInGen.reduce((sum, n) => sum + n.y, 0) / nodesInGen.length;
-        return { gen: g, avgY };
-      }).filter(Boolean) as { gen: typeof gens[0]; avgY: number }[];
-
-      // Compute band boundaries
-      for (let i = 0; i < allGenYs.length; i++) {
-        const cur = allGenYs[i];
-        const prev = allGenYs[i - 1];
-        const next = allGenYs[i + 1];
-        const top = prev ? (prev.avgY + cur.avgY) / 2 : cur.avgY - 80;
-        const bottom = next ? (cur.avgY + next.avgY) / 2 : cur.avgY + 80;
-        // Very subtle band background
-        ctx.fillStyle = i % 2 === 0 ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.04)";
-        // Use a wide range to cover visible area
-        ctx.fillRect(-2000, top, 6000, bottom - top);
-        // Generation label on the left
-        ctx.save();
-        ctx.font = "11px -apple-system, sans-serif";
-        ctx.fillStyle = "rgba(255,255,255,0.2)";
-        ctx.textAlign = "left";
-        const label = cur.gen.label ? `Gen ${cur.gen.number}: ${cur.gen.label}` : `Gen ${cur.gen.number}`;
-        const periodText = cur.gen.period ?? "";
-        ctx.fillText(label, -1900, cur.avgY - 4);
-        if (periodText) {
-          ctx.font = "9px -apple-system, sans-serif";
-          ctx.fillStyle = "rgba(255,255,255,0.12)";
-          ctx.fillText(periodText, -1900, cur.avgY + 10);
-        }
-        ctx.restore();
-      }
-    }
-
-    // --- Background: Stream column headers ---
-    const streams = currentData.metadata.streams;
-    if (streams.length > 0) {
-      const streamCenters = new Map<string, number>();
-      for (const s of streams) {
-        const streamNodes = nodesRef.current.filter((n) => n.stream === s.id);
-        if (streamNodes.length === 0) continue;
-        const avgX = streamNodes.reduce((sum, n) => sum + n.x, 0) / streamNodes.length;
-        streamCenters.set(s.id, avgX);
-      }
-      // Find top of visible nodes
-      const minY = nodesRef.current.length > 0
-        ? Math.min(...nodesRef.current.map((n) => n.y)) - 60
-        : 0;
-
-      ctx.save();
-      for (const s of streams) {
-        const cx = streamCenters.get(s.id);
-        if (cx == null) continue;
-        ctx.font = "bold 12px -apple-system, sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillStyle = s.color ? s.color + "55" : "rgba(255,255,255,0.15)";
-        ctx.fillText(s.name, cx, minY);
-      }
-      ctx.restore();
-    }
 
     const hovered = hoveredRef.current;
     const selected = selectedNodeId;
@@ -391,10 +479,15 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       });
     }
 
-    // When in add-edge mode, show ALL nodes (full network) so user can pick any node
     const isVisible = (node: SimNode) => {
       if (isAdding) return true;
       return isNodePrimary(node, mode) || revealed.has(node.id);
+    };
+
+    // Check if node is in an active stream
+    const isStreamActive = (node: SimNode) => {
+      if (!streams) return true;
+      return node.stream ? streams.has(node.stream) : false;
     };
 
     // Draw edges
@@ -407,6 +500,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const isHighlighted = connectedToHighlight.size === 0 || (connectedToHighlight.has(source.id) && connectedToHighlight.has(target.id));
       const isRevealed = !isAdding && (revealed.has(source.id) || revealed.has(target.id));
       const isEdgeHovered = hoveredEdge === l;
+      const edgeStreamDimmed = !isStreamActive(source) && !isStreamActive(target);
 
       ctx.beginPath();
       ctx.moveTo(source.x, source.y);
@@ -422,7 +516,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         ctx.lineWidth = 2.5;
       } else {
         ctx.strokeStyle = visual.color ?? (isHighlighted ? "#555" : "#333");
-        ctx.globalAlpha = isHighlighted ? 0.8 : isRevealed ? 0.4 : 0.15;
+        let alpha = isHighlighted ? 0.8 : isRevealed ? 0.4 : 0.15;
+        if (edgeStreamDimmed) alpha = 0.08;
+        ctx.globalAlpha = alpha;
         ctx.lineWidth = isHighlighted ? 1.5 : 0.8;
       }
       ctx.stroke();
@@ -441,7 +537,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         ctx.lineTo(tipX - 8 * Math.cos(angle + 0.4), tipY - 8 * Math.sin(angle + 0.4));
         ctx.closePath();
         ctx.fillStyle = isEdgeHovered ? "#fff" : (visual.color ?? "#555");
-        ctx.globalAlpha = isEdgeHovered ? 0.9 : (isHighlighted ? 0.8 : 0.15);
+        let arrowAlpha = isEdgeHovered ? 0.9 : (isHighlighted ? 0.8 : 0.15);
+        if (edgeStreamDimmed) arrowAlpha = 0.08;
+        ctx.globalAlpha = arrowAlpha;
         ctx.fill();
         ctx.globalAlpha = 1;
       }
@@ -468,7 +566,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         ctx.fillStyle = "rgba(26, 26, 46, 0.9)";
         ctx.fillRect(-tw / 2 - 3, -5, tw + 6, 11);
         ctx.fillStyle = visual.color ?? "#999";
-        ctx.globalAlpha = 0.9;
+        ctx.globalAlpha = edgeStreamDimmed ? 0.15 : 0.9;
         ctx.fillText(label, 0, 3);
         ctx.globalAlpha = 1;
         ctx.restore();
@@ -487,8 +585,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const isSelected = node.id === selected;
       const isHovered = node.id === hovered;
       const isEdgeSource = node.id === edgeSrc;
+      const streamActive = isStreamActive(node);
 
-      ctx.globalAlpha = isHighlighted ? (isRevealed ? 0.7 : 1) : 0.25;
+      let alpha = isHighlighted ? (isRevealed ? 0.7 : 1) : 0.25;
+      if (!streamActive) alpha = 0.15;
+      ctx.globalAlpha = alpha;
 
       const effectiveR = isRevealed ? r * 0.7 : r;
 
@@ -536,7 +637,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         ctx.fill();
       }
 
-      // Labels — font size proportional to zoom (clamped)
+      // Labels
       if (t.k > 0.4 || node.thinker_fields?.eminence === "dominant") {
         const fontSize = Math.max(8, Math.min(16, 11 * Math.sqrt(t.k)));
         ctx.font = `${fontSize}px -apple-system, sans-serif`;
@@ -559,7 +660,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
         ctx.fillStyle = "rgba(26, 26, 46, 0.85)";
         ctx.fillRect(node.x - bgW / 2, baseY - fontSize + 1, bgW, bgH);
-        ctx.fillStyle = isHighlighted ? (isRevealed ? "#aaa" : "#ddd") : "#666";
+        let labelAlpha = isHighlighted ? (isRevealed ? "#aaa" : "#ddd") : "#666";
+        if (!streamActive) labelAlpha = "#444";
+        ctx.fillStyle = labelAlpha;
         ctx.fillText(node.name, node.x, baseY);
 
         if (showInst) {
@@ -572,11 +675,26 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       ctx.globalAlpha = 1;
     });
 
+    // Draw marquee rectangle if active
+    if (isMarqueeRef.current && marqueeRef.current) {
+      const m = marqueeRef.current;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = "#4A90D9";
+      ctx.lineWidth = 1.5 / t.k;
+      ctx.strokeRect(
+        Math.min(m.startX, m.endX),
+        Math.min(m.startY, m.endY),
+        Math.abs(m.endX - m.startX),
+        Math.abs(m.endY - m.startY)
+      );
+      ctx.setLineDash([]);
+    }
+
     ctx.restore();
   }
 
   return (
-    <div style={{ position: "relative", flex: 1 }}>
+    <div style={{ position: "relative", width: "100%", height: "100%" }}>
       <canvas ref={canvasRef} />
       <div
         ref={tooltipRef}

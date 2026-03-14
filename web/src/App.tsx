@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import type { GraphIR, GraphNode, GraphEdge } from "./types/graph-ir";
 import { GraphCanvas } from "./graph/GraphCanvas";
-import { NodeDetail } from "./ui/NodeDetail";
+import { DetailPanel } from "./ui/DetailPanel";
+import { NotesPane } from "./ui/NotesPane";
 import { Toolbar } from "./ui/Toolbar";
 import { AddNodeModal } from "./ui/AddNodeModal";
 import { AddEdgeModal } from "./ui/AddEdgeModal";
@@ -9,6 +10,17 @@ import "./App.css";
 
 export type ViewMode = "full" | "people" | "concepts";
 export type InteractionMode = "normal" | "add-edge-source" | "add-edge-target";
+
+function mergeNodeUpdate(node: GraphNode, updates: Partial<GraphNode>): GraphNode {
+  const merged = { ...node, ...updates };
+  if (updates.thinker_fields && node.thinker_fields) {
+    merged.thinker_fields = { ...node.thinker_fields, ...updates.thinker_fields };
+  }
+  if (updates.concept_fields && node.concept_fields) {
+    merged.concept_fields = { ...node.concept_fields, ...updates.concept_fields };
+  }
+  return merged;
+}
 
 function App() {
   const [graphData, setGraphData] = useState<GraphIR | null>(null);
@@ -27,6 +39,10 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [detailWidth, setDetailWidth] = useState(320);
+  const [notesWidth, setNotesWidth] = useState(420);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [activeStreams, setActiveStreams] = useState<Set<string> | null>(null);
 
   useEffect(() => {
     fetch("/graph.json")
@@ -73,17 +89,17 @@ function App() {
     [interactionMode, viewMode, graphData]
   );
 
-  const handleNotesChange = useCallback(
-    (nodeId: string, notes: string) => {
+  const handleNodeUpdate = useCallback(
+    (nodeId: string, updates: Partial<GraphNode>) => {
       if (!graphData) return;
       setGraphData({
         ...graphData,
         nodes: graphData.nodes.map((n) =>
-          n.id === nodeId ? { ...n, notes: notes || undefined } : n
+          n.id === nodeId ? mergeNodeUpdate(n, updates) : n
         ),
       });
       setSelectedNode((prev) =>
-        prev?.id === nodeId ? { ...prev, notes: notes || undefined } : prev
+        prev?.id === nodeId ? mergeNodeUpdate(prev, updates) : prev
       );
     },
     [graphData]
@@ -237,6 +253,51 @@ function App() {
     []
   );
 
+  // Close notes when node deselected
+  const handleCloseNode = useCallback(() => {
+    setSelectedNode(null);
+    setNotesOpen(false);
+  }, []);
+
+  // Resizer drag handler — generic for either pane
+  const makeResizeHandler = useCallback(
+    (setter: React.Dispatch<React.SetStateAction<number>>, currentWidth: number) =>
+      (e: React.MouseEvent) => {
+        e.preventDefault();
+        const startX = e.clientX;
+        const startW = currentWidth;
+        const onMouseMove = (moveEvent: MouseEvent) => {
+          const delta = startX - moveEvent.clientX;
+          setter(Math.max(240, Math.min(600, startW + delta)));
+        };
+        const onMouseUp = () => {
+          document.removeEventListener("mousemove", onMouseMove);
+          document.removeEventListener("mouseup", onMouseUp);
+        };
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+      },
+    []
+  );
+
+  // Stream toggle for legend filtering
+  const handleStreamToggle = (streamId: string) => {
+    setActiveStreams((prev) => {
+      if (!prev) {
+        // First click: show only this stream
+        return new Set([streamId]);
+      }
+      const next = new Set(prev);
+      if (next.has(streamId)) {
+        next.delete(streamId);
+        if (next.size === 0) return null; // all cleared = show all
+      } else {
+        next.add(streamId);
+      }
+      return next;
+    });
+  };
+
   // Search results
   const searchResults = searchQuery.trim().length > 0 && graphData
     ? graphData.nodes
@@ -332,36 +393,71 @@ function App() {
         onImportFile={handleImportFile}
       />
       <div className="app-body">
-        <GraphCanvas
-          data={graphData}
-          onSelectNode={handleSelectNode}
-          selectedNodeId={selectedNode?.id ?? null}
-          viewMode={viewMode}
-          revealedNodes={revealedNodes}
-          interactionMode={interactionMode}
-          edgeSourceId={edgeSource}
-        />
-        {selectedNode && (
-          <NodeDetail
-            node={selectedNode}
-            edges={graphData.edges.filter(
-              (e) => e.from === selectedNode.id || e.to === selectedNode.id
-            )}
-            nodes={graphData.nodes}
-            streams={graphData.metadata.streams}
-            onClose={() => setSelectedNode(null)}
-            onNotesChange={handleNotesChange}
-            onNavigateToNode={handleNavigateToNode}
+        <div className="canvas-container">
+          <GraphCanvas
+            data={graphData}
+            onSelectNode={handleSelectNode}
+            selectedNodeId={selectedNode?.id ?? null}
+            viewMode={viewMode}
+            revealedNodes={revealedNodes}
+            interactionMode={interactionMode}
+            edgeSourceId={edgeSource}
+            activeStreams={activeStreams}
           />
+        </div>
+        {selectedNode && (
+          <>
+            <div className="pane-resizer" onMouseDown={makeResizeHandler(setDetailWidth, detailWidth)} />
+            <DetailPanel
+              node={selectedNode}
+              edges={graphData.edges.filter(
+                (e) => e.from === selectedNode.id || e.to === selectedNode.id
+              )}
+              nodes={graphData.nodes}
+              streams={graphData.metadata.streams}
+              generations={graphData.metadata.generations}
+              onClose={handleCloseNode}
+              onNodeUpdate={handleNodeUpdate}
+              onNavigateToNode={handleNavigateToNode}
+              onOpenNotes={() => setNotesOpen(!notesOpen)}
+              notesOpen={notesOpen}
+              style={{ width: detailWidth }}
+            />
+          </>
+        )}
+        {selectedNode && notesOpen && (
+          <>
+            <div className="pane-resizer" onMouseDown={makeResizeHandler(setNotesWidth, notesWidth)} />
+            <NotesPane
+              node={selectedNode}
+              edges={graphData.edges.filter(
+                (e) => e.from === selectedNode.id || e.to === selectedNode.id
+              )}
+              nodes={graphData.nodes}
+              onNodeUpdate={handleNodeUpdate}
+              onClose={() => setNotesOpen(false)}
+              style={{ width: notesWidth }}
+            />
+          </>
         )}
       </div>
       <div className="legend">
         {graphData.metadata.streams.map((s) => (
-          <span key={s.id} className="legend-item">
+          <span
+            key={s.id}
+            className={`legend-item ${activeStreams === null || activeStreams.has(s.id) ? "legend-active" : "legend-dimmed"}`}
+            onClick={() => handleStreamToggle(s.id)}
+            style={{ cursor: "pointer" }}
+          >
             <span className="legend-dot" style={{ backgroundColor: s.color || "#999" }} />
             {s.name}
           </span>
         ))}
+        {activeStreams && (
+          <span className="legend-item legend-reset" onClick={() => setActiveStreams(null)}>
+            Show All
+          </span>
+        )}
       </div>
 
       {showAddThinker && (
