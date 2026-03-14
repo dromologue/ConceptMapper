@@ -10,6 +10,7 @@ interface Props {
   onAddEdge: () => void;
   interactionMode: InteractionMode;
   onCancelAddEdge: () => void;
+  onImportFile: () => void;
 }
 
 export function Toolbar({
@@ -17,6 +18,7 @@ export function Toolbar({
   onDownloadImage, onDownloadFile,
   onAddThinker, onAddConcept, onAddEdge,
   interactionMode, onCancelAddEdge,
+  onImportFile,
 }: Props) {
   return (
     <div className="toolbar">
@@ -57,7 +59,10 @@ export function Toolbar({
       </div>
 
       <div className="toolbar-group">
-        <span className="toolbar-label">Export</span>
+        <span className="toolbar-label">File</span>
+        <button className="toolbar-btn import-btn" onClick={onImportFile} title="Import a .json graph file">
+          Import
+        </button>
         <button className="toolbar-btn export-btn" onClick={onDownloadImage} title="Download graph as PNG image">
           Download Image
         </button>

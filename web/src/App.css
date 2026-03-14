@@ -93,7 +93,7 @@ canvas:active {
   right: 0;
   top: 0;
   bottom: 0;
-  width: 320px;
+  width: 400px;
   background: #16213e;
   border-left: 1px solid #2a2a4a;
   padding: 16px;
@@ -181,7 +181,7 @@ canvas:active {
 }
 
 .node-detail .edge-note {
-  color: #666;
+  color: #aaa;
   font-size: 11px;
   margin-top: 2px;
 }
@@ -383,4 +383,157 @@ canvas:active {
 .modal-actions button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Edge hover tooltip */
+.edge-tooltip {
+  position: absolute;
+  background: #16213e;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #ddd;
+  pointer-events: none;
+  z-index: 20;
+  white-space: pre-line;
+  max-width: 260px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* Notes & Content collapsible section */
+.notes-section {
+  margin-top: 16px;
+  border-top: 1px solid #2a2a4a;
+  padding-top: 12px;
+}
+
+.notes-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 0;
+}
+
+.notes-section-header .field-label {
+  margin-bottom: 0;
+}
+
+.notes-section-toggle {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.notes-section-toggle:hover {
+  color: #ddd;
+}
+
+.notes-section-body {
+  margin-top: 8px;
+}
+
+.edge-notes-list {
+  margin-bottom: 10px;
+}
+
+.edge-notes-list .edge-note-item {
+  padding: 4px 0;
+  border-bottom: 1px solid #1a1a2e;
+  font-size: 12px;
+}
+
+.edge-notes-list .edge-note-label {
+  color: #888;
+  font-style: italic;
+  font-size: 11px;
+}
+
+.edge-notes-list .edge-note-text {
+  color: #aaa;
+  margin-top: 2px;
+  font-size: 12px;
+}
+
+/* Search */
+.search-container {
+  position: relative;
+  margin-left: 16px;
+}
+
+.search-input {
+  width: 200px;
+  padding: 5px 10px;
+  background: #1a1a2e;
+  color: #ccc;
+  border: 1px solid #2a2a4a;
+  border-radius: 4px;
+  font-size: 13px;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: #4A90D9;
+}
+
+.search-input::placeholder {
+  color: #555;
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #16213e;
+  border: 1px solid #3a3a5a;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.search-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #ccc;
+  border-bottom: 1px solid #1a1a2e;
+}
+
+.search-result:hover {
+  background: #2a2a4a;
+}
+
+.search-result .type-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.search-result .type-indicator.concept {
+  border-radius: 2px;
+}
+
+/* Import button */
+.import-btn {
+  background: #1a2a3a;
+  border-color: #2a4a6e;
+  color: #8ab4f8;
+}
+
+.import-btn:hover {
+  background: #2a4a6e;
+  color: #aacbff;
 }

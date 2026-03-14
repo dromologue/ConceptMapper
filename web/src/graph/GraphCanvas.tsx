@@ -48,6 +48,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const nodesRef = useRef<SimNode[]>([]);
   const linksRef = useRef<SimLink[]>([]);
   const hoveredRef = useRef<string | null>(null);
+  const hoveredEdgeRef = useRef<SimLink | null>(null);
   const dragNodeRef = useRef<SimNode | null>(null);
   const isDraggingRef = useRef(false);
   const viewModeRef = useRef(viewMode);
@@ -55,7 +56,12 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const interactionRef = useRef(interactionMode);
   const edgeSourceRef = useRef(edgeSourceId);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown> | null>(null);
+  const onSelectNodeRef = useRef(onSelectNode);
+  const dataRef = useRef(data);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => { onSelectNodeRef.current = onSelectNode; }, [onSelectNode]);
+  useEffect(() => { dataRef.current = data; }, [data]);
   useEffect(() => { viewModeRef.current = viewMode; redraw(); }, [viewMode]);
   useEffect(() => { revealedRef.current = revealedNodes; redraw(); }, [revealedNodes]);
   useEffect(() => { interactionRef.current = interactionMode; redraw(); }, [interactionMode]);
@@ -168,15 +174,45 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         return;
       }
 
-      // Hover detection
+      // Hover detection — nodes first, then edges
       const node = findNodeAt(event.offsetX, event.offsetY);
       const newHovered = node?.id ?? null;
+      let needsRedraw = false;
+
       if (newHovered !== hoveredRef.current) {
         hoveredRef.current = newHovered;
         const isEdgeMode = interactionRef.current !== "normal";
         canvas.style.cursor = isEdgeMode ? "crosshair" : newHovered ? "pointer" : "grab";
-        draw(ctx, width, height);
+        needsRedraw = true;
       }
+
+      // Edge hover tooltip
+      const tooltip = tooltipRef.current;
+      if (!newHovered && tooltip) {
+        const edgeHit = findEdgeAt(event.offsetX, event.offsetY);
+        if (edgeHit !== hoveredEdgeRef.current) {
+          hoveredEdgeRef.current = edgeHit;
+          needsRedraw = true;
+        }
+        if (edgeHit) {
+          const label = EDGE_LABELS[edgeHit.edge.edge_type] ?? edgeHit.edge.edge_type;
+          const noteText = edgeHit.edge.note ? `\n${edgeHit.edge.note}` : "";
+          tooltip.textContent = `${label}${noteText}`;
+          tooltip.style.display = "block";
+          tooltip.style.left = `${event.offsetX + 12}px`;
+          tooltip.style.top = `${event.offsetY - 8}px`;
+        } else {
+          tooltip.style.display = "none";
+        }
+      } else if (tooltip) {
+        if (hoveredEdgeRef.current) {
+          hoveredEdgeRef.current = null;
+          needsRedraw = true;
+        }
+        tooltip.style.display = "none";
+      }
+
+      if (needsRedraw) draw(ctx, width, height);
     });
 
     canvas.addEventListener("pointerup", (event) => {
@@ -193,8 +229,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
           // Fire click logic
           if (clickedNode) {
-            const originalNode = data.nodes.find((n) => n.id === clickedNode.id) ?? null;
-            onSelectNode(originalNode);
+            const originalNode = dataRef.current.nodes.find((n) => n.id === clickedNode.id) ?? null;
+            onSelectNodeRef.current(originalNode);
           }
         } else {
           // It was a drag — keep node pinned at new position
@@ -209,7 +245,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
       // Click on empty canvas
       if (!isDraggingRef.current && !pointerDownNode) {
-        onSelectNode(null);
+        onSelectNodeRef.current(null);
       }
       pointerDownNode = null;
     });
@@ -237,16 +273,107 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     return null;
   }
 
+  function findEdgeAt(canvasX: number, canvasY: number): SimLink | null {
+    const t = transformRef.current;
+    const x = (canvasX - t.x) / t.k;
+    const y = (canvasY - t.y) / t.k;
+    const threshold = 8 / t.k; // 8px in screen space
+
+    for (const l of linksRef.current) {
+      const source = l.source as SimNode;
+      const target = l.target as SimNode;
+      // Point-to-line-segment distance
+      const dx = target.x - source.x;
+      const dy = target.y - source.y;
+      const lenSq = dx * dx + dy * dy;
+      if (lenSq === 0) continue;
+      let param = ((x - source.x) * dx + (y - source.y) * dy) / lenSq;
+      param = Math.max(0, Math.min(1, param));
+      const projX = source.x + param * dx;
+      const projY = source.y + param * dy;
+      const distSq = (x - projX) * (x - projX) + (y - projY) * (y - projY);
+      if (distSq < threshold * threshold) return l;
+    }
+    return null;
+  }
+
   function draw(ctx: CanvasRenderingContext2D, width: number, height: number) {
     const t = transformRef.current;
     const mode = viewModeRef.current;
     const revealed = revealedRef.current;
     const edgeSrc = edgeSourceRef.current;
     const isAdding = interactionRef.current !== "normal";
+    const currentData = dataRef.current;
+    const hoveredEdge = hoveredEdgeRef.current;
     ctx.clearRect(0, 0, width, height);
     ctx.save();
     ctx.translate(t.x, t.y);
     ctx.scale(t.k, t.k);
+
+    // --- Background: Generation bands ---
+    const gens = currentData.metadata.generations;
+    if (gens.length > 0) {
+      const allGenYs = gens.map((g) => {
+        const nodesInGen = nodesRef.current.filter((n) => n.generation === g.number);
+        if (nodesInGen.length === 0) return null;
+        const avgY = nodesInGen.reduce((sum, n) => sum + n.y, 0) / nodesInGen.length;
+        return { gen: g, avgY };
+      }).filter(Boolean) as { gen: typeof gens[0]; avgY: number }[];
+
+      // Compute band boundaries
+      for (let i = 0; i < allGenYs.length; i++) {
+        const cur = allGenYs[i];
+        const prev = allGenYs[i - 1];
+        const next = allGenYs[i + 1];
+        const top = prev ? (prev.avgY + cur.avgY) / 2 : cur.avgY - 80;
+        const bottom = next ? (cur.avgY + next.avgY) / 2 : cur.avgY + 80;
+        // Very subtle band background
+        ctx.fillStyle = i % 2 === 0 ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.04)";
+        // Use a wide range to cover visible area
+        ctx.fillRect(-2000, top, 6000, bottom - top);
+        // Generation label on the left
+        ctx.save();
+        ctx.font = "11px -apple-system, sans-serif";
+        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        ctx.textAlign = "left";
+        const label = cur.gen.label ? `Gen ${cur.gen.number}: ${cur.gen.label}` : `Gen ${cur.gen.number}`;
+        const periodText = cur.gen.period ?? "";
+        ctx.fillText(label, -1900, cur.avgY - 4);
+        if (periodText) {
+          ctx.font = "9px -apple-system, sans-serif";
+          ctx.fillStyle = "rgba(255,255,255,0.12)";
+          ctx.fillText(periodText, -1900, cur.avgY + 10);
+        }
+        ctx.restore();
+      }
+    }
+
+    // --- Background: Stream column headers ---
+    const streams = currentData.metadata.streams;
+    if (streams.length > 0) {
+      const streamCenters = new Map<string, number>();
+      for (const s of streams) {
+        const streamNodes = nodesRef.current.filter((n) => n.stream === s.id);
+        if (streamNodes.length === 0) continue;
+        const avgX = streamNodes.reduce((sum, n) => sum + n.x, 0) / streamNodes.length;
+        streamCenters.set(s.id, avgX);
+      }
+      // Find top of visible nodes
+      const minY = nodesRef.current.length > 0
+        ? Math.min(...nodesRef.current.map((n) => n.y)) - 60
+        : 0;
+
+      ctx.save();
+      for (const s of streams) {
+        const cx = streamCenters.get(s.id);
+        if (cx == null) continue;
+        ctx.font = "bold 12px -apple-system, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillStyle = s.color ? s.color + "55" : "rgba(255,255,255,0.15)";
+        ctx.fillText(s.name, cx, minY);
+      }
+      ctx.restore();
+    }
 
     const hovered = hoveredRef.current;
     const selected = selectedNodeId;
@@ -279,6 +406,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const visual = l.edge.visual;
       const isHighlighted = connectedToHighlight.size === 0 || (connectedToHighlight.has(source.id) && connectedToHighlight.has(target.id));
       const isRevealed = !isAdding && (revealed.has(source.id) || revealed.has(target.id));
+      const isEdgeHovered = hoveredEdge === l;
 
       ctx.beginPath();
       ctx.moveTo(source.x, source.y);
@@ -288,9 +416,15 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       else if (visual.style === "dotted") ctx.setLineDash([2, 4]);
       else ctx.setLineDash([]);
 
-      ctx.strokeStyle = visual.color ?? (isHighlighted ? "#555" : "#333");
-      ctx.globalAlpha = isHighlighted ? 0.8 : isRevealed ? 0.4 : 0.15;
-      ctx.lineWidth = isHighlighted ? 1.5 : 0.8;
+      if (isEdgeHovered) {
+        ctx.strokeStyle = "#fff";
+        ctx.globalAlpha = 0.9;
+        ctx.lineWidth = 2.5;
+      } else {
+        ctx.strokeStyle = visual.color ?? (isHighlighted ? "#555" : "#333");
+        ctx.globalAlpha = isHighlighted ? 0.8 : isRevealed ? 0.4 : 0.15;
+        ctx.lineWidth = isHighlighted ? 1.5 : 0.8;
+      }
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.globalAlpha = 1;
@@ -306,8 +440,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         ctx.lineTo(tipX - 8 * Math.cos(angle - 0.4), tipY - 8 * Math.sin(angle - 0.4));
         ctx.lineTo(tipX - 8 * Math.cos(angle + 0.4), tipY - 8 * Math.sin(angle + 0.4));
         ctx.closePath();
-        ctx.fillStyle = visual.color ?? "#555";
-        ctx.globalAlpha = isHighlighted ? 0.8 : 0.15;
+        ctx.fillStyle = isEdgeHovered ? "#fff" : (visual.color ?? "#555");
+        ctx.globalAlpha = isEdgeHovered ? 0.9 : (isHighlighted ? 0.8 : 0.15);
         ctx.fill();
         ctx.globalAlpha = 1;
       }
@@ -346,7 +480,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       if (!isVisible(node)) return;
 
       const r = getNodeRadius(node, mode);
-      const color = getStreamColor(node, data.metadata.streams);
+      const color = getStreamColor(node, currentData.metadata.streams);
       const isPrimary = isAdding || isNodePrimary(node, mode);
       const isRevealed = !isPrimary && revealed.has(node.id);
       const isHighlighted = connectedToHighlight.size === 0 || connectedToHighlight.has(node.id);
@@ -402,9 +536,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         ctx.fill();
       }
 
-      // Labels
+      // Labels — font size proportional to zoom (clamped)
       if (t.k > 0.4 || node.thinker_fields?.eminence === "dominant") {
-        const fontSize = Math.max(10, Math.min(14, 11 / Math.sqrt(t.k)));
+        const fontSize = Math.max(8, Math.min(16, 11 * Math.sqrt(t.k)));
         ctx.font = `${fontSize}px -apple-system, sans-serif`;
         ctx.textAlign = "center";
         const baseY = node.y + effectiveR + fontSize + 2;
@@ -441,5 +575,14 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     ctx.restore();
   }
 
-  return <canvas ref={canvasRef} />;
+  return (
+    <div style={{ position: "relative", flex: 1 }}>
+      <canvas ref={canvasRef} />
+      <div
+        ref={tooltipRef}
+        className="edge-tooltip"
+        style={{ display: "none" }}
+      />
+    </div>
+  );
 }

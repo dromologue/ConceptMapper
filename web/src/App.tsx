@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type { GraphIR, GraphNode, GraphEdge } from "./types/graph-ir";
 import { GraphCanvas } from "./graph/GraphCanvas";
 import { NodeDetail } from "./ui/NodeDetail";
@@ -24,6 +24,9 @@ function App() {
   const [edgeSource, setEdgeSource] = useState<string | null>(null);
   const [edgeTarget, setEdgeTarget] = useState<string | null>(null);
   const [showAddEdgeModal, setShowAddEdgeModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/graph.json")
@@ -207,6 +210,53 @@ function App() {
     return () => window.removeEventListener("keydown", handler);
   }, [interactionMode, handleCancelAddEdge]);
 
+  const handleImportFile = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const imported = JSON.parse(ev.target?.result as string) as GraphIR;
+          setGraphData(imported);
+          setSelectedNode(null);
+          setRevealedNodes(new Set());
+          setError(null);
+        } catch {
+          setError("Invalid JSON file");
+        }
+      };
+      reader.readAsText(file);
+      // Reset the input so the same file can be re-imported
+      e.target.value = "";
+    },
+    []
+  );
+
+  // Search results
+  const searchResults = searchQuery.trim().length > 0 && graphData
+    ? graphData.nodes
+        .filter((n) => n.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        .slice(0, 10)
+    : [];
+
+  const handleSearchSelect = useCallback(
+    (node: GraphNode) => {
+      setSelectedNode(node);
+      setSearchQuery("");
+      setSearchFocused(false);
+      // Reveal node in filtered view
+      if (viewMode !== "full") {
+        setRevealedNodes((prev) => new Set(prev).add(node.id));
+      }
+    },
+    [viewMode]
+  );
+
   const handleDownloadImage = useCallback(() => {
     const canvas = document.querySelector("canvas");
     if (!canvas) return;
@@ -238,6 +288,33 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>{graphData.metadata.title || "Concept Map"}</h1>
+        <div className="search-container">
+          <input
+            className="search-input"
+            type="text"
+            placeholder="Search nodes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+          />
+          {searchFocused && searchResults.length > 0 && (
+            <div className="search-dropdown">
+              {searchResults.map((n) => (
+                <div key={n.id} className="search-result" onMouseDown={() => handleSearchSelect(n)}>
+                  <span
+                    className={`type-indicator ${n.node_type === "concept" ? "concept" : ""}`}
+                    style={{
+                      backgroundColor:
+                        graphData.metadata.streams.find((s) => s.id === n.stream)?.color ?? "#666",
+                    }}
+                  />
+                  {n.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <span className="stats">
           {graphData.nodes.length} nodes &middot; {graphData.edges.length} edges
         </span>
@@ -252,6 +329,7 @@ function App() {
         onAddEdge={handleStartAddEdge}
         interactionMode={interactionMode}
         onCancelAddEdge={handleCancelAddEdge}
+        onImportFile={handleImportFile}
       />
       <div className="app-body">
         <GraphCanvas
@@ -312,6 +390,13 @@ function App() {
           onCancel={handleCancelAddEdge}
         />
       )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
     </div>
   );
 }

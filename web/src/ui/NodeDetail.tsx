@@ -33,6 +33,7 @@ export function NodeDetail({ node, edges, nodes, streams, onClose, onNotesChange
   const stream = streams.find((s) => s.id === node.stream);
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
   const [localNotes, setLocalNotes] = useState(node.notes ?? "");
+  const [notesOpen, setNotesOpen] = useState(true);
 
   // Sync local notes when selected node changes
   useEffect(() => {
@@ -43,6 +44,20 @@ export function NodeDetail({ node, edges, nodes, streams, onClose, onNotesChange
     setLocalNotes(value);
     onNotesChange(node.id, value);
   };
+
+  // Collect edge notes for connected edges
+  const edgeNotes = edges
+    .filter((e) => e.note)
+    .map((e) => {
+      const otherId = e.from === node.id ? e.to : e.from;
+      const otherNode = nodeMap.get(otherId);
+      const label = EDGE_LABELS[e.edge_type] ?? e.edge_type;
+      const direction = e.from === node.id ? "\u2192" : "\u2190";
+      return {
+        label: `${label} ${direction} ${otherNode?.name ?? otherId}`,
+        note: e.note!,
+      };
+    });
 
   return (
     <div className="node-detail">
@@ -142,15 +157,33 @@ export function NodeDetail({ node, edges, nodes, streams, onClose, onNotesChange
         </>
       )}
 
-      <div className="field">
-        <div className="field-label">Notes</div>
-        <textarea
-          className="notes-editor"
-          value={localNotes}
-          onChange={(e) => handleNotesChange(e.target.value)}
-          placeholder="Add notes about this node..."
-          rows={4}
-        />
+      {/* Collapsible Notes & Content section */}
+      <div className="notes-section">
+        <div className="notes-section-header" onClick={() => setNotesOpen(!notesOpen)}>
+          <div className="field-label">Notes &amp; Content</div>
+          <button className="notes-section-toggle">{notesOpen ? "\u25B2" : "\u25BC"}</button>
+        </div>
+        {notesOpen && (
+          <div className="notes-section-body">
+            {edgeNotes.length > 0 && (
+              <div className="edge-notes-list">
+                {edgeNotes.map((en, i) => (
+                  <div key={i} className="edge-note-item">
+                    <div className="edge-note-label">{en.label}</div>
+                    <div className="edge-note-text">{en.note}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <textarea
+              className="notes-editor"
+              value={localNotes}
+              onChange={(e) => handleNotesChange(e.target.value)}
+              placeholder="Add notes about this node..."
+              rows={8}
+            />
+          </div>
+        )}
       </div>
 
       {edges.length > 0 && (
