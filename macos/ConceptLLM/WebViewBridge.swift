@@ -1,5 +1,8 @@
 import Foundation
 import WebKit
+import os.log
+
+private let logger = Logger(subsystem: "com.dromologue.ConceptLLM", category: "Bridge")
 
 /// Handles bidirectional communication between Swift and the React SPA in WKWebView.
 @MainActor
@@ -13,13 +16,17 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
         didReceive message: WKScriptMessage
     ) {
         let name = message.name
+        let body = "\(message.body)"
         Task { @MainActor in
-            handleMessage(name)
+            handleMessage(name, body: body)
         }
     }
 
-    private func handleMessage(_ name: String) {
+    private func handleMessage(_ name: String, body: String) {
         switch name {
+        case "jsLog":
+            logger.warning("JS: \(body)")
+            return
         case "openFile":
             FileHandler.openFile { [weak self] content, filename in
                 self?.loadFileContent(content, filename: filename)

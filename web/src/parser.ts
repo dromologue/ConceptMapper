@@ -1,7 +1,9 @@
 import type { GraphIR } from "./types/graph-ir";
 
-// Dynamic import of the WASM module — resolved at build time by Vite
 let wasmModule: typeof import("./wasm/concept_mapper_core") | null = null;
+
+// Vite inlines this as a base64 data URL since assetsInlineLimit is lifted for this import
+import wasmBinaryUrl from "./wasm/concept_mapper_core_bg.wasm?url";
 
 interface ParseOutput {
   graph: GraphIR;
@@ -9,19 +11,32 @@ interface ParseOutput {
 }
 
 /**
- * Initialize the WASM parser module. Call once on app startup.
+ * Initialize the WASM parser module.
  */
 export async function initParser(): Promise<void> {
   if (wasmModule) return;
   const mod = await import("./wasm/concept_mapper_core");
-  await mod.default(); // Initialize WASM
+
+  // Load WASM binary via XHR (works on both http:// and file://)
+  const wasmBytes = await new Promise<ArrayBuffer>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", wasmBinaryUrl, true);
+    xhr.responseType = "arraybuffer";
+    xhr.onload = () => {
+      if (xhr.response && xhr.response.byteLength > 0) {
+        resolve(xhr.response as ArrayBuffer);
+      } else {
+        reject(new Error("WASM binary is empty"));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Failed to load WASM binary via XHR"));
+    xhr.send();
+  });
+
+  mod.initSync({ module: wasmBytes });
   wasmModule = mod;
 }
 
-/**
- * Parse a markdown taxonomy document into GraphIR using the Rust WASM parser.
- * Throws if the parser hasn't been initialized or if the document has errors.
- */
 export function parseMarkdown(content: string): ParseOutput {
   if (!wasmModule) {
     throw new Error("WASM parser not initialized. Call initParser() first.");
@@ -30,9 +45,6 @@ export function parseMarkdown(content: string): ParseOutput {
   return JSON.parse(jsonStr) as ParseOutput;
 }
 
-/**
- * Parse a JSON file directly into GraphIR (no WASM needed).
- */
 export function parseJsonFile(content: string): GraphIR {
   return JSON.parse(content) as GraphIR;
 }
