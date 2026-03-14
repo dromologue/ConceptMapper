@@ -1,0 +1,750 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "title": "How We Learn: Sample Network",
+    "source_file": "examples/how-we-learn-sample.md",
+    "parsed_at": "2026-03-14T14:43:35.875061+00:00",
+    "generations": [
+      {
+        "number": 1,
+        "period": "~1880–1920",
+        "label": "Founders",
+        "attention_space_count": 3
+      },
+      {
+        "number": 2,
+        "period": "~1930–1960",
+        "label": "Systematisers",
+        "attention_space_count": 4
+      },
+      {
+        "number": 3,
+        "period": "~1960–1985",
+        "label": "Flowering",
+        "attention_space_count": 5
+      },
+      {
+        "number": 4,
+        "period": "~1985–2005",
+        "label": "Extensions",
+        "attention_space_count": 5
+      },
+      {
+        "number": 5,
+        "period": "~2000–present",
+        "label": "Practitioners",
+        "attention_space_count": 4
+      }
+    ],
+    "streams": [
+      {
+        "id": "mgmt",
+        "name": "Management & Organisation",
+        "color": "#4A90D9",
+        "description": "How organisations should be designed, governed, and led"
+      },
+      {
+        "id": "social",
+        "name": "Social Structure & Power",
+        "color": "#D94A4A",
+        "description": "How social structures reproduce themselves and constrain action"
+      },
+      {
+        "id": "systems",
+        "name": "Systems & Complexity",
+        "color": "#4AD94A",
+        "description": "How feedback, emergence, and systemic causation operate"
+      },
+      {
+        "id": "psychology",
+        "name": "Psychology & Cognition",
+        "color": "#D9A84A",
+        "description": "How individuals think, learn, and develop"
+      },
+      {
+        "id": "sensemaking",
+        "name": "Sensemaking & Safety",
+        "color": "#9B59B6",
+        "description": "How meaning is constructed and how failure is understood"
+      }
+    ],
+    "external_shocks": [
+      {
+        "date": "1950s",
+        "description": "Quality revolution in Japan; Deming's methods adopted outside Western orthodoxy"
+      },
+      {
+        "date": "2001",
+        "description": "Agile Manifesto; software industry rejects waterfall methods"
+      },
+      {
+        "date": "2023–present",
+        "description": "Generative AI; specification becomes the means of production"
+      }
+    ],
+    "structural_observations": [
+      "**Attention space**: 4–5 active positions per generation, consistent with Collins' law of small numbers",
+      "**Chain depth**: Taylor → Argyris → Senge → (synthesis), spanning four generations",
+      "**Central rivalry**: Stacey vs Senge defines \"organisational learning\" for two generations",
+      "**Emerging cluster**: Sensemaking/safety stream (Snowden, Dekker, Edmondson) is the densest in Generations 4–5",
+      "**Abstraction trend**: Rising from concrete (Gen 1) to meta-theoretical (Gen 5)"
+    ],
+    "network_stats": {
+      "chain_depth": null,
+      "node_count": 19,
+      "edge_count": 25
+    }
+  },
+  "nodes": [
+    {
+      "id": "taylor",
+      "node_type": "thinker",
+      "name": "Frederick Winslow Taylor",
+      "generation": 1,
+      "stream": "mgmt",
+      "thinker_fields": {
+        "dates": "1856–1915",
+        "eminence": "dominant",
+        "structural_roles": [
+          "chain_originator"
+        ],
+        "active_period": "1880–1915",
+        "key_concept_ids": [
+          "scientific_management"
+        ],
+        "institutional_base": "Bethlehem Steel"
+      }
+    },
+    {
+      "id": "argyris",
+      "node_type": "thinker",
+      "name": "Chris Argyris",
+      "generation": 2,
+      "stream": "psychology",
+      "thinker_fields": {
+        "dates": "1923–2013",
+        "eminence": "dominant",
+        "structural_roles": [
+          "intellectual_leader",
+          "chain_originator"
+        ],
+        "active_period": "1960–1995",
+        "key_concept_ids": [
+          "double_loop",
+          "defensive_routines",
+          "espoused_vs_inuse",
+          "model_I_II"
+        ],
+        "institutional_base": "Harvard Business School"
+      }
+    },
+    {
+      "id": "deming",
+      "node_type": "thinker",
+      "name": "W. Edwards Deming",
+      "generation": 2,
+      "stream": "systems",
+      "thinker_fields": {
+        "dates": "1900–1993",
+        "eminence": "dominant",
+        "structural_roles": [
+          "chain_originator",
+          "intellectual_leader"
+        ],
+        "active_period": "1950–1993",
+        "key_concept_ids": [
+          "pdsa_cycle",
+          "system_of_profound_knowledge"
+        ],
+        "institutional_base": "NYU Stern"
+      }
+    },
+    {
+      "id": "giddens",
+      "node_type": "thinker",
+      "name": "Anthony Giddens",
+      "generation": 3,
+      "stream": "social",
+      "thinker_fields": {
+        "dates": "b. 1938",
+        "eminence": "major",
+        "structural_roles": [
+          "synthesiser"
+        ],
+        "active_period": "1976–2000",
+        "key_concept_ids": [
+          "structuration"
+        ],
+        "institutional_base": "Cambridge / LSE"
+      }
+    },
+    {
+      "id": "kahneman",
+      "node_type": "thinker",
+      "name": "Daniel Kahneman",
+      "generation": 3,
+      "stream": "psychology",
+      "thinker_fields": {
+        "dates": "1934–2024",
+        "eminence": "dominant",
+        "structural_roles": [
+          "intellectual_leader"
+        ],
+        "active_period": "1970–2011",
+        "key_concept_ids": [
+          "prospect_theory",
+          "system_1_2"
+        ],
+        "institutional_base": "Princeton"
+      }
+    },
+    {
+      "id": "senge",
+      "node_type": "thinker",
+      "name": "Peter Senge",
+      "generation": 4,
+      "stream": "systems",
+      "thinker_fields": {
+        "dates": "b. 1947",
+        "eminence": "major",
+        "structural_roles": [
+          "synthesiser"
+        ],
+        "active_period": "1990–2010",
+        "key_concept_ids": [
+          "learning_organisation",
+          "five_disciplines",
+          "system_archetypes"
+        ],
+        "institutional_base": "MIT Sloan"
+      }
+    },
+    {
+      "id": "stacey",
+      "node_type": "thinker",
+      "name": "Ralph Stacey",
+      "generation": 3,
+      "stream": "systems",
+      "thinker_fields": {
+        "dates": "1942–2021",
+        "eminence": "major",
+        "structural_roles": [
+          "structural_rival",
+          "peripheral_critic"
+        ],
+        "active_period": "1990–2015",
+        "key_concept_ids": [
+          "complex_responsive_processes",
+          "shadow_system",
+          "paradox_of_control"
+        ],
+        "institutional_base": "University of Hertfordshire"
+      }
+    },
+    {
+      "id": "snowden",
+      "node_type": "thinker",
+      "name": "Dave Snowden",
+      "generation": 5,
+      "stream": "sensemaking",
+      "thinker_fields": {
+        "dates": "b. 1954",
+        "eminence": "major",
+        "structural_roles": [
+          "synthesiser"
+        ],
+        "active_period": "1999–present",
+        "key_concept_ids": [
+          "cynefin"
+        ],
+        "institutional_base": "Cognitive Edge"
+      }
+    },
+    {
+      "id": "dekker",
+      "node_type": "thinker",
+      "name": "Sidney Dekker",
+      "generation": 5,
+      "stream": "sensemaking",
+      "thinker_fields": {
+        "dates": "b. 1969",
+        "eminence": "major",
+        "structural_roles": [
+          "intellectual_leader"
+        ],
+        "active_period": "2006–present",
+        "key_concept_ids": [
+          "just_culture",
+          "drift_into_failure"
+        ],
+        "institutional_base": "Griffith University"
+      }
+    },
+    {
+      "id": "edmondson",
+      "node_type": "thinker",
+      "name": "Amy Edmondson",
+      "generation": 4,
+      "stream": "psychology",
+      "thinker_fields": {
+        "dates": "b. 1959",
+        "eminence": "major",
+        "structural_roles": [
+          "chain_transmitter"
+        ],
+        "active_period": "1999–present",
+        "key_concept_ids": [
+          "psychological_safety"
+        ],
+        "institutional_base": "Harvard Business School"
+      }
+    },
+    {
+      "id": "double_loop",
+      "node_type": "concept",
+      "name": "Double-Loop Learning",
+      "generation": 3,
+      "stream": "psychology",
+      "concept_fields": {
+        "originator_id": "argyris",
+        "date_introduced": "1977",
+        "concept_type": "distinction",
+        "abstraction_level": "theoretical",
+        "status": "active"
+      }
+    },
+    {
+      "id": "cynefin",
+      "node_type": "concept",
+      "name": "Cynefin Framework",
+      "generation": 5,
+      "stream": "sensemaking",
+      "concept_fields": {
+        "originator_id": "snowden",
+        "date_introduced": "1999",
+        "concept_type": "framework",
+        "abstraction_level": "operational",
+        "status": "active"
+      }
+    },
+    {
+      "id": "just_culture",
+      "node_type": "concept",
+      "name": "Just Culture",
+      "generation": 5,
+      "stream": "sensemaking",
+      "concept_fields": {
+        "originator_id": "dekker",
+        "date_introduced": "2007",
+        "concept_type": "framework",
+        "abstraction_level": "operational",
+        "status": "active"
+      }
+    },
+    {
+      "id": "drift_into_failure",
+      "node_type": "concept",
+      "name": "Drift into Failure",
+      "generation": 5,
+      "stream": "sensemaking",
+      "concept_fields": {
+        "originator_id": "dekker",
+        "date_introduced": "2011",
+        "concept_type": "mechanism",
+        "abstraction_level": "theoretical",
+        "status": "active"
+      }
+    },
+    {
+      "id": "structuration",
+      "node_type": "concept",
+      "name": "Structuration Theory",
+      "generation": 3,
+      "stream": "social",
+      "concept_fields": {
+        "originator_id": "giddens",
+        "date_introduced": "1984",
+        "concept_type": "framework",
+        "abstraction_level": "meta-theoretical",
+        "status": "active"
+      }
+    },
+    {
+      "id": "prospect_theory",
+      "node_type": "concept",
+      "name": "Prospect Theory",
+      "generation": 3,
+      "stream": "psychology",
+      "concept_fields": {
+        "originator_id": "kahneman",
+        "date_introduced": "1979",
+        "concept_type": "framework",
+        "abstraction_level": "theoretical",
+        "status": "active"
+      }
+    },
+    {
+      "id": "system_1_2",
+      "node_type": "concept",
+      "name": "System 1 / System 2",
+      "generation": 5,
+      "stream": "psychology",
+      "concept_fields": {
+        "originator_id": "kahneman",
+        "date_introduced": "2011",
+        "concept_type": "distinction",
+        "abstraction_level": "operational",
+        "status": "active"
+      }
+    },
+    {
+      "id": "learning_organisation",
+      "node_type": "concept",
+      "name": "Learning Organisation",
+      "generation": 4,
+      "stream": "systems",
+      "concept_fields": {
+        "originator_id": "senge",
+        "date_introduced": "1990",
+        "concept_type": "framework",
+        "abstraction_level": "theoretical",
+        "status": "active"
+      }
+    },
+    {
+      "id": "psychological_safety",
+      "node_type": "concept",
+      "name": "Psychological Safety",
+      "generation": 4,
+      "stream": "psychology",
+      "concept_fields": {
+        "originator_id": "edmondson",
+        "date_introduced": "1999",
+        "concept_type": "principle",
+        "abstraction_level": "operational",
+        "status": "active"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "taylor",
+      "to": "argyris",
+      "edge_type": "chain",
+      "edge_category": "thinker_thinker",
+      "directed": true,
+      "weight": 1.0,
+      "note": "Model I as Taylorism internalised as management psychology",
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "argyris",
+      "to": "edmondson",
+      "edge_type": "teacher_pupil",
+      "edge_category": "thinker_thinker",
+      "directed": true,
+      "weight": 1.0,
+      "note": "Edmondson studied under Argyris at Harvard",
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "argyris",
+      "to": "senge",
+      "edge_type": "chain",
+      "edge_category": "thinker_thinker",
+      "directed": true,
+      "weight": 1.0,
+      "note": "Learning organisation draws directly on Argyris' learning theory",
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "deming",
+      "to": "senge",
+      "edge_type": "chain",
+      "edge_category": "thinker_thinker",
+      "directed": true,
+      "weight": 1.0,
+      "note": "Systems thinking and quality lineage",
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "stacey",
+      "to": "senge",
+      "edge_type": "rivalry",
+      "edge_category": "thinker_thinker",
+      "directed": false,
+      "weight": 1.0,
+      "note": "Core rivalry — can you design a learning organisation or does learning emerge from complex responsive processes?",
+      "visual": {
+        "style": "dashed",
+        "color": "#D94A4A",
+        "show_arrow": false
+      }
+    },
+    {
+      "from": "kahneman",
+      "to": "dekker",
+      "edge_type": "alliance",
+      "edge_category": "thinker_thinker",
+      "directed": false,
+      "weight": 1.0,
+      "note": "Both study cognition under uncertainty; Dekker operationalises Kahneman's biases for safety",
+      "visual": {
+        "style": "dotted",
+        "color": "#999999",
+        "show_arrow": false
+      }
+    },
+    {
+      "from": "deming",
+      "to": "argyris",
+      "edge_type": "alliance",
+      "edge_category": "thinker_thinker",
+      "directed": false,
+      "weight": 1.0,
+      "note": "Drive out fear / remove defensive routines; systemic not individual cause",
+      "visual": {
+        "style": "dotted",
+        "color": "#999999",
+        "show_arrow": false
+      }
+    },
+    {
+      "from": "argyris",
+      "to": "double_loop",
+      "edge_type": "originates",
+      "edge_category": "thinker_concept",
+      "directed": true,
+      "weight": 1.0,
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "dekker",
+      "to": "just_culture",
+      "edge_type": "originates",
+      "edge_category": "thinker_concept",
+      "directed": true,
+      "weight": 1.0,
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "dekker",
+      "to": "drift_into_failure",
+      "edge_type": "originates",
+      "edge_category": "thinker_concept",
+      "directed": true,
+      "weight": 1.0,
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "snowden",
+      "to": "cynefin",
+      "edge_type": "originates",
+      "edge_category": "thinker_concept",
+      "directed": true,
+      "weight": 1.0,
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "giddens",
+      "to": "structuration",
+      "edge_type": "originates",
+      "edge_category": "thinker_concept",
+      "directed": true,
+      "weight": 1.0,
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "kahneman",
+      "to": "prospect_theory",
+      "edge_type": "originates",
+      "edge_category": "thinker_concept",
+      "directed": true,
+      "weight": 1.0,
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "kahneman",
+      "to": "system_1_2",
+      "edge_type": "originates",
+      "edge_category": "thinker_concept",
+      "directed": true,
+      "weight": 1.0,
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "senge",
+      "to": "learning_organisation",
+      "edge_type": "originates",
+      "edge_category": "thinker_concept",
+      "directed": true,
+      "weight": 1.0,
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "edmondson",
+      "to": "psychological_safety",
+      "edge_type": "originates",
+      "edge_category": "thinker_concept",
+      "directed": true,
+      "weight": 1.0,
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "stacey",
+      "to": "double_loop",
+      "edge_type": "contests",
+      "edge_category": "thinker_concept",
+      "directed": true,
+      "weight": 1.0,
+      "note": "Stacey argues you cannot reliably produce double-loop learning",
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "dekker",
+      "to": "system_1_2",
+      "edge_type": "applies",
+      "edge_category": "thinker_concept",
+      "directed": true,
+      "weight": 1.0,
+      "note": "Local rationality and hindsight bias as System 1 phenomena",
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "snowden",
+      "to": "double_loop",
+      "edge_type": "reframes",
+      "edge_category": "thinker_concept",
+      "directed": true,
+      "weight": 1.0,
+      "note": "Cynefin reframes learning as domain-dependent",
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "double_loop",
+      "to": "psychological_safety",
+      "edge_type": "enables",
+      "edge_category": "concept_concept",
+      "directed": true,
+      "weight": 1.0,
+      "note": "Double-loop learning requires the safety to surface undiscussables",
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "just_culture",
+      "to": "double_loop",
+      "edge_type": "enables",
+      "edge_category": "concept_concept",
+      "directed": true,
+      "weight": 1.0,
+      "note": "Just culture creates safety conditions for examining defensive routines",
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "system_1_2",
+      "to": "drift_into_failure",
+      "edge_type": "enables",
+      "edge_category": "concept_concept",
+      "directed": true,
+      "weight": 1.0,
+      "note": "System 1 dominance under pressure explains why drift is locally rational",
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "structuration",
+      "to": "drift_into_failure",
+      "edge_type": "extends",
+      "edge_category": "concept_concept",
+      "directed": true,
+      "weight": 1.0,
+      "note": "Work-as-imagined vs work-as-done is the structuration gap",
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "cynefin",
+      "to": "double_loop",
+      "edge_type": "reframes",
+      "edge_category": "concept_concept",
+      "directed": true,
+      "weight": 1.0,
+      "note": "Double-loop works in the complicated domain; complex requires probe-sense-respond",
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    },
+    {
+      "from": "prospect_theory",
+      "to": "system_1_2",
+      "edge_type": "extends",
+      "edge_category": "concept_concept",
+      "directed": true,
+      "weight": 1.0,
+      "note": "System 1/2 popularises the cognitive architecture prospect theory was built on",
+      "visual": {
+        "style": "solid",
+        "show_arrow": true
+      }
+    }
+  ]
+}
