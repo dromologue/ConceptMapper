@@ -33,6 +33,10 @@ struct ContentView: View {
 struct WebView: NSViewRepresentable {
     let bridge: WebViewBridge
 
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
     func makeNSView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         let userContentController = WKUserContentController()
@@ -47,19 +51,30 @@ struct WebView: NSViewRepresentable {
         config.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
 
         let webView = WKWebView(frame: .zero, configuration: config)
-        webView.setValue(false, forKey: "drawsBackground") // transparent bg during load
+        webView.navigationDelegate = context.coordinator
+        webView.isInspectable = true
         bridge.webView = webView
 
         // Load the bundled React SPA
         if let htmlURL = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "web") {
             let dirURL = htmlURL.deletingLastPathComponent()
             webView.loadFileURL(htmlURL, allowingReadAccessTo: dirURL)
+        } else {
+            NSLog("[ConceptLLM] ERROR: index.html not found in app bundle")
         }
 
         return webView
     }
 
-    func updateNSView(_ nsView: WKWebView, context: Context) {
-        // No dynamic updates needed — all communication goes through the bridge
+    func updateNSView(_ nsView: WKWebView, context: Context) {}
+
+    class Coordinator: NSObject, WKNavigationDelegate {
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            NSLog("[ConceptLLM] Navigation failed: %@", error.localizedDescription)
+        }
+
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            NSLog("[ConceptLLM] Provisional navigation failed: %@", error.localizedDescription)
+        }
     }
 }

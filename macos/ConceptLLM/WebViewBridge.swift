@@ -44,14 +44,16 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
     // MARK: - Swift → JS
 
     /// Send file content to the React app for parsing and rendering.
+    /// Uses Base64 encoding to safely pass arbitrary file content through evaluateJavaScript.
     func loadFileContent(_ content: String, filename: String) {
-        let escaped = content
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "'", with: "\\'")
-            .replacingOccurrences(of: "\n", with: "\\n")
-            .replacingOccurrences(of: "\r", with: "\\r")
-        let js = "window.loadFileContent('\(escaped)', '\(filename)');"
-        webView?.evaluateJavaScript(js)
+        guard let data = content.data(using: .utf8) else { return }
+        let base64 = data.base64EncodedString()
+        let js = "window.loadFileContentBase64('\(base64)', '\(filename)');"
+        webView?.evaluateJavaScript(js) { _, error in
+            if let error = error {
+                print("Bridge error: \(error)")
+            }
+        }
     }
 
     /// Request the current graph as JSON from the React app.

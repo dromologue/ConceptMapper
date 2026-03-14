@@ -71,6 +71,14 @@ function App() {
             );
           }
         }
+        if (data.nodes.length === 0) {
+          setError(
+            `No nodes found in "${filename}". ` +
+            "This file may not be in Collins taxonomy format. " +
+            "Expected fenced code blocks with id/name/eminence fields."
+          );
+          return;
+        }
         setGraphData(data);
         setSelectedNode(null);
         setRevealedNodes(new Set());
@@ -84,38 +92,45 @@ function App() {
 
   // Expose bridge functions for Swift WKWebView
   useEffect(() => {
-    // Swift → JS: load file content after NSOpenPanel
-    (window as unknown as Record<string, unknown>).loadFileContent = (
-      content: string,
-      filename: string
-    ) => {
-      loadFileContent(content, filename);
+    const win = window as unknown as Record<string, unknown>;
+
+    // Swift → JS: load file content (Base64 encoded to avoid escaping issues)
+    win.loadFileContentBase64 = (base64: string, filename: string) => {
+      try {
+        const content = atob(base64);
+        // Decode UTF-8 from the binary string
+        const bytes = Uint8Array.from(content, (c) => c.charCodeAt(0));
+        const decoded = new TextDecoder().decode(bytes);
+        loadFileContent(decoded, filename);
+      } catch (err) {
+        console.error("Bridge decode error:", err);
+      }
     };
 
     // Swift → JS: get current graph as JSON (for Save)
-    (window as unknown as Record<string, unknown>).getGraphJSON = (): string => {
+    win.getGraphJSON = (): string => {
       if (!graphData) return "";
       return JSON.stringify(graphData, null, 2);
     };
 
     // Swift → JS: get current graph as markdown (for Export Markdown)
-    (window as unknown as Record<string, unknown>).getGraphMarkdown = (): string => {
+    win.getGraphMarkdown = (): string => {
       if (!graphData) return "";
       return exportToMarkdown(graphData);
     };
 
     // Swift → JS: get canvas data URL (for Export Image)
-    (window as unknown as Record<string, unknown>).getCanvasImage = (): string => {
+    win.getCanvasImage = (): string => {
       const canvas = document.querySelector("canvas");
       if (!canvas) return "";
       return canvas.toDataURL("image/png");
     };
 
     return () => {
-      delete (window as unknown as Record<string, unknown>).loadFileContent;
-      delete (window as unknown as Record<string, unknown>).getGraphJSON;
-      delete (window as unknown as Record<string, unknown>).getGraphMarkdown;
-      delete (window as unknown as Record<string, unknown>).getCanvasImage;
+      delete win.loadFileContentBase64;
+      delete win.getGraphJSON;
+      delete win.getGraphMarkdown;
+      delete win.getCanvasImage;
     };
   }, [loadFileContent, graphData]);
 
