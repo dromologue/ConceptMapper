@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { GraphNode, GraphEdge, Stream, Generation } from "../types/graph-ir";
 
 interface Props {
@@ -28,6 +28,31 @@ const CONCEPT_TYPE_OPTIONS = ["framework", "principle", "distinction", "mechanis
 const ABSTRACTION_OPTIONS = ["meta-theoretical", "theoretical", "operational", "concrete"];
 const STATUS_OPTIONS = ["active", "absorbed", "contested", "dormant", "superseded"];
 
+/** Text input with local state — only commits on blur or after 500ms idle */
+function DebouncedField({ label, value, nodeId, onCommit }: {
+  label: string; value: string; nodeId: string;
+  onCommit: (value: string) => void;
+}) {
+  const [local, setLocal] = useState(value);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => { setLocal(value); }, [nodeId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleChange = (v: string) => {
+    setLocal(v);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => onCommit(v), 500);
+  };
+
+  return (
+    <div className="editor-field">
+      <label>{label}</label>
+      <input value={local} onChange={(e) => handleChange(e.target.value)}
+        onBlur={() => { clearTimeout(timerRef.current); onCommit(local); }} />
+    </div>
+  );
+}
+
 export function DetailPanel({
   node, edges, nodes, streams, generations,
   onClose, onNodeUpdate, onNavigateToNode, onOpenNotes, notesOpen, style,
@@ -39,13 +64,27 @@ export function DetailPanel({
   const [attrsOpen, setAttrsOpen] = useState(true);
   const [connectionsOpen, setConnectionsOpen] = useState(true);
 
+  // Reset only when switching to a different node
   useEffect(() => {
     setLocalName(node.name);
-  }, [node.id, node.name]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node.id]);
+
+  // Debounced text field update (300ms delay)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const debouncedUpdate = useCallback(
+    (updates: Partial<GraphNode>) => {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        onNodeUpdate(node.id, updates);
+      }, 300);
+    },
+    [node.id, onNodeUpdate]
+  );
 
   const handleNameChange = (value: string) => {
     setLocalName(value);
-    onNodeUpdate(node.id, { name: value });
+    debouncedUpdate({ name: value });
   };
 
   return (
@@ -85,11 +124,9 @@ export function DetailPanel({
             <div className="detail-section-body">
               {node.thinker_fields && (
                 <>
-                  <div className="editor-field">
-                    <label>Dates</label>
-                    <input value={node.thinker_fields.dates ?? ""} onChange={(e) =>
-                      onNodeUpdate(node.id, { thinker_fields: { ...node.thinker_fields!, dates: e.target.value || undefined } })} />
-                  </div>
+                  <DebouncedField label="Dates" value={node.thinker_fields.dates ?? ""} nodeId={node.id}
+                    onCommit={(v) => debouncedUpdate({ thinker_fields: { ...node.thinker_fields!, dates: v || undefined } })} />
+
                   <div className="editor-field">
                     <label>Eminence</label>
                     <select value={node.thinker_fields.eminence} onChange={(e) =>
@@ -112,21 +149,12 @@ export function DetailPanel({
                       {generations.map((g) => <option key={g.number} value={g.number}>{g.number}{g.label ? ` - ${g.label}` : ""}</option>)}
                     </select>
                   </div>
-                  <div className="editor-field">
-                    <label>Roles</label>
-                    <input value={node.thinker_fields.structural_roles.join(", ")} onChange={(e) =>
-                      onNodeUpdate(node.id, { thinker_fields: { ...node.thinker_fields!, structural_roles: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) } })} />
-                  </div>
-                  <div className="editor-field">
-                    <label>Active Period</label>
-                    <input value={node.thinker_fields.active_period ?? ""} onChange={(e) =>
-                      onNodeUpdate(node.id, { thinker_fields: { ...node.thinker_fields!, active_period: e.target.value || undefined } })} />
-                  </div>
-                  <div className="editor-field">
-                    <label>Institution</label>
-                    <input value={node.thinker_fields.institutional_base ?? ""} onChange={(e) =>
-                      onNodeUpdate(node.id, { thinker_fields: { ...node.thinker_fields!, institutional_base: e.target.value || undefined } })} />
-                  </div>
+                  <DebouncedField label="Roles" value={node.thinker_fields.structural_roles.join(", ")} nodeId={node.id}
+                    onCommit={(v) => onNodeUpdate(node.id, { thinker_fields: { ...node.thinker_fields!, structural_roles: v.split(",").map((s) => s.trim()).filter(Boolean) } })} />
+                  <DebouncedField label="Active Period" value={node.thinker_fields.active_period ?? ""} nodeId={node.id}
+                    onCommit={(v) => onNodeUpdate(node.id, { thinker_fields: { ...node.thinker_fields!, active_period: v || undefined } })} />
+                  <DebouncedField label="Institution" value={node.thinker_fields.institutional_base ?? ""} nodeId={node.id}
+                    onCommit={(v) => onNodeUpdate(node.id, { thinker_fields: { ...node.thinker_fields!, institutional_base: v || undefined } })} />
                 </>
               )}
               {node.concept_fields && (
@@ -160,11 +188,8 @@ export function DetailPanel({
                       {STATUS_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
-                  <div className="editor-field">
-                    <label>Introduced</label>
-                    <input value={node.concept_fields.date_introduced ?? ""} onChange={(e) =>
-                      onNodeUpdate(node.id, { concept_fields: { ...node.concept_fields!, date_introduced: e.target.value || undefined } })} />
-                  </div>
+                  <DebouncedField label="Introduced" value={node.concept_fields.date_introduced ?? ""} nodeId={node.id}
+                    onCommit={(v) => onNodeUpdate(node.id, { concept_fields: { ...node.concept_fields!, date_introduced: v || undefined } })} />
                   <div className="editor-field">
                     <label>Stream</label>
                     <select value={node.stream ?? ""} onChange={(e) => onNodeUpdate(node.id, { stream: e.target.value || undefined })}>

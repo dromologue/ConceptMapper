@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Markdown from "react-markdown";
 import type { GraphNode, GraphEdge } from "../types/graph-ir";
 
@@ -24,14 +24,20 @@ export function NotesPane({ node, edges, nodes, onNodeUpdate, onClose, style }: 
   const [localNotes, setLocalNotes] = useState(node.notes ?? "");
   const [mode, setMode] = useState<"edit" | "read">(node.notes ? "read" : "edit");
 
+  // Reset mode only when switching to a different node
   useEffect(() => {
     setLocalNotes(node.notes ?? "");
     setMode(node.notes ? "read" : "edit");
-  }, [node.id, node.notes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node.id]);
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const handleNotesChange = (value: string) => {
     setLocalNotes(value);
-    onNodeUpdate(node.id, { notes: value || undefined });
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      onNodeUpdate(node.id, { notes: value || undefined });
+    }, 500);
   };
 
   const edgeNotes = edges
