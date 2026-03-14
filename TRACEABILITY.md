@@ -92,10 +92,15 @@
 | REQ-023 | AC-023-15..18 (notes) | `src/__tests__/toolbar.test.ts` | — | pending |
 | REQ-024 | AC-024-01..08 | `src/__tests__/search.test.ts` | — | pending |
 | REQ-025 | AC-025-01..08 | `src/__tests__/import.test.ts` | — | pending |
-| REQ-026 | AC-026-01..07 | `src/__tests__/canvas-labels.test.ts` | — | pending |
+| REQ-026 | AC-026-01..15 (attribute filtering) | `src/__tests__/filter-panel.test.ts` | — | pending |
 | REQ-027 | AC-027-01..08 | `src/__tests__/edge-hover.test.ts` | — | pending |
 | REQ-028 | AC-028-01..08 | `src/__tests__/persistence.test.ts` | — | pending |
 | REQ-029 | AC-029-01..06 | `src/__tests__/accessibility.test.ts` | — | pending |
+| REQ-030 | AC-030-01..08 (thinker editing) | `src/__tests__/editing.test.ts` | — | pending |
+| REQ-030 | AC-030-09..15 (concept editing) | `src/__tests__/editing.test.ts` | — | pending |
+| REQ-030 | AC-030-16..20 (edit state) | `src/__tests__/editing.test.ts` | — | pending |
+| REQ-031 | AC-031-01..05 | `src/__tests__/center-on-node.test.ts` | — | pending |
+| REQ-032 | AC-032-01..07 | `src/__tests__/summary-panel.test.ts` | — | pending |
 
 ## Principle Compliance
 

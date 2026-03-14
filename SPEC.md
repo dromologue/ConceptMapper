@@ -945,34 +945,45 @@ The user can load their own taxonomy files or graph JSON files into the visualiz
 
 ---
 
-## REQ-026: Generation and Stream Labels on Canvas
+## REQ-026: Universal Attribute Filtering
 
-The canvas displays visible generation bands and stream column headers to orient the researcher.
+Every node attribute (stream, generation, eminence, concept_type, abstraction_level, status, structural_role) can be used as a filter to show only nodes matching the selected values. This replaces fixed "People" and "Concepts" view modes with a flexible, composable filter system.
 
 **Preconditions:**
-- Graph is rendered with generations and streams defined in metadata (REQ-009)
+- Graph is rendered (REQ-009)
 
 **Trigger:**
-- Always visible when graph is loaded
+- User opens the filter panel and selects attribute values to filter by
 
 **Expected Behavior:**
-- Horizontal bands for each generation are drawn behind the nodes with labels
-- Vertical stream regions are labeled at the top of the canvas
-- Labels remain visible during pan/zoom, positioned relative to the graph coordinate system
+- A filter panel is accessible from the toolbar
+- Each filterable attribute shows its possible values with checkboxes
+- Only nodes matching ALL active filters are shown (AND logic within categories, OR logic within a single attribute)
+- Edges are shown only when both endpoints are visible
+- Filters combine with view modes (REQ-021)
+- Active filter count is shown on the filter button
 
 **Acceptance Criteria:**
-- [ ] AC-026-01: Horizontal bands are drawn for each generation, alternating between slightly different background shades
-- [ ] AC-026-02: Each generation band has a label on the left edge: "Gen N: Label (Period)" (e.g., "Gen 3: Flowering (~1960–1985)")
-- [ ] AC-026-03: Stream names are displayed as column headers at the top, positioned at the stream's X-axis center
-- [ ] AC-026-04: Stream headers are colored with the stream's assigned color
-- [ ] AC-026-05: Labels scale with zoom but remain readable (minimum 10px)
-- [ ] AC-026-06: Labels are drawn behind nodes and edges (background layer)
-- [ ] AC-026-07: Labels are visible in all view modes (Full, People, Concepts)
+- [ ] AC-026-01: A "Filter" button in the toolbar opens/closes a filter panel
+- [ ] AC-026-02: The filter panel lists all filterable attributes: node_type, stream, generation, eminence, concept_type, abstraction_level, status
+- [ ] AC-026-03: Each attribute shows checkboxes for its possible values (derived from the current graph data)
+- [ ] AC-026-04: Unchecking a value hides nodes with that value; checking shows them
+- [ ] AC-026-05: All values are checked by default (full graph visible)
+- [ ] AC-026-06: A "Reset" button restores all filters to default (all checked)
+- [ ] AC-026-07: Active filter count is shown as a badge on the Filter button (e.g., "Filter (3)")
+- [ ] AC-026-08: Filtering by node_type: "thinker" / "concept" replaces the People/Concepts view toggle
+- [ ] AC-026-09: Filtering by stream shows only nodes in selected streams
+- [ ] AC-026-10: Filtering by generation shows only nodes in selected generations
+- [ ] AC-026-11: Filtering by eminence shows only thinkers of selected eminence tiers
+- [ ] AC-026-12: Filtering by concept_type shows only concepts of selected types
+- [ ] AC-026-13: Hidden nodes remain in the force simulation (layout stability)
+- [ ] AC-026-14: Edges between hidden nodes are hidden
+- [ ] AC-026-15: Filter state is preserved across view mode changes
 
 **Edge Cases:**
-- Graph with only one generation: single band fills the canvas
-- Graph with no stream metadata: no stream headers shown
-- Very wide zoom out: labels may overlap — show only generation numbers at low zoom
+- All filters unchecked in one attribute: no nodes match, empty graph shown with message
+- Filtering by concept_type when no concepts exist: attribute section hidden
+- Combining node_type=thinker + stream=psychology: shows only psychology thinkers
 
 ---
 
@@ -1055,3 +1066,101 @@ The visualization meets accessibility standards for color, contrast, and readabi
 - [ ] AC-029-04: Edge styles (solid/dashed/dotted) are distinguishable at all zoom levels, reinforced by color differences
 - [ ] AC-029-05: The detail panel width is at least 400px to accommodate relationship note text
 - [ ] AC-029-06: Node labels scale proportionally with zoom (larger at high zoom, not clamped at 13px)
+
+---
+
+## REQ-030: Inline Attribute Editing
+
+All node attributes are editable directly in the detail panel via an edit mode toggle. Changes immediately update the in-memory IR and are reflected in the visualization and exports.
+
+**Preconditions:**
+- A node is selected and the detail panel is open (REQ-010)
+
+**Trigger:**
+- User clicks "Edit" toggle in the detail panel
+
+**Expected Behavior:**
+- All read-only field values become editable controls (text inputs for strings, dropdowns for enums, number inputs for integers)
+- Changes take effect immediately (no save button needed)
+- Clicking "Edit" again returns to read-only view
+- Enum fields are constrained to valid values via dropdowns
+
+**Acceptance Criteria:**
+
+*Thinker Fields:*
+- [ ] AC-030-01: `name` is editable as text input
+- [ ] AC-030-02: `dates` is editable as text input
+- [ ] AC-030-03: `eminence` is editable as dropdown (dominant, major, secondary, minor)
+- [ ] AC-030-04: `generation` is editable as dropdown of available generations
+- [ ] AC-030-05: `stream` is editable as dropdown of available streams
+- [ ] AC-030-06: `structural_role` is editable as multi-select or comma-separated text
+- [ ] AC-030-07: `active_period` is editable as text input
+- [ ] AC-030-08: `institutional_base` is editable as text input
+
+*Concept Fields:*
+- [ ] AC-030-09: `name` is editable as text input
+- [ ] AC-030-10: `originator_id` is editable as dropdown of existing thinker nodes
+- [ ] AC-030-11: `concept_type` is editable as dropdown (framework, principle, distinction, mechanism, prescription, synthesis)
+- [ ] AC-030-12: `abstraction_level` is editable as dropdown (concrete, operational, theoretical, meta-theoretical)
+- [ ] AC-030-13: `status` is editable as dropdown (active, absorbed, contested, dormant, superseded)
+- [ ] AC-030-14: `generation` is editable as dropdown
+- [ ] AC-030-15: `stream` is editable as dropdown
+
+*Edit State:*
+- [ ] AC-030-16: An "Edit" toggle button is visible in the detail panel header
+- [ ] AC-030-17: In edit mode, field labels are accompanied by their input controls
+- [ ] AC-030-18: Changes are applied to the in-memory IR immediately (no save button)
+- [ ] AC-030-19: Changes are reflected in the canvas rendering (e.g., changing eminence changes node size)
+- [ ] AC-030-20: Changes are included in file export (REQ-020)
+
+**Edge Cases:**
+- Changing a node's stream changes its color on the canvas
+- Changing eminence from dominant to minor shrinks the node immediately
+- Editing name updates the canvas label immediately
+
+---
+
+## REQ-031: Center on Node
+
+Selecting a node (via search, connection click, or canvas click) pans the canvas to center on that node.
+
+**Preconditions:**
+- Graph is rendered, a node is selected
+
+**Trigger:**
+- Node is selected via any mechanism
+
+**Expected Behavior:**
+- The canvas smoothly pans to center the selected node in the viewport
+
+**Acceptance Criteria:**
+- [ ] AC-031-01: Clicking a node in the canvas centers the view on that node
+- [ ] AC-031-02: Clicking a connection link in the detail panel centers on the navigated-to node
+- [ ] AC-031-03: Selecting a search result centers on the matched node
+- [ ] AC-031-04: Centering uses a smooth animation (300ms transition)
+- [ ] AC-031-05: If the node is already centered, no animation occurs
+
+---
+
+## REQ-032: Network Summary Panel
+
+A summary panel shows network-level metadata: structural observations, external shocks, and network statistics.
+
+**Preconditions:**
+- Graph IR contains metadata (structural_observations, external_shocks, network_stats)
+
+**Trigger:**
+- User clicks an "Info" or "Summary" button in the toolbar
+
+**Expected Behavior:**
+- A panel displays the network's structural observations, external shocks, and statistics
+- The panel is dismissible
+
+**Acceptance Criteria:**
+- [ ] AC-032-01: An "Info" button is visible in the toolbar
+- [ ] AC-032-02: Clicking "Info" opens a summary panel overlaying the canvas
+- [ ] AC-032-03: The panel shows network title and description
+- [ ] AC-032-04: Structural observations are listed as bullet points
+- [ ] AC-032-05: External shocks are listed with dates
+- [ ] AC-032-06: Network stats (node count, edge count, chain depth) are shown
+- [ ] AC-032-07: The panel is dismissible via a close button or clicking outside
