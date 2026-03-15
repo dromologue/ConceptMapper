@@ -21,7 +21,7 @@ fn sample_graph_ir() -> GraphIR {
                 Stream {
                     id: "mgmt".to_string(),
                     name: "Management & Organisation".to_string(),
-                    color: Some("Blue".to_string()),
+                    color: Some("#4A90D9".to_string()),
                     description: Some("How organisations should be designed".to_string()),
                 },
             ],
@@ -41,7 +41,7 @@ fn sample_graph_ir() -> GraphIR {
         nodes: vec![
             Node {
                 id: "argyris".to_string(),
-                node_type: NodeType::Thinker,
+                node_type: "thinker".to_string(),
                 name: "Chris Argyris".to_string(),
                 generation: Some(2),
                 stream: Some("psychology".to_string()),
@@ -55,12 +55,13 @@ fn sample_graph_ir() -> GraphIR {
                     is_placeholder: false,
                 }),
                 concept_fields: None,
+                fields: None,
                 content: None,
                 notes: None,
             },
             Node {
                 id: "double_loop".to_string(),
-                node_type: NodeType::Concept,
+                node_type: "concept".to_string(),
                 name: "Double-Loop Learning".to_string(),
                 generation: Some(3),
                 stream: Some("psychology".to_string()),
@@ -73,6 +74,7 @@ fn sample_graph_ir() -> GraphIR {
                     status: "active".to_string(),
                     parent_concept_id: None,
                 }),
+                fields: None,
                 content: None,
                 notes: None,
             },

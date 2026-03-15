@@ -26,31 +26,23 @@
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>Markdown Document</string>
+			<string>Concept Map</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
-				<string>md</string>
+				<string>cm</string>
 			</array>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>net.daringfireball.markdown</string>
-			</array>
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>JSON Document</string>
+			<string>Concept Map Template</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
-				<string>json</string>
+				<string>cmt</string>
 			</array>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>public.json</string>
-			</array>
 		</dict>
 	</array>
 </dict>

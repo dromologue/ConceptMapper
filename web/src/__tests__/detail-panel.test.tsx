@@ -34,14 +34,14 @@ describe("DetailPanel — Person Node", () => {
     expect(screen.getByText("Person")).toBeInTheDocument();
   });
 
-  // AC-030-03: Importance editable as dropdown
-  it("shows importance as editable dropdown", () => {
+  it("shows importance as editable dropdown from config", () => {
     render(<DetailPanel node={argyris} edges={personEdges} {...defaultDetailProps} />);
+    expect(screen.getByText("Importance")).toBeInTheDocument();
     const importanceSelect = screen.getByDisplayValue("dominant");
     expect(importanceSelect.tagName).toBe("SELECT");
   });
 
-  it("calls onNodeUpdate when importance is changed", async () => {
+  it("calls onNodeUpdate with properties when importance is changed", async () => {
     const user = userEvent.setup();
     const onNodeUpdate = vi.fn();
     render(<DetailPanel node={argyris} edges={personEdges} {...defaultDetailProps} onNodeUpdate={onNodeUpdate} />);
@@ -50,6 +50,14 @@ describe("DetailPanel — Person Node", () => {
     expect(onNodeUpdate).toHaveBeenCalledWith("argyris", expect.objectContaining({
       properties: expect.objectContaining({ importance: "major" }),
     }));
+  });
+
+  it("shows config-driven text fields (From, To, Tags, Roles)", () => {
+    render(<DetailPanel node={argyris} edges={personEdges} {...defaultDetailProps} />);
+    expect(screen.getByText("From")).toBeInTheDocument();
+    expect(screen.getByText("To")).toBeInTheDocument();
+    expect(screen.getByText("Tags")).toBeInTheDocument();
+    expect(screen.getByText("Roles")).toBeInTheDocument();
   });
 
   it("displays connections with edge type labels", () => {
@@ -88,14 +96,14 @@ describe("DetailPanel — Concept Node", () => {
     (e) => e.from === "double_loop" || e.to === "double_loop"
   );
 
-  it("displays concept fields as editable controls", () => {
+  it("displays concept fields from config as editable controls", () => {
     render(<DetailPanel node={doubleLoop} edges={conceptEdges} {...defaultDetailProps} />);
     expect(screen.getByDisplayValue("distinction")).toBeInTheDocument();
     expect(screen.getByDisplayValue("theoretical")).toBeInTheDocument();
     expect(screen.getByDisplayValue("active")).toBeInTheDocument();
   });
 
-  it("shows concept type badge", () => {
+  it("shows Concept type badge", () => {
     render(<DetailPanel node={doubleLoop} edges={conceptEdges} {...defaultDetailProps} />);
     expect(screen.getByText("Concept")).toBeInTheDocument();
   });

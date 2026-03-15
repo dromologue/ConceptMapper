@@ -1,4 +1,10 @@
-import type { GraphIR, GraphNode, GraphEdge } from "../types/graph-ir";
+import type { GraphIR, GraphNode, GraphEdge, NodeTypeConfig } from "../types/graph-ir";
+import type { LLMConfig, AppConfig, ChatMessage } from "../types/llm";
+import { DEFAULT_NODE_CONFIG, DEFAULT_PERSON_CONFIG, DEFAULT_CONCEPT_CONFIG } from "../migration";
+
+export const defaultNodeTypeConfigs: NodeTypeConfig[] = [DEFAULT_NODE_CONFIG];
+// Legacy configs for backward-compat tests
+export const legacyNodeTypeConfigs: NodeTypeConfig[] = [DEFAULT_PERSON_CONFIG, DEFAULT_CONCEPT_CONFIG];
 
 export const sampleStreams = [
   { id: "psychology", name: "Psychology & Cognition", color: "#D9A84A", description: "How individuals think" },
@@ -14,10 +20,17 @@ export const sampleGenerations = [
 
 export const argyris: GraphNode = {
   id: "argyris",
-  node_type: "thinker",
+  node_type: "person",
   name: "Chris Argyris",
   generation: 2,
   stream: "psychology",
+  properties: {
+    importance: "dominant",
+    date_from: "1923",
+    date_to: "2013",
+    tags: "Harvard Business School",
+    structural_roles: "intellectual_leader, chain_originator",
+  },
   thinker_fields: {
     dates: "1923–2013",
     eminence: "dominant",
@@ -31,10 +44,16 @@ export const argyris: GraphNode = {
 
 export const senge: GraphNode = {
   id: "senge",
-  node_type: "thinker",
+  node_type: "person",
   name: "Peter Senge",
   generation: 3,
   stream: "systems",
+  properties: {
+    importance: "major",
+    date_from: "1947",
+    tags: "MIT Sloan",
+    structural_roles: "synthesiser",
+  },
   thinker_fields: {
     dates: "b. 1947",
     eminence: "major",
@@ -48,10 +67,16 @@ export const senge: GraphNode = {
 
 export const dekker: GraphNode = {
   id: "dekker",
-  node_type: "thinker",
+  node_type: "person",
   name: "Sidney Dekker",
   generation: 5,
   stream: "sensemaking",
+  properties: {
+    importance: "major",
+    date_from: "1969",
+    tags: "Griffith University",
+    structural_roles: "intellectual_leader",
+  },
   thinker_fields: {
     dates: "b. 1969",
     eminence: "major",
@@ -69,6 +94,13 @@ export const doubleLoop: GraphNode = {
   name: "Double-Loop Learning",
   generation: 3,
   stream: "psychology",
+  properties: {
+    concept_type: "distinction",
+    abstraction_level: "theoretical",
+    status: "active",
+    originator_id: "argyris",
+    date_introduced: "1977",
+  },
   concept_fields: {
     originator_id: "argyris",
     date_introduced: "1977",
@@ -84,6 +116,13 @@ export const cynefin: GraphNode = {
   name: "Cynefin Framework",
   generation: 5,
   stream: "sensemaking",
+  properties: {
+    concept_type: "framework",
+    abstraction_level: "operational",
+    status: "active",
+    originator_id: "snowden",
+    date_introduced: "1999",
+  },
   concept_fields: {
     originator_id: "snowden",
     date_introduced: "1999",
@@ -128,3 +167,22 @@ export const sampleGraphData: GraphIR = {
   nodes: [argyris, senge, dekker, doubleLoop, cynefin],
   edges: sampleEdges,
 };
+
+// LLM test fixtures
+export const sampleLLMConfig: LLMConfig = {
+  provider: "anthropic",
+  apiKey: (typeof globalThis !== "undefined" && (globalThis as Record<string, unknown>).process
+    ? ((globalThis as Record<string, unknown>).process as Record<string, Record<string, string>>).env?.ANTHROPIC_API_KEY
+    : undefined) ?? "test-key",
+  model: "claude-sonnet-4-20250514",
+  temperature: 0.3,
+};
+
+export const sampleAppConfig: AppConfig = {
+  llm: sampleLLMConfig,
+};
+
+export const sampleChatMessages: ChatMessage[] = [
+  { role: "user", content: "What are the key relationships in this network?", timestamp: Date.now() - 2000 },
+  { role: "assistant", content: "The network shows Argyris influencing Senge through the chain relationship.", timestamp: Date.now() - 1000 },
+];

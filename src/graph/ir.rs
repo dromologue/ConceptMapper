@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 /// The top-level Graph IR — the contract between Rust and React.
@@ -53,7 +54,7 @@ pub struct NetworkStats {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
     pub id: String,
-    pub node_type: NodeType,
+    pub node_type: String,
     pub name: String,
     pub generation: Option<i32>,
     pub stream: Option<String>,
@@ -61,6 +62,9 @@ pub struct Node {
     pub thinker_fields: Option<ThinkerFields>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub concept_fields: Option<ConceptFields>,
+    /// Generic key-value fields for non-thinker/concept node types.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fields: Option<HashMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<NodeContent>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -87,11 +91,12 @@ pub struct ConnectionProse {
     pub text: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum NodeType {
+/// Used internally for edge category resolution. Not serialized on nodes.
+#[derive(Debug, Clone, PartialEq)]
+pub enum NodeTypeTag {
     Thinker,
     Concept,
+    Generic,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -146,6 +151,7 @@ pub enum EdgeCategory {
     ThinkerThinker,
     ThinkerConcept,
     ConceptConcept,
+    Generic,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

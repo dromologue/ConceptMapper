@@ -5,23 +5,125 @@ import UniformTypeIdentifiers
 @MainActor
 enum FileHandler {
 
-    /// Show NSOpenPanel for .md and .json files, read contents, and call completion.
-    static func openFile(completion: @escaping @MainActor (String, String) -> Void) {
+    // MARK: - Config (.cme)
+
+    /// Returns the path to the config file: ~/Library/Application Support/ConceptLLM/config.cme
+    static func getConfigPath() -> URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let folder = appSupport.appendingPathComponent("ConceptLLM")
+        if !FileManager.default.fileExists(atPath: folder.path) {
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        }
+        return folder.appendingPathComponent("config.cme")
+    }
+
+    /// Load the config.cme JSON file. Returns empty JSON object if not found.
+    static func loadConfig(completion: @escaping @MainActor (String) -> Void) {
+        let url = getConfigPath()
+        if FileManager.default.fileExists(atPath: url.path) {
+            do {
+                let content = try String(contentsOf: url, encoding: .utf8)
+                completion(content)
+            } catch {
+                completion("{}")
+            }
+        } else {
+            completion("{}")
+        }
+    }
+
+    /// Save content to config.cme.
+    static func saveConfig(content: String) {
+        let url = getConfigPath()
+        do {
+            try content.write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = "Failed to save config"
+            alert.informativeText = error.localizedDescription
+            alert.runModal()
+        }
+    }
+
+    // MARK: - Templates
+
+    /// Returns (and creates if needed) the templates folder.
+    static func getTemplatesFolder() -> URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let folder = appSupport.appendingPathComponent("ConceptLLM/templates")
+        if !FileManager.default.fileExists(atPath: folder.path) {
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        }
+        return folder
+    }
+
+    /// Enumerate .cmt template files in the templates folder.
+    static func listTemplates(completion: @escaping @MainActor ([Any]) -> Void) {
+        let folder = getTemplatesFolder()
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
+                .filter { $0.pathExtension == "cmt" }
+            let results = files.map { url -> [String: String] in
+                return ["name": url.deletingPathExtension().lastPathComponent, "path": url.path]
+            }
+            completion(results)
+        } catch {
+            completion([])
+        }
+    }
+
+    /// Read a .cmt template file and return its content.
+    static func loadTemplateFile(path: String, completion: @escaping @MainActor (String) -> Void) {
+        let url = URL(fileURLWithPath: path)
+        do {
+            let content = try String(contentsOf: url, encoding: .utf8)
+            completion(content)
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = "Failed to read template"
+            alert.informativeText = error.localizedDescription
+            alert.runModal()
+        }
+    }
+
+    /// Show NSSavePanel for a .cmt template file.
+    static func saveTemplateFile(content: String, defaultName: String, completion: @escaping @MainActor (String) -> Void) {
+        let panel = NSSavePanel()
+        panel.title = "Save Template"
+        panel.nameFieldStringValue = defaultName
+        panel.allowedContentTypes = [UTType(filenameExtension: "cmt")!]
+        panel.directoryURL = getTemplatesFolder()
+
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                try content.write(to: url, atomically: true, encoding: .utf8)
+                completion(url.path)
+            } catch {
+                let alert = NSAlert()
+                alert.messageText = "Failed to save template"
+                alert.informativeText = error.localizedDescription
+                alert.runModal()
+            }
+        }
+    }
+
+    /// Show NSOpenPanel for .cm and .cmt files, read contents, and call completion.
+    /// Completion receives (content, filename, fullPath).
+    static func openFile(completion: @escaping @MainActor (String, String, String) -> Void) {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = [
-            UTType(filenameExtension: "md")!,
-            UTType.json,
-        ]
-        panel.message = "Select a taxonomy markdown or JSON file"
+        panel.allowedContentTypes = [UTType.plainText, UTType.json, UTType.data]
+        panel.allowsOtherFileTypes = true
+        panel.message = "Select a .cm concept map or .cmt template file"
 
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
             do {
                 let content = try String(contentsOf: url, encoding: .utf8)
-                completion(content, url.lastPathComponent)
+                completion(content, url.lastPathComponent, url.path)
             } catch {
                 let alert = NSAlert()
                 alert.messageText = "Failed to read file"
@@ -35,12 +137,8 @@ enum FileHandler {
     static func saveFile(content: String, type: String, title: String) {
         let panel = NSSavePanel()
         panel.title = title
-        panel.nameFieldStringValue = "concept-map.\(type)"
-        if type == "json" {
-            panel.allowedContentTypes = [UTType.json]
-        } else {
-            panel.allowedContentTypes = [UTType(filenameExtension: "md")!]
-        }
+        panel.nameFieldStringValue = "concept-map.cm"
+        panel.allowedContentTypes = [UTType(filenameExtension: "cm")!]
 
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
@@ -52,6 +150,40 @@ enum FileHandler {
                 alert.informativeText = error.localizedDescription
                 alert.runModal()
             }
+        }
+    }
+
+    /// Show NSSavePanel for a new file and call completion with the saved path.
+    static func saveNewFile(content: String, defaultName: String, completion: @escaping @MainActor (String) -> Void) {
+        let panel = NSSavePanel()
+        panel.title = "Save New Taxonomy"
+        panel.nameFieldStringValue = defaultName
+        panel.allowedContentTypes = [UTType(filenameExtension: "cm")!]
+
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                try content.write(to: url, atomically: true, encoding: .utf8)
+                completion(url.path)
+            } catch {
+                let alert = NSAlert()
+                alert.messageText = "Failed to save taxonomy"
+                alert.informativeText = error.localizedDescription
+                alert.runModal()
+            }
+        }
+    }
+
+    /// Write content to a known file path without showing a dialog.
+    static func saveToPath(content: String, path: String) {
+        let url = URL(fileURLWithPath: path)
+        do {
+            try content.write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = "Failed to auto-save"
+            alert.informativeText = error.localizedDescription
+            alert.runModal()
         }
     }
 

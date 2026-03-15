@@ -28,8 +28,10 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
             logger.warning("JS: \(body)")
             return
         case "openFile":
-            FileHandler.openFile { [weak self] content, filename in
-                self?.loadFileContent(content, filename: filename)
+            print("[Bridge] openFile handler called")
+            FileHandler.openFile { [weak self] content, filename, filePath in
+                print("[Bridge] FileHandler returned: \(filename), \(content.count) bytes")
+                self?.loadFileContent(content, filename: filename, filePath: filePath)
             }
         case "saveFile":
             requestGraphJSON { json in
@@ -43,6 +45,134 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
             requestGraphMarkdown { md in
                 FileHandler.saveFile(content: md, type: "md", title: "Export Markdown")
             }
+        case "saveToPath":
+            // Auto-save: JS sends JSON with { path, content }
+            if let data = body.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+               let path = json["path"],
+               let content = json["content"] {
+                FileHandler.saveToPath(content: content, path: path)
+            }
+        case "saveNewTaxonomy":
+            // Taxonomy wizard: save new .cm file and callback with path
+            if let data = body.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+               let content = json["content"],
+               let title = json["title"] {
+                let filename = title.lowercased()
+                    .replacingOccurrences(of: "[^a-z0-9]+", with: "_", options: .regularExpression)
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+                FileHandler.saveNewFile(content: content, defaultName: "\(filename).cm") { [weak self] savedPath in
+                    self?.webView?.evaluateJavaScript(
+                        "window.taxonomySaved?.('\(savedPath)');"
+                    ) { _, _ in }
+                }
+            }
+        case "listTemplates":
+            FileHandler.listTemplates { [weak self] results in
+                if let jsonData = try? JSONSerialization.data(withJSONObject: results),
+                   let jsonString = String(data: jsonData, encoding: .utf8) {
+                    self?.webView?.evaluateJavaScript(
+                        "window.templatesLoaded?.('\(jsonString.replacingOccurrences(of: "'", with: "\\'"))');"
+                    ) { _, _ in }
+                }
+            }
+        case "loadTemplate":
+            // JS sends JSON with { path }
+            if let data = body.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+               let path = json["path"] {
+                FileHandler.loadTemplateFile(path: path) { [weak self] content in
+                    let escaped = content.replacingOccurrences(of: "'", with: "\\'")
+                        .replacingOccurrences(of: "\n", with: "\\n")
+                    self?.webView?.evaluateJavaScript(
+                        "window.templateLoaded?.('\(escaped)');"
+                    ) { _, _ in }
+                }
+            }
+        case "saveTemplate":
+            // JS sends JSON with { content, title }
+            if let data = body.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+               let content = json["content"],
+               let title = json["title"] {
+                let filename = title.lowercased()
+                    .replacingOccurrences(of: "[^a-z0-9]+", with: "_", options: .regularExpression)
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+                FileHandler.saveTemplateFile(content: content, defaultName: "\(filename).cmt") { _ in }
+            }
+
+        // MARK: LLM Config
+        case "loadConfig":
+            FileHandler.loadConfig { [weak self] content in
+                let escaped = content.replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "'", with: "\\'")
+                    .replacingOccurrences(of: "\n", with: "\\n")
+                self?.webView?.evaluateJavaScript(
+                    "window.configLoaded?.('\(escaped)');"
+                ) { _, _ in }
+            }
+        case "saveConfig":
+            if let data = body.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+               let content = json["content"] {
+                FileHandler.saveConfig(content: content)
+            }
+
+        // MARK: LLM Chat
+        case "llmChat":
+            if let data = body.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let configStr = json["config"] as? String,
+               let messagesStr = json["messages"] as? String,
+               let requestId = json["requestId"] as? String {
+                let systemPrompt = json["systemPrompt"] as? String
+                LLMService.sendMessage(configJSON: configStr, messagesJSON: messagesStr, systemPrompt: systemPrompt) { [weak self] result in
+                    Task { @MainActor in
+                        switch result {
+                        case .success(let content):
+                            let escaped = content.replacingOccurrences(of: "\\", with: "\\\\")
+                                .replacingOccurrences(of: "'", with: "\\'")
+                                .replacingOccurrences(of: "\n", with: "\\n")
+                                .replacingOccurrences(of: "\r", with: "")
+                            self?.webView?.evaluateJavaScript(
+                                "window.llmResponse?.({requestId: '\(requestId)', content: '\(escaped)'});"
+                            ) { _, _ in }
+                        case .failure(let error):
+                            let msg = error.localizedDescription
+                                .replacingOccurrences(of: "'", with: "\\'")
+                            self?.webView?.evaluateJavaScript(
+                                "window.llmError?.({requestId: '\(requestId)', error: '\(msg)'});"
+                            ) { _, _ in }
+                        }
+                    }
+                }
+            }
+
+        // MARK: LLM Test Connection
+        case "llmTestConnection":
+            if let data = body.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+               let configStr = json["config"] {
+                let testMessages = "[{\"role\": \"user\", \"content\": \"Say hello in exactly one word.\"}]"
+                LLMService.sendMessage(configJSON: configStr, messagesJSON: testMessages, systemPrompt: nil) { [weak self] result in
+                    Task { @MainActor in
+                        switch result {
+                        case .success:
+                            self?.webView?.evaluateJavaScript(
+                                "window.llmTestResult?.({success: true});"
+                            ) { _, _ in }
+                        case .failure(let error):
+                            let msg = error.localizedDescription
+                                .replacingOccurrences(of: "'", with: "\\'")
+                            self?.webView?.evaluateJavaScript(
+                                "window.llmTestResult?.({success: false, error: '\(msg)'});"
+                            ) { _, _ in }
+                        }
+                    }
+                }
+            }
+
         default:
             break
         }
@@ -51,11 +181,12 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
     // MARK: - Swift → JS
 
     /// Send file content to the React app for parsing and rendering.
-    /// Uses Base64 encoding to safely pass arbitrary file content through evaluateJavaScript.
-    func loadFileContent(_ content: String, filename: String) {
+    func loadFileContent(_ content: String, filename: String, filePath: String? = nil) {
         guard let data = content.data(using: .utf8) else { return }
         let base64 = data.base64EncodedString()
-        let js = "window.loadFileContentBase64('\(base64)', '\(filename)');"
+        let pathArg = filePath.map { "'\($0)'" } ?? "undefined"
+        // logger removed — file open is working
+        let js = "window.loadFileContentBase64('\(base64)', '\(filename)', \(pathArg));"
         webView?.evaluateJavaScript(js) { _, error in
             if let error = error {
                 print("Bridge error: \(error)")

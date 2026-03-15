@@ -1,0 +1,32 @@
+import type { InteractionMode } from "../App";
+
+interface Props {
+  nodeCount: number;
+  edgeCount: number;
+  saveIndicator: boolean;
+  interactionMode: InteractionMode;
+  themeName: string;
+}
+
+export function StatusBar({
+  nodeCount, edgeCount, saveIndicator,
+  interactionMode, themeName,
+}: Props) {
+  return (
+    <div className="status-bar">
+      <div className="status-bar-left">
+        {interactionMode !== "normal" && (
+          <span className="status-bar-edge-mode">
+            {interactionMode === "add-edge-source" ? "Select source node..." : "Select target node..."}
+          </span>
+        )}
+      </div>
+      <div className="status-bar-right">
+        <span className="status-bar-item">{nodeCount} nodes</span>
+        <span className="status-bar-item">{edgeCount} edges</span>
+        <span className={`status-bar-save ${saveIndicator ? "visible" : ""}`}>Saved</span>
+        <span className="status-bar-item status-bar-theme">{themeName}</span>
+      </div>
+    </div>
+  );
+}

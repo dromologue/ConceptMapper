@@ -10,6 +10,11 @@ struct ConceptLLMApp: App {
         }
         .commands {
             CommandGroup(replacing: .newItem) {
+                Button("New Taxonomy...") {
+                    NotificationCenter.default.post(name: .newTaxonomy, object: nil)
+                }
+                .keyboardShortcut("n")
+
                 Button("Open...") {
                     NotificationCenter.default.post(name: .openFile, object: nil)
                 }
@@ -27,10 +32,17 @@ struct ConceptLLMApp: App {
                 }
                 .keyboardShortcut("e")
 
-                Button("Export Markdown...") {
+                Button("Export Concept Map...") {
                     NotificationCenter.default.post(name: .exportMarkdown, object: nil)
                 }
                 .keyboardShortcut("e", modifiers: [.command, .shift])
+            }
+
+            CommandGroup(replacing: .help) {
+                Button("ConceptLLM Help") {
+                    NotificationCenter.default.post(name: .showHelp, object: nil)
+                }
+                .keyboardShortcut("?")
             }
         }
     }
@@ -47,4 +59,6 @@ extension Notification.Name {
     static let saveFile = Notification.Name("saveFile")
     static let exportImage = Notification.Name("exportImage")
     static let exportMarkdown = Notification.Name("exportMarkdown")
+    static let showHelp = Notification.Name("showHelp")
+    static let newTaxonomy = Notification.Name("newTaxonomy")
 }

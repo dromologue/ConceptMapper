@@ -7,3 +7,7 @@
 .env
 .DS_Store
 concept\ library.md
+*.cme
+/collins_network_taxonomy.cm
+/collins_network_taxonomy.json
+/test.cmt.cm

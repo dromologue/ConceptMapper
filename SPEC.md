@@ -926,7 +926,7 @@ The user can open taxonomy files or graph JSON files into the visualization via 
 - User selects File > Open (⌘O) from the menu bar, or clicks "Import" in the toolbar
 
 **Expected Behavior:**
-- macOS NSOpenPanel is presented, filtered to `.md` and `.json` files
+- macOS NSOpenPanel is presented, filtered to `.cm` concept map files
 - `.md` files are parsed in-browser via the Rust WASM parser
 - `.json` files are loaded directly as Graph IR
 - The imported data replaces the current graph
@@ -934,7 +934,7 @@ The user can open taxonomy files or graph JSON files into the visualization via 
 
 **Acceptance Criteria:**
 - [ ] AC-025-01: File > Open menu item (⌘O) is available in the macOS menu bar
-- [ ] AC-025-02: NSOpenPanel filters to `.md` and `.json` files
+- [ ] AC-025-02: NSOpenPanel filters to `.cm` concept map files
 - [ ] AC-025-03: `.md` files are parsed via the bundled WASM parser (no network required)
 - [ ] AC-025-04: `.json` files are loaded directly as Graph IR (validated against expected structure)
 - [ ] AC-025-05: Invalid files show an error message without crashing the app
@@ -1025,32 +1025,32 @@ Hovering over an edge on the canvas shows a tooltip with the relationship type a
 
 ## REQ-028: State Persistence
 
-The user's work (notes, node positions, view state) persists across page reloads.
+The user's work persists via two mechanisms: theme/colour preferences in localStorage, and graph edits auto-saved back to the source .cm file.
 
 **Preconditions:**
-- Graph is loaded and user has made edits
+- Graph is loaded from a .cm file via the native macOS file dialog
 
 **Trigger:**
-- Automatic on every edit; restored on page load
+- Theme/colour changes: persisted to localStorage immediately
+- Graph edits (nodes, edges, notes): debounce-saved to source .cm file after 2 seconds
 
 **Expected Behavior:**
-- Notes, added nodes, added edges, and node positions are saved to localStorage
-- On reload, the saved state is merged with the base graph data
-- A "Reset" button clears saved state and reloads from the original source
+- Theme selection persists in `localStorage` key `cm-theme-id`
+- Stream and edge colour overrides persist in `cm-stream-colors` and `cm-edge-colors`
+- Graph data changes are exported as markdown and written back to the source file path via Swift bridge `saveToPath`
+- A "Saved" indicator appears briefly in the header after auto-save
 
 **Acceptance Criteria:**
-- [ ] AC-028-01: Notes edits are saved to localStorage within 1 second of change
-- [ ] AC-028-02: Added nodes and edges are saved to localStorage
-- [ ] AC-028-03: Node positions (fx/fy from drag) are saved to localStorage
-- [ ] AC-028-04: Current view mode is saved to localStorage
-- [ ] AC-028-05: On page reload, saved state is loaded and applied to the graph
-- [ ] AC-028-06: A "Reset" button in the toolbar clears all saved state
-- [ ] AC-028-07: The localStorage key is namespaced by graph title to support multiple graphs
-- [ ] AC-028-08: Corrupted localStorage data is handled gracefully (ignored, not crash)
+- [ ] AC-028-01: Theme ID persists to localStorage key `cm-theme-id`
+- [ ] AC-028-02: Edge colour overrides persist to localStorage key `cm-edge-colors`
+- [ ] AC-028-03: Stream colour overrides persist to localStorage key `cm-stream-colors`
+- [ ] AC-028-04: Graph edits auto-save to the source .cm file after 2-second debounce
+- [ ] AC-028-05: "Saved" indicator appears in header and fades after 2 seconds
+- [ ] AC-028-06: Corrupted localStorage data is handled gracefully (defaults to empty)
 
 **Edge Cases:**
-- localStorage full: graceful degradation, warn user
-- Graph structure changed (new source file) but old state exists: merge what matches, discard what doesn't
+- No source file path (browser-only mode): auto-save skipped, manual export still works
+- localStorage unavailable: theme defaults to midnight, no crash
 
 ---
 
@@ -1183,7 +1183,7 @@ The macOS app provides a native File menu with Open, Save As, Export Image, and 
 - User accesses the File menu or uses keyboard shortcuts
 
 **Expected Behavior:**
-- File > Open (⌘O): Opens NSOpenPanel for .md/.json files, content sent to WKWebView via Swift→JS bridge
+- File > Open (⌘O): Opens NSOpenPanel for .cm files, content sent to WKWebView via Swift→JS bridge
 - File > Save As (⌘S): Requests current graph JSON from JS, presents NSSavePanel
 - File > Export Image (⌘E): Requests canvas data URL from JS, presents NSSavePanel for PNG
 - File > Export Markdown (⇧⌘E): Requests markdown from JS, presents NSSavePanel for .md
@@ -1191,7 +1191,7 @@ The macOS app provides a native File menu with Open, Save As, Export Image, and 
 **Acceptance Criteria:**
 - [ ] AC-033-01: File menu contains Open, Save As, Export Image, Export Markdown items
 - [ ] AC-033-02: Each menu item has a keyboard shortcut
-- [ ] AC-033-03: Open presents NSOpenPanel filtered to .md and .json
+- [ ] AC-033-03: Open presents NSOpenPanel filtered to .cm
 - [ ] AC-033-04: Save As presents NSSavePanel with .json extension
 - [ ] AC-033-05: Export Image presents NSSavePanel with .png extension
 - [ ] AC-033-06: Export Markdown presents NSSavePanel with .md extension
@@ -1219,4 +1219,164 @@ The macOS app manages window lifecycle, quit handling, and App Store sandboxing 
 - [ ] AC-034-04: No network-related entitlements
 - [ ] AC-034-05: Minimum deployment target is macOS 14.0
 - [ ] AC-034-06: WKWebView loads bundled HTML/JS/WASM from the app bundle (file:// protocol)
-- [ ] AC-034-07: Info.plist declares .md and .json as supported document types
+- [ ] AC-034-07: Info.plist declares .cm as supported document types
+
+---
+
+## REQ-035: Responsive Canvas Resize
+
+The graph canvas redraws correctly when the window is resized, with no rendering artifacts.
+
+**Preconditions:**
+- Graph is rendered in an HTML canvas via D3 force simulation
+- Canvas is observed by a ResizeObserver
+
+**Expected Behavior:**
+- On window resize, canvas clears fully (no ghost shadows from stale dimensions)
+- Simulation forces (forceX, forceY) recalculate targets for the new dimensions
+- Simulation reheats to animate nodes to new positions
+- Stream colors display correctly using hex values parsed from named colors
+
+**Acceptance Criteria:**
+- [ ] AC-035-01: Tick and zoom callbacks read dimensions from refs, not closure-captured values
+- [ ] AC-035-02: resizeCanvas() updates forceX and forceY with recalculated stream/generation positions
+- [ ] AC-035-03: resizeCanvas() reheats the simulation (alpha > 0) so nodes animate to new layout
+- [ ] AC-035-04: Dragging a node after resize produces no ghost/shadow trail
+- [ ] AC-035-05: Stream IDs in parsed stream table have backticks stripped (`` `mgmt` `` → `mgmt`)
+- [ ] AC-035-06: Named colors in stream table are normalized to hex (Blue → #4A90D9, Amber → #E6A23C, etc.)
+
+---
+
+## REQ-036: Theme System
+
+The application supports predefined color themes and user-customizable stream/edge colors, affecting both CSS-styled UI panels and canvas-rendered graph elements.
+
+**Preconditions:**
+- React SPA is rendered
+- `ThemeConfig` interface defines all color tokens for both CSS and canvas
+
+**Trigger:**
+- App mounts (loads saved theme from localStorage)
+- User selects a theme in the Settings modal
+- User customizes stream or edge colors
+
+**Expected Behavior:**
+- CSS custom properties are injected on `:root` from the active `ThemeConfig`
+- Canvas drawing uses `ThemeConfig` color fields via a `themeRef`
+- Stream color overrides take precedence over data-defined colors in both canvas and legend
+- Edge color overrides take precedence over edge visual defaults
+- All settings persist across sessions via `localStorage`
+
+**Acceptance Criteria:**
+- [ ] AC-036-01: `ThemeConfig` interface has all required UI chrome and canvas color fields
+- [ ] AC-036-02: 6 predefined themes exist: midnight, obsidian, solarized, nord, ivory, paper
+- [ ] AC-036-03: `getThemeById` returns the correct theme or defaults to midnight
+- [ ] AC-036-04: Midnight theme exactly matches original hardcoded colors (#1a1a2e, #16213e, #4A90D9, etc.)
+- [ ] AC-036-05: Light themes (ivory, paper) have light backgrounds and dark text
+- [ ] AC-036-06: Default theme is midnight when no localStorage value exists
+- [ ] AC-036-07: Theme switches immediately when `setThemeId` is called
+- [ ] AC-036-08: Selected theme ID persists to `localStorage` key `cm-theme-id`
+- [ ] AC-036-09: Theme restores from `localStorage` on mount
+- [ ] AC-036-10: CSS custom properties (--bg-body, --bg-panel, --accent, etc.) update on `:root` when theme changes
+- [ ] AC-036-11: Edge color overrides persist to `localStorage` key `cm-edge-colors`
+- [ ] AC-036-12: Stream color overrides persist to `localStorage` key `cm-stream-colors`
+- [ ] AC-036-13: Color overrides restore from `localStorage` on mount
+- [ ] AC-036-14: All ~50 hardcoded color values in App.css are replaced with `var(--name, fallback)` syntax
+- [ ] AC-036-15: GraphCanvas accepts a `theme: ThemeConfig` prop and uses it for all drawing colors
+- [ ] AC-036-16: `getStreamColor` checks `streamColorOverrides` before data-defined colors
+
+**Edge Cases:**
+- Invalid theme ID in localStorage: defaults to midnight
+- Malformed JSON in color override keys: defaults to empty object `{}`
+
+---
+
+## REQ-037: Settings Modal
+
+A settings modal allows users to switch themes and customize stream/edge colors.
+
+**Preconditions:**
+- ThemeProvider wraps the app and provides theme context
+- Graph data is loaded (streams and edge types available)
+
+**Trigger:**
+- User clicks the gear icon (⚙) in the toolbar
+
+**Expected Behavior:**
+- Modal opens with three sections: Theme picker, Stream colors, Edge type colors
+- Theme picker shows a grid of 6 swatches; clicking one switches the theme immediately
+- Stream colors section shows each stream with a color picker and optional reset button
+- Edge type colors section shows each edge type with a color picker and optional reset button
+- Changes apply instantly to both CSS-styled UI and canvas rendering
+- Clicking the overlay or close button dismisses the modal
+
+**Acceptance Criteria:**
+- [ ] AC-037-01: Settings modal renders with "Settings" title
+- [ ] AC-037-02: All 6 theme swatches are displayed (Midnight, Obsidian, Solarized Dark, Nord, Ivory, Paper)
+- [ ] AC-037-03: Active theme swatch has the `.theme-swatch-active` class
+- [ ] AC-037-04: Clicking a theme swatch switches the active theme
+- [ ] AC-037-05: Stream colors section lists all streams with color pickers
+- [ ] AC-037-06: Edge type colors section lists all edge types with color pickers
+- [ ] AC-037-07: Close button (`×`) calls `onClose`
+- [ ] AC-037-08: Clicking the modal overlay calls `onClose`
+- [ ] AC-037-09: Toolbar renders a settings gear button when `onOpenSettings` prop is provided
+- [ ] AC-037-10: Toolbar does not render settings button when `onOpenSettings` is omitted
+- [ ] AC-037-11: Clicking the gear button calls `onOpenSettings`
+
+**Edge Cases:**
+- No streams loaded: Stream colors section hidden
+- No edge types: Edge type colors section hidden
+- Clicking inside the modal does not trigger overlay close (event propagation stopped)
+
+---
+
+## REQ-038: Notes Editor Enter Key Fix
+
+The contentEditable inline markdown notes editor handles Enter key correctly without cursor jumps or extra whitespace.
+
+**Preconditions:**
+- Node is selected and Notes pane is open
+- Editor uses `contentEditable` div with `highlightMarkdown()` rendering
+
+**Trigger:**
+- User presses Enter in the notes editor
+
+**Expected Behavior:**
+- Browser's default Enter behavior inserts a line break naturally
+- Re-render is debounced to 500ms (same as normal typing), not 100ms
+- Text extraction normalizes `\n\n\n+` runs from empty `<div><br></div>` elements back to `\n\n`
+- No cursor jump or extra whitespace after Enter
+
+**Acceptance Criteria:**
+- [ ] AC-038-01: Enter key handler debounces re-render to 500ms (matching normal input debounce)
+- [ ] AC-038-02: `extractMarkdown()` collapses runs of 3+ newlines to double newline
+- [ ] AC-038-03: Inline editor uses contentEditable div (not textarea)
+- [ ] AC-038-04: Inline editor has `contenteditable="true"` attribute
+
+---
+
+## REQ-039: Notes Persistence to Source File
+
+Notes and other graph edits are auto-saved back to the source file via the Swift bridge.
+
+**Preconditions:**
+- File was opened through the native macOS file dialog
+- Full file path was passed from Swift to JS on open
+
+**Trigger:**
+- Any graph data change (node edit, edge add, notes edit)
+
+**Expected Behavior:**
+- Changes are debounce-saved (2 second delay) as JSON to the source file path
+- Overwrites the source `.cm` file in place with the exported markdown
+- A subtle "Saved" indicator appears in the header and fades after 2 seconds
+- `saveToPath` Swift bridge message writes content to disk without showing a dialog
+
+**Acceptance Criteria:**
+- [ ] AC-039-01: `FileHandler.openFile` passes full path (`url.path`) alongside filename to completion handler
+- [ ] AC-039-02: `WebViewBridge.loadFileContent` accepts optional `filePath` parameter and passes to JS
+- [ ] AC-039-03: JS `loadFileContentBase64` bridge function accepts optional `filePath` parameter
+- [ ] AC-039-04: `FileHandler.saveToPath(content:path:)` writes content to disk atomically
+- [ ] AC-039-05: `saveToPath` message handler registered in `WKUserContentController`
+- [ ] AC-039-06: Auto-save debounces at 2 seconds after graph data changes
+- [ ] AC-039-07: Save indicator shows "Saved" text that fades after 2 seconds
