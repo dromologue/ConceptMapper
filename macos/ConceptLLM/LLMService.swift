@@ -93,6 +93,12 @@ enum LLMService {
         }
         body["messages"] = chatMessages
 
+        // Debug: log the request body
+        if let debugData = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted),
+           let debugStr = String(data: debugData, encoding: .utf8) {
+            logger.info("Anthropic request body: \(debugStr)")
+        }
+
         guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
             completion(.failure(LLMError.invalidConfig("Failed to serialize request body")))
             return
@@ -114,13 +120,20 @@ enum LLMService {
             let statusCode = httpResponse?.statusCode ?? 0
 
             guard statusCode == 200 else {
-                let body = String(data: data, encoding: .utf8) ?? "unknown error"
+                let respBody = String(data: data, encoding: .utf8) ?? "unknown error"
+                // Try to extract the human-readable error message from Anthropic JSON
+                var friendlyMsg = "HTTP \(statusCode)"
+                if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let errorObj = errorJson["error"] as? [String: Any],
+                   let msg = errorObj["message"] as? String {
+                    friendlyMsg = msg
+                }
                 if statusCode == 401 {
                     completion(.failure(LLMError.auth("Invalid API key")))
                 } else if statusCode == 429 {
                     completion(.failure(LLMError.rateLimit("Rate limit exceeded")))
                 } else {
-                    completion(.failure(LLMError.api("HTTP \(statusCode): \(body)")))
+                    completion(.failure(LLMError.api(friendlyMsg)))
                 }
                 return
             }

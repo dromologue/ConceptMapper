@@ -26,7 +26,7 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
     private func handleMessage(_ name: String, body: String) {
         switch name {
         case "jsLog":
-            logger.warning("JS: \(body)")
+            logger.warning("[JS] \(body)")
             return
         case "openFile":
             print("[Bridge] openFile handler called")
