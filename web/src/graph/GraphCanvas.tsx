@@ -1,7 +1,10 @@
 import { useRef, useEffect } from "react";
 import * as d3 from "d3";
-import type { GraphIR, GraphNode, SimNode, SimLink } from "../types/graph-ir";
+import type { GraphIR, GraphNode, GraphEdge, SimNode, SimLink, NodeTypeConfig } from "../types/graph-ir";
 import type { ViewMode, InteractionMode } from "../App";
+import type { ThemeConfig } from "../theme/themes";
+import { getNodeTypeConfig, getConfigNodeRadius } from "../migration";
+import { computeCollapseState } from "./collapse-utils";
 
 interface Props {
   data: GraphIR;
@@ -12,10 +15,14 @@ interface Props {
   interactionMode: InteractionMode;
   edgeSourceId: string | null;
   activeStreams: Set<string> | null;
+  theme: ThemeConfig;
+  nodeTypeConfigs: NodeTypeConfig[];
+  collapsedNodes?: Set<string>;
+  onToggleCollapse?: (nodeId: string) => void;
+  onSelectEdge?: (edge: GraphEdge | null, pos?: { x: number; y: number }) => void;
+  selectedEdgeKey?: string | null; // "from|to" key for highlighting
 }
 
-const EMINENCE_RADIUS: Record<string, number> = { dominant: 20, major: 14, secondary: 10, minor: 6 };
-const ABSTRACTION_RADIUS: Record<string, number> = { "meta-theoretical": 16, theoretical: 13, operational: 10, concrete: 7 };
 const EDGE_LABELS: Record<string, string> = {
   teacher_pupil: "Teacher \u2192 Pupil", chain: "Chain", rivalry: "Rivalry", alliance: "Alliance",
   synthesis: "Synthesis", institutional: "Institutional", originates: "Originates", develops: "Develops",
@@ -23,26 +30,43 @@ const EDGE_LABELS: Record<string, string> = {
   subsumes: "Subsumes", enables: "Enables", reframes: "Reframes",
 };
 
-function getNodeRadius(node: SimNode, viewMode: ViewMode): number {
-  if (node.node_type === "concept") {
-    if (viewMode === "concepts") return ABSTRACTION_RADIUS[node.concept_fields?.abstraction_level ?? "operational"] ?? 10;
-    return 8;
+function getNodeRadius(node: SimNode, viewMode: ViewMode, nodeTypeConfigs: NodeTypeConfig[]): number {
+  const config = getNodeTypeConfig(nodeTypeConfigs, node.node_type);
+  if (config) {
+    return getConfigNodeRadius(config, node.properties, viewMode);
   }
-  return EMINENCE_RADIUS[node.thinker_fields?.eminence ?? "minor"] ?? 8;
+  // Legacy fallback
+  if (node.node_type === "concept") return 8;
+  return 10;
 }
 
-function getStreamColor(node: SimNode, streams: GraphIR["metadata"]["streams"]): string {
+function getStreamColor(node: SimNode, streams: GraphIR["metadata"]["streams"], overrides?: Record<string, string>): string {
+  if (overrides && node.stream && overrides[node.stream]) return overrides[node.stream];
   return streams.find((s) => s.id === node.stream)?.color ?? "#666";
 }
 
-function isNodePrimary(node: SimNode, viewMode: ViewMode): boolean {
+function isNodePrimary(node: SimNode, viewMode: ViewMode, nodeTypeConfigs: NodeTypeConfig[]): boolean {
   if (viewMode === "full") return true;
-  if (viewMode === "people") return node.node_type === "thinker";
-  if (viewMode === "concepts") return node.node_type === "concept";
-  return true;
+  // Legacy compat
+  if (viewMode === "people") {
+    const config = getNodeTypeConfig(nodeTypeConfigs, node.node_type);
+    return config ? config.shape === "circle" : node.node_type !== "concept";
+  }
+  if (viewMode === "concepts") {
+    const config = getNodeTypeConfig(nodeTypeConfigs, node.node_type);
+    return config ? config.shape === "rectangle" : node.node_type === "concept";
+  }
+  // Dynamic: viewMode is a node type id — show only nodes of that type
+  return node.node_type === viewMode;
 }
 
-export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, activeStreams }: Props) {
+function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): "circle" | "rectangle" {
+  const config = getNodeTypeConfig(nodeTypeConfigs, node.node_type);
+  if (config) return config.shape;
+  return node.node_type === "concept" ? "rectangle" : "circle";
+}
+
+export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, activeStreams, theme, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const transformRef = useRef(d3.zoomIdentity);
@@ -65,17 +89,29 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const isMarqueeRef = useRef(false);
   const canvasSizeRef = useRef({ width: 800, height: 600 });
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
-  // Track whether simulation has been initialized
   const simInitializedRef = useRef(false);
+  const streamIdsRef = useRef<string[]>([]);
+  const gensRef = useRef<number[]>([]);
+  const themeRef = useRef(theme);
+  const nodeTypeConfigsRef = useRef(nodeTypeConfigs);
+  const collapsedRef = useRef(collapsedNodes ?? new Set<string>());
+  const onToggleCollapseRef = useRef(onToggleCollapse);
+  const onSelectEdgeRef = useRef(onSelectEdge);
 
   useEffect(() => { onSelectNodeRef.current = onSelectNode; }, [onSelectNode]);
+  useEffect(() => { onSelectEdgeRef.current = onSelectEdge; }, [onSelectEdge]);
+  useEffect(() => { onToggleCollapseRef.current = onToggleCollapse; }, [onToggleCollapse]);
+  useEffect(() => { collapsedRef.current = collapsedNodes ?? new Set(); redraw(); }, [collapsedNodes]);
   useEffect(() => { dataRef.current = data; }, [data]);
+  useEffect(() => { themeRef.current = theme; redraw(); }, [theme]);
   useEffect(() => { viewModeRef.current = viewMode; redraw(); }, [viewMode]);
   useEffect(() => { revealedRef.current = revealedNodes; redraw(); }, [revealedNodes]);
   useEffect(() => { interactionRef.current = interactionMode; redraw(); }, [interactionMode]);
   useEffect(() => { edgeSourceRef.current = edgeSourceId; redraw(); }, [edgeSourceId]);
   useEffect(() => { activeStreamsRef.current = activeStreams; redraw(); }, [activeStreams]);
   useEffect(() => { redraw(); }, [selectedNodeId]);
+  useEffect(() => { nodeTypeConfigsRef.current = nodeTypeConfigs; redraw(); }, [nodeTypeConfigs]);
+  useEffect(() => { redraw(); }, [selectedEdgeKey]);
 
   function redraw() {
     const ctx = ctxRef.current;
@@ -84,7 +120,6 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     if (width && height) draw(ctx, width, height);
   }
 
-  // Resize canvas to fit container
   function resizeCanvas() {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -101,10 +136,30 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const ctx = canvas.getContext("2d")!;
     ctx.scale(2, 2);
     ctxRef.current = ctx;
-    redraw();
+
+    const simulation = simRef.current;
+    if (simulation && simInitializedRef.current) {
+      const sIds = streamIdsRef.current;
+      const gs = gensRef.current;
+
+      simulation.force("x", d3.forceX<SimNode>((d) => {
+        const idx = sIds.indexOf(d.stream ?? "");
+        if (idx >= 0) return width * (0.15 + (0.7 * idx) / Math.max(sIds.length - 1, 1));
+        return width / 2;
+      }).strength(0.3));
+
+      simulation.force("y", d3.forceY<SimNode>((d) => {
+        const idx = gs.indexOf(d.generation ?? 0);
+        if (idx >= 0) return height * (0.1 + (0.8 * idx) / Math.max(gs.length - 1, 1));
+        return height / 2;
+      }).strength(0.5));
+
+      simulation.alpha(0.3).restart();
+    } else {
+      redraw();
+    }
   }
 
-  // ResizeObserver to watch container size
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !canvas.parentElement) return;
@@ -122,10 +177,10 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
     resizeCanvas();
     const { width, height } = canvasSizeRef.current;
-    const ctx = ctxRef.current!;
 
+    const spread = Math.min(width, height) * 0.6;
     const nodes: SimNode[] = data.nodes.map((n) => ({
-      ...n, x: width / 2 + (Math.random() - 0.5) * 200, y: height / 2 + (Math.random() - 0.5) * 200,
+      ...n, x: width / 2 + (Math.random() - 0.5) * spread, y: height / 2 + (Math.random() - 0.5) * spread,
     }));
     const nodeMap = new Map(nodes.map((n) => [n.id, n]));
     const links: SimLink[] = data.edges
@@ -135,25 +190,61 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     nodesRef.current = nodes;
     linksRef.current = links;
 
-    const streamIds = [...new Set(data.nodes.map((n) => n.stream).filter(Boolean))];
+    const streamIds = [...new Set(data.nodes.map((n) => n.stream).filter(Boolean))] as string[];
+    streamIdsRef.current = streamIds;
     const streamX = new Map<string, number>();
-    streamIds.forEach((s, i) => { streamX.set(s!, width * (0.15 + (0.7 * i) / Math.max(streamIds.length - 1, 1))); });
+    streamIds.forEach((s, i) => { streamX.set(s, width * (0.15 + (0.7 * i) / Math.max(streamIds.length - 1, 1))); });
 
-    const gens = [...new Set(data.nodes.map((n) => n.generation).filter((g) => g != null))].sort((a, b) => a! - b!);
+    const gens = ([...new Set(data.nodes.map((n) => n.generation).filter((g) => g != null))] as number[]).sort((a, b) => a - b);
+    gensRef.current = gens;
     const genY = new Map<number, number>();
-    gens.forEach((g, i) => { genY.set(g!, height * (0.1 + (0.8 * i) / Math.max(gens.length - 1, 1))); });
+    gens.forEach((g, i) => { genY.set(g, height * (0.1 + (0.8 * i) / Math.max(gens.length - 1, 1))); });
 
+    const configs = nodeTypeConfigsRef.current;
     const simulation = d3.forceSimulation<SimNode>(nodes)
       .force("link", d3.forceLink<SimNode, SimLink>(links).id((d) => d.id).distance(80).strength(0.3))
-      .force("charge", d3.forceManyBody().strength(-200).distanceMax(300))
+      .force("charge", d3.forceManyBody().strength(-300).distanceMax(500))
       .force("x", d3.forceX<SimNode>((d) => streamX.get(d.stream ?? "") ?? width / 2).strength(0.3))
       .force("y", d3.forceY<SimNode>((d) => genY.get(d.generation ?? 0) ?? height / 2).strength(0.5))
-      .force("collide", d3.forceCollide<SimNode>((d) => getNodeRadius(d, "full") + 6))
+      .force("collide", d3.forceCollide<SimNode>((d) => getNodeRadius(d, "full", configs) + 6))
       .alphaDecay(0.02);
 
     simRef.current = simulation;
     simInitializedRef.current = true;
-    simulation.on("tick", () => draw(ctx, width, height));
+    simulation.on("tick", () => {
+      const c = ctxRef.current;
+      const { width: w, height: h } = canvasSizeRef.current;
+      if (c) draw(c, w, h);
+    });
+
+    // Fit graph to viewport after simulation settles
+    simulation.on("end", () => {
+      if (nodes.length === 0) return;
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (const n of nodes) {
+        if (n.x < minX) minX = n.x;
+        if (n.x > maxX) maxX = n.x;
+        if (n.y < minY) minY = n.y;
+        if (n.y > maxY) maxY = n.y;
+      }
+      const padding = 60;
+      const gw = maxX - minX + padding * 2;
+      const gh = maxY - minY + padding * 2;
+      const { width: cw, height: ch } = canvasSizeRef.current;
+      const scale = Math.min(cw / gw, ch / gh, 1.5);
+      const cx = (minX + maxX) / 2;
+      const cy = (minY + maxY) / 2;
+      const fitTransform = d3.zoomIdentity
+        .translate(cw / 2, ch / 2)
+        .scale(scale)
+        .translate(-cx, -cy);
+      if (zoomBehaviorRef.current && canvas) {
+        d3.select(canvas)
+          .transition()
+          .duration(400)
+          .call(zoomBehaviorRef.current.transform, fitTransform);
+      }
+    });
 
     // Zoom behavior
     const zoomBehavior = d3.zoom<HTMLCanvasElement, unknown>()
@@ -165,7 +256,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       })
       .on("zoom", (event) => {
         transformRef.current = event.transform;
-        draw(ctx, width, height);
+        const c = ctxRef.current;
+        const { width: w, height: h } = canvasSizeRef.current;
+        if (c) draw(c, w, h);
       });
 
     zoomBehaviorRef.current = zoomBehavior;
@@ -182,7 +275,6 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const node = findNodeAt(event.offsetX, event.offsetY);
       pointerDownNode = node;
 
-      // Shift+drag on empty space = marquee zoom
       if (!node && event.shiftKey) {
         isMarqueeRef.current = true;
         const t = transformRef.current;
@@ -208,7 +300,6 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     });
 
     canvas.addEventListener("pointermove", (event) => {
-      // Marquee zoom drag
       if (isMarqueeRef.current && marqueeRef.current) {
         const t = transformRef.current;
         marqueeRef.current.endX = (event.offsetX - t.x) / t.k;
@@ -238,12 +329,31 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const newHovered = hitNode?.id ?? null;
       let needsRedraw = false;
 
+      // Check if hovering over a +/- indicator
+      let hoverIndicator = false;
+      if (!hitNode) {
+        const t = transformRef.current;
+        const mx = (event.offsetX - t.x) / t.k;
+        const my = (event.offsetY - t.y) / t.k;
+        const configs = nodeTypeConfigsRef.current;
+        for (const node of nodesRef.current) {
+          const r = getNodeRadius(node, viewModeRef.current, configs);
+          const indicatorR = Math.max(5, 3 / t.k);
+          const ix = node.x + r + indicatorR + 2;
+          const iy = node.y - r;
+          if (Math.sqrt((mx - ix) ** 2 + (my - iy) ** 2) <= indicatorR * 2.5) {
+            hoverIndicator = true;
+            break;
+          }
+        }
+      }
+
       if (newHovered !== hoveredRef.current) {
         hoveredRef.current = newHovered;
-        const isEdgeMode = interactionRef.current !== "normal";
-        canvas.style.cursor = isEdgeMode ? "crosshair" : newHovered ? "pointer" : "grab";
         needsRedraw = true;
       }
+      const isEdgeMode = interactionRef.current !== "normal";
+      canvas.style.cursor = isEdgeMode ? "crosshair" : (newHovered || hoverIndicator) ? "pointer" : "grab";
 
       // Edge hover tooltip
       const tooltip = tooltipRef.current;
@@ -279,7 +389,6 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     });
 
     canvas.addEventListener("pointerup", (event) => {
-      // Marquee zoom complete
       if (isMarqueeRef.current && marqueeRef.current) {
         isMarqueeRef.current = false;
         const m = marqueeRef.current;
@@ -338,9 +447,37 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         return;
       }
 
-      // Click on empty canvas
       if (!isDraggingRef.current && !pointerDownNode) {
-        onSelectNodeRef.current(null);
+        // Check if the click was on a +/- collapse indicator (outside node radius)
+        const t = transformRef.current;
+        const mx = (event.offsetX - t.x) / t.k;
+        const my = (event.offsetY - t.y) / t.k;
+        let hitIndicator = false;
+        if (onToggleCollapseRef.current) {
+          const configs = nodeTypeConfigsRef.current;
+          for (const node of nodesRef.current) {
+            const r = getNodeRadius(node, viewModeRef.current, configs);
+            const indicatorR = Math.max(5, 3 / t.k);
+            const ix = node.x + r + indicatorR + 2;
+            const iy = node.y - r;
+            const dist = Math.sqrt((mx - ix) ** 2 + (my - iy) ** 2);
+            if (dist <= indicatorR * 2.5) {
+              onToggleCollapseRef.current(node.id);
+              hitIndicator = true;
+              break;
+            }
+          }
+        }
+        if (!hitIndicator) {
+          // Check if click hit an edge
+          const edgeHit = findEdgeAt(event.offsetX, event.offsetY);
+          if (edgeHit && onSelectEdgeRef.current) {
+            onSelectEdgeRef.current(edgeHit.edge, { x: event.offsetX, y: event.offsetY });
+          } else {
+            if (onSelectEdgeRef.current) onSelectEdgeRef.current(null);
+            onSelectNodeRef.current(null);
+          }
+        }
       }
       pointerDownNode = null;
     });
@@ -348,7 +485,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     return () => { simulation.stop(); simInitializedRef.current = false; };
   }, []);
 
-  // Refactor: update simulation in-place when data changes (after initial setup)
+  // Update simulation in-place when data changes
   useEffect(() => {
     if (!simInitializedRef.current) return;
     const simulation = simRef.current;
@@ -358,23 +495,21 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const newNodeIds = new Set(data.nodes.map((n) => n.id));
     const existingNodeIds = new Set(nodesRef.current.map((n) => n.id));
 
-    // Update existing nodes in place (preserve positions)
     for (const n of data.nodes) {
       const existing = existingMap.get(n.id);
       if (existing) {
-        // Update data fields but keep position
         existing.name = n.name;
         existing.node_type = n.node_type;
         existing.generation = n.generation;
         existing.stream = n.stream;
         existing.thinker_fields = n.thinker_fields;
         existing.concept_fields = n.concept_fields;
+        existing.properties = n.properties;
         existing.content = n.content;
         existing.notes = n.notes;
       }
     }
 
-    // Add new nodes
     const { width, height } = canvasSizeRef.current;
     const addedNodes: SimNode[] = data.nodes
       .filter((n) => !existingNodeIds.has(n.id))
@@ -384,18 +519,15 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         y: height / 2 + (Math.random() - 0.5) * 200,
       }));
 
-    // Remove deleted nodes
     const updatedNodes = nodesRef.current.filter((n) => newNodeIds.has(n.id)).concat(addedNodes);
     nodesRef.current = updatedNodes;
 
-    // Rebuild links
     const nodeMap = new Map(updatedNodes.map((n) => [n.id, n]));
     const newLinks: SimLink[] = data.edges
       .filter((e) => nodeMap.has(e.from) && nodeMap.has(e.to))
       .map((e) => ({ source: e.from, target: e.to, edge: e }));
     linksRef.current = newLinks;
 
-    // Update simulation
     simulation.nodes(updatedNodes);
     const linkForce = simulation.force("link") as d3.ForceLink<SimNode, SimLink>;
     if (linkForce) linkForce.links(newLinks);
@@ -414,11 +546,12 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const mode = viewModeRef.current;
     const revealed = revealedRef.current;
     const isAdding = interactionRef.current !== "normal";
+    const configs = nodeTypeConfigsRef.current;
 
     for (let i = nodesRef.current.length - 1; i >= 0; i--) {
       const node = nodesRef.current[i];
-      if (!isAdding && !isNodePrimary(node, mode) && !revealed.has(node.id)) continue;
-      const r = getNodeRadius(node, mode);
+      if (!isAdding && !isNodePrimary(node, mode, configs) && !revealed.has(node.id)) continue;
+      const r = getNodeRadius(node, mode, configs);
       const dx = x - node.x;
       const dy = y - node.y;
       if (dx * dx + dy * dy < (r + 4) * (r + 4)) return node;
@@ -458,6 +591,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const currentData = dataRef.current;
     const hoveredEdge = hoveredEdgeRef.current;
     const streams = activeStreamsRef.current;
+    const th = themeRef.current;
+    const configs = nodeTypeConfigsRef.current;
     ctx.clearRect(0, 0, width, height);
     ctx.save();
     ctx.translate(t.x, t.y);
@@ -479,12 +614,16 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       });
     }
 
+    // Compute collapse state (works for all edge types, not just directed)
+    const collapsed = collapsedRef.current;
+    const { hasChildren, hiddenByCollapse } = computeCollapseState(currentData.edges, collapsed);
+
     const isVisible = (node: SimNode) => {
+      if (hiddenByCollapse.has(node.id)) return false;
       if (isAdding) return true;
-      return isNodePrimary(node, mode) || revealed.has(node.id);
+      return isNodePrimary(node, mode, configs) || revealed.has(node.id);
     };
 
-    // Check if node is in an active stream
     const isStreamActive = (node: SimNode) => {
       if (!streams) return true;
       return node.stream ? streams.has(node.stream) : false;
@@ -500,6 +639,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const isHighlighted = connectedToHighlight.size === 0 || (connectedToHighlight.has(source.id) && connectedToHighlight.has(target.id));
       const isRevealed = !isAdding && (revealed.has(source.id) || revealed.has(target.id));
       const isEdgeHovered = hoveredEdge === l;
+      const isEdgeSelected = selectedEdgeKey === `${source.id}|${target.id}` || selectedEdgeKey === `${target.id}|${source.id}`;
       const edgeStreamDimmed = !isStreamActive(source) && !isStreamActive(target);
 
       ctx.beginPath();
@@ -510,16 +650,20 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       else if (visual.style === "dotted") ctx.setLineDash([2, 4]);
       else ctx.setLineDash([]);
 
-      if (isEdgeHovered) {
-        ctx.strokeStyle = "#fff";
+      // Weight scales line thickness: weight 1.0 = normal, 2.0 = double, etc.
+      const weightScale = Math.max(0.3, Math.min(4, l.edge.weight ?? 1));
+
+      if (isEdgeHovered || isEdgeSelected) {
+        ctx.strokeStyle = th.canvasEdgeHover;
         ctx.globalAlpha = 0.9;
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 2.5 * weightScale;
       } else {
-        ctx.strokeStyle = visual.color ?? (isHighlighted ? "#555" : "#333");
+        const edgeColor = th.edgeColorOverrides[l.edge.edge_type] ?? visual.color;
+        ctx.strokeStyle = edgeColor ?? (isHighlighted ? th.canvasEdgeDefault : th.canvasEdgeDim);
         let alpha = isHighlighted ? 0.8 : isRevealed ? 0.4 : 0.15;
         if (edgeStreamDimmed) alpha = 0.08;
         ctx.globalAlpha = alpha;
-        ctx.lineWidth = isHighlighted ? 1.5 : 0.8;
+        ctx.lineWidth = (isHighlighted ? 1.5 : 0.8) * weightScale;
       }
       ctx.stroke();
       ctx.setLineDash([]);
@@ -528,7 +672,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       // Arrowhead
       if (visual.show_arrow) {
         const angle = Math.atan2(target.y - source.y, target.x - source.x);
-        const r = getNodeRadius(target, mode) + 4;
+        const r = getNodeRadius(target, mode, configs) + 4;
         const tipX = target.x - Math.cos(angle) * r;
         const tipY = target.y - Math.sin(angle) * r;
         ctx.beginPath();
@@ -536,7 +680,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         ctx.lineTo(tipX - 8 * Math.cos(angle - 0.4), tipY - 8 * Math.sin(angle - 0.4));
         ctx.lineTo(tipX - 8 * Math.cos(angle + 0.4), tipY - 8 * Math.sin(angle + 0.4));
         ctx.closePath();
-        ctx.fillStyle = isEdgeHovered ? "#fff" : (visual.color ?? "#555");
+        ctx.fillStyle = isEdgeHovered ? th.canvasEdgeHover : (th.edgeColorOverrides[l.edge.edge_type] ?? visual.color ?? th.canvasEdgeDefault);
         let arrowAlpha = isEdgeHovered ? 0.9 : (isHighlighted ? 0.8 : 0.15);
         if (edgeStreamDimmed) arrowAlpha = 0.08;
         ctx.globalAlpha = arrowAlpha;
@@ -563,9 +707,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         ctx.font = "9px -apple-system, sans-serif";
         ctx.textAlign = "center";
         const tw = ctx.measureText(label).width;
-        ctx.fillStyle = "rgba(26, 26, 46, 0.9)";
+        ctx.fillStyle = th.canvasLabelBg;
         ctx.fillRect(-tw / 2 - 3, -5, tw + 6, 11);
-        ctx.fillStyle = visual.color ?? "#999";
+        ctx.fillStyle = th.edgeColorOverrides[l.edge.edge_type] ?? visual.color ?? th.canvasEdgeDefault;
         ctx.globalAlpha = edgeStreamDimmed ? 0.15 : 0.9;
         ctx.fillText(label, 0, 3);
         ctx.globalAlpha = 1;
@@ -577,9 +721,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     nodesRef.current.forEach((node) => {
       if (!isVisible(node)) return;
 
-      const r = getNodeRadius(node, mode);
-      const color = getStreamColor(node, currentData.metadata.streams);
-      const isPrimary = isAdding || isNodePrimary(node, mode);
+      const r = getNodeRadius(node, mode, configs);
+      const color = getStreamColor(node, currentData.metadata.streams, th.streamColorOverrides);
+      const isPrimary = isAdding || isNodePrimary(node, mode, configs);
       const isRevealed = !isPrimary && revealed.has(node.id);
       const isHighlighted = connectedToHighlight.size === 0 || connectedToHighlight.has(node.id);
       const isSelected = node.id === selected;
@@ -592,8 +736,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       ctx.globalAlpha = alpha;
 
       const effectiveR = isRevealed ? r * 0.7 : r;
+      const shape = getNodeShape(node, configs);
 
-      if (node.node_type === "concept") {
+      if (shape === "rectangle") {
         const w = effectiveR * 2.5;
         const h = effectiveR * 1.6;
         ctx.beginPath();
@@ -601,12 +746,12 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         ctx.fillStyle = color;
         ctx.fill();
         if (isSelected || isHovered || isEdgeSource) {
-          ctx.strokeStyle = isEdgeSource ? "#4AD94A" : "#fff";
+          ctx.strokeStyle = isEdgeSource ? th.canvasEdgeSourceStroke : th.canvasSelectionStroke;
           ctx.lineWidth = 2;
           ctx.stroke();
-        } else if (!isAdding && mode === "concepts" && node.concept_fields?.status === "contested") {
+        } else if (!isAdding && mode === "concepts" && node.properties?.status === "contested") {
           ctx.setLineDash([3, 3]);
-          ctx.strokeStyle = "#aaa";
+          ctx.strokeStyle = th.canvasLabelDim;
           ctx.lineWidth = 1;
           ctx.stroke();
           ctx.setLineDash([]);
@@ -616,14 +761,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         ctx.arc(node.x, node.y, effectiveR, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
-        if (node.thinker_fields?.is_placeholder) {
-          ctx.setLineDash([3, 3]);
-          ctx.strokeStyle = "#888";
-          ctx.lineWidth = 2;
-          ctx.stroke();
-          ctx.setLineDash([]);
-        } else if (isSelected || isHovered || isEdgeSource) {
-          ctx.strokeStyle = isEdgeSource ? "#4AD94A" : "#fff";
+        if (isSelected || isHovered || isEdgeSource) {
+          ctx.strokeStyle = isEdgeSource ? th.canvasEdgeSourceStroke : th.canvasSelectionStroke;
           ctx.lineWidth = 2;
           ctx.stroke();
         }
@@ -631,45 +770,68 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
       // Notes indicator
       if (node.notes && t.k > 0.5) {
-        ctx.fillStyle = "#f8c88a";
+        ctx.fillStyle = th.canvasNotesIndicator;
         ctx.beginPath();
         ctx.arc(node.x + effectiveR + 2, node.y - effectiveR - 2, 3, 0, Math.PI * 2);
         ctx.fill();
       }
 
       // Labels
-      if (t.k > 0.4 || node.thinker_fields?.eminence === "dominant") {
+      const sizeFieldValue = node.properties?.[configs.find((c) => c.id === node.node_type)?.size_field ?? ""];
+      const isDominant = sizeFieldValue === "dominant";
+      if (t.k > 0.4 || isDominant) {
         const fontSize = Math.max(8, Math.min(16, 11 * Math.sqrt(t.k)));
         ctx.font = `${fontSize}px -apple-system, sans-serif`;
         ctx.textAlign = "center";
         const baseY = node.y + effectiveR + fontSize + 2;
 
-        const showInst = mode === "people" && !isAdding && node.thinker_fields?.institutional_base && t.k > 0.7;
-        const instText = showInst ? node.thinker_fields!.institutional_base! : "";
-        const instFS = fontSize - 2;
+        const tagsValue = node.properties?.tags;
+        const showTags = mode === "people" && !isAdding && tagsValue && t.k > 0.7;
+        const tagsText = showTags ? String(tagsValue) : "";
+        const tagsFS = fontSize - 2;
 
         const nameW = ctx.measureText(node.name).width;
         let bgW = nameW + 6;
         let bgH = fontSize + 2;
-        if (showInst) {
-          ctx.font = `${instFS}px -apple-system, sans-serif`;
-          bgW = Math.max(bgW, ctx.measureText(instText).width + 6);
-          bgH += instFS + 2;
+        if (showTags) {
+          ctx.font = `${tagsFS}px -apple-system, sans-serif`;
+          bgW = Math.max(bgW, ctx.measureText(tagsText).width + 6);
+          bgH += tagsFS + 2;
           ctx.font = `${fontSize}px -apple-system, sans-serif`;
         }
 
-        ctx.fillStyle = "rgba(26, 26, 46, 0.85)";
+        ctx.fillStyle = th.canvasLabelBg;
         ctx.fillRect(node.x - bgW / 2, baseY - fontSize + 1, bgW, bgH);
-        let labelAlpha = isHighlighted ? (isRevealed ? "#aaa" : "#ddd") : "#666";
-        if (!streamActive) labelAlpha = "#444";
-        ctx.fillStyle = labelAlpha;
+        let labelColor = isHighlighted ? (isRevealed ? th.canvasLabelDim : th.canvasLabelHighlight) : th.canvasLabelDim;
+        if (!streamActive) labelColor = th.canvasLabelDim;
+        ctx.fillStyle = labelColor;
         ctx.fillText(node.name, node.x, baseY);
 
-        if (showInst) {
-          ctx.font = `${instFS}px -apple-system, sans-serif`;
-          ctx.fillStyle = isHighlighted ? "#999" : "#555";
-          ctx.fillText(instText, node.x, baseY + instFS + 2);
+        if (showTags) {
+          ctx.font = `${tagsFS}px -apple-system, sans-serif`;
+          ctx.fillStyle = isHighlighted ? th.canvasLabelDim : th.canvasLabelDim;
+          ctx.fillText(tagsText, node.x, baseY + tagsFS + 2);
         }
+      }
+
+      // Draw +/- collapse indicator for nodes with directed children
+      if (hasChildren.has(node.id) && t.k > 0.4) {
+        const isCollapsed = collapsed.has(node.id);
+        const indicatorR = Math.max(5, 3 / t.k);
+        const ix = node.x + effectiveR + indicatorR + 2;
+        const iy = node.y - effectiveR;
+        ctx.beginPath();
+        ctx.arc(ix, iy, indicatorR, 0, Math.PI * 2);
+        ctx.fillStyle = th.bgPanel;
+        ctx.fill();
+        ctx.strokeStyle = th.textMuted;
+        ctx.lineWidth = 1 / t.k;
+        ctx.stroke();
+        ctx.font = `bold ${indicatorR * 1.4}px -apple-system, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = th.textPrimary;
+        ctx.fillText(isCollapsed ? "+" : "\u2212", ix, iy);
       }
 
       ctx.globalAlpha = 1;
@@ -679,7 +841,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     if (isMarqueeRef.current && marqueeRef.current) {
       const m = marqueeRef.current;
       ctx.setLineDash([6, 4]);
-      ctx.strokeStyle = "#4A90D9";
+      ctx.strokeStyle = th.accent;
       ctx.lineWidth = 1.5 / t.k;
       ctx.strokeRect(
         Math.min(m.startX, m.endX),

@@ -1,3 +1,70 @@
+// --- Template / Config types ---
+
+export type FieldType = "text" | "select" | "textarea";
+
+export interface FieldConfig {
+  key: string;
+  label: string;
+  type: FieldType;
+  options?: string[];    // for select type
+  required?: boolean;
+}
+
+export interface NodeTypeConfig {
+  id: string;            // e.g. "person"
+  label: string;         // e.g. "Person"
+  shape: "circle" | "rectangle";
+  icon?: string;         // single char for sidebar, defaults to label[0]
+  size_field?: string;   // key of the field that drives node size
+  size_map?: Record<string, number>;  // field value → radius
+  fields: FieldConfig[];
+  label_overrides?: Record<string, string>;  // field key → custom label for this type
+}
+
+export interface EdgeTypeConfig {
+  id: string;            // e.g. "chain"
+  label: string;         // e.g. "Chain"
+  color?: string;        // display color
+  directed: boolean;     // has arrow
+  style?: string;        // "solid" | "dashed" | "dotted"
+}
+
+export interface TaxonomyTemplate {
+  title: string;
+  description?: string;
+  streams: Stream[];
+  generations: Generation[];
+  node_types: NodeTypeConfig[];
+  edge_types?: EdgeTypeConfig[];
+}
+
+/** .cm data file format (v2 JSON) */
+export interface ConceptMapData {
+  version: string;
+  template: string;        // .cmt filename or path
+  title?: string;
+  streams?: Stream[];
+  generations?: Generation[];
+  node_types?: NodeTypeConfig[];
+  edge_types?: EdgeTypeConfig[];
+  nodes: DataNode[];
+  edges: GraphEdge[];
+  external_shocks: ExternalShock[];
+  structural_observations: string[];
+}
+
+export interface DataNode {
+  id: string;
+  node_type: string;       // matches NodeTypeConfig.id
+  name: string;
+  generation?: number;
+  stream?: string;
+  properties: Record<string, string | string[] | number | undefined>;
+  notes?: string;
+}
+
+// --- Runtime types ---
+
 export interface GraphIR {
   version: string;
   metadata: Metadata;
@@ -14,6 +81,7 @@ export interface Metadata {
   external_shocks: ExternalShock[];
   structural_observations: string[];
   network_stats?: NetworkStats;
+  template?: TaxonomyTemplate;  // merged at runtime after load
 }
 
 export interface Generation {
@@ -43,12 +111,15 @@ export interface NetworkStats {
 
 export interface GraphNode {
   id: string;
-  node_type: "thinker" | "concept";
+  node_type: string;
   name: string;
   generation?: number;
   stream?: string;
   thinker_fields?: ThinkerFields;
   concept_fields?: ConceptFields;
+  /** Generic key-value fields for non-thinker/concept node types (from Rust parser). */
+  fields?: Record<string, string>;
+  properties?: Record<string, string | string[] | number | undefined>;
   content?: NodeContent;
   notes?: string;
 }
@@ -83,7 +154,7 @@ export interface GraphEdge {
   from: string;
   to: string;
   edge_type: string;
-  edge_category: "thinker_thinker" | "thinker_concept" | "concept_concept";
+  edge_category: "thinker_thinker" | "thinker_concept" | "concept_concept" | "generic";
   directed: boolean;
   weight: number;
   note?: string;

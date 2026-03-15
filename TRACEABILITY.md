@@ -102,6 +102,17 @@
 | REQ-031 | AC-031-01..05 | `src/__tests__/center-on-node.test.ts` | — | pending |
 | REQ-032 | AC-032-01..07 | `src/__tests__/summary-panel.test.ts` | — | pending |
 
+## UI Features (New)
+
+| Spec | Criteria | Test File | Test Name | Status |
+|------|----------|-----------|-----------|--------|
+| REQ-047 | AC-047-01..08 (edge click editing) | `src/__tests__/edge-popover.test.tsx` | 5 tests | passing |
+| REQ-048 | AC-048-01..07 (unified fields) | `src/__tests__/taxonomy-wizard.test.tsx` | `shared fields`, `label overrides`, `backward compat` | passing |
+| REQ-049 | AC-049-01..03 (start screen map text) | — | — | pending (requires integration test) |
+| REQ-050 | AC-050-01..05 (edge types persisted) | `src/__tests__/migration.test.ts` | `dataFromGraphIR includes edge_types` | passing |
+| REQ-051 | AC-051-01..03 (activity bar labels) | `src/__tests__/activity-bar.test.tsx` | `displays custom icons from node type configs` | passing |
+| REQ-052 | AC-052-01..04 (graph layout) | — | — | pending (canvas rendering, manual verification) |
+
 ## Principle Compliance
 
 | Spec | Architecture | Development | Security |
