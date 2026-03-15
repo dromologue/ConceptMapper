@@ -59,6 +59,8 @@ export interface TaxonomyWizardResult {
   generations: Generation[];
   node_types: NodeTypeConfig[];
   edge_types?: EdgeTypeConfig[];
+  stream_label?: string;
+  generation_label?: string;
 }
 
 /** Optional initial data for edit mode — pre-populates all fields. */
@@ -69,6 +71,8 @@ export interface TaxonomyWizardInitial {
   generations: Generation[];
   node_types?: NodeTypeConfig[];
   edge_types?: EdgeTypeConfig[];
+  stream_label?: string;
+  generation_label?: string;
 }
 
 interface Props {
@@ -123,6 +127,8 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
   // Step 1
   const [title, setTitle] = useState(initialData?.title ?? "");
   const [description, setDescription] = useState(initialData?.description ?? "");
+  const [streamLabel, setStreamLabel] = useState(initialData?.stream_label ?? "Categories");
+  const [generationLabel, setGenerationLabel] = useState(initialData?.generation_label ?? "Horizons");
 
   // Step 2: Shared Fields + Node Types
   const [sharedFields, setSharedFields] = useState<WizardField[]>(() => {
@@ -252,8 +258,10 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
       generations: resultGenerations,
       node_types: buildNodeTypeConfigs(),
       edge_types: resultEdgeTypes,
+      stream_label: streamLabel.trim() || undefined,
+      generation_label: generationLabel.trim() || undefined,
     };
-  }, [title, description, streams, generations, edgeTypes, buildNodeTypeConfigs]);
+  }, [title, description, streams, generations, edgeTypes, buildNodeTypeConfigs, streamLabel, generationLabel]);
 
   const handleCreate = useCallback(() => {
     onComplete(buildResult());
@@ -408,6 +416,26 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
                 placeholder="A brief description of this taxonomy..."
               />
             </div>
+            <div className="wizard-node-type-row">
+              <div className="wizard-field wizard-field-inline">
+                <label>Grouping label</label>
+                <input
+                  type="text"
+                  value={streamLabel}
+                  onChange={(e) => setStreamLabel(e.target.value)}
+                  placeholder="Category"
+                />
+              </div>
+              <div className="wizard-field wizard-field-inline">
+                <label>Timeline label</label>
+                <input
+                  type="text"
+                  value={generationLabel}
+                  onChange={(e) => setGenerationLabel(e.target.value)}
+                  placeholder="Horizon"
+                />
+              </div>
+            </div>
           </>
         )}
 
@@ -521,7 +549,7 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
         {/* Step 3: Streams */}
         {step === 3 && (
           <>
-            <div className="wizard-step-label">Define Categories</div>
+            <div className="wizard-step-label">Define {streamLabel || "Categories"}</div>
             <div className="wizard-list-header">
               <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
                 Categories group related nodes (e.g. disciplines, themes, schools of thought)
@@ -568,7 +596,7 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
         {/* Step 4: Generations */}
         {step === 4 && (
           <>
-            <div className="wizard-step-label">Define Horizons</div>
+            <div className="wizard-step-label">Define {generationLabel || "Horizons"}</div>
             <div className="wizard-list-header">
               <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
                 Horizons are time periods or phases (e.g. 1950–1970, Founders)

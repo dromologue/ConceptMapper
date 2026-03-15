@@ -31,7 +31,7 @@ describe("DetailPanel — Person Node", () => {
 
   it("displays type badge from config", () => {
     render(<DetailPanel node={argyris} edges={personEdges} {...defaultDetailProps} />);
-    expect(screen.getByText("Person")).toBeInTheDocument();
+    expect(screen.getAllByText("Person").length).toBeGreaterThanOrEqual(1);
   });
 
   // AC-030-03: Importance editable as dropdown
@@ -97,7 +97,7 @@ describe("DetailPanel — Concept Node", () => {
 
   it("shows concept type badge", () => {
     render(<DetailPanel node={doubleLoop} edges={conceptEdges} {...defaultDetailProps} />);
-    expect(screen.getByText("Concept")).toBeInTheDocument();
+    expect(screen.getAllByText("Concept").length).toBeGreaterThanOrEqual(1);
   });
 });
 

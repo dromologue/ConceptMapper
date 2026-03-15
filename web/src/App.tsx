@@ -481,6 +481,8 @@ function AppInner() {
       generations: data.generations,
       node_types: data.node_types,
       edge_types: data.edge_types,
+      stream_label: data.stream_label,
+      generation_label: data.generation_label,
     };
 
     if (graphData && taxonomyEditData) {
@@ -553,6 +555,8 @@ function AppInner() {
       generations: graphData.metadata.generations,
       node_types: nodeTypeConfigs,
       edge_types: template?.edge_types,
+      stream_label: template?.stream_label,
+      generation_label: template?.generation_label,
     });
     setShowTaxonomyWizard(true);
   }, [graphData, nodeTypeConfigs, template]);
@@ -566,6 +570,8 @@ function AppInner() {
       generations: data.generations,
       node_types: data.node_types,
       edge_types: data.edge_types,
+      stream_label: data.stream_label,
+      generation_label: data.generation_label,
     };
 
     if (isNativeApp) {
@@ -576,6 +582,8 @@ function AppInner() {
         generations: data.generations,
         node_types: data.node_types,
         edge_types: data.edge_types,
+        stream_label: data.stream_label,
+        generation_label: data.generation_label,
       }, null, 2);
       sendToSwift("saveTemplate", JSON.stringify({ content: templateJson, title: data.title }));
     }
@@ -981,6 +989,7 @@ function AppInner() {
                 streams={graphData.metadata.streams}
                 generations={graphData.metadata.generations}
                 nodeTypeConfigs={nodeTypeConfigs}
+                template={template}
                 onNodeUpdate={handleNodeUpdate}
                 onNavigateToNode={handleNavigateToNode}
                 onOpenNotes={() => setNotesOpen(!notesOpen)}

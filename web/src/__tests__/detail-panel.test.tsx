@@ -31,7 +31,7 @@ describe("DetailPanel — Person Node", () => {
 
   it("displays type badge from config", () => {
     render(<DetailPanel node={argyris} edges={personEdges} {...defaultDetailProps} />);
-    expect(screen.getByText("Person")).toBeInTheDocument();
+    expect(screen.getAllByText("Person").length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows importance as editable dropdown from config", () => {
@@ -105,7 +105,7 @@ describe("DetailPanel — Concept Node", () => {
 
   it("shows Concept type badge", () => {
     render(<DetailPanel node={doubleLoop} edges={conceptEdges} {...defaultDetailProps} />);
-    expect(screen.getByText("Concept")).toBeInTheDocument();
+    expect(screen.getAllByText("Concept").length).toBeGreaterThanOrEqual(1);
   });
 });
 

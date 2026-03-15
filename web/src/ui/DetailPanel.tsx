@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { GraphNode, GraphEdge, Stream, Generation, NodeTypeConfig } from "../types/graph-ir";
+import type { GraphNode, GraphEdge, Stream, Generation, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
 import { getNodeTypeConfig } from "../migration";
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   streams: Stream[];
   generations: Generation[];
   nodeTypeConfigs: NodeTypeConfig[];
+  template?: TaxonomyTemplate | null;
   onClose?: () => void;
   onNodeUpdate: (nodeId: string, updates: Partial<GraphNode>) => void;
   onNavigateToNode: (nodeId: string) => void;
@@ -77,9 +78,14 @@ function DebouncedTextarea({ label, value, nodeId, onCommit }: {
 }
 
 export function DetailPanel({
-  node, edges, nodes, streams, generations, nodeTypeConfigs,
+  node, edges, nodes, streams, generations, nodeTypeConfigs, template,
   onNodeUpdate, onNavigateToNode, onOpenNotes, notesOpen, style,
 }: Props) {
+  // Use singular form for field labels — strip trailing 's' if present
+  const rawStreamLabel = template?.stream_label || "Category";
+  const rawGenLabel = template?.generation_label || "Horizon";
+  const streamLabel = rawStreamLabel.endsWith("s") ? rawStreamLabel.slice(0, -1) : rawStreamLabel;
+  const generationLabel = rawGenLabel.endsWith("s") ? rawGenLabel.slice(0, -1) : rawGenLabel;
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
   const config = getNodeTypeConfig(nodeTypeConfigs, node.node_type);
 
@@ -153,17 +159,22 @@ export function DetailPanel({
           </div>
           {attrsOpen && (
             <div className="detail-section-body">
-              {/* Stream (built-in) */}
+              {/* Node Type (read-only, prominent) */}
               <div className="editor-field">
-                <label>Stream</label>
+                <label>Type</label>
+                <span className="editor-field-value">{config?.label ?? node.node_type}</span>
+              </div>
+              {/* Stream / Category (built-in) */}
+              <div className="editor-field">
+                <label>{streamLabel}</label>
                 <select value={node.stream ?? ""} onChange={(e) => onNodeUpdate(node.id, { stream: e.target.value || undefined })}>
                   <option value="">--</option>
                   {streams.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
-              {/* Generation (built-in) */}
+              {/* Generation / Horizon (built-in) */}
               <div className="editor-field">
-                <label>Generation</label>
+                <label>{generationLabel}</label>
                 <select value={node.generation ?? ""} onChange={(e) =>
                   onNodeUpdate(node.id, { generation: e.target.value ? Number(e.target.value) : undefined })}>
                   <option value="">--</option>
@@ -238,6 +249,11 @@ export function DetailPanel({
                       <button className="link-btn" onClick={() => onNavigateToNode(otherId)}>
                         {otherNode?.name ?? otherId}
                       </button>
+                      {otherNode && (
+                        <span className="edge-other-type">
+                          {getNodeTypeConfig(nodeTypeConfigs, otherNode.node_type)?.label ?? otherNode.node_type}
+                        </span>
+                      )}
                       {e.note && <div className="edge-note">{e.note}</div>}
                     </div>
                   );

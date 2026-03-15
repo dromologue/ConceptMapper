@@ -433,7 +433,25 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           dragNodeRef.current = null;
           canvas.releasePointerCapture(event.pointerId);
 
-          if (clickedNode) {
+          // Check if the click was on a collapse indicator near the node
+          let hitIndicator = false;
+          if (clickedNode && onToggleCollapseRef.current) {
+            const t = transformRef.current;
+            const mx = (event.offsetX - t.x) / t.k;
+            const my = (event.offsetY - t.y) / t.k;
+            const configs = nodeTypeConfigsRef.current;
+            const r = getNodeRadius(clickedNode as SimNode, viewModeRef.current, configs);
+            const indicatorR = Math.max(5, 3 / t.k);
+            const ix = clickedNode.x + r + indicatorR + 2;
+            const iy = clickedNode.y - r;
+            const dist = Math.sqrt((mx - ix) ** 2 + (my - iy) ** 2);
+            if (dist <= indicatorR * 2.5) {
+              onToggleCollapseRef.current(clickedNode.id);
+              hitIndicator = true;
+            }
+          }
+
+          if (!hitIndicator && clickedNode) {
             const originalNode = dataRef.current.nodes.find((n) => n.id === clickedNode.id) ?? null;
             onSelectNodeRef.current(originalNode);
           }
