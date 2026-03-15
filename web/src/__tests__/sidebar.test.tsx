@@ -36,7 +36,7 @@ describe("Sidebar", () => {
 
   it("shows categories section", () => {
     render(<Sidebar {...defaultProps} />);
-    expect(screen.getByText("Categories")).toBeInTheDocument();
+    expect(screen.getByText("Streams")).toBeInTheDocument();
     expect(screen.getByText("Psychology")).toBeInTheDocument();
     expect(screen.getByText("Sociology")).toBeInTheDocument();
   });

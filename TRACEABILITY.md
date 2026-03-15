@@ -112,6 +112,9 @@
 | REQ-050 | AC-050-01..05 (edge types persisted) | `src/__tests__/migration.test.ts` | `dataFromGraphIR includes edge_types` | passing |
 | REQ-051 | AC-051-01..03 (activity bar labels) | `src/__tests__/activity-bar.test.tsx` | `displays custom icons from node type configs` | passing |
 | REQ-052 | AC-052-01..04 (graph layout) | — | — | pending (canvas rendering, manual verification) |
+| REQ-053 | AC-053-01..05 (notes persistence) | `src/__tests__/migration.test.ts` | `preserves node notes through round-trip` | passing |
+| REQ-054 | AC-054-01..03 (sidebar template labels) | `src/__tests__/sidebar.test.tsx` | `shows categories section` (now "Streams") | passing |
+| REQ-041 | AC-041-05..06 (weight round-trip) | `src/__tests__/migration.test.ts` | `preserves edge weight through round-trip` | passing |
 
 ## Principle Compliance
 

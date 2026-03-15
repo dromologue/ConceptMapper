@@ -133,4 +133,33 @@ describe("dataFromGraphIR", () => {
     const extracted = dataFromGraphIR(ir);
     expect(extracted.edge_types).toBeUndefined();
   });
+
+  it("preserves node notes through round-trip", () => {
+    const { template, data } = migrateFromParser(minimalParsed);
+    // Add notes to a node
+    data.nodes[0].notes = "Important research notes";
+    const ir = graphIRFromData(template, data);
+    expect(ir.nodes[0].notes).toBe("Important research notes");
+    const extracted = dataFromGraphIR(ir);
+    expect(extracted.nodes[0].notes).toBe("Important research notes");
+  });
+
+  it("preserves edge weight through round-trip", () => {
+    const { template, data } = migrateFromParser(minimalParsed);
+    // Modify edge weight
+    data.edges[0].weight = 2.5;
+    const ir = graphIRFromData(template, data);
+    expect(ir.edges[0].weight).toBe(2.5);
+    const extracted = dataFromGraphIR(ir);
+    expect(extracted.edges[0].weight).toBe(2.5);
+  });
+
+  it("preserves edge note through round-trip", () => {
+    const { template, data } = migrateFromParser(minimalParsed);
+    data.edges[0].note = "Strong influence relationship";
+    const ir = graphIRFromData(template, data);
+    expect(ir.edges[0].note).toBe("Strong influence relationship");
+    const extracted = dataFromGraphIR(ir);
+    expect(extracted.edges[0].note).toBe("Strong influence relationship");
+  });
 });

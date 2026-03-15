@@ -1209,7 +1209,7 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): str
       for (const e of edges) {
         lines.push(`from: ${e.from.padEnd(16)} to: ${e.to.padEnd(20)} type: ${e.edge_type}`);
         if (e.note) lines.push(`  note: ${e.note}`);
-        if (e.weight !== 1.0) lines.push(`  weight: ${e.weight}`);
+        if (e.weight != null && e.weight !== 1.0) lines.push(`  weight: ${e.weight}`);
         lines.push("");
       }
       lines.push("```\n");

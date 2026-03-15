@@ -16,12 +16,15 @@ Clicking the indicator toggles collapse state.
 
 ## Edge Weight / Thickness
 
-### REQ-041: Edge Weight Visualization
-Edge weight controls line thickness on canvas.
+### REQ-041: Edge Weight Visualization and Persistence
+Edge weight controls line thickness on canvas and is persisted through save/load.
 
-**AC-041-01**: Edge weight range 0.3-4.0 mapped to line width.
+**AC-041-01**: Edge weight range 0.5-4.0 mapped to line width via slider.
 **AC-041-02**: Default weight is 1.0.
-**AC-041-03**: Weight is persisted in the .cm file.
+**AC-041-03**: Weight is written to the .cm markdown file as `weight: N` on the edge.
+**AC-041-04**: Rust WASM parser reads weight values in range 0.0-10.0 (not clamped to 0-1).
+**AC-041-05**: Weight survives full round-trip: edit → export → parse → render.
+**AC-041-06**: dataFromGraphIR preserves edge weight values.
 
 ## Dynamic View Modes
 
@@ -129,6 +132,26 @@ When opening a file, the graph spreads to fill the available canvas area.
 **AC-052-02**: Charge strength (-300) and distanceMax (500) provide adequate repulsion.
 **AC-052-03**: After simulation settles, a fit-to-viewport zoom transform centers and scales the graph.
 **AC-052-04**: The fit-to-viewport transition is animated (400ms).
+
+## Notes Persistence
+
+### REQ-053: Node Notes Saved Across Sessions
+Node notes entered in the NotesPane are persisted in the .cm file and restored on reload.
+
+**AC-053-01**: Notes are written to the .cm file as `notes:` key-value on the node block.
+**AC-053-02**: Multiline notes are collapsed to single-line on export (newlines → spaces).
+**AC-053-03**: Notes survive full round-trip: edit → auto-save → reload → notes visible.
+**AC-053-04**: dataFromGraphIR preserves node notes.
+**AC-053-05**: migrateFromParser preserves notes from the Rust parser output.
+
+## Sidebar Uses Template Labels
+
+### REQ-054: Sidebar Section Labels from Template
+Sidebar section headers use template-defined labels instead of hardcoded names.
+
+**AC-054-01**: Streams section header uses `template.stream_label` (default: "Streams").
+**AC-054-02**: Node list is grouped by node type with full type label as header.
+**AC-054-03**: When template labels are customised in the wizard, sidebar updates on save.
 
 ## Generic Node Types (Rust Parser)
 

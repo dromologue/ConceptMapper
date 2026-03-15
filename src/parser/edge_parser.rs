@@ -148,7 +148,7 @@ fn parse_single_edge(lines: &[&ClassifiedLine]) -> Result<ParsedEdge, Vec<ParseE
                     "note" => note_parts.push(value.trim().to_string()),
                     "weight" => {
                         if let Ok(w) = value.trim().parse::<f64>() {
-                            weight = w.clamp(0.0, 1.0);
+                            weight = w.clamp(0.0, 10.0);
                         }
                     }
                     _ => {} // ignore unknown keys

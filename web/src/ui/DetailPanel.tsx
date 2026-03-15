@@ -242,7 +242,8 @@ export function DetailPanel({
                   const otherId = e.from === node.id ? e.to : e.from;
                   const otherNode = nodeMap.get(otherId);
                   const direction = e.from === node.id ? "\u2192" : "\u2190";
-                  const label = EDGE_LABELS[e.edge_type] ?? e.edge_type;
+                  const label = template?.edge_types?.find((et) => et.id === e.edge_type)?.label
+                    ?? EDGE_LABELS[e.edge_type] ?? e.edge_type;
                   return (
                     <div key={i} className="edge-item">
                       <span className="edge-type">{label}</span>{" "}

@@ -25,7 +25,7 @@ export function Sidebar({
   onAddNode, onAddEdge,
   interactionMode, onCancelAddEdge,
 }: Props) {
-  const streamSectionLabel = template?.stream_label || "Categories";
+  const streamSectionLabel = template?.stream_label || "Streams";
   const [filter, setFilter] = useState("");
   const [streamsOpen, setStreamsOpen] = useState(true);
   const [nodesOpen, setNodesOpen] = useState(true);
