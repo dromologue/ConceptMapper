@@ -97,6 +97,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const collapsedRef = useRef(collapsedNodes ?? new Set<string>());
   const onToggleCollapseRef = useRef(onToggleCollapse);
   const onSelectEdgeRef = useRef(onSelectEdge);
+  const hasChildrenRef = useRef<Set<string>>(new Set());
 
   useEffect(() => { onSelectNodeRef.current = onSelectNode; }, [onSelectNode]);
   useEffect(() => { onSelectEdgeRef.current = onSelectEdge; }, [onSelectEdge]);
@@ -435,7 +436,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
           // Check if the click was on a collapse indicator near the node
           let hitIndicator = false;
-          if (clickedNode && onToggleCollapseRef.current) {
+          if (clickedNode && onToggleCollapseRef.current && hasChildrenRef.current.has(clickedNode.id)) {
             const t = transformRef.current;
             const mx = (event.offsetX - t.x) / t.k;
             const my = (event.offsetY - t.y) / t.k;
@@ -445,7 +446,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
             const ix = clickedNode.x + r + indicatorR + 2;
             const iy = clickedNode.y - r;
             const dist = Math.sqrt((mx - ix) ** 2 + (my - iy) ** 2);
-            if (dist <= indicatorR * 2.5) {
+            if (dist <= indicatorR * 3.5) {
               onToggleCollapseRef.current(clickedNode.id);
               hitIndicator = true;
             }
@@ -474,12 +475,13 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         if (onToggleCollapseRef.current) {
           const configs = nodeTypeConfigsRef.current;
           for (const node of nodesRef.current) {
+            if (!hasChildrenRef.current.has(node.id)) continue;
             const r = getNodeRadius(node, viewModeRef.current, configs);
             const indicatorR = Math.max(5, 3 / t.k);
             const ix = node.x + r + indicatorR + 2;
             const iy = node.y - r;
             const dist = Math.sqrt((mx - ix) ** 2 + (my - iy) ** 2);
-            if (dist <= indicatorR * 2.5) {
+            if (dist <= indicatorR * 3.5) {
               onToggleCollapseRef.current(node.id);
               hitIndicator = true;
               break;
@@ -635,6 +637,12 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     // Compute collapse state (works for all edge types, not just directed)
     const collapsed = collapsedRef.current;
     const { hasChildren, hiddenByCollapse } = computeCollapseState(currentData.edges, collapsed);
+    hasChildrenRef.current = hasChildren;
+
+    // Auto-deselect if the selected node got hidden by collapse
+    if (selected && hiddenByCollapse.has(selected)) {
+      onSelectNodeRef.current(null);
+    }
 
     const isVisible = (node: SimNode) => {
       if (hiddenByCollapse.has(node.id)) return false;

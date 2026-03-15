@@ -20,23 +20,23 @@ describe("computeCollapseState", () => {
     expect(hasChildren.has("B")).toBe(false);
   });
 
-  it("marks both ends of undirected edges as having children", () => {
+  it("undirected edges do NOT create collapse parent-child relationships", () => {
     const edges = [edge("A", "B", false)];
     const { hasChildren } = computeCollapseState(edges, new Set());
-    expect(hasChildren.has("A")).toBe(true);
-    expect(hasChildren.has("B")).toBe(true);
+    expect(hasChildren.has("A")).toBe(false);
+    expect(hasChildren.has("B")).toBe(false);
   });
 
   it("handles mixed directed and undirected edges", () => {
     const edges = [
-      edge("A", "B", true),   // A → B
-      edge("C", "D", false),  // C — D (rivalry/alliance style)
+      edge("A", "B", true),   // A → B (directed: A has children)
+      edge("C", "D", false),  // C — D (undirected: no collapse relationship)
     ];
     const { hasChildren } = computeCollapseState(edges, new Set());
     expect(hasChildren.has("A")).toBe(true);
     expect(hasChildren.has("B")).toBe(false);
-    expect(hasChildren.has("C")).toBe(true);
-    expect(hasChildren.has("D")).toBe(true);
+    expect(hasChildren.has("C")).toBe(false);
+    expect(hasChildren.has("D")).toBe(false);
   });
 
   it("returns empty hasChildren for no edges", () => {
@@ -46,41 +46,43 @@ describe("computeCollapseState", () => {
 
   // --- hiddenByCollapse (directed) ---
 
-  it("hides child when sole parent is collapsed", () => {
+  it("hides child when sole directed parent is collapsed", () => {
     const edges = [edge("A", "B", true)];
     const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A"]));
     expect(hiddenByCollapse.has("B")).toBe(true);
   });
 
-  it("does not hide child with another non-collapsed parent", () => {
+  it("does not hide child with another non-collapsed directed parent", () => {
     const edges = [edge("A", "B", true), edge("C", "B", true)];
     const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A"]));
     expect(hiddenByCollapse.has("B")).toBe(false);
   });
 
-  it("hides child when all parents are collapsed", () => {
+  it("hides child when all directed parents are collapsed", () => {
     const edges = [edge("A", "B", true), edge("C", "B", true)];
     const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A", "C"]));
     expect(hiddenByCollapse.has("B")).toBe(true);
   });
 
-  // --- hiddenByCollapse (undirected) ---
+  // --- undirected edges do NOT participate in collapse hiding ---
 
-  it("hides undirected neighbor when sole connection is collapsed", () => {
+  it("undirected edges do not hide neighbors on collapse", () => {
     const edges = [edge("A", "B", false)];
-    const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A"]));
-    expect(hiddenByCollapse.has("B")).toBe(true);
-  });
-
-  it("does not hide undirected neighbor with other connections", () => {
-    const edges = [edge("A", "B", false), edge("C", "B", true)];
     const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A"]));
     expect(hiddenByCollapse.has("B")).toBe(false);
   });
 
+  it("child with undirected edge to another node is still hidden if sole directed parent collapsed", () => {
+    // A→B directed, B—C undirected. Collapse A: B hidden (sole directed parent). C NOT hidden (no directed parent).
+    const edges = [edge("A", "B", true), edge("B", "C", false)];
+    const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A"]));
+    expect(hiddenByCollapse.has("B")).toBe(true);
+    expect(hiddenByCollapse.has("C")).toBe(false);
+  });
+
   // --- cascading collapse ---
 
-  it("cascades: hiding A hides B, which then hides C", () => {
+  it("cascades: collapsing A hides B, which then hides C", () => {
     const edges = [edge("A", "B", true), edge("B", "C", true)];
     const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A"]));
     expect(hiddenByCollapse.has("B")).toBe(true);
@@ -99,5 +101,15 @@ describe("computeCollapseState", () => {
     const edges = [edge("A", "B", true), edge("B", "C", true)];
     const { hiddenByCollapse } = computeCollapseState(edges, new Set());
     expect(hiddenByCollapse.size).toBe(0);
+  });
+
+  // --- edge case: node with mixed directed + undirected ---
+
+  it("node with directed parent AND undirected edge: only directed parent matters for collapse", () => {
+    // A→B directed, B—D undirected. Collapse A: B hidden. D not affected.
+    const edges = [edge("A", "B", true), edge("B", "D", false)];
+    const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A"]));
+    expect(hiddenByCollapse.has("B")).toBe(true);
+    expect(hiddenByCollapse.has("D")).toBe(false);
   });
 });
