@@ -1,0 +1,440 @@
+# Task Management — Product Launch
+
+<!-- Template: task-management.cmt -->
+
+## Generations
+
+| Gen | Period | Label | Attention Space Count |
+|-----|--------|-------|-----------------------|
+| 1 | Week 1–2 | Discovery | 5 |
+| 2 | Week 3–4 | Foundation | 5 |
+| 3 | Week 5–8 | Build | 5 |
+| 4 | Week 9–10 | Polish | 5 |
+| 5 | Week 11–12 | Launch | 5 |
+
+## Streams
+
+| Stream ID | Name | Colour | Description |
+|-----------|------|--------|-------------|
+| backend | Backend | #4A90D9 | API, database, infrastructure |
+| frontend | Frontend | #50C878 | UI, components, interactions |
+| design | Design | #9B59B6 | UX research, wireframes, visual design |
+| devops | DevOps | #E67E22 | CI/CD, deployment, monitoring |
+| planning | Planning | #E74C3C | Requirements, coordination, decisions |
+
+## Task Nodes
+
+```
+id:               gather_requirements
+name:             Gather Requirements
+generation:       1
+stream:           planning
+priority:         high
+status:           done
+assignee:         Product Manager
+estimate:         5d
+notes:            Interview stakeholders, document user stories, define acceptance criteria
+```
+
+```
+id:               user_research
+name:             User Research
+generation:       1
+stream:           design
+priority:         high
+status:           done
+assignee:         UX Lead
+estimate:         5d
+notes:            Conduct user interviews, analyse pain points, create personas
+```
+
+```
+id:               design_system
+name:             Design System Setup
+generation:       2
+stream:           design
+priority:         medium
+status:           in_progress
+assignee:         Designer
+estimate:         3d
+notes:            Define colour palette, typography, component library, spacing grid
+```
+
+```
+id:               wireframes
+name:             Create Wireframes
+generation:       2
+stream:           design
+priority:         high
+status:           in_progress
+assignee:         UX Lead
+estimate:         4d
+notes:            Low-fidelity wireframes for all key screens
+```
+
+```
+id:               api_design
+name:             API Design
+generation:       2
+stream:           backend
+priority:         critical
+status:           done
+assignee:         Tech Lead
+estimate:         3d
+notes:            Define REST endpoints, auth flow, data models, error handling
+```
+
+```
+id:               db_schema
+name:             Database Schema
+generation:       2
+stream:           backend
+priority:         high
+status:           done
+assignee:         Backend Dev
+estimate:         2d
+notes:            Design tables, indexes, migrations. PostgreSQL.
+```
+
+```
+id:               ci_pipeline
+name:             CI/CD Pipeline
+generation:       2
+stream:           devops
+priority:         high
+status:           done
+assignee:         DevOps Engineer
+estimate:         2d
+notes:            GitHub Actions: lint, test, build, deploy to staging
+```
+
+```
+id:               auth_service
+name:             Auth Service
+generation:       3
+stream:           backend
+priority:         critical
+status:           in_progress
+assignee:         Backend Dev
+estimate:         5d
+notes:            JWT tokens, OAuth2 social login, session management, rate limiting
+```
+
+```
+id:               crud_endpoints
+name:             CRUD Endpoints
+generation:       3
+stream:           backend
+priority:         high
+status:           todo
+assignee:         Backend Dev
+estimate:         4d
+notes:            Implement create/read/update/delete for all resources
+```
+
+```
+id:               component_library
+name:             Component Library
+generation:       3
+stream:           frontend
+priority:         high
+status:           in_progress
+assignee:         Frontend Dev
+estimate:         5d
+notes:            Build reusable React components: buttons, forms, modals, tables
+```
+
+```
+id:               dashboard_ui
+name:             Dashboard UI
+generation:       3
+stream:           frontend
+priority:         critical
+status:           todo
+assignee:         Frontend Dev
+estimate:         8d
+notes:            Main dashboard with data visualisation, filters, real-time updates
+```
+
+```
+id:               notification_service
+name:             Notification Service
+generation:       3
+stream:           backend
+priority:         medium
+status:           todo
+assignee:         Backend Dev
+estimate:         3d
+notes:            Email and in-app notifications, webhooks, digest scheduling
+```
+
+```
+id:               staging_env
+name:             Staging Environment
+generation:       3
+stream:           devops
+priority:         high
+status:           in_progress
+assignee:         DevOps Engineer
+estimate:         3d
+notes:            Mirror production: load balancer, DB replica, CDN, monitoring
+```
+
+```
+id:               integration_tests
+name:             Integration Tests
+generation:       4
+stream:           backend
+priority:         high
+status:           todo
+assignee:         QA Lead
+estimate:         4d
+notes:            End-to-end API tests, database fixtures, auth flow testing
+```
+
+```
+id:               performance_audit
+name:             Performance Audit
+generation:       4
+stream:           frontend
+priority:         medium
+status:           todo
+assignee:         Frontend Dev
+estimate:         2d
+notes:            Lighthouse scores, bundle size analysis, lazy loading, caching
+```
+
+```
+id:               accessibility_review
+name:             Accessibility Review
+generation:       4
+stream:           design
+priority:         medium
+status:           todo
+assignee:         UX Lead
+estimate:         2d
+notes:            WCAG 2.1 AA compliance, screen reader testing, keyboard navigation
+```
+
+```
+id:               security_audit
+name:             Security Audit
+generation:       4
+stream:           devops
+priority:         critical
+status:           todo
+assignee:         Security Engineer
+estimate:         3d
+notes:            OWASP top 10, dependency scanning, penetration testing
+```
+
+```
+id:               production_deploy
+name:             Production Deploy
+generation:       5
+stream:           devops
+priority:         critical
+status:           todo
+assignee:         DevOps Engineer
+estimate:         2d
+notes:            Blue-green deployment, DNS cutover, rollback plan
+```
+
+```
+id:               monitoring_setup
+name:             Monitoring Setup
+generation:       5
+stream:           devops
+priority:         high
+status:           todo
+assignee:         DevOps Engineer
+estimate:         2d
+notes:            Grafana dashboards, PagerDuty alerts, log aggregation
+```
+
+```
+id:               user_onboarding
+name:             User Onboarding Flow
+generation:       5
+stream:           frontend
+priority:         high
+status:           todo
+assignee:         Frontend Dev
+estimate:         3d
+notes:            Welcome wizard, guided tour, sample data, help tooltips
+```
+
+## Milestone Nodes
+
+```
+id:               mvp_release
+name:             MVP Release
+generation:       3
+stream:           planning
+due_date:         Week 8
+owner:            Tech Lead
+priority:         critical
+status:           todo
+notes:            Minimum viable product: auth + dashboard + core CRUD
+```
+
+```
+id:               beta_milestone
+name:             Beta Milestone
+generation:       4
+stream:           planning
+due_date:         Week 10
+owner:            Product Manager
+priority:         critical
+status:           todo
+notes:            Feature-complete, tested, deployed to staging, ready for beta users
+```
+
+```
+id:               launch_milestone
+name:             Launch Milestone
+generation:       5
+stream:           planning
+due_date:         Week 12
+owner:            Product Manager
+priority:         critical
+status:           todo
+notes:            Production deployment, monitoring live, users onboarded
+```
+
+## Edges
+
+### Task-to-Task
+
+```
+from: gather_requirements to: api_design            type: chain
+  note: Requirements feed directly into API design decisions
+
+from: gather_requirements to: wireframes             type: chain
+  note: User stories drive wireframe priorities
+
+from: user_research      to: wireframes             type: chain
+  note: Personas and pain points inform wireframe design
+
+from: user_research      to: design_system          type: chain
+  note: Research insights shape the visual language
+
+from: wireframes         to: component_library      type: chain
+  note: Wireframes define which components are needed
+
+from: wireframes         to: dashboard_ui           type: chain
+  note: Dashboard layout derived from wireframes
+
+from: api_design         to: db_schema              type: chain
+  note: API data models drive database schema
+
+from: api_design         to: auth_service           type: chain
+  note: Auth endpoints defined in API spec
+
+from: api_design         to: crud_endpoints         type: chain
+  note: CRUD endpoints defined in API spec
+
+from: db_schema          to: crud_endpoints         type: chain
+  note: Schema migrations must run before endpoints work
+
+from: auth_service       to: dashboard_ui           type: chain
+  note: Dashboard requires auth token for API calls
+
+from: crud_endpoints     to: dashboard_ui           type: chain
+  note: Dashboard consumes CRUD API endpoints
+
+from: ci_pipeline        to: staging_env            type: chain
+  note: CI deploys to staging automatically on merge
+
+from: crud_endpoints     to: integration_tests      type: chain
+  note: Integration tests exercise the CRUD endpoints
+
+from: auth_service       to: integration_tests      type: chain
+  note: Auth flow is a critical integration test path
+
+from: dashboard_ui       to: performance_audit      type: chain
+  note: Dashboard is the primary target for performance work
+
+from: component_library  to: accessibility_review   type: chain
+  note: Components must pass accessibility checks
+
+from: staging_env        to: security_audit         type: chain
+  note: Security audit runs against staging environment
+
+from: staging_env        to: production_deploy      type: chain
+  note: Staging validates the deploy before production
+
+from: security_audit     to: production_deploy      type: chain
+  note: Security sign-off required before go-live
+
+from: production_deploy  to: monitoring_setup       type: chain
+  note: Monitoring deployed alongside production
+
+from: dashboard_ui       to: user_onboarding        type: chain
+  note: Onboarding flow guides users through the dashboard
+
+from: notification_service to: crud_endpoints       type: alliance
+  note: Notifications triggered by CRUD events — parallel workstream
+
+from: performance_audit  to: security_audit         type: alliance
+  note: Both audits run in parallel during polish phase
+```
+
+### Task-to-Milestone
+
+```
+from: auth_service       to: mvp_release            type: chain
+  note: Auth is a core MVP component
+
+from: dashboard_ui       to: mvp_release            type: chain
+  note: Dashboard is the primary MVP deliverable
+
+from: crud_endpoints     to: mvp_release            type: chain
+  note: CRUD endpoints power the MVP functionality
+
+from: integration_tests  to: beta_milestone         type: chain
+  note: Passing integration tests gates beta readiness
+
+from: performance_audit  to: beta_milestone         type: chain
+  note: Performance targets must be met for beta
+
+from: accessibility_review to: beta_milestone       type: chain
+  note: Accessibility must pass before beta users
+
+from: production_deploy  to: launch_milestone       type: chain
+  note: Successful deploy is the launch gate
+
+from: monitoring_setup   to: launch_milestone       type: chain
+  note: Monitoring must be live at launch
+
+from: user_onboarding    to: launch_milestone       type: chain
+  note: Onboarding ready for first users
+```
+
+### Milestone-to-Milestone
+
+```
+from: mvp_release        to: beta_milestone         type: chain
+  note: MVP must ship before beta testing can begin
+
+from: beta_milestone     to: launch_milestone       type: chain
+  note: Beta sign-off gates the production launch
+```
+
+## External Shocks
+
+```
+date: Week 6
+description: Key stakeholder requests scope change — additional reporting dashboard
+
+date: Week 9
+description: Security vulnerability discovered in auth dependency — emergency patch
+```
+
+## Structural Observations
+
+- **Critical path**: Requirements → API Design → Auth Service → Dashboard → MVP → Beta → Launch
+- **Parallel workstreams**: Design and DevOps run independently until integration in Build phase
+- **Bottleneck**: API Design is the highest-fan-out node — delays cascade to 3+ downstream tasks
+- **Phase gates**: MVP Release, Beta Milestone, and Launch Milestone are go/no-go checkpoints
+- **Risk concentration**: Security audit and performance audit both gate launch — if either slips, launch slips

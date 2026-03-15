@@ -1109,102 +1109,99 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): str
     lines.push("");
   }
 
-  // Group nodes by type config
-  const circleTypes = nodeTypeConfigs.filter((c) => c.shape === "circle").map((c) => c.id);
-  const rectTypes = nodeTypeConfigs.filter((c) => c.shape === "rectangle").map((c) => c.id);
+  // Group nodes by node_type and write each group as "## [Label] Nodes"
+  const nodesByType = new Map<string, typeof data.nodes>();
+  for (const n of data.nodes) {
+    const typeId = n.node_type;
+    if (!nodesByType.has(typeId)) nodesByType.set(typeId, []);
+    nodesByType.get(typeId)!.push(n);
+  }
 
-  // Write all nodes grouped by type, using the Rust parser's expected format
-  const personNodes = data.nodes.filter((n) => circleTypes.includes(n.node_type));
-  if (personNodes.length > 0) {
-    lines.push("## Thinker Nodes\n");
-    for (const t of personNodes) {
+  // Legacy compat: "person" → "Thinker Nodes", "concept" → "Concept Nodes"
+  const sectionName = (typeId: string): string => {
+    if (typeId === "person" || typeId === "thinker") return "Thinker";
+    if (typeId === "concept") return "Concept";
+    const config = nodeTypeConfigs.find((c) => c.id === typeId);
+    return config?.label ?? typeId.charAt(0).toUpperCase() + typeId.slice(1);
+  };
+
+  for (const [typeId, typeNodes] of nodesByType) {
+    const label = sectionName(typeId);
+    const isLegacyThinker = typeId === "person" || typeId === "thinker";
+    const isLegacyConcept = typeId === "concept";
+
+    lines.push(`## ${label} Nodes\n`);
+
+    for (const node of typeNodes) {
       lines.push("```");
-      lines.push(`id:               ${t.id}`);
-      lines.push(`name:             ${t.name}`);
-      const props = t.properties ?? {};
-      const tf = t.thinker_fields;
-      // dates
-      if (tf?.dates) {
-        lines.push(`dates:            ${tf.dates}`);
-      } else if (props.date_from || props.date_to) {
-        const dates = [props.date_from, props.date_to].filter(Boolean).join("–");
-        if (dates) lines.push(`dates:            ${dates}`);
+      lines.push(`id:               ${node.id}`);
+      lines.push(`name:             ${node.name}`);
+
+      if (isLegacyThinker) {
+        // Legacy thinker format for backward compat with Rust parser
+        const props = node.properties ?? {};
+        const tf = node.thinker_fields;
+        if (tf?.dates) {
+          lines.push(`dates:            ${tf.dates}`);
+        } else if (props.date_from || props.date_to) {
+          const dates = [props.date_from, props.date_to].filter(Boolean).join("–");
+          if (dates) lines.push(`dates:            ${dates}`);
+        }
+        lines.push(`eminence:         ${tf?.eminence ?? props.importance ?? "minor"}`);
+        lines.push(`generation:       ${node.generation ?? 1}`);
+        lines.push(`stream:           ${node.stream ?? "default"}`);
+        const roles = tf?.structural_roles?.join(", ") ?? props.structural_roles;
+        if (roles) lines.push(`structural_role:  ${roles}`);
+        const tags = tf?.institutional_base ?? props.tags;
+        if (tags) lines.push(`institutional_base: ${tags}`);
+      } else if (isLegacyConcept) {
+        // Legacy concept format for backward compat
+        const props = node.properties ?? {};
+        const cf = node.concept_fields;
+        const originator = cf?.originator_id ?? props.originator_id ?? props.precursor ?? "unknown_author";
+        lines.push(`originator_id:    ${originator}`);
+        if (cf?.date_introduced ?? props.date_introduced) lines.push(`date_introduced:  ${cf?.date_introduced ?? props.date_introduced}`);
+        lines.push(`concept_type:     ${cf?.concept_type ?? props.concept_type ?? "framework"}`);
+        lines.push(`abstraction_level: ${cf?.abstraction_level ?? props.abstraction_level ?? "operational"}`);
+        lines.push(`status:           ${cf?.status ?? props.status ?? "active"}`);
+        if (node.generation != null) lines.push(`generation:       ${node.generation}`);
+        if (node.stream) lines.push(`stream:           ${node.stream}`);
+      } else {
+        // Generic format: write generation, stream, then all properties as KV pairs
+        if (node.generation != null) lines.push(`generation:       ${node.generation}`);
+        if (node.stream) lines.push(`stream:           ${node.stream}`);
+        const props = node.properties ?? {};
+        for (const [key, value] of Object.entries(props)) {
+          if (value != null && value !== "") {
+            lines.push(`${key.padEnd(18)}${value}`);
+          }
+        }
       }
-      // eminence — required by parser, default to minor
-      lines.push(`eminence:         ${tf?.eminence ?? props.importance ?? "minor"}`);
-      // generation — required by parser
-      lines.push(`generation:       ${t.generation ?? 1}`);
-      // stream — required by parser
-      lines.push(`stream:           ${t.stream ?? "default"}`);
-      // optional fields
-      const roles = tf?.structural_roles?.join(", ") ?? props.structural_roles;
-      if (roles) lines.push(`structural_role:  ${roles}`);
-      const tags = tf?.institutional_base ?? props.tags;
-      if (tags) lines.push(`institutional_base: ${tags}`);
-      if (t.notes) lines.push(`notes:            ${t.notes.replace(/\n/g, " ")}`);
+
+      if (node.notes) lines.push(`notes:            ${node.notes.replace(/\n/g, " ")}`);
       lines.push("```\n");
     }
   }
-
-  const conceptNodes = data.nodes.filter((n) => rectTypes.includes(n.node_type));
-  if (conceptNodes.length > 0) {
-    lines.push("## Concept Nodes\n");
-    for (const c of conceptNodes) {
-      lines.push("```");
-      lines.push(`id:               ${c.id}`);
-      lines.push(`name:             ${c.name}`);
-      const props = c.properties ?? {};
-      const cf = c.concept_fields;
-      const originator = cf?.originator_id ?? props.originator_id ?? props.precursor ?? "unknown_author";
-      lines.push(`originator_id:    ${originator}`);
-      if (cf?.date_introduced ?? props.date_introduced) lines.push(`date_introduced:  ${cf?.date_introduced ?? props.date_introduced}`);
-      // required by parser — default values
-      lines.push(`concept_type:     ${cf?.concept_type ?? props.concept_type ?? "framework"}`);
-      lines.push(`abstraction_level: ${cf?.abstraction_level ?? props.abstraction_level ?? "operational"}`);
-      lines.push(`status:           ${cf?.status ?? props.status ?? "active"}`);
-      if (c.generation != null) lines.push(`generation:       ${c.generation}`);
-      if (c.stream) lines.push(`stream:           ${c.stream}`);
-      if (c.notes) lines.push(`notes:            ${c.notes.replace(/\n/g, " ")}`);
-      lines.push("```\n");
-    }
-  }
-
-  // Write any remaining nodes not yet covered (generic types) as thinker nodes
-  const writtenIds = new Set([...personNodes.map((n) => n.id), ...conceptNodes.map((n) => n.id)]);
-  const otherNodes = data.nodes.filter((n) => !writtenIds.has(n.id));
-  if (otherNodes.length > 0) {
-    // Append to Thinker Nodes section if it wasn't written, or add a new one
-    if (personNodes.length === 0) lines.push("## Thinker Nodes\n");
-    for (const t of otherNodes) {
-      lines.push("```");
-      lines.push(`id:               ${t.id}`);
-      lines.push(`name:             ${t.name}`);
-      const props = t.properties ?? {};
-      if (props.date_from || props.date_to) {
-        const dates = [props.date_from, props.date_to].filter(Boolean).join("–");
-        if (dates) lines.push(`dates:            ${dates}`);
-      }
-      lines.push(`eminence:         ${props.importance ?? "minor"}`);
-      lines.push(`generation:       ${t.generation ?? 1}`);
-      lines.push(`stream:           ${t.stream ?? "default"}`);
-      if (props.structural_roles) lines.push(`structural_role:  ${props.structural_roles}`);
-      if (props.tags) lines.push(`institutional_base: ${props.tags}`);
-      if (t.notes) lines.push(`notes:            ${t.notes.replace(/\n/g, " ")}`);
-      lines.push("```\n");
-    }
-  }
-
-  const edgeGroups = [
-    { label: "### Thinker-to-Thinker", edges: data.edges.filter((e) => e.edge_category === "thinker_thinker") },
-    { label: "### Thinker-to-Concept", edges: data.edges.filter((e) => e.edge_category === "thinker_concept") },
-    { label: "### Concept-to-Concept", edges: data.edges.filter((e) => e.edge_category === "concept_concept") },
-  ];
 
   if (data.edges.length > 0) {
     lines.push("## Edges\n");
-    for (const { label, edges } of edgeGroups) {
-      if (edges.length === 0) continue;
-      lines.push(`${label}\n`);
+
+    // Group edges by category, using node type labels for section names
+    const nodeTypeOf = new Map(data.nodes.map((n) => [n.id, n.node_type]));
+    const edgeBuckets = new Map<string, typeof data.edges>();
+    for (const e of data.edges) {
+      const fromType = nodeTypeOf.get(e.from) ?? "unknown";
+      const toType = nodeTypeOf.get(e.to) ?? "unknown";
+      const key = `${fromType}-to-${toType}`;
+      if (!edgeBuckets.has(key)) edgeBuckets.set(key, []);
+      edgeBuckets.get(key)!.push(e);
+    }
+
+    for (const [key, edges] of edgeBuckets) {
+      const [fromType, toType] = key.split("-to-");
+      const fromLabel = sectionName(fromType);
+      const toLabel = sectionName(toType);
+      lines.push(`### ${fromLabel}-to-${toLabel}\n`);
       lines.push("```");
       for (const e of edges) {
         lines.push(`from: ${e.from.padEnd(16)} to: ${e.to.padEnd(20)} type: ${e.edge_type}`);
