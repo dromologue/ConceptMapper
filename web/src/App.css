@@ -732,7 +732,12 @@ canvas:active {
   text-transform: uppercase;
   color: var(--text-dim, #666);
   min-width: 80px;
+  max-width: 80px;
   flex-shrink: 0;
+  overflow: visible;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.2;
 }
 .editor-field input, .editor-field select {
   flex: 1;
@@ -1494,6 +1499,16 @@ canvas:active {
 .wizard-modal {
   max-width: 520px;
   width: 520px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.wizard-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
 }
 
 .wizard-steps {
@@ -1683,6 +1698,7 @@ canvas:active {
   justify-content: space-between;
   align-items: center;
   margin-top: 20px;
+  flex-shrink: 0;
 }
 
 .wizard-nav-right {

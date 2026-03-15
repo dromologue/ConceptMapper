@@ -394,6 +394,7 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
           ))}
         </div>
 
+        <div className="wizard-content">
         {/* Step 1: Title */}
         {step === 1 && (
           <>
@@ -773,6 +774,8 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
             </div>
           </>
         )}
+
+        </div>{/* end wizard-content */}
 
         {/* Navigation */}
         <div className="wizard-nav">
