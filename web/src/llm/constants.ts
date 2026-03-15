@@ -46,6 +46,21 @@ export const PROVIDER_DEFAULTS: Record<LLMProviderType, ProviderDefault> = {
       "Create a new secret key and paste it here",
     ],
   },
+  gemini: {
+    model: "gemini-2.5-flash",
+    modelSuggestions: [
+      "gemini-2.5-flash",
+      "gemini-2.5-pro",
+      "gemini-2.0-flash",
+    ],
+    keyFormatHint: "Starts with AI",
+    helpUrl: "https://aistudio.google.com/apikey",
+    setupSteps: [
+      "Go to Google AI Studio",
+      "Click the link below to create an API key",
+      "Paste it here",
+    ],
+  },
   ollama: {
     model: "llama3.2",
     baseUrl: "http://localhost:11434",

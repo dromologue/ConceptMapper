@@ -322,6 +322,36 @@ body {
   flex-shrink: 0;
 }
 
+.sidebar-type-group {
+  margin-bottom: 4px;
+}
+
+.sidebar-type-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.sidebar-type-group-icon {
+  font-size: 12px;
+}
+
+.sidebar-type-group-label {
+  flex: 1;
+}
+
+.sidebar-type-group-count {
+  font-size: 10px;
+  color: var(--text-dim, #555);
+  font-weight: 400;
+}
+
 /* ===== Editor Area ===== */
 .editor-area {
   flex: 1;

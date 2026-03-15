@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Sidebar } from "../ui/Sidebar";
-import { defaultNodeTypeConfigs } from "./fixtures";
+import { legacyNodeTypeConfigs } from "./fixtures";
 
 const mockNodes = [
   { id: "n1", name: "Alice", node_type: "person" as string, stream: "s1", generation: 1, properties: { importance: "major" } },
@@ -16,7 +16,7 @@ const defaultProps = {
     { id: "s1", name: "Psychology", color: "#ff0000" },
     { id: "s2", name: "Sociology", color: "#00ff00" },
   ],
-  nodeTypeConfigs: defaultNodeTypeConfigs,
+  nodeTypeConfigs: legacyNodeTypeConfigs,
   activeStreams: null as Set<string> | null,
   onStreamToggle: vi.fn(),
   onShowAll: vi.fn(),
@@ -76,7 +76,8 @@ describe("Sidebar", () => {
 
   it("shows dynamic add buttons from nodeTypeConfigs", () => {
     render(<Sidebar {...defaultProps} />);
-    expect(screen.getByText("+ Node")).toBeInTheDocument();
+    expect(screen.getByText("+ Person")).toBeInTheDocument();
+    expect(screen.getByText("+ Concept")).toBeInTheDocument();
   });
 
   it("calls onAddNode with type when add button is clicked", async () => {
@@ -84,8 +85,8 @@ describe("Sidebar", () => {
     const onAddNode = vi.fn();
     render(<Sidebar {...defaultProps} onAddNode={onAddNode} />);
 
-    await user.click(screen.getByText("+ Node"));
-    expect(onAddNode).toHaveBeenCalledWith("node");
+    await user.click(screen.getByText("+ Person"));
+    expect(onAddNode).toHaveBeenCalledWith("person");
   });
 
   it("shows + Edge button", () => {
@@ -116,11 +117,10 @@ describe("Sidebar", () => {
     expect(onStreamToggle).toHaveBeenCalledWith("s1");
   });
 
-  it("shows node type icon indicators", () => {
+  it("groups nodes by type with type headers", () => {
     render(<Sidebar {...defaultProps} />);
-    // Person nodes show "P", Concept nodes show "C"
-    const typeIndicators = screen.getAllByText("P");
-    expect(typeIndicators.length).toBeGreaterThanOrEqual(2); // Alice and Bob
-    expect(screen.getByText("C")).toBeInTheDocument(); // Theory X
+    // Node type group headers show full label
+    expect(screen.getByText("Person")).toBeInTheDocument();
+    expect(screen.getByText("Concept")).toBeInTheDocument();
   });
 });

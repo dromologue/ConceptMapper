@@ -1,5 +1,6 @@
 import Foundation
 import WebKit
+import AppKit
 import os.log
 
 private let logger = Logger(subsystem: "com.dromologue.ConceptLLM", category: "Bridge")
@@ -171,6 +172,11 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
                         }
                     }
                 }
+            }
+
+        case "openURL":
+            if let url = URL(string: body) {
+                NSWorkspace.shared.open(url)
             }
 
         default:

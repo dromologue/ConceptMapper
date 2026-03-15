@@ -896,6 +896,7 @@ function AppInner() {
             nodes={graphData.nodes}
             streams={graphData.metadata.streams}
             nodeTypeConfigs={nodeTypeConfigs}
+            template={template}
             activeStreams={activeStreams}
             onStreamToggle={handleStreamToggle}
             onShowAll={() => setActiveStreams(null)}
@@ -1140,7 +1141,7 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): str
       if (roles) lines.push(`structural_role:  ${roles}`);
       const tags = tf?.institutional_base ?? props.tags;
       if (tags) lines.push(`institutional_base: ${tags}`);
-      if (t.notes) lines.push(`notes:            ${t.notes}`);
+      if (t.notes) lines.push(`notes:            ${t.notes.replace(/\n/g, " ")}`);
       lines.push("```\n");
     }
   }
@@ -1163,7 +1164,7 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): str
       lines.push(`status:           ${cf?.status ?? props.status ?? "active"}`);
       if (c.generation != null) lines.push(`generation:       ${c.generation}`);
       if (c.stream) lines.push(`stream:           ${c.stream}`);
-      if (c.notes) lines.push(`notes:            ${c.notes}`);
+      if (c.notes) lines.push(`notes:            ${c.notes.replace(/\n/g, " ")}`);
       lines.push("```\n");
     }
   }
@@ -1188,7 +1189,7 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): str
       lines.push(`stream:           ${t.stream ?? "default"}`);
       if (props.structural_roles) lines.push(`structural_role:  ${props.structural_roles}`);
       if (props.tags) lines.push(`institutional_base: ${props.tags}`);
-      if (t.notes) lines.push(`notes:            ${t.notes}`);
+      if (t.notes) lines.push(`notes:            ${t.notes.replace(/\n/g, " ")}`);
       lines.push("```\n");
     }
   }

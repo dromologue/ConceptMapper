@@ -82,8 +82,9 @@ export function DetailPanel({
   onNodeUpdate, onNavigateToNode, onOpenNotes, notesOpen, style,
 }: Props) {
   // Use singular form for field labels — strip trailing 's' if present
-  const rawStreamLabel = template?.stream_label || "Category";
-  const rawGenLabel = template?.generation_label || "Horizon";
+  // Use template labels if set, otherwise generic defaults
+  const rawStreamLabel = template?.stream_label || "Stream";
+  const rawGenLabel = template?.generation_label || "Generation";
   const streamLabel = rawStreamLabel.endsWith("s") ? rawStreamLabel.slice(0, -1) : rawStreamLabel;
   const generationLabel = rawGenLabel.endsWith("s") ? rawGenLabel.slice(0, -1) : rawGenLabel;
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
