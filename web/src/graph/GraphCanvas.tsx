@@ -639,11 +639,6 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const { hasChildren, hiddenByCollapse } = computeCollapseState(currentData.edges, collapsed);
     hasChildrenRef.current = hasChildren;
 
-    // Auto-deselect if the selected node got hidden by collapse
-    if (selected && hiddenByCollapse.has(selected)) {
-      onSelectNodeRef.current(null);
-    }
-
     const isVisible = (node: SimNode) => {
       if (hiddenByCollapse.has(node.id)) return false;
       if (isAdding) return true;
