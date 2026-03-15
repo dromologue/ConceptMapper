@@ -11,21 +11,20 @@ function edge(from: string, to: string, directed: boolean): GraphEdge {
 }
 
 describe("computeCollapseState", () => {
-  // --- hasChildren: based on from-side of ALL edges ---
+  // --- hasChildren: any node with at least one edge ---
 
-  it("marks from-node as having children for directed edges", () => {
-    const edges = [edge("A", "B", true), edge("A", "C", true)];
+  it("marks both endpoints of any edge as having children", () => {
+    const edges = [edge("A", "B", true)];
     const { hasChildren } = computeCollapseState(edges, new Set());
     expect(hasChildren.has("A")).toBe(true);
-    expect(hasChildren.has("B")).toBe(false);
+    expect(hasChildren.has("B")).toBe(true);
   });
 
-  it("marks from-node as having children for undirected edges too", () => {
+  it("works for undirected edges too", () => {
     const edges = [edge("A", "B", false)];
     const { hasChildren } = computeCollapseState(edges, new Set());
     expect(hasChildren.has("A")).toBe(true);
-    // B is NOT a parent (to-side only) — no indicator
-    expect(hasChildren.has("B")).toBe(false);
+    expect(hasChildren.has("B")).toBe(true);
   });
 
   it("returns empty hasChildren for no edges", () => {
@@ -33,57 +32,34 @@ describe("computeCollapseState", () => {
     expect(hasChildren.size).toBe(0);
   });
 
-  // --- hiddenByCollapse ---
+  // --- hiddenByCollapse: bidirectional neighbor check ---
 
-  it("hides child when sole parent is collapsed", () => {
+  it("hides to-node when from-node is collapsed (sole connection)", () => {
     const edges = [edge("A", "B", true)];
     const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A"]));
     expect(hiddenByCollapse.has("B")).toBe(true);
   });
 
-  it("does not hide child with another non-collapsed parent", () => {
+  it("hides from-node when to-node is collapsed (sole connection)", () => {
+    // Edge is A→B, but collapsing B hides A if A has no other connections
+    const edges = [edge("A", "B", true)];
+    const { hiddenByCollapse } = computeCollapseState(edges, new Set(["B"]));
+    expect(hiddenByCollapse.has("A")).toBe(true);
+  });
+
+  it("does not hide node with another non-collapsed neighbor", () => {
     const edges = [edge("A", "B", true), edge("C", "B", true)];
     const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A"]));
     expect(hiddenByCollapse.has("B")).toBe(false);
   });
 
-  it("hides child when all parents are collapsed", () => {
+  it("hides node when all neighbors are collapsed", () => {
     const edges = [edge("A", "B", true), edge("C", "B", true)];
     const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A", "C"]));
     expect(hiddenByCollapse.has("B")).toBe(true);
   });
 
-  it("undirected edge: collapsing from-node hides to-node", () => {
-    // A—B undirected (rivalry). A is the from-node, so collapsing A hides B.
-    const edges = [edge("A", "B", false)];
-    const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A"]));
-    expect(hiddenByCollapse.has("B")).toBe(true);
-  });
-
-  it("undirected edge: collapsing to-node does NOT hide from-node", () => {
-    // A—B undirected. B is the to-node. Collapsing B does NOT hide A.
-    const edges = [edge("A", "B", false)];
-    const { hiddenByCollapse } = computeCollapseState(edges, new Set(["B"]));
-    expect(hiddenByCollapse.has("A")).toBe(false);
-  });
-
-  it("child with additional undirected parent is not hidden when directed parent collapsed", () => {
-    // A→B directed, C→B undirected. Collapse A only: B has parent C (not collapsed) → NOT hidden.
-    const edges = [edge("A", "B", true), edge("C", "B", false)];
-    const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A"]));
-    expect(hiddenByCollapse.has("B")).toBe(false);
-  });
-
-  // --- cascading collapse ---
-
-  it("cascades: collapsing A hides B, which then hides C", () => {
-    const edges = [edge("A", "B", true), edge("B", "C", true)];
-    const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A"]));
-    expect(hiddenByCollapse.has("B")).toBe(true);
-    expect(hiddenByCollapse.has("C")).toBe(true);
-  });
-
-  it("collapsed nodes themselves are NOT hidden (they show +)", () => {
+  it("collapsed nodes themselves are NOT hidden", () => {
     const edges = [edge("A", "B", true)];
     const collapsed = new Set(["A"]);
     const { hiddenByCollapse } = computeCollapseState(edges, collapsed);
@@ -97,25 +73,50 @@ describe("computeCollapseState", () => {
     expect(hiddenByCollapse.size).toBe(0);
   });
 
-  // --- Real-world Collins taxonomy scenario ---
+  // --- cascading ---
 
-  it("Collins: collapsing argyris hides senge (child via chain)", () => {
+  it("cascades: collapsing A hides B (sole neighbor), then C (sole neighbor of B)", () => {
+    const edges = [edge("A", "B", true), edge("B", "C", true)];
+    const { hiddenByCollapse } = computeCollapseState(edges, new Set(["A"]));
+    // B's only neighbor is A (collapsed) → hidden
+    // But wait: B also has neighbor C via edge B→C. So B has neighbors {A, C}.
+    // A is collapsed, C is not → B is NOT hidden
+    expect(hiddenByCollapse.has("B")).toBe(false);
+    // C's only neighbor is B, which is not hidden → C is not hidden
+    expect(hiddenByCollapse.has("C")).toBe(false);
+  });
+
+  it("linear chain: collapsing middle node hides leaf but not root", () => {
+    // A→B→C: collapse B. A has neighbor B (collapsed) only → hidden? No: A also connects to nothing else.
+    // Actually A's neighbors = {B}. B is collapsed → A is hidden.
+    // C's neighbors = {B}. B is collapsed → C is hidden.
+    const edges = [edge("A", "B", true), edge("B", "C", true)];
+    const { hiddenByCollapse } = computeCollapseState(edges, new Set(["B"]));
+    expect(hiddenByCollapse.has("A")).toBe(true);
+    expect(hiddenByCollapse.has("C")).toBe(true);
+    expect(hiddenByCollapse.has("B")).toBe(false);
+  });
+
+  // --- Collins taxonomy scenario ---
+
+  it("Collins: collapsing system_1_2 hides prospect_theory (sole neighbor via extends)", () => {
+    // prospect_theory → system_1_2 (extends): bidirectional, so both are neighbors
+    // system_1_2 → drift_into_failure (enables): both are neighbors
+    // structuration → drift_into_failure (extends): both are neighbors
     const edges = [
-      edge("argyris", "senge", true),          // chain (directed)
-      edge("argyris", "double_loop", true),     // originates (directed)
-      edge("senge", "seven_conditions", true),  // develops (directed)
-      edge("stacey", "double_loop", true),      // contests (directed)
-      edge("stacey", "senge", false),           // rivalry (undirected, stacey→senge)
+      edge("prospect_theory", "system_1_2", true),
+      edge("system_1_2", "drift_into_failure", true),
+      edge("structuration", "drift_into_failure", true),
     ];
-    const { hasChildren, hiddenByCollapse } = computeCollapseState(edges, new Set(["argyris"]));
+    const { hiddenByCollapse } = computeCollapseState(edges, new Set(["system_1_2"]));
 
-    expect(hasChildren.has("argyris")).toBe(true);
-    // senge: parents are argyris (chain) + stacey (rivalry from-side).
-    // Only argyris is collapsed, stacey is not → NOT hidden
-    expect(hiddenByCollapse.has("senge")).toBe(false);
-    // double_loop: parents are argyris + stacey. Only argyris collapsed → NOT hidden
-    expect(hiddenByCollapse.has("double_loop")).toBe(false);
-    // argyris itself stays visible
-    expect(hiddenByCollapse.has("argyris")).toBe(false);
+    // prospect_theory: neighbors = {system_1_2}. system_1_2 is collapsed → hidden
+    expect(hiddenByCollapse.has("prospect_theory")).toBe(true);
+
+    // drift_into_failure: neighbors = {system_1_2, structuration}. structuration is not collapsed → NOT hidden
+    expect(hiddenByCollapse.has("drift_into_failure")).toBe(false);
+
+    // system_1_2 itself stays visible
+    expect(hiddenByCollapse.has("system_1_2")).toBe(false);
   });
 });
