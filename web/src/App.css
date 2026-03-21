@@ -467,6 +467,44 @@ body {
   overflow: hidden;
 }
 
+.zoom-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 10;
+}
+
+.zoom-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: var(--bg-panel);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.zoom-btn:hover {
+  opacity: 1;
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.zoom-btn-fit {
+  font-size: 10px;
+  font-weight: 500;
+}
+
 canvas {
   cursor: grab;
 }
@@ -2609,4 +2647,113 @@ select.settings-input {
 .chat-send-btn:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* ===== Export Image Modal ===== */
+
+.export-image-modal {
+  min-width: 320px;
+}
+
+.export-image-modal .modal-header {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.export-image-modal .modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.export-field label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.export-options {
+  display: flex;
+  gap: 6px;
+}
+
+.export-option-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--bg-hover);
+  border-radius: 4px;
+  background: var(--bg-body);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.export-option-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.export-option-btn.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.export-color-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid rgba(128,128,128,0.3);
+}
+
+.export-color-picker {
+  width: 100%;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+.export-image-modal .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.modal-cancel-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--bg-hover);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.modal-confirm-btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.modal-confirm-btn:hover {
+  opacity: 0.9;
 }

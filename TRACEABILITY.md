@@ -127,6 +127,9 @@
 | REQ-057 | AC-057-01..05 (integration test) | `tests/integration_tests.rs` | `parse_organisational_learning_example` | passing |
 | REQ-058 | AC-058-01..08 (build pipeline) | — | `scripts/build-app.sh` manual verification | passing |
 | REQ-059 | AC-059-01..06 (App Store sandbox) | — | entitlements + project.yml manual verification | passing |
+| REQ-060 | AC-060-01..05 (zoom controls) | — | manual verification (canvas overlay) | passing |
+| REQ-061 | AC-061-01..07 (organic look) | `src/__tests__/theme.test.tsx` | organic theme exists, look field on all themes | passing |
+| REQ-062 | AC-062-01..08 (image export) | `src/__tests__/export-image-modal.test.tsx` | 7 tests: format, background, resolution, export handler | passing |
 
 ## Additional Passing Tests (not yet mapped to spec requirements)
 

@@ -1,5 +1,5 @@
 import type { NodeTypeConfig } from "../types/graph-ir";
-import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconMapping, IconChat, IconHelp, IconFitView } from "./Icons";
+import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconMapping, IconChat, IconHelp, IconFitView, IconExport } from "./Icons";
 
 interface Props {
   viewMode: string; // "full" or a node type id
@@ -14,6 +14,7 @@ interface Props {
   llmAvailable?: boolean;
   onOpenHelp?: () => void;
   onFitToView?: () => void;
+  onExportImage?: () => void;
   nodeTypeConfigs?: NodeTypeConfig[];
 }
 
@@ -28,6 +29,7 @@ export function ActivityBar({
   llmAvailable,
   onOpenHelp,
   onFitToView,
+  onExportImage,
   nodeTypeConfigs,
 }: Props) {
   return (
@@ -66,6 +68,15 @@ export function ActivityBar({
             title="Fit to View"
           >
             <IconFitView size={20} />
+          </button>
+        )}
+        {onExportImage && (
+          <button
+            className="activity-bar-btn"
+            onClick={onExportImage}
+            title="Export Image"
+          >
+            <IconExport size={20} />
           </button>
         )}
         {llmAvailable && onOpenMapping && (

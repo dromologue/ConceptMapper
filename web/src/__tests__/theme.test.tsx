@@ -29,11 +29,18 @@ beforeEach(() => {
 
 describe("ThemeConfig", () => {
   // AC-036-01: ThemeConfig interface has all required fields
-  it("has 6 predefined themes", () => {
-    expect(THEMES).toHaveLength(6);
+  it("has 7 predefined themes", () => {
+    expect(THEMES).toHaveLength(7);
     expect(THEMES.map((t) => t.id)).toEqual([
-      "midnight", "obsidian", "solarized", "nord", "ivory", "paper",
+      "midnight", "obsidian", "solarized", "nord", "ivory", "paper", "organic",
     ]);
+  });
+
+  // AC-061-03: Organic theme exists as a color palette
+  it("organic theme has warm earth tones", () => {
+    const organic = getThemeById("organic");
+    expect(organic.name).toBe("Organic");
+    expect(organic.accent).toMatch(/#[0-9a-f]{6}/i);
   });
 
   // AC-036-02: Each theme has all required color fields
@@ -85,6 +92,38 @@ describe("ThemeConfig", () => {
     // Light backgrounds should be above #c0 in all channels
     expect(ivory.textPrimary).toMatch(/^#[0-4]/); // dark text
     expect(paper.textPrimary).toMatch(/^#[0-4]/); // dark text
+  });
+});
+
+describe("Look & Feel", () => {
+  function LookInspector() {
+    const { look, setLook } = useTheme();
+    return (
+      <div>
+        <span data-testid="look">{look}</span>
+        <button onClick={() => setLook("organic")}>Go Organic</button>
+        <button onClick={() => setLook("formal")}>Go Formal</button>
+      </div>
+    );
+  }
+
+  it("defaults to formal", () => {
+    render(<ThemeProvider><LookInspector /></ThemeProvider>);
+    expect(screen.getByTestId("look")).toHaveTextContent("formal");
+  });
+
+  it("can be switched to organic independently of theme", async () => {
+    const user = userEvent.setup();
+    render(<ThemeProvider><LookInspector /></ThemeProvider>);
+    await user.click(screen.getByText("Go Organic"));
+    expect(screen.getByTestId("look")).toHaveTextContent("organic");
+  });
+
+  it("persists look to localStorage", async () => {
+    const user = userEvent.setup();
+    render(<ThemeProvider><LookInspector /></ThemeProvider>);
+    await user.click(screen.getByText("Go Organic"));
+    expect(localStorage.getItem("cm-look")).toBe("organic");
   });
 });
 

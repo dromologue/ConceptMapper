@@ -25,6 +25,8 @@ export function SettingsModal({ streams, edgeTypes, onClose }: Props) {
   const {
     theme,
     setThemeId,
+    look,
+    setLook,
     edgeColorOverrides,
     setEdgeColorOverrides,
     streamColorOverrides,
@@ -158,6 +160,24 @@ export function SettingsModal({ streams, edgeTypes, onClose }: Props) {
         <div className="settings-header">
           <h3>Settings</h3>
           <button className="close-btn" onClick={onClose}>&times;</button>
+        </div>
+
+        {/* Look & Feel — shown first for visibility */}
+        <div className="settings-section">
+          <div className="field-label" style={{ marginBottom: 8 }}>Look &amp; Feel</div>
+          <div className="export-options">
+            <button
+              className={`export-option-btn ${look === "formal" ? "active" : ""}`}
+              onClick={() => setLook("formal")}
+            >Formal</button>
+            <button
+              className={`export-option-btn ${look === "organic" ? "active" : ""}`}
+              onClick={() => setLook("organic")}
+            >Organic</button>
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
+            {look === "formal" ? "Precise geometric shapes and straight edges" : "Hand-drawn shapes with curved, tapered edges"}
+          </div>
         </div>
 
         {/* Theme picker */}

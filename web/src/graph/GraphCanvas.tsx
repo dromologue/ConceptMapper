@@ -9,6 +9,63 @@ import { getNodeTypeConfig, getConfigNodeRadius } from "../migration";
 import { computeCollapseState } from "./collapse-utils";
 import { EDGE_LABELS } from "../utils/edge-labels";
 
+// --- Organic rendering helpers ---
+
+/** Deterministic hash from a string, for stable jitter per node */
+function hashCode(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return h;
+}
+
+/** Deterministic pseudo-random from seed, returns -1 to 1 */
+function seededRandom(seed: number, index: number): number {
+  const x = Math.sin(seed * 9301 + index * 49297 + 233280) * 43758.5453;
+  return (x - Math.floor(x)) * 2 - 1;
+}
+
+/** Apply organic jitter to a coordinate */
+function jitter(val: number, seed: number, index: number, amount: number): number {
+  return val + seededRandom(seed, index) * amount;
+}
+
+/** Draw an organic (hand-drawn) circle with jittered control points */
+function drawOrganicCircle(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, seed: number) {
+  const segments = 12;
+  const amt = r * 0.05;
+  ctx.beginPath();
+  for (let i = 0; i <= segments; i++) {
+    const angle = (i / segments) * Math.PI * 2;
+    const jr = r + seededRandom(seed, i) * amt;
+    const px = cx + jr * Math.cos(angle);
+    const py = cy + jr * Math.sin(angle);
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+
+/** Draw an organic rectangle with wobbly corners */
+function drawOrganicRect(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number, seed: number) {
+  const amt = Math.min(w, h) * 0.025;
+  ctx.beginPath();
+  ctx.moveTo(jitter(cx - w / 2, seed, 0, amt), jitter(cy - h / 2, seed, 1, amt));
+  ctx.lineTo(jitter(cx + w / 2, seed, 2, amt), jitter(cy - h / 2, seed, 3, amt));
+  ctx.lineTo(jitter(cx + w / 2, seed, 4, amt), jitter(cy + h / 2, seed, 5, amt));
+  ctx.lineTo(jitter(cx - w / 2, seed, 6, amt), jitter(cy + h / 2, seed, 7, amt));
+  ctx.closePath();
+}
+
+/** Draw an organic polygon with jittered vertices */
+function drawOrganicPolygon(ctx: CanvasRenderingContext2D, _cx: number, _cy: number, points: Array<[number, number]>, seed: number, amt: number) {
+  ctx.beginPath();
+  for (let i = 0; i < points.length; i++) {
+    const px = jitter(points[i][0], seed, i * 2, amt);
+    const py = jitter(points[i][1], seed, i * 2 + 1, amt);
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+
 interface Props {
   data: GraphIR;
   onSelectNode: (node: GraphNode | null) => void;
@@ -19,6 +76,7 @@ interface Props {
   edgeSourceId: string | null;
   filters: FilterState;
   theme: ThemeConfig;
+  look: "formal" | "organic";
   nodeTypeConfigs: NodeTypeConfig[];
   collapsedNodes?: Set<string>;
   onToggleCollapse?: (nodeId: string) => void;
@@ -26,6 +84,7 @@ interface Props {
   selectedEdgeKey?: string | null; // "from|to" key for highlighting
   centerOnNode?: { id: string; ts: number } | null;
   onRegisterFitToView?: (fn: () => void) => void;
+  onRegisterZoom?: (fns: { zoomIn: () => void; zoomOut: () => void }) => void;
 }
 
 function getNodeRadius(node: SimNode, viewMode: ViewMode, nodeTypeConfigs: NodeTypeConfig[]): number {
@@ -57,7 +116,7 @@ function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): NodeSha
   return "circle";
 }
 
-export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, onRegisterFitToView }: Props) {
+export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, onRegisterFitToView, onRegisterZoom }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const transformRef = useRef(d3.zoomIdentity);
@@ -84,6 +143,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const streamIdsRef = useRef<string[]>([]);
   const gensRef = useRef<number[]>([]);
   const themeRef = useRef(theme);
+  const lookRef = useRef(look);
   const nodeTypeConfigsRef = useRef(nodeTypeConfigs);
   const collapsedRef = useRef(collapsedNodes ?? new Set<string>());
   const onToggleCollapseRef = useRef(onToggleCollapse);
@@ -96,6 +156,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { collapsedRef.current = collapsedNodes ?? new Set(); redraw(); }, [collapsedNodes]);
   useEffect(() => { dataRef.current = data; }, [data]);
   useEffect(() => { themeRef.current = theme; redraw(); }, [theme]);
+  useEffect(() => { lookRef.current = look; redraw(); }, [look]);
   useEffect(() => { viewModeRef.current = viewMode; redraw(); }, [viewMode]);
   useEffect(() => { revealedRef.current = revealedNodes; redraw(); }, [revealedNodes]);
   useEffect(() => { interactionRef.current = interactionMode; redraw(); }, [interactionMode]);
@@ -245,8 +306,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       if (c) draw(c, w, h);
     });
 
-    // Fit graph to viewport after simulation settles
-    simulation.on("end", () => { fitToView(); });
+    // Fit graph to viewport only on initial layout (not after user interaction)
+    let hasUserZoomed = false;
+    simulation.on("end", () => { if (!hasUserZoomed) { fitToView(); hasUserZoomed = true; } });
 
     // Zoom behavior
     const zoomBehavior = d3.zoom<HTMLCanvasElement, unknown>()
@@ -660,10 +722,6 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const isEdgeHovered = hoveredEdge === l;
       const isEdgeSelected = selectedEdgeKey === `${source.id}|${target.id}` || selectedEdgeKey === `${target.id}|${source.id}`;
 
-      ctx.beginPath();
-      ctx.moveTo(source.x, source.y);
-      ctx.lineTo(target.x, target.y);
-
       if (visual.style === "dashed") ctx.setLineDash([6, 4]);
       else if (visual.style === "dotted") ctx.setLineDash([2, 4]);
       else ctx.setLineDash([]);
@@ -671,18 +729,55 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       // Weight scales line thickness: weight 1.0 = normal, 2.0 = double, etc.
       const weightScale = Math.max(0.3, Math.min(4, l.edge.weight ?? 1));
 
+      let edgeLw: number;
       if (isEdgeHovered || isEdgeSelected) {
         ctx.strokeStyle = th.canvasEdgeHover;
         ctx.globalAlpha = 0.9;
-        ctx.lineWidth = 2.5 * weightScale;
+        edgeLw = 2.5 * weightScale;
       } else {
         const edgeColor = th.edgeColorOverrides[l.edge.edge_type] ?? visual.color;
         ctx.strokeStyle = edgeColor ?? (isHighlighted ? th.canvasEdgeDefault : th.canvasEdgeDim);
         const alpha = isHighlighted ? 0.8 : isRevealed ? 0.4 : 0.15;
         ctx.globalAlpha = alpha;
-        ctx.lineWidth = (isHighlighted ? 1.5 : 0.8) * weightScale;
+        edgeLw = (isHighlighted ? 1.5 : 0.8) * weightScale;
       }
-      ctx.stroke();
+
+      if (lookRef.current === "organic") {
+        // Organic: slightly curved edge with taper (thicker at source)
+        const dx = target.x - source.x;
+        const dy = target.y - source.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        // Perpendicular offset for curve (small, proportional to distance)
+        const edgeSeed = hashCode(source.id + target.id);
+        const curveOffset = seededRandom(edgeSeed, 0) * Math.min(dist * 0.08, 20);
+        const mx = (source.x + target.x) / 2 - (dy / dist) * curveOffset;
+        const my = (source.y + target.y) / 2 + (dx / dist) * curveOffset;
+
+        // Draw tapered edge using a filled path (thick at source, thin at target)
+        const nx = -dy / dist;
+        const ny = dx / dist;
+        const srcW = edgeLw * 0.8;
+        const tgtW = edgeLw * 0.3;
+
+        ctx.beginPath();
+        ctx.moveTo(source.x + nx * srcW, source.y + ny * srcW);
+        ctx.quadraticCurveTo(mx + nx * (srcW + tgtW) / 2, my + ny * (srcW + tgtW) / 2,
+          target.x + nx * tgtW, target.y + ny * tgtW);
+        ctx.lineTo(target.x - nx * tgtW, target.y - ny * tgtW);
+        ctx.quadraticCurveTo(mx - nx * (srcW + tgtW) / 2, my - ny * (srcW + tgtW) / 2,
+          source.x - nx * srcW, source.y - ny * srcW);
+        ctx.closePath();
+        ctx.fillStyle = ctx.strokeStyle as string;
+        ctx.fill();
+        ctx.setLineDash([]);
+      } else {
+        // Formal: straight line
+        ctx.lineWidth = edgeLw;
+        ctx.beginPath();
+        ctx.moveTo(source.x, source.y);
+        ctx.lineTo(target.x, target.y);
+        ctx.stroke();
+      }
       ctx.setLineDash([]);
       ctx.globalAlpha = 1;
 
@@ -753,40 +848,75 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const shape = getNodeShape(node, configs);
 
       // Draw shape path
-      ctx.beginPath();
-      if (shape === "rectangle") {
-        const w = effectiveR * 2.5;
-        const h = effectiveR * 1.6;
-        ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, 4);
-      } else if (shape === "diamond") {
-        const s = effectiveR * 1.4;
-        ctx.moveTo(node.x, node.y - s);
-        ctx.lineTo(node.x + s, node.y);
-        ctx.lineTo(node.x, node.y + s);
-        ctx.lineTo(node.x - s, node.y);
-        ctx.closePath();
-      } else if (shape === "hexagon") {
-        const s = effectiveR * 1.1;
-        for (let i = 0; i < 6; i++) {
-          const angle = (Math.PI / 3) * i - Math.PI / 6;
-          const px = node.x + s * Math.cos(angle);
-          const py = node.y + s * Math.sin(angle);
-          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      const isOrganic = lookRef.current === "organic";
+      const nodeSeed = hashCode(node.id);
+
+      if (isOrganic) {
+        // Organic: hand-drawn shapes with jitter
+        if (shape === "rectangle" || shape === "pill") {
+          const w = effectiveR * (shape === "pill" ? 2.4 : 2.5);
+          const h = effectiveR * (shape === "pill" ? 1.2 : 1.6);
+          drawOrganicRect(ctx, node.x, node.y, w, h, nodeSeed);
+        } else if (shape === "diamond") {
+          const s = effectiveR * 1.4;
+          drawOrganicPolygon(ctx, node.x, node.y, [
+            [node.x, node.y - s], [node.x + s, node.y],
+            [node.x, node.y + s], [node.x - s, node.y],
+          ], nodeSeed, s * 0.035);
+        } else if (shape === "hexagon") {
+          const s = effectiveR * 1.1;
+          const pts: Array<[number, number]> = [];
+          for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i - Math.PI / 6;
+            pts.push([node.x + s * Math.cos(angle), node.y + s * Math.sin(angle)]);
+          }
+          drawOrganicPolygon(ctx, node.x, node.y, pts, nodeSeed, s * 0.035);
+        } else if (shape === "triangle") {
+          const s = effectiveR * 1.3;
+          drawOrganicPolygon(ctx, node.x, node.y, [
+            [node.x, node.y - s],
+            [node.x + s * 0.87, node.y + s * 0.5],
+            [node.x - s * 0.87, node.y + s * 0.5],
+          ], nodeSeed, s * 0.035);
+        } else {
+          drawOrganicCircle(ctx, node.x, node.y, effectiveR, nodeSeed);
         }
-        ctx.closePath();
-      } else if (shape === "triangle") {
-        const s = effectiveR * 1.3;
-        ctx.moveTo(node.x, node.y - s);
-        ctx.lineTo(node.x + s * 0.87, node.y + s * 0.5);
-        ctx.lineTo(node.x - s * 0.87, node.y + s * 0.5);
-        ctx.closePath();
-      } else if (shape === "pill") {
-        const w = effectiveR * 2.4;
-        const h = effectiveR * 1.2;
-        ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, h / 2);
       } else {
-        // circle (default)
-        ctx.arc(node.x, node.y, effectiveR, 0, Math.PI * 2);
+        // Formal: precise geometry
+        ctx.beginPath();
+        if (shape === "rectangle") {
+          const w = effectiveR * 2.5;
+          const h = effectiveR * 1.6;
+          ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, 4);
+        } else if (shape === "diamond") {
+          const s = effectiveR * 1.4;
+          ctx.moveTo(node.x, node.y - s);
+          ctx.lineTo(node.x + s, node.y);
+          ctx.lineTo(node.x, node.y + s);
+          ctx.lineTo(node.x - s, node.y);
+          ctx.closePath();
+        } else if (shape === "hexagon") {
+          const s = effectiveR * 1.1;
+          for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i - Math.PI / 6;
+            const px = node.x + s * Math.cos(angle);
+            const py = node.y + s * Math.sin(angle);
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+        } else if (shape === "triangle") {
+          const s = effectiveR * 1.3;
+          ctx.moveTo(node.x, node.y - s);
+          ctx.lineTo(node.x + s * 0.87, node.y + s * 0.5);
+          ctx.lineTo(node.x - s * 0.87, node.y + s * 0.5);
+          ctx.closePath();
+        } else if (shape === "pill") {
+          const w = effectiveR * 2.4;
+          const h = effectiveR * 1.2;
+          ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, h / 2);
+        } else {
+          ctx.arc(node.x, node.y, effectiveR, 0, Math.PI * 2);
+        }
       }
       ctx.fillStyle = color;
       ctx.fill();
@@ -886,6 +1016,28 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => {
     if (onRegisterFitToView) onRegisterFitToView(() => fitToView());
   }, [onRegisterFitToView]);
+
+  // Register zoom in/out callbacks for parent
+  useEffect(() => {
+    if (!onRegisterZoom) return;
+    const zoomBy = (factor: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas || !zoomBehaviorRef.current) return;
+      const t = transformRef.current;
+      const cx = canvas.width / (2 * (window.devicePixelRatio || 1));
+      const cy = canvas.height / (2 * (window.devicePixelRatio || 1));
+      const newK = Math.max(0.1, Math.min(5, t.k * factor));
+      const newT = d3.zoomIdentity
+        .translate(cx - (cx - t.x) * (newK / t.k), cy - (cy - t.y) * (newK / t.k))
+        .scale(newK);
+      d3.select(canvas).transition().duration(300)
+        .call(zoomBehaviorRef.current!.transform, newT);
+    };
+    onRegisterZoom({
+      zoomIn: () => zoomBy(1.5),
+      zoomOut: () => zoomBy(0.67),
+    });
+  }, [onRegisterZoom]);
 
   // Center on a specific node when requested
   useEffect(() => {

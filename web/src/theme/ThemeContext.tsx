@@ -2,9 +2,13 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import type { ThemeConfig } from "./themes";
 import { getThemeById, THEMES } from "./themes";
 
+export type LookAndFeel = "formal" | "organic";
+
 interface ThemeContextValue {
   theme: ThemeConfig;
   setThemeId: (id: string) => void;
+  look: LookAndFeel;
+  setLook: (look: LookAndFeel) => void;
   edgeColorOverrides: Record<string, string>;
   setEdgeColorOverrides: (overrides: Record<string, string>) => void;
   streamColorOverrides: Record<string, string>;
@@ -14,6 +18,7 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const LS_THEME = "cm-theme-id";
+const LS_LOOK = "cm-look";
 const LS_EDGE_COLORS = "cm-edge-colors";
 const LS_STREAM_COLORS = "cm-stream-colors";
 
@@ -72,6 +77,7 @@ function injectCssVars(theme: ThemeConfig) {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [themeId, setThemeIdState] = useState(() => lsGet(LS_THEME) ?? "midnight");
+  const [look, setLookState] = useState<LookAndFeel>(() => (lsGet(LS_LOOK) as LookAndFeel) ?? "formal");
   const [edgeColorOverrides, setEdgeColorOverridesState] = useState(() => readJson(LS_EDGE_COLORS));
   const [streamColorOverrides, setStreamColorOverridesState] = useState(() => readJson(LS_STREAM_COLORS));
 
@@ -85,6 +91,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setThemeId = useCallback((id: string) => {
     lsSet(LS_THEME, id);
     setThemeIdState(id);
+  }, []);
+
+  const setLook = useCallback((l: LookAndFeel) => {
+    lsSet(LS_LOOK, l);
+    setLookState(l);
   }, []);
 
   const setEdgeColorOverrides = useCallback((overrides: Record<string, string>) => {
@@ -102,6 +113,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       value={{
         theme: { ...theme, edgeColorOverrides, streamColorOverrides },
         setThemeId,
+        look,
+        setLook,
         edgeColorOverrides,
         setEdgeColorOverrides,
         streamColorOverrides,

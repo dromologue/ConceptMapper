@@ -13,6 +13,9 @@ import { TaxonomyWizard } from "./ui/TaxonomyWizard";
 import type { TaxonomyWizardResult, TaxonomyWizardInitial } from "./ui/TaxonomyWizard";
 import { MappingModal } from "./ui/MappingModal";
 import { ChatPane } from "./ui/ChatPane";
+import { ExportImageModal } from "./ui/ExportImageModal";
+import type { ExportImageOptions } from "./ui/ExportImageModal";
+import { jsPDF } from "jspdf";
 import { HelpPanel } from "./ui/HelpPanel";
 import { EdgePopover } from "./ui/EdgePopover";
 import { IconSearch } from "./ui/Icons";
@@ -38,7 +41,7 @@ function mergeNodeUpdate(node: GraphNode, updates: Partial<GraphNode>): GraphNod
 }
 
 function AppInner() {
-  const { theme } = useTheme();
+  const { theme, look } = useTheme();
   const { isLLMConfigured } = useLLM();
   const [graphData, setGraphData] = useState<GraphIR | null>(null);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
@@ -75,6 +78,8 @@ function AppInner() {
   const [chatHeight, setChatHeight] = useState(300);
   const [centerOnNode, setCenterOnNode] = useState<{ id: string; ts: number } | null>(null);
   const fitToViewRef = useRef<(() => void) | null>(null);
+  const zoomFnsRef = useRef<{ zoomIn: () => void; zoomOut: () => void } | null>(null);
+  const [showExportImage, setShowExportImage] = useState(false);
   const [selectedEdge, setSelectedEdge] = useState<import("./types/graph-ir").GraphEdge | null>(null);
   const [edgePopoverPos, setEdgePopoverPos] = useState<{ x: number; y: number } | null>(null);
   const [loadedNativeTemplates, setLoadedNativeTemplates] = useState<Map<string, TaxonomyWizardInitial>>(new Map());
@@ -419,6 +424,56 @@ function AppInner() {
     setSelectedEdge(null);
     setEdgePopoverPos(null);
   }, [graphData]);
+
+  // Export image handler — captures current canvas to PNG or PDF
+  const handleExportImage = useCallback((options: ExportImageOptions) => {
+    const canvas = document.querySelector("canvas");
+    if (!canvas) return;
+    setShowExportImage(false);
+
+    // Create an off-screen canvas at the desired scale
+    const w = canvas.width;
+    const h = canvas.height;
+    const scale = options.scale;
+    const offscreen = document.createElement("canvas");
+    offscreen.width = w * scale / (window.devicePixelRatio || 1);
+    offscreen.height = h * scale / (window.devicePixelRatio || 1);
+    const ctx = offscreen.getContext("2d")!;
+
+    // Fill background
+    const bgColor = options.background === "as-viewed"
+      ? theme.canvasBg
+      : options.customColor;
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+
+    // Draw current canvas content onto the off-screen canvas
+    ctx.drawImage(canvas, 0, 0, offscreen.width, offscreen.height);
+
+    const title = graphData?.metadata.title ?? "concept-map";
+    const filename = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+    if (options.format === "png") {
+      offscreen.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${filename}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }, "image/png");
+    } else {
+      // PDF using jsPDF
+      const imgData = offscreen.toDataURL("image/png");
+      const pxToMm = 0.264583;
+      const pdfW = offscreen.width * pxToMm;
+      const pdfH = offscreen.height * pxToMm;
+      const pdf = new jsPDF({ orientation: pdfW > pdfH ? "landscape" : "portrait", unit: "mm", format: [pdfW, pdfH] });
+      pdf.addImage(imgData, "PNG", 0, 0, pdfW, pdfH);
+      pdf.save(`${filename}.pdf`);
+    }
+  }, [theme, graphData]);
 
   // Keyboard shortcuts: Escape to cancel edge drawing, Delete/Backspace to delete
   useEffect(() => {
@@ -1062,6 +1117,7 @@ function AppInner() {
           llmAvailable={false /* LLM features hidden — enable in a later release */}
           onOpenHelp={() => setShowHelp(true)}
           onFitToView={() => fitToViewRef.current?.()}
+          onExportImage={() => setShowExportImage(true)}
           nodeTypeConfigs={nodeTypeConfigs}
         />
 
@@ -1098,6 +1154,7 @@ function AppInner() {
               edgeSourceId={edgeSource}
               filters={filters}
               theme={theme}
+              look={look}
               nodeTypeConfigs={nodeTypeConfigs}
               collapsedNodes={collapsedNodes}
               onToggleCollapse={(nodeId) => {
@@ -1112,7 +1169,13 @@ function AppInner() {
               selectedEdgeKey={selectedEdge ? `${selectedEdge.from}|${selectedEdge.to}` : null}
               centerOnNode={centerOnNode}
               onRegisterFitToView={(fn) => { fitToViewRef.current = fn; }}
+              onRegisterZoom={(fns) => { zoomFnsRef.current = fns; }}
             />
+            <div className="zoom-controls">
+              <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomIn()} title="Zoom in">+</button>
+              <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomOut()} title="Zoom out">-</button>
+              <button className="zoom-btn zoom-btn-fit" onClick={() => fitToViewRef.current?.()} title="Fit to view">Fit</button>
+            </div>
             {selectedEdge && edgePopoverPos && (
               <EdgePopover
                 edge={selectedEdge}
@@ -1243,6 +1306,13 @@ function AppInner() {
       )}
       {showHelp && (
         <HelpPanel onClose={() => setShowHelp(false)} />
+      )}
+      {showExportImage && (
+        <ExportImageModal
+          onExport={handleExportImage}
+          onCancel={() => setShowExportImage(false)}
+          currentBgColor={theme.canvasBg}
+        />
       )}
       <input
         ref={fileInputRef}

@@ -2,7 +2,6 @@
 export interface ThemeConfig {
   id: string;
   name: string;
-
   // UI chrome colors (injected as CSS custom properties)
   bgBody: string;
   bgPanel: string;
@@ -304,7 +303,49 @@ const paper: ThemeConfig = {
   sidebarBg: "#f5f5f5",
 };
 
-export const THEMES: ThemeConfig[] = [midnight, obsidian, solarized, nord, ivory, paper];
+const organic: ThemeConfig = {
+  ...ivory,
+  id: "organic",
+  name: "Organic",
+  bgBody: "#faf6ef",
+  bgPanel: "#f0eadd",
+  bgHover: "#e6dfd0",
+  textPrimary: "#3a3028",
+  textSecondary: "#5a4e40",
+  textMuted: "#8a7e6e",
+  textDim: "#b0a898",
+  accent: "#7a9a5a",
+  accentLight: "#9aba7a",
+  badgeThinkerBg: "#d8e0c8",
+  badgeThinkerText: "#4a6a2a",
+  badgeConceptBg: "#e8d8c0",
+  badgeConceptText: "#8a6a30",
+  btnExportBg: "#d0dcc0",
+  btnExportText: "#3a5a2a",
+  btnAddBg: "#d0d8c8",
+  btnAddText: "#4a6a2a",
+  errorText: "#c44040",
+  canvasBg: "#faf6ef",
+  canvasLabelBg: "rgba(250,246,239,0.88)",
+  canvasEdgeDefault: "#9a8e7a",
+  canvasEdgeDim: "#c0b8a8",
+  canvasEdgeHover: "#3a3028",
+  canvasLabelHighlight: "#4a4030",
+  canvasLabelDim: "#9a8e7a",
+  canvasSelectionStroke: "#5a7a3a",
+  canvasEdgeSourceStroke: "#5a9a3a",
+  canvasNotesIndicator: "#c89a40",
+  titlebarBg: "#ede6d8",
+  activityBarBg: "#e0d8ca",
+  activityBarFg: "#9a8e7a",
+  activityBarActiveFg: "#3a3028",
+  activityBarActiveBorder: "#7a9a5a",
+  statusBarBg: "#7a9a5a",
+  statusBarFg: "#f5f0e8",
+  sidebarBg: "#f0eadd",
+};
+
+export const THEMES: ThemeConfig[] = [midnight, obsidian, solarized, nord, ivory, paper, organic];
 
 export function getThemeById(id: string): ThemeConfig {
   return THEMES.find((t) => t.id === id) ?? midnight;

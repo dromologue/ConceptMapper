@@ -215,3 +215,38 @@ The macOS app runs in App Sandbox with minimum required entitlements.
 **AC-059-04**: Hardened runtime is enabled (`ENABLE_HARDENED_RUNTIME: YES`).
 **AC-059-05**: Info.plist includes `NSHumanReadableCopyright` and `LSApplicationCategoryType`.
 **AC-059-06**: ExportOptions.plist exists for App Store archive export.
+
+## Canvas Interaction & Export
+
+### REQ-060: Zoom Controls
+Canvas overlay provides zoom in, zoom out, and fit-to-view buttons.
+
+**AC-060-01**: Canvas overlay shows +, -, Fit buttons in the top-right corner.
+**AC-060-02**: + button zooms in 1.5x centered on canvas center with 300ms animation.
+**AC-060-03**: - button zooms out 0.67x centered on canvas center with 300ms animation.
+**AC-060-04**: Fit button calls existing fitToView function.
+**AC-060-05**: Shift+drag marquee zoom still works (existing feature, unchanged).
+
+### REQ-061: Organic Look-and-Feel
+A look-and-feel setting independent of color theme controls rendering style. Can be combined with any theme.
+
+**AC-061-01**: Look-and-feel is a separate setting ("formal" or "organic"), stored in localStorage, not tied to any theme.
+**AC-061-02**: The Settings modal has a Look & Feel toggle (Formal / Organic).
+**AC-061-03**: An "Organic" color theme exists with warm earth tones (usable with either look).
+**AC-061-04**: Organic look uses subtly jittered paths for hand-drawn shapes that remain recognizable.
+**AC-061-05**: Organic edges use quadratic bezier curves with taper (thicker at source, thinner at target).
+**AC-061-06**: Jitter is deterministic per node (based on node ID hash), stable across redraws.
+**AC-061-07**: Formal look renders with precise geometry (unchanged from current behaviour).
+**AC-061-08**: Auto-fit only runs on initial layout, not after user zoom/pan interaction.
+
+### REQ-062: Image Export (PNG/PDF)
+Export the current canvas view as PNG or PDF with configurable background.
+
+**AC-062-01**: Export Image button in the activity bar opens an export modal.
+**AC-062-02**: Modal offers format options: PNG and PDF.
+**AC-062-03**: Modal offers background options: "As viewed" (current theme bg) or custom color picker.
+**AC-062-04**: Modal offers resolution options: 1x and 2x (retina).
+**AC-062-05**: Export captures the current canvas state (respects filters, zoom, selection).
+**AC-062-06**: PNG export creates an off-screen canvas and triggers blob download.
+**AC-062-07**: PDF export uses jsPDF to create a single-page PDF with the canvas image.
+**AC-062-08**: Download triggers via blob URL with appropriate filename.
