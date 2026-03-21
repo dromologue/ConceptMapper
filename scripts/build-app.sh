@@ -81,12 +81,22 @@ npm run build
 cd "$ROOT"
 echo "React SPA built."
 
-# --- Step 4: Copy web assets ---
+# --- Step 3b: Build MCP server ---
 echo ""
-echo "=== Step 4: Copy web assets to macOS Resources ==="
+echo "=== Step 3b: Build MCP server ==="
+cd mcp-server
+swift build -c release 2>&1 | tail -3
+cd "$ROOT"
+echo "MCP server built."
+
+# --- Step 4: Copy web assets + MCP binary ---
+echo ""
+echo "=== Step 4: Copy web assets and MCP binary to macOS Resources ==="
 rm -rf macos/Resources/web
 cp -r web/dist/ macos/Resources/web/
-echo "Web assets copied."
+mkdir -p macos/Resources/bin
+cp mcp-server/.build/release/ConceptMCP macos/Resources/bin/
+echo "Web assets and MCP binary copied."
 
 # --- Step 5: Regenerate Xcode project ---
 echo ""

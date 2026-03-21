@@ -4,6 +4,9 @@
 /web/src/wasm
 /macos/ConceptLLM.xcodeproj
 /macos/Resources/web
+/macos/Resources/bin
+/macos/build
+/mcp-server/.build
 .env
 .DS_Store
 concept\ library.md

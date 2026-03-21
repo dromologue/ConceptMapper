@@ -543,101 +543,72 @@ The k-core number of a node indicates which "shell" of the network it belongs to
     id: "mcp-server",
     title: "MCP Server: Using ConceptLLM with AI Assistants",
     tags: ["mcp", "server", "claude", "ai", "llm", "api", "tools", "integration", "model context protocol"],
-    content: `ConceptLLM includes an MCP (Model Context Protocol) server that lets AI assistants like Claude directly read, search, create, and edit concept maps.
+    content: `ConceptLLM includes a built-in MCP (Model Context Protocol) server that lets AI assistants like Claude directly read, search, create, and edit your concept maps. No installation or configuration required beyond a single click.
 
-**What is MCP?**
+**Quick Setup (One Click)**
 
-MCP is a protocol that allows AI assistants to use external tools. When configured, your AI assistant gains 15 tools for working with your concept maps — searching nodes, adding relationships, creating new maps from templates, and more.
+1. Open the **Help** menu in ConceptLLM's menu bar (top of screen)
+2. Click **"Setup MCP for Claude Desktop"** (or whichever AI client you use)
+3. A confirmation dialog appears — click OK
+4. **Restart your AI client** (e.g. quit and reopen Claude Desktop)
+5. Done! Your AI assistant now has 15 tools for working with your concept maps
 
-**Setup for Claude Desktop**
+The green **MCP** badge in the status bar confirms the connection is configured.
 
-1. Build the MCP server (one-time):
+**Supported AI Clients**
 
-Open Terminal and run:
-\`\`\`
-cd /path/to/concept-mapper/mcp-server
-swift build -c release
-\`\`\`
+ConceptLLM auto-detects installed AI clients:
+- **Claude Desktop** — fully supported
+- **Cursor** — fully supported
+- **Other MCP-compatible clients** — use "Setup MCP — Custom Path..." to point to your client's config file
 
-2. Find the built binary:
-\`\`\`
-.build/release/ConceptMCP
-\`\`\`
+**What Can Your AI Do?**
 
-3. Add to Claude Desktop's configuration file at:
-\`~/Library/Application Support/Claude/claude_desktop_config.json\`
+Once configured, your AI assistant can:
 
-Add this to the "mcpServers" section:
-\`\`\`json
-{
-  "mcpServers": {
-    "conceptllm": {
-      "command": "/path/to/concept-mapper/mcp-server/.build/release/ConceptMCP"
-    }
-  }
-}
-\`\`\`
+*Browse your maps:*
+- List all your concept maps and templates
+- Open and read any map (nodes, edges, streams, generations)
+- Search for nodes by name, type, or property value
+- Get full details and connections for any node
 
-4. Restart Claude Desktop. You should see ConceptLLM tools available.
+*Edit your maps:*
+- Add new nodes with properties, notes, stream, and generation
+- Update existing nodes (rename, change properties, add notes)
+- Delete nodes (automatically removes connected edges)
+- Add, update, or delete edges (relationships) between nodes
 
-**Custom directories**
+*Create new maps:*
+- Create a new concept map from any of your templates
+- The AI can populate it with nodes and edges from your source material
 
-By default, the MCP server reads maps from:
-\`~/Library/Application Support/ConceptLLM/Maps/\`
-and templates from:
-\`~/Library/Application Support/ConceptLLM/templates/\`
+**Example Conversations**
 
-Override with flags:
-\`\`\`
-ConceptMCP --maps-dir ~/my-maps --templates-dir ~/my-templates
-\`\`\`
+"Open the organisational learning map and show me the most connected nodes"
+→ AI uses list_maps, open_map, and get_map_stats
 
-**Available Tools (15)**
+"Add a new thinker for Hannah Arendt in the institution stream, generation 2, with a note about her work on public space"
+→ AI uses add_node with all the specified properties
 
-*Navigation:*
-- **list_maps** — List all concept maps with node/edge counts
-- **list_templates** — List all available templates
-- **open_map** — Read a complete map (nodes, edges, streams, generations)
-- **open_template** — Read a template's taxonomy structure
+"What concepts did Bourdieu originate? Show me his full network."
+→ AI uses get_node and get_connections to trace relationships
 
-*Search:*
-- **search_nodes** — Find nodes by name, type, or property value
-- **get_node** — Get full details of a node (properties, notes, connections)
-- **get_connections** — Get all edges connected to a node
+"Create a new map called 'Management Theory' using the intellectual-history template"
+→ AI uses create_map with the specified template
 
-*Create & Edit:*
-- **add_node** — Add a new node to a map
-- **update_node** — Update a node's name, properties, notes, stream, or generation
-- **delete_node** — Remove a node and all its edges
-- **add_edge** — Create a relationship between two nodes
-- **update_edge** — Change an edge's note, weight, or type
-- **delete_edge** — Remove a relationship
+**Where Are My Files?**
 
-*Map Management:*
-- **create_map** — Create a new map from a template
-- **get_map_stats** — Get network statistics (density, node types, edge types)
+Maps: ~/Library/Application Support/ConceptLLM/Maps/
+Templates: ~/Library/Application Support/ConceptLLM/templates/
 
-**Example conversation with Claude**
-
-You: "Open the organisational learning map and find all nodes connected to Bourdieu"
-
-Claude will use \`open_map\` then \`get_connections\` to show you Bourdieu's network of concepts and relationships.
-
-You: "Add a new thinker node for Hannah Arendt in the institution stream, generation 2"
-
-Claude will use \`add_node\` to create the node and save the .cm file.
-
-You: "Create an edge from Arendt to the concept of public space with type 'originates'"
-
-Claude will use \`add_edge\` to establish the relationship.
-
-**Changes are saved immediately** to the .cm files. If ConceptLLM is open, reload the file to see the AI's changes.
+All changes made by the AI are saved immediately to these .cm files. If ConceptLLM is open, reopen the file to see changes.
 
 **Troubleshooting**
 
-- *Tools not appearing in Claude Desktop:* Check the path in claude_desktop_config.json. The binary must exist at the specified path. Restart Claude Desktop after config changes.
-- *"File not found" errors:* The MCP server looks in the default ConceptLLM directories. If your maps are elsewhere, use --maps-dir.
-- *Maps not appearing in ConceptLLM:* Save new maps to ~/Library/Application Support/ConceptLLM/Maps/ so they show on the start screen.`,
+- *"Setup MCP" shows "not installed":* Install the AI client first, then try again.
+- *Tools not appearing after setup:* Quit and fully restart your AI client.
+- *AI can't find your maps:* Maps must be in the ConceptLLM Maps folder. Save maps there from File > Save As.
+- *MCP badge not showing:* The badge appears after you run setup AND restart ConceptLLM.`,
   },
 
   // ── FAQ ──────────────────────────────────────────────────────────

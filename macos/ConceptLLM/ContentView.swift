@@ -256,6 +256,11 @@ struct WebView: NSViewRepresentable {
     class Coordinator: NSObject, WKNavigationDelegate {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             logger.info("Page loaded successfully")
+
+            // Inject MCP status for the status bar
+            let mcpConfigured = MCPSetup.detectedClients.contains { MCPSetup.isConfigured(for: $0) }
+            webView.evaluateJavaScript("window.__MCP_CONFIGURED__ = \(mcpConfigured)") { _, _ in }
+
             webView.evaluateJavaScript("document.getElementById('root').innerHTML.length") { result, error in
                 if let len = result as? Int {
                     logger.info("React root innerHTML length: \(len)")
