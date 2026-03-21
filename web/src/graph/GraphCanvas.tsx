@@ -86,6 +86,7 @@ interface Props {
   centerOnNode?: { id: string; ts: number } | null;
   onRegisterFitToView?: (fn: () => void) => void;
   onRegisterZoom?: (fns: { zoomIn: () => void; zoomOut: () => void }) => void;
+  hiddenLabelTypes?: Set<string>;
   communityOverlay?: Map<string, number>;
   highlightedPath?: string[] | null;
   highlightedCommunity?: number | null;
@@ -120,7 +121,7 @@ function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): NodeSha
   return "circle";
 }
 
-export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, onRegisterFitToView, onRegisterZoom, communityOverlay, highlightedPath, highlightedCommunity }: Props) {
+export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const transformRef = useRef(d3.zoomIdentity);
@@ -148,6 +149,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const gensRef = useRef<number[]>([]);
   const themeRef = useRef(theme);
   const lookRef = useRef(look);
+  const selectedNodeIdRef = useRef(selectedNodeId);
+  const selectedEdgeKeyRef = useRef(selectedEdgeKey);
+  const hiddenLabelTypesRef = useRef(hiddenLabelTypes);
   const communityOverlayRef = useRef(communityOverlay);
   const highlightedPathRef = useRef(highlightedPath);
   const highlightedCommunityRef = useRef(highlightedCommunity);
@@ -164,6 +168,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { dataRef.current = data; }, [data]);
   useEffect(() => { themeRef.current = theme; redraw(); }, [theme]);
   useEffect(() => { lookRef.current = look; redraw(); }, [look]);
+  useEffect(() => { selectedNodeIdRef.current = selectedNodeId; redraw(); }, [selectedNodeId]);
+  useEffect(() => { hiddenLabelTypesRef.current = hiddenLabelTypes; redraw(); }, [hiddenLabelTypes]);
   useEffect(() => { communityOverlayRef.current = communityOverlay; redraw(); }, [communityOverlay]);
   useEffect(() => { highlightedPathRef.current = highlightedPath; redraw(); }, [highlightedPath]);
   useEffect(() => { highlightedCommunityRef.current = highlightedCommunity; redraw(); }, [highlightedCommunity]);
@@ -172,9 +178,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { interactionRef.current = interactionMode; redraw(); }, [interactionMode]);
   useEffect(() => { edgeSourceRef.current = edgeSourceId; redraw(); }, [edgeSourceId]);
   useEffect(() => { filtersRef.current = filters; redraw(); }, [filters]);
-  useEffect(() => { redraw(); }, [selectedNodeId]);
   useEffect(() => { nodeTypeConfigsRef.current = nodeTypeConfigs; redraw(); }, [nodeTypeConfigs]);
-  useEffect(() => { redraw(); }, [selectedEdgeKey]);
+  useEffect(() => { selectedEdgeKeyRef.current = selectedEdgeKey; redraw(); }, [selectedEdgeKey]);
 
   function redraw() {
     const ctx = ctxRef.current;
@@ -692,11 +697,13 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     ctx.scale(t.k, t.k);
 
     const hovered = hoveredRef.current;
-    const selected = selectedNodeId;
+    const selected = selectedNodeIdRef.current;
     const connectedToHighlight = new Set<string>();
 
     if (hovered || selected) {
       const focusId = hovered || selected;
+      // Always include the focused node itself (handles isolated nodes with no edges)
+      if (focusId) connectedToHighlight.add(focusId);
       linksRef.current.forEach((l) => {
         const src = typeof l.source === "string" ? l.source : l.source.id;
         const tgt = typeof l.target === "string" ? l.target : l.target.id;
@@ -730,7 +737,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const isHighlighted = connectedToHighlight.size === 0 || (connectedToHighlight.has(source.id) && connectedToHighlight.has(target.id));
       const isRevealed = !isAdding && (revealed.has(source.id) || revealed.has(target.id));
       const isEdgeHovered = hoveredEdge === l;
-      const isEdgeSelected = selectedEdgeKey === `${source.id}|${target.id}` || selectedEdgeKey === `${target.id}|${source.id}`;
+      const isEdgeSelected = selectedEdgeKeyRef.current === `${source.id}|${target.id}` || selectedEdgeKeyRef.current === `${target.id}|${source.id}`;
 
       // Check if this edge is on the highlighted path
       const hPath = highlightedPathRef.current;
@@ -781,8 +788,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         edgeLw = 2.5 * weightScale;
       } else {
         const edgeColor = th.edgeColorOverrides[l.edge.edge_type] ?? visual.color;
+        const hasNodeSelection = selected && connectedToHighlight.size > 0;
         ctx.strokeStyle = edgeColor ?? (isHighlighted ? th.canvasEdgeDefault : th.canvasEdgeDim);
-        const alpha = isHighlighted ? 0.8 : isRevealed ? 0.4 : 0.15;
+        const alpha = isHighlighted ? 0.8 : hasNodeSelection ? 0.03 : isRevealed ? 0.4 : 0.15;
         ctx.globalAlpha = alpha;
         edgeLw = (isHighlighted ? 1.5 : 0.8) * weightScale;
       }
@@ -848,7 +856,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const showInFilteredView = (mode === "people" || mode === "concepts") && !isAdding && t.k > 0.8;
       const showForHighlighted = isHighlighted && t.k > 0.6;
 
-      if (showInFilteredView || showForHighlighted) {
+      const edgeLabelHidden = hiddenLabelTypesRef.current?.has(`edge:${l.edge.edge_type}`);
+      if (!edgeLabelHidden && (showInFilteredView || showForHighlighted)) {
         const midX = (source.x + target.x) / 2;
         const midY = (source.y + target.y) / 2;
         const label = EDGE_LABELS[l.edge.edge_type] ?? l.edge.edge_type;
@@ -898,8 +907,15 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const isHovered = node.id === hovered;
       const isEdgeSource = node.id === edgeSrc;
 
-      const alpha = isHighlighted ? (isRevealed ? 0.7 : 1) : 0.25;
-      ctx.globalAlpha = alpha;
+      // Dimming: community highlight takes priority over node selection
+      const communityActive = hComm != null && communityMap;
+      if (!communityActive) {
+        const hasSelection = selected && connectedToHighlight.size > 0;
+        const alpha = isHighlighted
+          ? (isRevealed ? 0.7 : 1)
+          : (hasSelection ? 0.08 : 0.25);
+        ctx.globalAlpha = alpha;
+      }
 
       const effectiveR = isRevealed ? r * 0.7 : r;
       const shape = getNodeShape(node, configs);
@@ -994,7 +1010,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       // Labels
       const sizeFieldValue = node.properties?.[configs.find((c) => c.id === node.node_type)?.size_field ?? ""];
       const isDominant = sizeFieldValue === "dominant";
-      if (t.k > 0.4 || isDominant) {
+      const nodeLabelHidden = hiddenLabelTypesRef.current?.has(`node:${node.node_type}`);
+      if (!nodeLabelHidden && (t.k > 0.4 || isDominant)) {
         const fontSize = Math.max(8, Math.min(16, 11 * Math.sqrt(t.k)));
         ctx.font = `${fontSize}px -apple-system, sans-serif`;
         ctx.textAlign = "center";

@@ -15,6 +15,7 @@ import { MappingModal } from "./ui/MappingModal";
 import { ChatPane } from "./ui/ChatPane";
 import { ExportImageModal } from "./ui/ExportImageModal";
 import { AnalysisPanel } from "./ui/AnalysisPanel";
+import { EdgeNotesPane } from "./ui/EdgeNotesPane";
 import { analyzeNetwork, findShortestPaths } from "./utils/graph-analysis";
 import type { NetworkAnalysis, PathResult } from "./utils/graph-analysis";
 import type { ExportImageOptions } from "./ui/ExportImageModal";
@@ -84,6 +85,8 @@ function AppInner() {
   const zoomFnsRef = useRef<{ zoomIn: () => void; zoomOut: () => void } | null>(null);
   const [showExportImage, setShowExportImage] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [hiddenLabelTypes, setHiddenLabelTypes] = useState<Set<string>>(new Set());
+  const [labelMenuOpen, setLabelMenuOpen] = useState(false);
   const [analysis, setAnalysis] = useState<NetworkAnalysis | null>(null);
   const [analysisNodeTypes, setAnalysisNodeTypes] = useState<Set<string> | null>(null);
   const [pathResult, setPathResult] = useState<PathResult | null>(null);
@@ -790,7 +793,7 @@ function AppInner() {
   const handleSelectEdge = useCallback((edge: import("./types/graph-ir").GraphEdge | null, pos?: { x: number; y: number }) => {
     setSelectedEdge(edge);
     setEdgePopoverPos(pos ?? null);
-    if (edge) setSelectedNode(null);
+    if (edge) { setSelectedNode(null); setNotesOpen(true); }
   }, []);
 
   const handleEdgeUpdate = useCallback((fromId: string, toId: string, updates: Partial<import("./types/graph-ir").GraphEdge>) => {
@@ -1213,6 +1216,7 @@ function AppInner() {
               centerOnNode={centerOnNode}
               onRegisterFitToView={(fn) => { fitToViewRef.current = fn; }}
               onRegisterZoom={(fns) => { zoomFnsRef.current = fns; }}
+              hiddenLabelTypes={hiddenLabelTypes}
               communityOverlay={communityOverlay ? analysis?.communities : undefined}
               highlightedPath={highlightedPath}
               highlightedCommunity={highlightedCommunity}
@@ -1221,6 +1225,51 @@ function AppInner() {
               <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomIn()} title="Zoom in">+</button>
               <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomOut()} title="Zoom out">-</button>
               <button className="zoom-btn zoom-btn-fit" onClick={() => fitToViewRef.current?.()} title="Fit to view">Fit</button>
+              <button
+                className={`zoom-btn zoom-btn-fit ${hiddenLabelTypes.size > 0 ? "zoom-btn-off" : ""}`}
+                onClick={() => setLabelMenuOpen(!labelMenuOpen)}
+                title="Label visibility"
+              >Aa</button>
+              {labelMenuOpen && (
+                <div className="label-menu">
+                  <div className="label-menu-header">Show Labels</div>
+                  <label className="label-menu-item">
+                    <input type="checkbox" checked={hiddenLabelTypes.size === 0}
+                      onChange={() => setHiddenLabelTypes(new Set())} />
+                    <span>All</span>
+                  </label>
+                  <div className="label-menu-group">Nodes</div>
+                  {nodeTypeConfigs.map((nt) => (
+                    <label key={nt.id} className="label-menu-item">
+                      <input type="checkbox" checked={!hiddenLabelTypes.has(`node:${nt.id}`)}
+                        onChange={() => {
+                          const next = new Set(hiddenLabelTypes);
+                          const key = `node:${nt.id}`;
+                          if (next.has(key)) next.delete(key); else next.add(key);
+                          setHiddenLabelTypes(next);
+                        }} />
+                      <span>{nt.label}</span>
+                    </label>
+                  ))}
+                  {template?.edge_types && template.edge_types.length > 0 && (
+                    <>
+                      <div className="label-menu-group">Edges</div>
+                      {template.edge_types.map((et) => (
+                        <label key={et.id} className="label-menu-item">
+                          <input type="checkbox" checked={!hiddenLabelTypes.has(`edge:${et.id}`)}
+                            onChange={() => {
+                              const next = new Set(hiddenLabelTypes);
+                              const key = `edge:${et.id}`;
+                              if (next.has(key)) next.delete(key); else next.add(key);
+                              setHiddenLabelTypes(next);
+                            }} />
+                          <span>{et.label}</span>
+                        </label>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
             {selectedEdge && edgePopoverPos && (
               <EdgePopover
@@ -1245,6 +1294,18 @@ function AppInner() {
                   edges={selectedEdges}
                   nodes={graphData.nodes}
                   onNodeUpdate={handleNodeUpdate}
+                />
+              </div>
+            </>
+          )}
+          {!selectedNode && selectedEdge && notesOpen && !chatOpen && (
+            <>
+              <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />
+              <div className="notes-bottom-pane" style={{ height: notesHeight }}>
+                <EdgeNotesPane
+                  edge={selectedEdge}
+                  nodes={graphData.nodes}
+                  onEdgeUpdate={handleEdgeUpdate}
                 />
               </div>
             </>
@@ -1302,9 +1363,10 @@ function AppInner() {
             pathResult={pathResult}
             onSelectNode={(id) => {
               const node = graphData.nodes.find((n) => n.id === id);
-              if (node) setSelectedNode(node);
+              if (node) { setSelectedNode(node); setHighlightedCommunity(null); }
             }}
-            onHighlightCommunity={setHighlightedCommunity}
+            onDeselectNode={() => { setSelectedNode(null); }}
+            onHighlightCommunity={(idx) => { setHighlightedCommunity(idx); if (idx != null) setSelectedNode(null); }}
             onFocusCommunity={(memberIds) => {
               // Reveal only community members and their inter-connections, then fit to view
               setRevealedNodes(new Set(memberIds));

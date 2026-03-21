@@ -133,6 +133,10 @@
 | REQ-063 | AC-063-01..10 (analysis engine) | `src/__tests__/graph-analysis.test.ts` | 31 tests: degree, betweenness, closeness, eigenvector, paths, communities, k-core, density, diameter | passing |
 | REQ-064 | AC-064-01..07 (analysis panel) | — | manual verification (panel UI) | passing |
 | REQ-065 | AC-065-01..06 (canvas integration) | — | manual verification (path highlight, community overlay, edge dimming) | passing |
+| REQ-066 | AC-066-01..04 (label toggle) | — | manual verification (Aa button in zoom controls) | passing |
+| REQ-067 | AC-067-01..08 (outline notes) | `src/__tests__/detail-panel-notes.test.tsx` | outline editor, indent hint, outline items | passing |
+| REQ-068 | AC-068-01..04 (edge notes pane) | `src/__tests__/edge-popover.test.tsx` | popover has weight+delete only, notes in bottom pane | passing |
+| REQ-069 | AC-069-01..05 (node selection highlight) | — | manual verification (strong dimming, mutual exclusivity) | passing |
 
 ## Additional Passing Tests (not yet mapped to spec requirements)
 

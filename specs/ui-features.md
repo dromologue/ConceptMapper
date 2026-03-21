@@ -251,6 +251,43 @@ Export the current canvas view as PNG or PDF with configurable background.
 **AC-062-07**: PDF export uses jsPDF to create a single-page PDF with the canvas image.
 **AC-062-08**: Download triggers via blob URL with appropriate filename.
 
+### REQ-066: Label Visibility Toggle
+Toggle node and edge labels on/off from the canvas controls.
+
+**AC-066-01**: "Aa" button in zoom controls toggles label visibility.
+**AC-066-02**: When off, no node name labels or edge type labels are drawn on canvas.
+**AC-066-03**: Button shows strikethrough/dimmed when labels are hidden.
+**AC-066-04**: Collapse indicators (+/-) remain visible regardless of label toggle.
+
+### REQ-067: Outline Notes Editor
+Notes use an interactive outline editor with indent/outdent instead of markdown.
+
+**AC-067-01**: Each line is an editable input with a bullet marker.
+**AC-067-02**: Tab indents the current line (max = parent indent + 1).
+**AC-067-03**: Shift+Tab outdents the current line.
+**AC-067-04**: Enter splits at cursor, creating a new line.
+**AC-067-05**: Backspace at line start outdents first, then merges with previous line.
+**AC-067-06**: Arrow up/down navigates between lines.
+**AC-067-07**: Notes stored as indented bullet text ("- " prefix, 2-space indent levels).
+**AC-067-08**: Notes pane has high-contrast background (white-on-black for dark themes, black-on-white for light).
+
+### REQ-068: Edge Notes Pane
+Edge notes open in the bottom notes pane (same as node notes) instead of the popover.
+
+**AC-068-01**: Clicking an edge opens the notes pane at the bottom with the edge note.
+**AC-068-02**: Edge notes pane header shows "Edge: FromNode → ToNode" with edge type.
+**AC-068-03**: Edge notes use the same outline editor as node notes.
+**AC-068-04**: Edge popover retains only weight slider and delete button (no note field).
+
+### REQ-069: Node Selection Highlight
+Selecting a node strongly dims non-connected nodes and edges.
+
+**AC-069-01**: Selected node and its direct connections render at full opacity.
+**AC-069-02**: Non-connected nodes dimmed to 8% opacity when a node is selected.
+**AC-069-03**: Non-connected edges dimmed to 3% opacity.
+**AC-069-04**: Highlight works consistently from canvas click, sidebar click, and analysis panel click.
+**AC-069-05**: Community highlight and node highlight are mutually exclusive — selecting one clears the other.
+
 ## Network Analysis
 
 ### REQ-063: Network Analysis Engine

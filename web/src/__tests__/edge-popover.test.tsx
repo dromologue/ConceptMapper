@@ -24,7 +24,6 @@ describe("EdgePopover", () => {
     render(<EdgePopover {...defaultProps} edgeTypeLabel="Chain" />);
     expect(screen.getByText("Chain")).toBeInTheDocument();
     expect(screen.getByRole("slider")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Edge note...")).toBeInTheDocument();
   });
 
   it("displays current weight value", () => {
@@ -47,9 +46,8 @@ describe("EdgePopover", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("displays note with existing value", () => {
-    const edgeWithNote = { ...sampleEdge, note: "Test note" };
-    render(<EdgePopover {...defaultProps} edge={edgeWithNote} />);
-    expect(screen.getByDisplayValue("Test note")).toBeInTheDocument();
+  it("shows delete button when onDelete is provided", () => {
+    render(<EdgePopover {...defaultProps} onDelete={vi.fn()} />);
+    expect(screen.getByText("Delete Edge")).toBeInTheDocument();
   });
 });

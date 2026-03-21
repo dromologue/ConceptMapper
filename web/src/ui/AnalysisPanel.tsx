@@ -11,6 +11,7 @@ interface Props {
   selectedNodeId: string | null;
   pathResult: PathResult | null;
   onSelectNode: (nodeId: string) => void;
+  onDeselectNode: () => void;
   onHighlightCommunity: (communityIndex: number | null) => void;
   onFocusCommunity: (memberIds: string[]) => void;
   highlightedCommunity: number | null;
@@ -39,7 +40,7 @@ export function communityColor(index: number): string {
 export function AnalysisPanel({
   analysis, nodes, nodeTypeConfigs, analysisNodeTypes, onSetAnalysisNodeTypes,
   selectedNodeId, pathResult,
-  onSelectNode, onHighlightCommunity, onFocusCommunity, highlightedCommunity,
+  onSelectNode, onDeselectNode, onHighlightCommunity, onFocusCommunity, highlightedCommunity,
   communityOverlay, onToggleCommunityOverlay,
   onFindPath, onClearPath, pathFrom, pathTo, onSetPathFrom, onSetPathTo,
 }: Props) {
@@ -95,6 +96,22 @@ export function AnalysisPanel({
   return (
     <div className="analysis-panel">
       <div className="analysis-header">Network Analysis</div>
+
+      {/* Active highlight banner */}
+      {(selectedNodeId || highlightedCommunity != null) && (
+        <div className="analysis-highlight-banner">
+          <span className="analysis-highlight-label">
+            {selectedNodeId
+              ? `Node: ${nodes.find((n) => n.id === selectedNodeId)?.name ?? selectedNodeId}`
+              : `Community ${(highlightedCommunity ?? 0) + 1}`
+            }
+          </span>
+          <button className="analysis-highlight-clear" onClick={() => {
+            onDeselectNode();
+            onHighlightCommunity(null);
+          }}>Clear</button>
+        </div>
+      )}
 
       {/* Node type filter */}
       {nodeTypeConfigs.length > 1 && (
@@ -166,7 +183,7 @@ export function AnalysisPanel({
               </thead>
               <tbody>
                 {displayedRankings.map((r) => (
-                  <tr key={r.id} className={`analysis-row ${r.id === selectedNodeId ? "analysis-row-selected" : ""}`} onClick={() => onSelectNode(r.id)}>
+                  <tr key={r.id} className={`analysis-row ${r.id === selectedNodeId ? "analysis-row-selected" : ""}`} onClick={() => r.id === selectedNodeId ? onDeselectNode() : onSelectNode(r.id)}>
                     <td className="analysis-cell-name">{r.name}</td>
                     <td>{r.connections}</td>
                     <td>{fmt(r.bridge)}</td>

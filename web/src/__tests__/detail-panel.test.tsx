@@ -121,25 +121,25 @@ describe("NotesPane", () => {
     expect(screen.getByText(/Notes: Chris Argyris/)).toBeInTheDocument();
   });
 
-  it("shows contenteditable inline editor when no notes exist", () => {
+  it("shows outline editor with input fields", () => {
     render(<NotesPane node={argyris} edges={[]} {...defaultNotesProps} />);
-    const editor = document.querySelector(".notes-inline-editor");
+    const editor = document.querySelector(".outline-editor");
     expect(editor).toBeInTheDocument();
-    expect(editor).toHaveAttribute("contenteditable", "true");
+    const inputs = document.querySelectorAll(".outline-input");
+    expect(inputs.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders markdown-highlighted content when notes exist", () => {
-    const nodeWithNotes = { ...argyris, notes: "**Bold** and *italic*" };
+  it("renders notes content as outline items", () => {
+    const nodeWithNotes = { ...argyris, notes: "- First point\n  - Sub point\n- Second point" };
     render(<NotesPane node={nodeWithNotes} edges={[]} {...defaultNotesProps} />);
-    expect(screen.getByText("Bold")).toBeInTheDocument();
-    expect(screen.getByText("italic")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("First point")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Sub point")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Second point")).toBeInTheDocument();
   });
 
-  it("renders contenteditable editor that accepts input", () => {
+  it("shows indent hint text", () => {
     render(<NotesPane node={argyris} edges={[]} {...defaultNotesProps} />);
-    const editor = document.querySelector(".notes-inline-editor");
-    expect(editor).toBeInTheDocument();
-    expect(editor).toHaveAttribute("contenteditable", "true");
+    expect(screen.getByText(/Tab to indent/)).toBeInTheDocument();
   });
 
   it("shows edge relationship context when edges have notes", () => {

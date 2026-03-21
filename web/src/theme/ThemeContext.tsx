@@ -70,6 +70,10 @@ function injectCssVars(theme: ThemeConfig) {
     ["--status-bar-fg", theme.statusBarFg],
     ["--sidebar-bg", theme.sidebarBg],
   ];
+  // Notes pane: high-contrast black-on-white or white-on-black
+  const isLight = theme.id === "ivory" || theme.id === "paper" || theme.id === "organic";
+  vars.push(["--notes-bg", isLight ? "#ffffff" : "#111111"]);
+  vars.push(["--notes-fg", isLight ? "#1a1a1a" : "#e8e8e8"]);
   for (const [prop, val] of vars) {
     root.style.setProperty(prop, val);
   }
