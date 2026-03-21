@@ -39,22 +39,13 @@ export const DEFAULT_CONCEPT_CONFIG: NodeTypeConfig = {
   ],
 };
 
-/** Default node type for new taxonomies — generic, all text fields */
+/** Default node type for new taxonomies — blank slate, users define their own fields */
 export const DEFAULT_NODE_CONFIG: NodeTypeConfig = {
   id: "node",
   label: "Node",
   shape: "circle",
   icon: "N",
-  fields: [
-    { key: "importance", label: "Importance", type: "text" },
-    { key: "status", label: "Status", type: "text" },
-    { key: "owner", label: "Owner", type: "text" },
-    { key: "precursor", label: "Precursor", type: "text" },
-    { key: "date_from", label: "From", type: "text" },
-    { key: "date_to", label: "To", type: "text" },
-    { key: "tags", label: "Tags", type: "text" },
-    { key: "structural_roles", label: "Roles", type: "text" },
-  ],
+  fields: [],
 };
 
 export const DEFAULT_NODE_TYPES: NodeTypeConfig[] = [DEFAULT_NODE_CONFIG];

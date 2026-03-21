@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { Stream, Generation, NodeTypeConfig, FieldConfig, EdgeTypeConfig } from "../types/graph-ir";
-import { DEFAULT_NODE_TYPES } from "../migration";
+import type { Stream, Generation, NodeTypeConfig, FieldConfig, EdgeTypeConfig, FieldType } from "../types/graph-ir";
 
 const DEFAULT_COLORS = ["#4A90D9", "#50C878", "#FF7F50", "#9B59B6", "#F1C40F", "#E74C3C", "#1ABC9C", "#E67E22"];
 const DEFAULT_EDGE_COLORS = ["#888888", "#4A90D9", "#D94A4A", "#50C878", "#9B59B6", "#E67E22", "#F1C40F"];
@@ -18,7 +17,7 @@ function slugify(name: string): string {
 }
 
 interface WizardStream {
-  id?: string; // preserve original id for existing streams
+  id?: string;
   name: string;
   color: string;
   description: string;
@@ -32,6 +31,8 @@ interface WizardGeneration {
 interface WizardField {
   key: string;
   label: string;
+  type: FieldType;
+  options?: string[];  // for select type
   required: boolean;
 }
 
@@ -48,7 +49,9 @@ interface WizardNodeType {
   label: string;
   shape: "circle" | "rectangle";
   icon: string;
-  label_overrides: Record<string, string>; // field key → custom label
+  fields: WizardField[];
+  size_field?: string;
+  size_map?: Record<string, number>;
   collapsed: boolean;
 }
 
@@ -82,39 +85,23 @@ interface Props {
   onSaveTemplate?: (data: TaxonomyWizardResult) => void;
 }
 
-/** Extract shared fields from the union of all node types' fields. */
-function deriveSharedFields(configs: NodeTypeConfig[]): WizardField[] {
-  const seen = new Map<string, WizardField>();
-  for (const config of configs) {
-    for (const f of config.fields) {
-      if (!seen.has(f.key)) {
-        seen.set(f.key, { key: f.key, label: f.label, required: f.required ?? false });
-      }
-    }
-  }
-  return [...seen.values()];
-}
-
-/** Extract label overrides for a node type relative to shared fields. */
-function deriveLabelOverrides(config: NodeTypeConfig, sharedFields: WizardField[]): Record<string, string> {
-  const overrides: Record<string, string> = {};
-  for (const sf of sharedFields) {
-    const typeField = config.fields.find((f) => f.key === sf.key);
-    if (typeField && typeField.label !== sf.label) {
-      overrides[sf.key] = typeField.label;
-    }
-  }
-  return overrides;
-}
-
-function configToWizardNodeTypes(configs: NodeTypeConfig[], sharedFields: WizardField[]): WizardNodeType[] {
+/** Convert NodeTypeConfig[] to WizardNodeType[] for edit mode hydration. */
+function configsToWizardNodeTypes(configs: NodeTypeConfig[]): WizardNodeType[] {
   return configs.map((c) => ({
     id: c.id,
     label: c.label,
     shape: c.shape,
     icon: c.icon ?? c.label[0] ?? "?",
+    fields: c.fields.map((f) => ({
+      key: f.key,
+      label: f.label,
+      type: f.type,
+      options: f.options ? [...f.options] : undefined,
+      required: f.required ?? false,
+    })),
+    size_field: c.size_field,
+    size_map: c.size_map ? { ...c.size_map } : undefined,
     collapsed: false,
-    label_overrides: deriveLabelOverrides(c, sharedFields),
   }));
 }
 
@@ -130,16 +117,19 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
   const [streamLabel, setStreamLabel] = useState(initialData?.stream_label ?? "Categories");
   const [generationLabel, setGenerationLabel] = useState(initialData?.generation_label ?? "Phases");
 
-  // Step 2: Shared Fields + Node Types
-  const [sharedFields, setSharedFields] = useState<WizardField[]>(() => {
-    const source = initialData?.node_types ?? DEFAULT_NODE_TYPES;
-    return deriveSharedFields(source);
-  });
-
+  // Step 2: Node Types (each with their own fields)
   const [nodeTypes, setNodeTypes] = useState<WizardNodeType[]>(() => {
-    const source = initialData?.node_types ?? DEFAULT_NODE_TYPES;
-    const sf = deriveSharedFields(source);
-    return configToWizardNodeTypes(source, sf);
+    if (initialData?.node_types?.length) {
+      return configsToWizardNodeTypes(initialData.node_types);
+    }
+    return [{
+      id: "node",
+      label: "Node",
+      shape: "circle",
+      icon: "N",
+      fields: [],
+      collapsed: false,
+    }];
   });
 
   // Step 3: Streams
@@ -192,12 +182,12 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
   // Validation
   const canNext = useCallback(() => {
     if (step === 1) return title.trim().length > 0;
-    if (step === 2) return nodeTypes.length > 0 && nodeTypes.every((t) => t.label.trim().length > 0) && sharedFields.length > 0 && sharedFields.every((f) => f.label.trim().length > 0);
+    if (step === 2) return nodeTypes.length > 0 && nodeTypes.every((t) => t.label.trim().length > 0);
     if (step === 3) return streams.every((s) => s.name.trim().length > 0);
     if (step === 4) return generations.length > 0;
     if (step === 5) return edgeTypes.length > 0 && edgeTypes.every((e) => e.label.trim().length > 0);
     return true;
-  }, [step, title, nodeTypes, sharedFields, streams, generations, edgeTypes]);
+  }, [step, title, nodeTypes, streams, generations, edgeTypes]);
 
   const handleNext = useCallback(() => {
     if (step < TOTAL_STEPS && canNext()) setStep(step + 1);
@@ -210,24 +200,22 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
   const [templateSaved, setTemplateSaved] = useState(false);
 
   const buildNodeTypeConfigs = useCallback((): NodeTypeConfig[] => {
-    return nodeTypes.map((nt) => {
-      const overrides = nt.label_overrides;
-      const hasOverrides = Object.keys(overrides).length > 0;
-      return {
-        id: nt.id || slugify(nt.label),
-        label: nt.label.trim(),
-        shape: nt.shape,
-        icon: nt.icon || nt.label[0] || "?",
-        fields: sharedFields.map((f): FieldConfig => ({
-          key: f.key || slugify(f.label),
-          label: (overrides[f.key || slugify(f.label)] || f.label).trim(),
-          type: "text",
-          required: f.required || undefined,
-        })),
-        label_overrides: hasOverrides ? overrides : undefined,
-      };
-    });
-  }, [nodeTypes, sharedFields]);
+    return nodeTypes.map((nt) => ({
+      id: nt.id || slugify(nt.label),
+      label: nt.label.trim(),
+      shape: nt.shape,
+      icon: nt.icon || nt.label[0] || "?",
+      size_field: nt.size_field || undefined,
+      size_map: nt.size_map && Object.keys(nt.size_map).length > 0 ? nt.size_map : undefined,
+      fields: nt.fields.map((f): FieldConfig => ({
+        key: f.key || slugify(f.label),
+        label: f.label.trim(),
+        type: f.type,
+        options: f.type === "select" && f.options?.length ? f.options : undefined,
+        required: f.required || undefined,
+      })),
+    }));
+  }, [nodeTypes]);
 
   const buildResult = useCallback((): TaxonomyWizardResult => {
     const resultStreams: Stream[] = streams.map((s) => ({
@@ -313,34 +301,6 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
     }));
   };
 
-  // Shared field helpers
-  const addSharedField = () => {
-    setSharedFields([...sharedFields, { key: "", label: "", required: false }]);
-  };
-  const removeSharedField = (i: number) => {
-    if (sharedFields.length > 1) {
-      const removed = sharedFields[i];
-      setSharedFields(sharedFields.filter((_, idx) => idx !== i));
-      // Clean up overrides that reference this field
-      if (removed.key) {
-        setNodeTypes(nodeTypes.map((nt) => {
-          const { [removed.key]: _, ...rest } = nt.label_overrides;
-          return { ...nt, label_overrides: rest };
-        }));
-      }
-    }
-  };
-  const updateSharedField = (i: number, updates: Partial<WizardField>) => {
-    setSharedFields(sharedFields.map((f, idx) => {
-      if (idx !== i) return f;
-      const updated = { ...f, ...updates };
-      if (updates.label !== undefined && !f.key) {
-        updated.key = slugify(updates.label);
-      }
-      return updated;
-    }));
-  };
-
   // Node type helpers
   const addNodeType = () => {
     setNodeTypes([...nodeTypes, {
@@ -348,8 +308,8 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
       label: "",
       shape: "circle",
       icon: "",
+      fields: [],
       collapsed: false,
-      label_overrides: {},
     }]);
   };
   const removeNodeType = (i: number) => {
@@ -368,15 +328,66 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
   const toggleNodeTypeCollapsed = (i: number) => {
     setNodeTypes(nodeTypes.map((nt, idx) => idx === i ? { ...nt, collapsed: !nt.collapsed } : nt));
   };
-  const updateLabelOverride = (typeIdx: number, fieldKey: string, value: string) => {
+
+  // Per-node-type field helpers
+  const addFieldToType = (typeIdx: number) => {
     const nt = nodeTypes[typeIdx];
-    const overrides = { ...nt.label_overrides };
-    if (value.trim()) {
-      overrides[fieldKey] = value;
-    } else {
-      delete overrides[fieldKey];
+    updateNodeType(typeIdx, {
+      fields: [...nt.fields, { key: "", label: "", type: "text", required: false }],
+    });
+  };
+  const removeFieldFromType = (typeIdx: number, fieldIdx: number) => {
+    const nt = nodeTypes[typeIdx];
+    const removed = nt.fields[fieldIdx];
+    const newFields = nt.fields.filter((_, idx) => idx !== fieldIdx);
+    const updates: Partial<WizardNodeType> = { fields: newFields };
+    // Clear size_field if the removed field was the size field
+    if (removed.key && nt.size_field === removed.key) {
+      updates.size_field = undefined;
+      updates.size_map = undefined;
     }
-    updateNodeType(typeIdx, { label_overrides: overrides });
+    updateNodeType(typeIdx, updates);
+  };
+  const updateFieldInType = (typeIdx: number, fieldIdx: number, updates: Partial<WizardField>) => {
+    const nt = nodeTypes[typeIdx];
+    const newFields = nt.fields.map((f, idx) => {
+      if (idx !== fieldIdx) return f;
+      const updated = { ...f, ...updates };
+      if (updates.label !== undefined && !f.key) {
+        updated.key = slugify(updates.label);
+      }
+      // Clear options when switching away from select
+      if (updates.type !== undefined && updates.type !== "select") {
+        updated.options = undefined;
+      }
+      return updated;
+    });
+    updateNodeType(typeIdx, { fields: newFields });
+  };
+
+  // Size field helpers
+  const setSizeField = (typeIdx: number, fieldKey: string) => {
+    const nt = nodeTypes[typeIdx];
+    if (!fieldKey) {
+      updateNodeType(typeIdx, { size_field: undefined, size_map: undefined });
+      return;
+    }
+    const field = nt.fields.find((f) => (f.key || slugify(f.label)) === fieldKey);
+    let sizeMap: Record<string, number> | undefined;
+    if (field?.type === "select" && field.options?.length) {
+      // Auto-generate size map with descending sizes
+      sizeMap = {};
+      const sizes = [20, 14, 10, 6];
+      field.options.forEach((opt, i) => {
+        sizeMap![opt] = sizes[Math.min(i, sizes.length - 1)];
+      });
+    }
+    updateNodeType(typeIdx, { size_field: fieldKey, size_map: sizeMap });
+  };
+  const updateSizeMapValue = (typeIdx: number, optionKey: string, radius: number) => {
+    const nt = nodeTypes[typeIdx];
+    const newMap = { ...(nt.size_map ?? {}), [optionKey]: radius };
+    updateNodeType(typeIdx, { size_map: newMap });
   };
 
   const nextDisabled = !canNext();
@@ -440,36 +451,15 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
           </>
         )}
 
-        {/* Step 2: Shared Fields + Node Types */}
+        {/* Step 2: Node Types with per-type fields */}
         {step === 2 && (
           <>
-            <div className="wizard-step-label">Define Fields &amp; Node Types</div>
-
-            {/* Section A: Shared Fields */}
+            <div className="wizard-step-label">Define Node Types &amp; Fields</div>
             <div className="wizard-section-header">
-              <span className="wizard-section-title">Shared Fields</span>
-              <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 8 }}>
-                All node types share these fields
-              </span>
-              <button type="button" className="wizard-add-btn" onClick={addSharedField} style={{ marginLeft: "auto" }}>+ Field</button>
-            </div>
-            <div className="wizard-shared-fields">
-              {sharedFields.map((f, i) => (
-                <div key={i} className="wizard-field-row">
-                  <input type="text" value={f.label}
-                    onChange={(e) => updateSharedField(i, { label: e.target.value })}
-                    placeholder="Field label" className="wizard-field-label-input" />
-                  <button type="button" className="wizard-remove-btn"
-                    onClick={() => removeSharedField(i)}
-                    disabled={sharedFields.length <= 1}
-                    title="Remove field">&times;</button>
-                </div>
-              ))}
-            </div>
-
-            {/* Section B: Node Types */}
-            <div className="wizard-section-header" style={{ marginTop: 16 }}>
               <span className="wizard-section-title">Node Types</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 8 }}>
+                Each type has its own attributes
+              </span>
               <button type="button" className="wizard-add-btn" onClick={addNodeType} style={{ marginLeft: "auto" }}>+ Add Type</button>
             </div>
             {nodeTypes.map((nt, i) => (
@@ -513,33 +503,91 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
                           placeholder={nt.label?.[0] ?? "?"} />
                       </div>
                     </div>
-                    {/* Label overrides for shared fields */}
-                    {sharedFields.length > 0 && (
-                      <>
-                        <div className="wizard-node-type-fields-header">
-                          <span className="wizard-fields-label">Label Overrides</span>
-                          <span style={{ fontSize: 10, color: "var(--text-muted)", marginLeft: 6 }}>blank = use default</span>
-                        </div>
-                        <div className="wizard-override-table">
-                          {sharedFields.map((sf) => {
-                            const fieldKey = sf.key || slugify(sf.label);
-                            if (!fieldKey) return null;
-                            return (
-                              <div key={fieldKey} className="wizard-override-row">
-                                <span className="wizard-override-default">{sf.label || fieldKey}</span>
-                                <input
-                                  type="text"
-                                  value={nt.label_overrides[fieldKey] ?? ""}
-                                  onChange={(e) => updateLabelOverride(i, fieldKey, e.target.value)}
-                                  placeholder={sf.label}
-                                  className="wizard-override-input"
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </>
+
+                    {/* Per-type fields */}
+                    <div className="wizard-node-type-fields-header">
+                      <span className="wizard-fields-label">Attributes</span>
+                      <button type="button" className="wizard-add-btn" onClick={() => addFieldToType(i)} style={{ marginLeft: "auto" }}>+ Field</button>
+                    </div>
+                    {nt.fields.length === 0 && (
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", padding: "4px 0" }}>
+                        No attributes defined. Click + Field to add.
+                      </div>
                     )}
+                    {nt.fields.map((f, fi) => (
+                      <div key={fi} className="wizard-field-row" style={{ alignItems: "center" }}>
+                        <input type="text" value={f.label}
+                          onChange={(e) => updateFieldInType(i, fi, { label: e.target.value })}
+                          placeholder="Field label" className="wizard-field-label-input" />
+                        <select value={f.type} onChange={(e) => updateFieldInType(i, fi, { type: e.target.value as FieldType })}
+                          style={{ width: 90, fontSize: 12 }}>
+                          <option value="text">Text</option>
+                          <option value="select">Select</option>
+                          <option value="textarea">Textarea</option>
+                        </select>
+                        {f.type === "select" && (
+                          <input type="text"
+                            value={f.options?.join(", ") ?? ""}
+                            onChange={(e) => updateFieldInType(i, fi, {
+                              options: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                            })}
+                            placeholder="option1, option2, ..."
+                            style={{ flex: 1, fontSize: 11 }}
+                            title="Comma-separated options"
+                          />
+                        )}
+                        <label style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 2, whiteSpace: "nowrap" }}>
+                          <input type="checkbox" checked={f.required}
+                            onChange={(e) => updateFieldInType(i, fi, { required: e.target.checked })} />
+                          Req
+                        </label>
+                        <button type="button" className="wizard-remove-btn"
+                          onClick={() => removeFieldFromType(i, fi)}
+                          title="Remove field">&times;</button>
+                      </div>
+                    ))}
+
+                    {/* Size field picker */}
+                    {nt.fields.length > 0 && (
+                      <div className="wizard-node-type-fields-header" style={{ marginTop: 8 }}>
+                        <span className="wizard-fields-label">Size Driver</span>
+                        <span style={{ fontSize: 10, color: "var(--text-muted)", marginLeft: 6 }}>field that controls node size</span>
+                      </div>
+                    )}
+                    {nt.fields.length > 0 && (
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+                        <select value={nt.size_field ?? ""}
+                          onChange={(e) => setSizeField(i, e.target.value)}
+                          style={{ fontSize: 12 }}>
+                          <option value="">None</option>
+                          {nt.fields.map((f) => {
+                            const fk = f.key || slugify(f.label);
+                            return fk ? <option key={fk} value={fk}>{f.label || fk}</option> : null;
+                          })}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Size map editor — shown when size field is a select */}
+                    {nt.size_field && nt.size_map && (() => {
+                      const sizeField = nt.fields.find((f) => (f.key || slugify(f.label)) === nt.size_field);
+                      if (!sizeField || sizeField.type !== "select" || !sizeField.options?.length) return null;
+                      return (
+                        <div className="wizard-override-table" style={{ marginBottom: 4 }}>
+                          {sizeField.options.map((opt) => (
+                            <div key={opt} className="wizard-override-row">
+                              <span className="wizard-override-default" style={{ fontSize: 11 }}>{opt}</span>
+                              <input type="number" min={2} max={40}
+                                value={nt.size_map?.[opt] ?? 10}
+                                onChange={(e) => updateSizeMapValue(i, opt, Number(e.target.value) || 10)}
+                                style={{ width: 50, fontSize: 11 }}
+                              />
+                              <span style={{ fontSize: 10, color: "var(--text-muted)" }}>px</span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -705,24 +753,14 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
               )}
             </div>
             <div className="wizard-review-section">
-              <h4>Shared Fields ({sharedFields.length})</h4>
-              {sharedFields.map((f, i) => (
+              <h4>Node Types ({nodeTypes.length})</h4>
+              {nodeTypes.map((nt, i) => (
                 <div key={i} className="wizard-review-item">
-                  {f.label || f.key}
+                  <span style={{ fontWeight: 600, marginRight: 4 }}>{nt.icon || nt.label?.[0]}</span>
+                  {nt.label} ({nt.shape}) — {nt.fields.length} field{nt.fields.length !== 1 ? "s" : ""}
+                  {nt.size_field && <span style={{ color: "var(--text-dim)", marginLeft: 6, fontSize: 11 }}>size: {nt.size_field}</span>}
                 </div>
               ))}
-            </div>
-            <div className="wizard-review-section">
-              <h4>Node Types ({nodeTypes.length})</h4>
-              {nodeTypes.map((nt, i) => {
-                const overrideCount = Object.keys(nt.label_overrides).length;
-                return (
-                  <div key={i} className="wizard-review-item">
-                    <span style={{ fontWeight: 600, marginRight: 4 }}>{nt.icon || nt.label?.[0]}</span>
-                    {nt.label} ({nt.shape}){overrideCount > 0 ? ` — ${overrideCount} label override${overrideCount > 1 ? "s" : ""}` : ""}
-                  </div>
-                );
-              })}
             </div>
             <div className="wizard-review-section">
               <h4>Categories ({streams.length})</h4>
@@ -770,7 +808,7 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
           <>
             <div className="wizard-step-label">{isEditMode ? "Save Changes" : "Create Taxonomy"}</div>
             <div style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 16 }}>
-              Ready to {isEditMode ? "save" : "create"} your taxonomy with {nodeTypes.length} node type{nodeTypes.length > 1 ? "s" : ""}, {sharedFields.length} shared field{sharedFields.length > 1 ? "s" : ""}, {streams.length} categor{streams.length > 1 ? "ies" : "y"}, and {generations.length} horizon{generations.length > 1 ? "s" : ""}.
+              Ready to {isEditMode ? "save" : "create"} your taxonomy with {nodeTypes.length} node type{nodeTypes.length > 1 ? "s" : ""}, {streams.length} categor{streams.length > 1 ? "ies" : "y"}, and {generations.length} horizon{generations.length > 1 ? "s" : ""}.
             </div>
           </>
         )}
