@@ -1,0 +1,218 @@
+### ==3 Levers and Nine Probes for Organisational Learning==
+
+**==The Big Idea==**
+
+- The Basic Mistake
+  - Your transformation programme, or indeed your organisation, treats learning as a process: something designed, managed, measured, delivered
+  - Learning is not a process; it is a condition
+  - It emerges when three conditions are met; if the conditions are absent, no process will produce learning; if they are present, learning will happen with or without a programme or process.
+- The Three Levers or Conditions
+  - Identity must be safe enough to change (Bourdieu)
+  - Information must be clean enough to act on (Bateson)
+  - The institutional form must be convivial enough to permit learning (Illich)
+- Why "condition, not process" Matters
+  - The teams quietly experimenting outside the governance framework succeed not despite the absence of a learning programme but because the conditions are present locally
+  - Learning programmes can actively degrade conditions: introducing double binds, threatening identity, suppressing interaction, teaching a hidden curriculum of dependency
+- The leader's role
+  - Not to design or manage learning but to create and protect these conditions
+  - The leader shapes institutional form; institutional form either creates or destroys the conditions for clean information and safe identity
+
+**==Condition One: Identity==**
+
+- Identity must be safe enough to change
+  - Present when people can engage with change without experiencing it as an existential threat
+  - Absent when people perform the new way of working while privately preserving the old
+- Core concepts for this condition
+  - Habitus: durable, transposable dispositions acquired through lived experience; operates below conscious awareness; you do not choose your habitus
+  - Capital: what you are worth in the field; economic, cultural, social, symbolic; transformation threatens capital devaluation
+  - Hysteresis: the lag between a changed field and an unchanged habitus; the mechanism of resistance; entirely rational
+  - Giddens: ontological security; routines provide existential continuity; disruption produces anxiety disproportionate to rational threat
+  - Kahneman: losses loom twice as large as gains; resistance fiercest at the beginning
+- Probe 1: Can people tolerate losing what they have?
+  - What you are testing: whether the loss has been named
+  - The loss is not incidental to the adaptive challenge; it IS the adaptive challenge (Heifetz)
+  - "People do not resist change; they resist loss"
+  - Goffman: transformation creates stigma; "the developer who doesn't get AI"; communicated through expressions given off; the stigmatised are systematically excluded from conversations that need their knowledge
+  - What to look for
+    - Compliance without commitment
+    - Passive resistance that never surfaces as objection
+    - Disproportionate hostility
+  - What to do
+    - Name the loss; do not deny it or dismiss what is being given up
+    - Identity transitions need: social support, role models, narrative resources
+    - The leader must attend to their own loss: from the person who knows the answer to the person who creates the conditions for answers to emerge
+- Probe 2: Is learning happening through practice or through instruction?
+  - What you are testing: whether habitus is being reshaped through participation or whether discursive consciousness is being changed while practical consciousness remains untouched
+  - Illich: the training programme teaches a hidden curriculum; learning requires experts; capability is certified by completion; the organisation does not trust you to learn on your own; transformation is something being done to you
+  - Freire: banking education (depositing knowledge) vs problem-posing education (active participants constructing knowledge)
+  - Wenger/Lave: legitimate peripheral participation; learning IS participation; newcomers learn by doing genuine tasks at the edges of practice
+  - Nonaka: SECI model; the critical step is externalisation (tacit to explicit through dialogue); cannot be done in a classroom
+  - What to look for
+    - Budget split: training courses vs time, tools, and real problems
+    - Are people developing new capabilities through practice or new vocabulary through instruction?
+  - What to do
+    - Stop governing learning; create conditions: safety, time, tools, real problems
+    - The quiet teams solving problems outside the framework are the emergent strategy
+- Probe 3: Do people believe that this time will be different?
+  - What you are testing: whether learned helplessness has become habitus
+  - Learned helplessness is not a mood; it is a sedimented disposition formed through repeated experience that effort does not produce results
+  - Each failed transformation taught the lesson: the process was run, the learning was mandated, nothing changed; the condition was never present, only the process
+  - Seligman: explanatory style; pessimistic (permanent, pervasive, personal) predicts helplessness
+  - Bandura: mastery experience is the most powerful recovery path; actually doing the thing and succeeding
+  - Dweck: organisations that celebrate talent reinforce fixed mindset; those that celebrate effort reinforce growth
+  - What to look for
+    - Same phrases as last transformation
+    - Knowing silence at announcements
+    - Best people not volunteering
+  - What to do
+    - Small wins (Weick); demonstrate through action not argument
+    - Make learning visible and valued before it produces measurable output
+    - If people are engaged and arguing about how to make things better, the condition is forming; if filling in templates and waiting for approval, the process is running but the condition is absent
+
+**==Condition Two: Information==**
+
+- Information must be clean enough to act on
+  - Present when the formal conversation and the shadow conversation say the same thing
+  - Absent when people know something to be true but cannot say it without career risk
+- Core concepts for this condition
+  - The double bind: contradictory messages at different logical levels with no permission to name the contradiction
+  - "We encourage honest feedback" (explicit) in a meeting where honesty has produced negative consequences (implicit); cannot comply with both; cannot name the impossibility; paralysis disguised as compliance
+  - Goffman: the micro-mechanism that maintains the double bind; front stage (managed performance), back stage (dropped performance); face-work is mutual (both parties protect each other's face; both benefit from the silence)
+  - The gap between formal meetings and hallway conversations is not a communication failure; it is the interaction order working as designed
+- Probe 4: Can people tell the truth about what is happening?
+  - What you are testing: whether the double bind is active
+  - Argyris: defensive routines; the gap between espoused theory and theory-in-use
+  - Goffman: why interventions fail; Model II training collapses in the meeting because face-work requirements override the training; "create openness" announcements are themselves front-stage performances
+  - Schon: frame reflection; most undiscussables are not facts people are hiding but frames they do not realise they hold
+  - Westrum: pathological (messengers punished), bureaucratic (messengers slowed), generative (information flows regardless of hierarchy)
+  - Edmondson: psychological safety is the floor; safety without high standards produces comfort, not learning
+  - Deming: most variation is common cause (system); blaming individuals teaches them to hide system information
+  - What to look for
+    - The gap between formal meetings and hallway conversations; that gap IS the double bind made visible
+    - Voices from below: the junior practitioner quietly experimenting; the analyst who has figured out something the strategy does not describe
+  - What to do
+    - Name the double bind explicitly: "I notice we say we want honest feedback but the last person who gave it was sidelined; that contradiction is a problem I want to address"
+    - Naming dissolves the bind because its power depends on the prohibition against naming
+    - If the leader cannot say "I don't know" or "I was wrong about that," the double bind remains active regardless of the communications plan
+- Probe 5: Are decision-makers close to the work?
+  - What you are testing: information quality as a function of proximity
+  - Drucker: the knowledge worker must define the task; definition requires intimacy with the domain
+  - Peters: close to the customer, close to the work; MBWA is an epistemological commitment
+  - Normann: the map is not just incomplete; it actively misleads by providing a sense of understanding that prevents seeking the understanding only proximity provides
+  - Taylor/Fayol: the separation of thinking from doing; hierarchical layers systematically remove decision-makers from reality
+  - The double bind: "We trust our teams" (explicit) through governance requiring five layers of approval (implicit); teams learn to perform autonomy while practising compliance
+  - What to look for
+    - Count the layers between decision-maker and work; each is a reduction in information quality
+    - If the people designing the transformation have never done the work, quality is structurally limited
+  - What to do
+    - Cancel the steering committee; go and watch people work
+    - The information cannot travel upward through hierarchy; you must go and get it
+- Probe 6: Is the organisation changing what it rewards, or just what it says?
+  - What you are testing: whether the structural double bind is active
+  - New language without new incentives sends contradictory signals at different logical levels
+  - Giddens: signification, domination, and legitimation must move together; when they don't, the organisation IS a double bind made structural
+  - Where identity constrains information: habitus formed around old rewards generates the information pathology; people produce old behaviour before the question of reward arises
+  - Weber: bureaucratic rationality; the iron cage; the system built for rational purposes becomes a prison preventing purposes from evolving
+  - What to look for
+    - Last three promotions: what behaviour was actually rewarded?
+    - Last three performance reviews: what was measured?
+    - Budget allocations: where did the money actually go?
+    - These reveal the theory-in-use regardless of the strategy deck
+  - What to do
+    - Change the practices: meetings, metrics, promotion criteria, budget allocation, definition of "done"
+    - Heifetz: distinguish technical work (policy, process, org chart) from adaptive work (values, role perception, competence beliefs); both necessary, neither sufficient alone
+
+**==Condition Three: Institution ==**
+
+- The institutional form must be convivial enough to permit learning
+  - Present when the structures serve the people
+  - Absent when the people serve the structures: dominant activity is compliance, reporting, certification, governance
+- Core concepts for this condition
+  - Confusing process and substance
+    - "They school them to confuse process and substance"
+    - Once an institution takes ownership, the activity is redefined as the consumption of institutional services
+    - Learning becomes completion of courses; capability becomes accumulation of credentials
+    - The escalation logic: more process = better results; if transformation is not working, the answer is more programme
+  - Institutionalisation of values: three stages
+    - Stage one: the institution defines the activity as requiring professional mediation; you cannot learn without a programme
+    - Stage two: the institution establishes a monopoly; learning outside the programme is not recognised; the team that learned by doing is "untrained"
+    - Stage three: the institution creates dependency; people believe they cannot learn without the programme
+  - Radical monopoly
+    - Not a monopoly over competing products but over the conditions of the activity itself
+    - The programme has reshaped the environment so informal learning is impractical: certification before experimentation; budgets to programme not teams; meeting agendas filled with governance
+    - The individual who wants to learn by doing faces an environment that makes their choice illegitimate
+    - Test: if the programme were abolished tomorrow, would the organisation be able to learn?
+  - Hidden curriculum
+    - Lessons taught by the institutional form itself, independent of content
+    - Learning requires experts; capability is certified by completion; the organisation does not trust you; transformation is being done to you
+    - Positions people as recipients rather than agents; directly undermines the identity condition
+  - Iatrogenesis: when the cure causes the disease
+    - Clinical: direct dysfunction (governance overhead, delays, role confusion)
+    - Social: redefinition of normal capability as requiring institutional mediation (informal competence = "untrained")
+    - Cultural: destruction of the capacity for autonomous action (people cannot imagine learning without a programme)
+    - Each level deepens the next; self-reinforcing cascade
+  - Convivial vs manipulative institutions
+    - Convivial: provides resources people use for their own purposes; tools, time, problems, mentors; does not prescribe, control, or credential; trusts the condition
+    - Manipulative: prescribes content, controls sequence, measures consumption, produces credential; does not trust the condition because the condition does not require the institution
+    - The diagnostic question for every institutional element: convivial or manipulative?
+- Probe 7: Does the institutional form serve the people, or do the people serve the institution?
+  - What you are testing: the convivial/manipulative character of every institutional element
+  - The process/substance test
+    - The programme measures completion rates, certification numbers, training hours: all process consumption; none measure capability
+    - "85% have completed the AI readiness programme" is treated as evidence of readiness; but readiness is a capability, not a credential
+    - Teams using AI on real problems for months are "untrained" because their learning is not programme-mediated
+  - The radical monopoly test
+    - Has the programme reshaped the environment so informal learning is impractical?
+    - Can the organisation recognise capability not developed through the programme?
+    - Are teams doing real work outside the programme treated as innovators or as non-compliant?
+  - Stacey: in a convivial institution, people make gestures and attend to responses; in a manipulative institution, the institution makes gestures on people's behalf and responses are channelled through governance
+  - Goffman: the leader relying on governance for information about learning is watching the performance and mistaking it for reality
+  - What to look for
+    - Apply the convivial/manipulative test to every element; count the ratio
+    - Layers of approval between team and experiment
+    - Duration of programme without anyone doing new work on a real problem
+    - If dominant activity is assessment and governance, the process is running but the condition is absent
+  - What to do
+    - Create spaces for action before understanding is complete: real problem, real team, a day to experiment
+    - Heifetz: the instinct to provide the answer is itself a barrier; create the space, do not prescribe the action
+    - Redirect resources from institutional infrastructure (programme team, governance, certification) toward conditions (tools, time, real problems, mentors)
+- Probe 8: Can the institution stop doing what no longer works?
+  - What you are testing: whether the institution has become autopoietic (existing to maintain itself)
+  - Illich's iatrogenesis diagnostic
+    - Clinical level: what direct dysfunction is the programme producing? (overhead, delays, confusion)
+    - Social level: has the programme redefined competence as requiring certification? (informal learning invisible)
+    - Cultural level: have people lost the capacity for autonomous learning? (cannot imagine learning without programme)
+    - At which level is the harm deepest?
+  - The self-justification mechanism
+    - The institution measures its own activity and presents this as evidence of progress
+    - Metrics measure institutional activity, not human capability
+    - "But can the teams actually do the work?" treated as attack rather than diagnostic
+  - Drucker: if we were not already doing this, would we start now?
+  - Illich goes further: has the institution made it impossible to even imagine doing without it?
+  - March: exploitation/exploration; the manipulative institution is an exploitation machine; exploration is structurally prevented
+  - Taleb: inability to abandon creates fragility; hidden liabilities shatter rather than degrade
+  - What to look for
+    - Activities, governance, working groups existing solely because they were created at the start and never revisited
+  - What to do
+    - Regular abandonment review: what to stop, not what to add
+    - Drucker's test: would we start now? If no, stop
+    - Illich's test: if abolished tomorrow, could the organisation learn? If no, the programme IS the primary barrier
+    - Freed capacity is where the learning condition becomes possible
+- Probe 9: Can the institution integrate conflict, or does it suppress it?
+  - What you are testing: whether divergent responses are held or resolved prematurely
+  - Illich: the manipulative institution cannot permit genuine conflict about its own purpose because its continuation depends on the confusion of process with substance; governance processes means-ends questions and prevents value questions
+  - Three suppression mechanisms: hierarchy (senior view prevails), process (governance routes to committee), avoidance (acknowledged, then never revisited); all lose the divergent signal
+  - Follett: domination (one side wins), compromise (both give up), integration (discover a solution neither had imagined); integration requires surfacing real desires beneath stated positions
+  - Stacey: legitimise dissent; allow anxiety and conflict to surface publicly; requires power to make it safe and courage to tolerate what is said
+  - Heifetz: the holding environment; regulate the temperature; too little heat, nothing changes; too much, people retreat
+  - Edmondson: psychological safety is the floor; safety alone insufficient; safe teams can tell small truths while avoiding the large one
+  - Goffman: the frame break; suspending face-work rules so participants engage with actual desires rather than performed positions
+  - What to look for
+    - When someone disagrees in a meeting, is the disagreement explored or managed?
+    - Does the conversation change direction or return to trajectory with dissent filed?
+    - When shadow and formal conversations contradict, which one changes?
+  - What to do
+    - Treat resistance as information, not a problem to overcome
+    - Follett's joint study: parties study the situation together, not negotiate from fixed positions
+    - The leader restating strategy more firmly has closed the loop prematurely
+    - The leader asking "What are you seeing that I am not?" has opened it

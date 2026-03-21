@@ -1,7 +1,7 @@
 import type {
   GraphIR, GraphNode,
   TaxonomyTemplate, ConceptMapData, DataNode,
-  NodeTypeConfig,
+  NodeTypeConfig, FieldConfig,
 } from "./types/graph-ir";
 
 // --- Default Node Type Configs ---
@@ -59,20 +59,26 @@ export function migrateFromParser(parsed: GraphIR): { template: TaxonomyTemplate
   const typeIds = new Set(parsed.nodes.map((n) => n.node_type));
   const nodeTypes: NodeTypeConfig[] = [];
   for (const typeId of typeIds) {
-    // Map known types to sensible configs, otherwise create generic
-    if (typeId === "thinker") {
-      nodeTypes.push(DEFAULT_PERSON_CONFIG);
-    } else if (typeId === "concept") {
-      nodeTypes.push(DEFAULT_CONCEPT_CONFIG);
-    } else {
-      nodeTypes.push({
-        id: typeId,
-        label: typeId.charAt(0).toUpperCase() + typeId.slice(1),
-        shape: "circle",
-        icon: typeId[0]?.toUpperCase() ?? "?",
-        fields: DEFAULT_NODE_CONFIG.fields,
-      });
+    // Derive fields from the actual data for this type
+    const typeNodes = parsed.nodes.filter((n) => n.node_type === typeId);
+    const fieldKeys = new Set<string>();
+    for (const n of typeNodes) {
+      if (n.fields) {
+        for (const key of Object.keys(n.fields)) fieldKeys.add(key);
+      }
     }
+    const fields: FieldConfig[] = [...fieldKeys].map((key) => ({
+      key,
+      label: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " "),
+      type: "text" as const,
+    }));
+    nodeTypes.push({
+      id: typeId,
+      label: typeId.charAt(0).toUpperCase() + typeId.slice(1),
+      shape: "circle",
+      icon: typeId[0]?.toUpperCase() ?? "?",
+      fields: fields.length > 0 ? fields : DEFAULT_NODE_CONFIG.fields,
+    });
   }
 
   const template: TaxonomyTemplate = {
@@ -83,63 +89,15 @@ export function migrateFromParser(parsed: GraphIR): { template: TaxonomyTemplate
     node_types: nodeTypes.length > 0 ? nodeTypes : DEFAULT_NODE_TYPES,
   };
 
-  const nodes: DataNode[] = parsed.nodes.map((n) => {
-    if (n.node_type === "thinker") {
-      const tf = n.thinker_fields;
-      // Parse dates string into from/to if it contains a dash
-      let dateFrom = tf?.dates ?? "";
-      let dateTo = "";
-      if (dateFrom.includes("–") || dateFrom.includes("-")) {
-        const sep = dateFrom.includes("–") ? "–" : "-";
-        const parts = dateFrom.split(sep).map((s) => s.trim());
-        dateFrom = parts[0] ?? "";
-        dateTo = parts[1] ?? "";
-      }
-      return {
-        id: n.id,
-        node_type: "person",
-        name: n.name,
-        generation: n.generation,
-        stream: n.stream,
-        properties: {
-          importance: tf?.eminence ?? "minor",
-          date_from: dateFrom || undefined,
-          date_to: dateTo || undefined,
-          tags: tf?.institutional_base ?? undefined,
-          structural_roles: tf?.structural_roles?.join(", ") || undefined,
-        },
-        notes: n.notes,
-      };
-    } else if (n.node_type === "concept") {
-      const cf = n.concept_fields;
-      return {
-        id: n.id,
-        node_type: "concept",
-        name: n.name,
-        generation: n.generation,
-        stream: n.stream,
-        properties: {
-          concept_type: cf?.concept_type ?? undefined,
-          abstraction_level: cf?.abstraction_level ?? undefined,
-          status: cf?.status ?? undefined,
-          originator_id: cf?.originator_id ?? undefined,
-          date_introduced: cf?.date_introduced ?? undefined,
-        },
-        notes: n.notes,
-      };
-    } else {
-      // Generic node type — use fields as properties
-      return {
-        id: n.id,
-        node_type: n.node_type,
-        name: n.name,
-        generation: n.generation,
-        stream: n.stream,
-        properties: { ...(n.fields ?? {}) },
-        notes: n.notes,
-      };
-    }
-  });
+  const nodes: DataNode[] = parsed.nodes.map((n) => ({
+    id: n.id,
+    node_type: n.node_type,
+    name: n.name,
+    generation: n.generation,
+    stream: n.stream,
+    properties: { ...(n.fields ?? {}) },
+    notes: n.notes,
+  }));
 
   const data: ConceptMapData = {
     version: "2.0",
@@ -171,28 +129,6 @@ export function graphIRFromData(template: TaxonomyTemplate, data: ConceptMapData
       notes: dn.notes,
     };
 
-    // Backfill thinker_fields/concept_fields for backward compat with rendering
-    if (dn.node_type === "person" || (config && config.shape === "circle")) {
-      node.thinker_fields = {
-        eminence: String(dn.properties.importance ?? "minor"),
-        dates: [dn.properties.date_from, dn.properties.date_to].filter(Boolean).join("–") || undefined,
-        structural_roles: typeof dn.properties.structural_roles === "string"
-          ? dn.properties.structural_roles.split(",").map((s) => s.trim()).filter(Boolean)
-          : [],
-        key_concept_ids: [],
-        institutional_base: typeof dn.properties.tags === "string" ? dn.properties.tags : undefined,
-      };
-    }
-    if (dn.node_type === "concept" || (config && config.shape === "rectangle")) {
-      node.concept_fields = {
-        originator_id: String(dn.properties.originator_id ?? "unknown_author"),
-        concept_type: String(dn.properties.concept_type ?? "framework"),
-        abstraction_level: String(dn.properties.abstraction_level ?? "operational"),
-        status: String(dn.properties.status ?? "active"),
-        date_introduced: dn.properties.date_introduced ? String(dn.properties.date_introduced) : undefined,
-      };
-    }
-
     return node;
   });
 
@@ -221,7 +157,7 @@ export function dataFromGraphIR(graphIR: GraphIR, templateRef: string = ""): Con
     name: n.name,
     generation: n.generation,
     stream: n.stream,
-    properties: n.properties ?? buildPropertiesFromLegacy(n),
+    properties: n.properties ?? buildPropertiesFromFields(n),
     notes: n.notes,
   }));
 
@@ -240,36 +176,9 @@ export function dataFromGraphIR(graphIR: GraphIR, templateRef: string = ""): Con
   };
 }
 
-/** Build properties from legacy thinker_fields/concept_fields */
-function buildPropertiesFromLegacy(n: GraphNode): Record<string, string | string[] | number | undefined> {
-  if (n.thinker_fields) {
-    const tf = n.thinker_fields;
-    let dateFrom = tf.dates ?? "";
-    let dateTo = "";
-    if (dateFrom.includes("–") || dateFrom.includes("-")) {
-      const sep = dateFrom.includes("–") ? "–" : "-";
-      const parts = dateFrom.split(sep).map((s) => s.trim());
-      dateFrom = parts[0] ?? "";
-      dateTo = parts[1] ?? "";
-    }
-    return {
-      importance: tf.eminence,
-      date_from: dateFrom || undefined,
-      date_to: dateTo || undefined,
-      tags: tf.institutional_base,
-      structural_roles: tf.structural_roles?.join(", ") || undefined,
-    };
-  }
-  if (n.concept_fields) {
-    return {
-      concept_type: n.concept_fields.concept_type,
-      abstraction_level: n.concept_fields.abstraction_level,
-      status: n.concept_fields.status,
-      originator_id: n.concept_fields.originator_id,
-      date_introduced: n.concept_fields.date_introduced,
-    };
-  }
-  return {};
+/** Build properties from node fields */
+function buildPropertiesFromFields(n: GraphNode): Record<string, string | string[] | number | undefined> {
+  return { ...(n.fields ?? {}) };
 }
 
 /**

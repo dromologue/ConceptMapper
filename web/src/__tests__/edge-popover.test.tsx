@@ -7,7 +7,6 @@ const sampleEdge: GraphEdge = {
   from: "argyris",
   to: "senge",
   edge_type: "chain",
-  edge_category: "thinker_thinker",
   directed: true,
   weight: 1.0,
   visual: { style: "solid", show_arrow: true },

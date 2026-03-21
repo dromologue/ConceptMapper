@@ -31,12 +31,6 @@ export type InteractionMode = "normal" | "add-edge-source" | "add-edge-target";
 
 function mergeNodeUpdate(node: GraphNode, updates: Partial<GraphNode>): GraphNode {
   const merged = { ...node, ...updates };
-  if (updates.thinker_fields && node.thinker_fields) {
-    merged.thinker_fields = { ...node.thinker_fields, ...updates.thinker_fields };
-  }
-  if (updates.concept_fields && node.concept_fields) {
-    merged.concept_fields = { ...node.concept_fields, ...updates.concept_fields };
-  }
   if (updates.properties && node.properties) {
     merged.properties = { ...node.properties, ...updates.properties };
   }
@@ -354,23 +348,6 @@ function AppInner() {
         properties: { ...properties },
       };
 
-      // Backfill legacy fields for rendering compat
-      if (config?.shape === "circle" || nodeType === "person") {
-        newNode.thinker_fields = {
-          eminence: (properties.importance as string) ?? "minor",
-          structural_roles: [],
-          key_concept_ids: [],
-        };
-      }
-      if (config?.shape === "rectangle" || nodeType === "concept") {
-        newNode.concept_fields = {
-          originator_id: (properties.originator_id as string) ?? "unknown_author",
-          concept_type: (properties.concept_type as string) ?? "framework",
-          abstraction_level: (properties.abstraction_level as string) ?? "operational",
-          status: (properties.status as string) ?? "active",
-        };
-      }
-
       setGraphData({ ...graphData, nodes: [...graphData.nodes, newNode] });
       setShowAddNode(null);
       setSelectedNode(newNode);
@@ -385,17 +362,6 @@ function AppInner() {
       const toNode = graphData.nodes.find((n) => n.id === edgeTarget);
       if (!fromNode || !toNode) return;
 
-      // Determine edge category based on shapes
-      const fromConfig = nodeTypeConfigs.find((t) => t.id === fromNode.node_type);
-      const toConfig = nodeTypeConfigs.find((t) => t.id === toNode.node_type);
-      const fromIsCircle = fromConfig ? fromConfig.shape === "circle" : fromNode.node_type !== "concept";
-      const toIsCircle = toConfig ? toConfig.shape === "circle" : toNode.node_type !== "concept";
-
-      const edgeCategory =
-        fromIsCircle && toIsCircle ? "thinker_thinker"
-        : !fromIsCircle && !toIsCircle ? "concept_concept"
-        : "thinker_concept";
-
       // Use template edge type config for visual if available
       const edgeTypeConfig = template?.edge_types?.find((e) => e.id === edgeType);
       const directed = edgeTypeConfig ? edgeTypeConfig.directed : !["rivalry", "alliance", "institutional", "opposes"].includes(edgeType);
@@ -407,7 +373,6 @@ function AppInner() {
         from: edgeSource,
         to: edgeTarget,
         edge_type: edgeType,
-        edge_category: edgeCategory as GraphEdge["edge_category"],
         directed,
         weight,
         visual,
@@ -1067,7 +1032,7 @@ function AppInner() {
                 return (
                   <div key={n.id} className={`search-result${idx === searchHighlight ? " search-result-highlight" : ""}`} onMouseDown={() => handleSearchSelect(n)}>
                     <span
-                      className={`type-indicator ${typeConfig?.shape === "rectangle" ? "concept" : ""}`}
+                      className={`type-indicator ${typeConfig?.shape !== "circle" ? "non-circle" : ""}`}
                       style={{
                         backgroundColor:
                           graphData.metadata.streams.find((s) => s.id === n.stream)?.color ?? "#666",
@@ -1335,18 +1300,13 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): str
     nodesByType.get(typeId)!.push(n);
   }
 
-  // Legacy compat: "person" → "Thinker Nodes", "concept" → "Concept Nodes"
   const sectionName = (typeId: string): string => {
-    if (typeId === "person" || typeId === "thinker") return "Thinker";
-    if (typeId === "concept") return "Concept";
     const config = nodeTypeConfigs.find((c) => c.id === typeId);
     return config?.label ?? typeId.charAt(0).toUpperCase() + typeId.slice(1);
   };
 
   for (const [typeId, typeNodes] of nodesByType) {
     const label = sectionName(typeId);
-    const isLegacyThinker = typeId === "person" || typeId === "thinker";
-    const isLegacyConcept = typeId === "concept";
 
     lines.push(`## ${label} Nodes\n`);
 
@@ -1355,44 +1315,13 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): str
       lines.push(`id:               ${node.id}`);
       lines.push(`name:             ${node.name}`);
 
-      if (isLegacyThinker) {
-        // Legacy thinker format for backward compat with Rust parser
-        const props = node.properties ?? {};
-        const tf = node.thinker_fields;
-        if (tf?.dates) {
-          lines.push(`dates:            ${tf.dates}`);
-        } else if (props.date_from || props.date_to) {
-          const dates = [props.date_from, props.date_to].filter(Boolean).join("–");
-          if (dates) lines.push(`dates:            ${dates}`);
-        }
-        lines.push(`eminence:         ${tf?.eminence ?? props.importance ?? "minor"}`);
-        lines.push(`generation:       ${node.generation ?? 1}`);
-        lines.push(`stream:           ${node.stream ?? "default"}`);
-        const roles = tf?.structural_roles?.join(", ") ?? props.structural_roles;
-        if (roles) lines.push(`structural_role:  ${roles}`);
-        const tags = tf?.institutional_base ?? props.tags;
-        if (tags) lines.push(`institutional_base: ${tags}`);
-      } else if (isLegacyConcept) {
-        // Legacy concept format for backward compat
-        const props = node.properties ?? {};
-        const cf = node.concept_fields;
-        const originator = cf?.originator_id ?? props.originator_id ?? props.precursor ?? "unknown_author";
-        lines.push(`originator_id:    ${originator}`);
-        if (cf?.date_introduced ?? props.date_introduced) lines.push(`date_introduced:  ${cf?.date_introduced ?? props.date_introduced}`);
-        lines.push(`concept_type:     ${cf?.concept_type ?? props.concept_type ?? "framework"}`);
-        lines.push(`abstraction_level: ${cf?.abstraction_level ?? props.abstraction_level ?? "operational"}`);
-        lines.push(`status:           ${cf?.status ?? props.status ?? "active"}`);
-        if (node.generation != null) lines.push(`generation:       ${node.generation}`);
-        if (node.stream) lines.push(`stream:           ${node.stream}`);
-      } else {
-        // Generic format: write generation, stream, then all properties as KV pairs
-        if (node.generation != null) lines.push(`generation:       ${node.generation}`);
-        if (node.stream) lines.push(`stream:           ${node.stream}`);
-        const props = node.properties ?? {};
-        for (const [key, value] of Object.entries(props)) {
-          if (value != null && value !== "") {
-            lines.push(`${key}: ${value}`);
-          }
+      // Write generation, stream, then all properties as KV pairs
+      if (node.generation != null) lines.push(`generation:       ${node.generation}`);
+      if (node.stream) lines.push(`stream:           ${node.stream}`);
+      const props = node.properties ?? {};
+      for (const [key, value] of Object.entries(props)) {
+        if (value != null && value !== "") {
+          lines.push(`${key}: ${value}`);
         }
       }
 

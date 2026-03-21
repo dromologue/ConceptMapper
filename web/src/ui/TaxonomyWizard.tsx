@@ -49,7 +49,7 @@ interface WizardEdgeType {
 interface WizardNodeType {
   id: string;
   label: string;
-  shape: "circle" | "rectangle";
+  shape: "circle" | "rectangle" | "diamond" | "hexagon" | "triangle" | "pill";
   icon: string;
   fields: WizardField[];
   size_field?: string;
@@ -486,6 +486,10 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
                           onChange={(e) => updateNodeType(i, { shape: e.target.value as "circle" | "rectangle" })}>
                           <option value="circle">Circle</option>
                           <option value="rectangle">Rectangle</option>
+                          <option value="diamond">Diamond</option>
+                          <option value="hexagon">Hexagon</option>
+                          <option value="triangle">Triangle</option>
+                          <option value="pill">Pill</option>
                         </select>
                       </div>
                       <div className="wizard-field wizard-field-inline" style={{ maxWidth: 60 }}>

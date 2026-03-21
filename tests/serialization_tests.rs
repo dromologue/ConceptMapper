@@ -1,8 +1,24 @@
+use std::collections::BTreeMap;
 use concept_mapper_core::graph::ir::*;
 
 // SPEC: REQ-007 - JSON Serialization
 
 fn sample_graph_ir() -> GraphIR {
+    let mut thinker_fields = BTreeMap::new();
+    thinker_fields.insert("dates".to_string(), "1923–2013".to_string());
+    thinker_fields.insert("eminence".to_string(), "dominant".to_string());
+    thinker_fields.insert("structural_roles".to_string(), "intellectual_leader".to_string());
+    thinker_fields.insert("active_period".to_string(), "1960–1995".to_string());
+    thinker_fields.insert("key_concept_ids".to_string(), "[double_loop]".to_string());
+    thinker_fields.insert("institutional_base".to_string(), "Harvard Business School".to_string());
+
+    let mut concept_fields = BTreeMap::new();
+    concept_fields.insert("originator_id".to_string(), "argyris".to_string());
+    concept_fields.insert("date_introduced".to_string(), "1977".to_string());
+    concept_fields.insert("concept_type".to_string(), "distinction".to_string());
+    concept_fields.insert("abstraction_level".to_string(), "theoretical".to_string());
+    concept_fields.insert("status".to_string(), "active".to_string());
+
     GraphIR {
         version: "1.0".to_string(),
         metadata: Metadata {
@@ -45,17 +61,7 @@ fn sample_graph_ir() -> GraphIR {
                 name: "Chris Argyris".to_string(),
                 generation: Some(2),
                 stream: Some("psychology".to_string()),
-                thinker_fields: Some(ThinkerFields {
-                    dates: Some("1923–2013".to_string()),
-                    eminence: "dominant".to_string(),
-                    structural_roles: vec!["intellectual_leader".to_string()],
-                    active_period: Some("1960–1995".to_string()),
-                    key_concept_ids: vec!["double_loop".to_string()],
-                    institutional_base: Some("Harvard Business School".to_string()),
-                    is_placeholder: false,
-                }),
-                concept_fields: None,
-                fields: None,
+                fields: Some(thinker_fields),
                 content: None,
                 notes: None,
             },
@@ -65,16 +71,7 @@ fn sample_graph_ir() -> GraphIR {
                 name: "Double-Loop Learning".to_string(),
                 generation: Some(3),
                 stream: Some("psychology".to_string()),
-                thinker_fields: None,
-                concept_fields: Some(ConceptFields {
-                    originator_id: "argyris".to_string(),
-                    date_introduced: Some("1977".to_string()),
-                    concept_type: "distinction".to_string(),
-                    abstraction_level: "theoretical".to_string(),
-                    status: "active".to_string(),
-                    parent_concept_id: None,
-                }),
-                fields: None,
+                fields: Some(concept_fields),
                 content: None,
                 notes: None,
             },
@@ -84,7 +81,6 @@ fn sample_graph_ir() -> GraphIR {
                 from: "argyris".to_string(),
                 to: "double_loop".to_string(),
                 edge_type: "originates".to_string(),
-                edge_category: EdgeCategory::ThinkerConcept,
                 directed: true,
                 weight: 1.0,
                 note: None,
@@ -139,17 +135,17 @@ fn nodes_array_with_correct_fields() {
     let nodes = value["nodes"].as_array().unwrap();
     assert_eq!(nodes.len(), 2);
 
-    // Check thinker node
     let thinker = &nodes[0];
     assert_eq!(thinker["id"], "argyris");
     assert_eq!(thinker["node_type"], "thinker");
-    assert!(thinker["thinker_fields"].is_object());
+    assert!(thinker["fields"].is_object());
+    assert_eq!(thinker["fields"]["eminence"], "dominant");
 
-    // Check concept node
     let concept = &nodes[1];
     assert_eq!(concept["id"], "double_loop");
     assert_eq!(concept["node_type"], "concept");
-    assert!(concept["concept_fields"].is_object());
+    assert!(concept["fields"].is_object());
+    assert_eq!(concept["fields"]["concept_type"], "distinction");
 }
 
 // AC-007-05: edges array with visual sub-object
@@ -165,7 +161,6 @@ fn edges_array_with_visual() {
 
     let edge = &edges[0];
     assert_eq!(edge["edge_type"], "originates");
-    assert_eq!(edge["edge_category"], "thinker_concept");
     assert_eq!(edge["directed"], true);
     assert!(edge["visual"].is_object());
     assert_eq!(edge["visual"]["style"], "solid");
@@ -188,17 +183,15 @@ fn roundtrip_serialization() {
 fn none_fields_omitted() {
     let ir = sample_graph_ir();
     let json = serde_json::to_string(&ir).unwrap();
-
-    // The thinker node should not have concept_fields in JSON
     let value: serde_json::Value = serde_json::from_str(&json).unwrap();
-    let thinker = &value["nodes"][0];
-    assert!(thinker.get("concept_fields").is_none() || thinker["concept_fields"].is_null(),
-        "concept_fields should be omitted for thinker nodes");
 
-    // The concept node should not have thinker_fields
-    let concept = &value["nodes"][1];
-    assert!(concept.get("thinker_fields").is_none() || concept["thinker_fields"].is_null(),
-        "thinker_fields should be omitted for concept nodes");
+    // Neither node should have content
+    let thinker = &value["nodes"][0];
+    assert!(thinker.get("content").is_none() || thinker["content"].is_null(),
+        "content should be omitted when absent");
+
+    // Nodes without notes should not have notes key
+    assert!(thinker.get("notes").is_none() || thinker["notes"].is_null());
 }
 
 // Edge case: empty graph
@@ -257,7 +250,6 @@ fn content_serialized_when_present() {
     assert_eq!(thinker["content"]["connections_prose"].as_array().unwrap().len(), 1);
     assert_eq!(thinker["content"]["connections_prose"][0]["target_id"], "senge");
 
-    // Second node should still have no content
     let concept = &value["nodes"][1];
     assert!(concept.get("content").is_none() || concept["content"].is_null(),
         "content should be omitted when absent");
@@ -269,7 +261,6 @@ fn content_omitted_when_absent() {
     let ir = sample_graph_ir();
     let json = serde_json::to_string(&ir).unwrap();
 
-    // Neither node has content set
     assert!(!json.contains("\"content\""), "content key should not appear in JSON");
 }
 
@@ -304,16 +295,16 @@ fn roundtrip_with_content() {
     assert_eq!(json1, json2, "round-trip with content should produce identical JSON");
 }
 
-// AC-017-01: parent_concept_id serialized on concept nodes
+// Fields are stored as key-value pairs in the fields HashMap
 #[test]
-fn parent_concept_id_serialized() {
-    let mut ir = sample_graph_ir();
-    if let Some(ref mut cf) = ir.nodes[1].concept_fields {
-        cf.parent_concept_id = Some("cynefin".to_string());
-    }
-
+fn fields_stored_as_hashmap() {
+    let ir = sample_graph_ir();
     let json = serde_json::to_string(&ir).unwrap();
     let value: serde_json::Value = serde_json::from_str(&json).unwrap();
 
-    assert_eq!(value["nodes"][1]["concept_fields"]["parent_concept_id"], "cynefin");
+    let concept = &value["nodes"][1];
+    assert_eq!(concept["fields"]["originator_id"], "argyris");
+    assert_eq!(concept["fields"]["concept_type"], "distinction");
+    assert_eq!(concept["fields"]["abstraction_level"], "theoretical");
+    assert_eq!(concept["fields"]["status"], "active");
 }

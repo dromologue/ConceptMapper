@@ -14,7 +14,7 @@ fn lex_fenced_inner(input: &str) -> Vec<concept_mapper_core::parser::lexer::Clas
 
 // AC-005-01: Each from: line starts a new edge definition
 // AC-005-02: from and to fields extracted as trimmed strings
-// AC-005-03: type field parsed as edge type enum
+// AC-005-03: type field extracted as string
 #[test]
 fn parse_single_edge_inline_format() {
     let input = "from: taylor    to: argyris    type: chain";
@@ -24,7 +24,7 @@ fn parse_single_edge_inline_format() {
     assert_eq!(edges.len(), 1);
     assert_eq!(edges[0].from, "taylor");
     assert_eq!(edges[0].to, "argyris");
-    assert_eq!(edges[0].edge_type, EdgeType::Chain);
+    assert_eq!(edges[0].edge_type, "chain");
 }
 
 // AC-005-04: Single-line note values extracted
@@ -63,13 +63,13 @@ fn parse_multiple_edges_in_one_block() {
     assert_eq!(edges.len(), 3);
     assert_eq!(edges[0].from, "taylor");
     assert_eq!(edges[0].to, "argyris");
-    assert_eq!(edges[0].edge_type, EdgeType::Chain);
+    assert_eq!(edges[0].edge_type, "chain");
     assert_eq!(edges[1].from, "argyris");
     assert_eq!(edges[1].to, "edmondson");
-    assert_eq!(edges[1].edge_type, EdgeType::TeacherPupil);
+    assert_eq!(edges[1].edge_type, "teacher_pupil");
     assert_eq!(edges[2].from, "argyris");
     assert_eq!(edges[2].to, "senge");
-    assert_eq!(edges[2].edge_type, EdgeType::Chain);
+    assert_eq!(edges[2].edge_type, "chain");
 }
 
 // AC-005-07: All example thinker-thinker edges parse correctly
@@ -117,13 +117,12 @@ from: deming    to: argyris    type: alliance
     let lines = lex_fenced_inner(input);
     let edges = parse_edges(&lines).expect("should parse all thinker-thinker edges");
 
-    assert_eq!(edges.len(), 12, "expected 12 thinker-thinker edges, got {}", edges.len());
+    assert_eq!(edges.len(), 12, "expected 12 edges, got {}", edges.len());
 
-    // Check specific edge types
-    let rivalry_count = edges.iter().filter(|e| e.edge_type == EdgeType::Rivalry).count();
-    let alliance_count = edges.iter().filter(|e| e.edge_type == EdgeType::Alliance).count();
-    let chain_count = edges.iter().filter(|e| e.edge_type == EdgeType::Chain).count();
-    let teacher_count = edges.iter().filter(|e| e.edge_type == EdgeType::TeacherPupil).count();
+    let rivalry_count = edges.iter().filter(|e| e.edge_type == "rivalry").count();
+    let alliance_count = edges.iter().filter(|e| e.edge_type == "alliance").count();
+    let chain_count = edges.iter().filter(|e| e.edge_type == "chain").count();
+    let teacher_count = edges.iter().filter(|e| e.edge_type == "teacher_pupil").count();
 
     assert_eq!(rivalry_count, 3, "expected 3 rivalry edges");
     assert_eq!(alliance_count, 2, "expected 2 alliance edges");
@@ -131,7 +130,7 @@ from: deming    to: argyris    type: alliance
     assert_eq!(teacher_count, 1, "expected 1 teacher_pupil edge");
 }
 
-// AC-005-08: All example thinker-concept edges parse correctly
+// AC-005-08: Thinker-concept edges parse correctly
 #[test]
 fn parse_thinker_concept_edges() {
     let input = "from: argyris   to: double_loop        type: originates
@@ -155,13 +154,13 @@ from: snowden   to: double_loop         type: reframes
     let lines = lex_fenced_inner(input);
     let edges = parse_edges(&lines).expect("should parse thinker-concept edges");
 
-    assert_eq!(edges.len(), 10, "expected 10 thinker-concept edges, got {}", edges.len());
+    assert_eq!(edges.len(), 10, "expected 10 edges, got {}", edges.len());
 
-    let originates_count = edges.iter().filter(|e| e.edge_type == EdgeType::Originates).count();
+    let originates_count = edges.iter().filter(|e| e.edge_type == "originates").count();
     assert_eq!(originates_count, 6, "expected 6 originates edges");
 }
 
-// AC-005-09: All example concept-concept edges parse correctly
+// AC-005-09: Concept-concept edges parse correctly
 #[test]
 fn parse_concept_concept_edges() {
     let input = "from: double_loop         to: seven_conditions   type: enables
@@ -191,9 +190,9 @@ from: prospect_theory     to: system_1_2           type: extends
     let lines = lex_fenced_inner(input);
     let edges = parse_edges(&lines).expect("should parse concept-concept edges");
 
-    assert_eq!(edges.len(), 6, "expected 6 concept-concept edges, got {}", edges.len());
+    assert_eq!(edges.len(), 6, "expected 6 edges, got {}", edges.len());
 
-    let enables_count = edges.iter().filter(|e| e.edge_type == EdgeType::Enables).count();
+    let enables_count = edges.iter().filter(|e| e.edge_type == "enables").count();
     assert_eq!(enables_count, 3, "expected 3 enables edges");
 }
 
@@ -219,13 +218,14 @@ fn parse_edge_with_trailing_whitespace() {
     assert_eq!(edges[0].to, "argyris");
 }
 
-// All 15 edge types parse correctly
+// Custom/unknown edge types are accepted (no enum validation)
 #[test]
-fn all_edge_types_parse() {
+fn custom_edge_types_accepted() {
     let types = vec![
         "teacher_pupil", "chain", "rivalry", "alliance", "synthesis", "institutional",
         "originates", "develops", "contests", "applies",
         "extends", "opposes", "subsumes", "enables", "reframes",
+        "blocks", "depends_on", "subtask_of", "delivers", "custom_type",
     ];
 
     for t in types {
@@ -233,19 +233,8 @@ fn all_edge_types_parse() {
         let lines = lex_fenced_inner(&input);
         let edges = parse_edges(&lines);
         assert!(edges.is_ok(), "edge type '{}' should parse successfully", t);
+        assert_eq!(edges.unwrap()[0].edge_type, t);
     }
-}
-
-// Invalid edge type produces error
-#[test]
-fn invalid_edge_type_produces_error() {
-    let input = "from: a    to: b    type: friendship";
-    let lines = lex_fenced_inner(input);
-    let result = parse_edges(&lines);
-
-    assert!(result.is_err());
-    let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.message.contains("friendship")));
 }
 
 // AC-005-10: Edge weight parsed when present, defaults to 1.0 when absent
@@ -269,9 +258,9 @@ fn edge_weight_parsed_when_present() {
 
 #[test]
 fn edge_weight_clamped_to_range() {
-    let input = "from: a    to: b    type: chain\n  weight: 1.5";
+    let input = "from: a    to: b    type: chain\n  weight: 15.0";
     let lines = lex_fenced_inner(input);
     let edges = parse_edges(&lines).expect("should parse");
 
-    assert!((edges[0].weight - 1.0).abs() < f64::EPSILON, "weight should be clamped to 1.0");
+    assert!((edges[0].weight - 10.0).abs() < f64::EPSILON, "weight should be clamped to 10.0");
 }

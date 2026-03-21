@@ -5,7 +5,7 @@ import type { GraphEdge } from "../types/graph-ir";
 function edge(from: string, to: string, directed: boolean): GraphEdge {
   return {
     from, to, directed,
-    edge_type: "test", edge_category: "thinker_thinker",
+    edge_type: "test",
     weight: 1.0, visual: { style: "solid", show_arrow: directed },
   };
 }

@@ -8,91 +8,117 @@ const defaultProps = {
   onCancel: vi.fn(),
 };
 
-// Helper to navigate to a specific step with valid data
-async function navigateToStep(user: ReturnType<typeof userEvent.setup>, targetStep: number) {
-  if (targetStep >= 2) {
+// Steps (default, both axes enabled): dimensions → title → node_types → streams → generations → edges → review → create
+// Helper navigates through steps with valid data at each gate
+async function navigateToStep(user: ReturnType<typeof userEvent.setup>, stepId: string) {
+  const order = ["dimensions", "title", "node_types", "streams", "generations", "edges", "review", "create"];
+  const targetIdx = order.indexOf(stepId);
+  if (targetIdx < 0) throw new Error(`Unknown step: ${stepId}`);
+
+  // Step 0 (dimensions) is shown on render; always valid → just click Next
+  if (targetIdx >= 1) {
+    await user.click(screen.getByText("Next")); // dimensions → title
+  }
+  if (targetIdx >= 2) {
     await user.type(screen.getByPlaceholderText(/Management Theory/), "Test Map");
-    await user.click(screen.getByText("Next")); // → 2: Node Types
+    await user.click(screen.getByText("Next")); // title → node_types
   }
-  if (targetStep >= 3) {
-    await user.click(screen.getByText("Next")); // → 3: Categories
+  if (targetIdx >= 3) {
+    await user.click(screen.getByText("Next")); // node_types → streams
   }
-  if (targetStep >= 4) {
-    await user.type(screen.getByPlaceholderText("Category name"), "Psychology");
-    await user.click(screen.getByText("Next")); // → 4: Horizons
+  if (targetIdx >= 4) {
+    await user.type(screen.getByPlaceholderText("Name"), "Psychology");
+    await user.click(screen.getByText("Next")); // streams → generations
   }
-  if (targetStep >= 5) {
-    await user.click(screen.getByText("Next")); // → 5: Edge Types
+  if (targetIdx >= 5) {
+    await user.click(screen.getByText("Next")); // generations → edges
   }
-  if (targetStep >= 6) {
-    await user.click(screen.getByText("Next")); // → 6: Review
+  if (targetIdx >= 6) {
+    await user.click(screen.getByText("Next")); // edges → review
   }
-  if (targetStep >= 7) {
-    await user.click(screen.getByText("Next")); // → 7: Create
+  if (targetIdx >= 7) {
+    await user.click(screen.getByText("Next")); // review → create
   }
 }
 
 describe("TaxonomyWizard", () => {
-  it("renders step 1 with title input", () => {
+  it("renders step 1 (dimensions) with axis toggles", () => {
     render(<TaxonomyWizard {...defaultProps} />);
-    expect(screen.getByText("New Taxonomy")).toBeInTheDocument();
+    expect(screen.getByText("What do you want to map?")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Categories")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Phases")).toBeInTheDocument();
+  });
+
+  it("Next button is not disabled on dimensions step", () => {
+    render(<TaxonomyWizard {...defaultProps} />);
+    const nextBtn = screen.getByText("Next");
+    expect(nextBtn.className).not.toContain("disabled");
+  });
+
+  it("advances to title step when Next clicked", async () => {
+    const user = userEvent.setup();
+    render(<TaxonomyWizard {...defaultProps} />);
+    await navigateToStep(user, "title");
+    expect(screen.getByText("Name Your Taxonomy")).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Management Theory/)).toBeInTheDocument();
   });
 
-  it("Next button has disabled class when title is empty", () => {
+  it("Next button has disabled class when title is empty", async () => {
+    const user = userEvent.setup();
     render(<TaxonomyWizard {...defaultProps} />);
+    await navigateToStep(user, "title");
     const nextBtn = screen.getByText("Next");
     expect(nextBtn.className).toContain("disabled");
   });
 
-  it("advances to step 2 (Node Types) when title filled and Next clicked", async () => {
+  it("advances to node types step", async () => {
     const user = userEvent.setup();
     render(<TaxonomyWizard {...defaultProps} />);
-    await navigateToStep(user, 2);
-    expect(screen.getByText("Define Fields & Node Types")).toBeInTheDocument();
+    await navigateToStep(user, "node_types");
+    expect(screen.getByText("Define Node Types & Fields")).toBeInTheDocument();
   });
 
-  it("step 2: shows default Node type", async () => {
+  it("node types step shows default Node type", async () => {
     const user = userEvent.setup();
     render(<TaxonomyWizard {...defaultProps} />);
-    await navigateToStep(user, 2);
-    expect(screen.getByText("Node")).toBeInTheDocument();
+    await navigateToStep(user, "node_types");
+    expect(screen.getByDisplayValue("Node")).toBeInTheDocument();
   });
 
-  it("step 2: can add a new node type", async () => {
+  it("node types step: can add a new node type", async () => {
     const user = userEvent.setup();
     render(<TaxonomyWizard {...defaultProps} />);
-    await navigateToStep(user, 2);
+    await navigateToStep(user, "node_types");
     await user.click(screen.getByText("+ Add Type"));
     expect(screen.getByText("Untitled Type")).toBeInTheDocument();
   });
 
-  it("step 3: advances to categories", async () => {
+  it("streams step shows category label", async () => {
     const user = userEvent.setup();
     render(<TaxonomyWizard {...defaultProps} />);
-    await navigateToStep(user, 3);
+    await navigateToStep(user, "streams");
     expect(screen.getByText("Define Categories")).toBeInTheDocument();
   });
 
-  it("step 4: renders phases", async () => {
+  it("generations step shows phases", async () => {
     const user = userEvent.setup();
     render(<TaxonomyWizard {...defaultProps} />);
-    await navigateToStep(user, 4);
+    await navigateToStep(user, "generations");
     expect(screen.getByText("Define Phases")).toBeInTheDocument();
   });
 
-  it("step 5: renders edge types", async () => {
+  it("edges step shows default edge types", async () => {
     const user = userEvent.setup();
     render(<TaxonomyWizard {...defaultProps} />);
-    await navigateToStep(user, 5);
+    await navigateToStep(user, "edges");
     expect(screen.getByText("Define Edge Types")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Chain")).toBeInTheDocument();
   });
 
-  it("step 6: review shows entered data", async () => {
+  it("review step shows entered data", async () => {
     const user = userEvent.setup();
     render(<TaxonomyWizard {...defaultProps} />);
-    await navigateToStep(user, 6);
+    await navigateToStep(user, "review");
     expect(screen.getByText(/Review/)).toBeInTheDocument();
     expect(screen.getByText("Test Map")).toBeInTheDocument();
     expect(screen.getByText("Psychology")).toBeInTheDocument();
@@ -104,7 +130,7 @@ describe("TaxonomyWizard", () => {
     const user = userEvent.setup();
     const onComplete = vi.fn();
     render(<TaxonomyWizard {...defaultProps} onComplete={onComplete} />);
-    await navigateToStep(user, 7);
+    await navigateToStep(user, "create");
     await user.click(screen.getByText("Create"));
 
     expect(onComplete).toHaveBeenCalledWith(expect.objectContaining({
@@ -129,10 +155,10 @@ describe("TaxonomyWizard", () => {
   it("Back button navigates to previous step", async () => {
     const user = userEvent.setup();
     render(<TaxonomyWizard {...defaultProps} />);
-    await navigateToStep(user, 2);
-    expect(screen.getByText("Define Fields & Node Types")).toBeInTheDocument();
+    await navigateToStep(user, "title");
+    expect(screen.getByText("Name Your Taxonomy")).toBeInTheDocument();
     await user.click(screen.getByText("Back"));
-    expect(screen.getByText("New Taxonomy")).toBeInTheDocument();
+    expect(screen.getByText("What do you want to map?")).toBeInTheDocument();
   });
 
   it("edit mode pre-fills data and shows Save button", async () => {
@@ -142,20 +168,23 @@ describe("TaxonomyWizard", () => {
         onComplete={vi.fn()}
         onCancel={vi.fn()}
         initialData={{
-          title: "Existing Map",
+          title: "Existing",
           streams: [{ id: "psych", name: "Psychology", color: "#4A90D9" }],
           generations: [{ number: 1, period: "1960-1980", label: "Founders" }],
         }}
       />
     );
-    expect(screen.getByDisplayValue("Existing Map")).toBeInTheDocument();
-    // Navigate through to final step
-    await user.click(screen.getByText("Next")); // → Node Types
-    await user.click(screen.getByText("Next")); // → Categories
-    await user.click(screen.getByText("Next")); // → Horizons
-    await user.click(screen.getByText("Next")); // → Edge Types
-    await user.click(screen.getByText("Next")); // → Review
-    await user.click(screen.getByText("Next")); // → Save step
+    // Step 1 is dimensions; advance to title
+    await user.click(screen.getByText("Next"));
+    expect(screen.getByText("Edit Taxonomy")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Existing")).toBeInTheDocument();
+    // Navigate through all steps to final
+    await user.click(screen.getByText("Next")); // → node_types
+    await user.click(screen.getByText("Next")); // → streams
+    await user.click(screen.getByText("Next")); // → generations
+    await user.click(screen.getByText("Next")); // → edges
+    await user.click(screen.getByText("Next")); // → review
+    await user.click(screen.getByText("Next")); // → create
     expect(screen.getByText("Save")).toBeInTheDocument();
   });
 
@@ -163,55 +192,23 @@ describe("TaxonomyWizard", () => {
     const user = userEvent.setup();
     const onSaveTemplate = vi.fn();
     render(<TaxonomyWizard {...defaultProps} onSaveTemplate={onSaveTemplate} />);
-    await navigateToStep(user, 6); // Review step
+    await navigateToStep(user, "review");
     await user.click(screen.getByText("Save as Template"));
     expect(onSaveTemplate).toHaveBeenCalledWith(expect.objectContaining({
       title: "Test Map",
     }));
   });
 
-  it("step 2: shows shared fields section", async () => {
+  it("can add a field to a node type", async () => {
     const user = userEvent.setup();
     render(<TaxonomyWizard {...defaultProps} />);
-    await navigateToStep(user, 2);
-    expect(screen.getByText("Shared Fields")).toBeInTheDocument();
-  });
-
-  it("step 2: can add a shared field", async () => {
-    const user = userEvent.setup();
-    render(<TaxonomyWizard {...defaultProps} />);
-    await navigateToStep(user, 2);
-    // Count existing field rows, then add one
-    const addButtons = screen.getAllByText("+ Field");
-    await user.click(addButtons[0]); // The first + Field is for shared fields
-    // Verify a new empty field input appeared
+    await navigateToStep(user, "node_types");
+    await user.click(screen.getByText("+ Field"));
     const fieldInputs = screen.getAllByPlaceholderText("Field label");
     expect(fieldInputs.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("step 6: review shows shared field count", async () => {
-    const user = userEvent.setup();
-    render(<TaxonomyWizard {...defaultProps} />);
-    await navigateToStep(user, 6);
-    expect(screen.getByText(/Shared Fields/)).toBeInTheDocument();
-  });
-
-  it("output includes all shared fields for each node type", async () => {
-    const user = userEvent.setup();
-    const onComplete = vi.fn();
-    render(<TaxonomyWizard {...defaultProps} onComplete={onComplete} />);
-    await navigateToStep(user, 7);
-    await user.click(screen.getByText("Create"));
-
-    const result = onComplete.mock.calls[0][0];
-    // All node types should have the same field keys
-    const nodeType = result.node_types[0];
-    expect(nodeType.fields.length).toBeGreaterThan(0);
-    // Default node type has fields like importance, status, etc.
-    expect(nodeType.fields.map((f: { key: string }) => f.key)).toContain("importance");
-  });
-
-  it("edit mode derives shared fields from existing node type configs", async () => {
+  it("edit mode shows existing node types", async () => {
     const user = userEvent.setup();
     render(
       <TaxonomyWizard
@@ -240,11 +237,9 @@ describe("TaxonomyWizard", () => {
         }}
       />
     );
-    // Navigate to step 2
-    await user.click(screen.getByText("Next"));
-    // Should show "Shared Fields" section with the union of field keys
-    expect(screen.getByText("Shared Fields")).toBeInTheDocument();
-    // Should show both node types
+    // Navigate to node types step
+    await user.click(screen.getByText("Next")); // → title
+    await user.click(screen.getByText("Next")); // → node_types
     expect(screen.getByText("Person")).toBeInTheDocument();
     expect(screen.getByText("Organisation")).toBeInTheDocument();
   });

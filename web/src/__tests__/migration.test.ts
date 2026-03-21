@@ -14,14 +14,14 @@ const minimalParsed: GraphIR = {
   nodes: [
     {
       id: "t1", node_type: "thinker", name: "Thinker One", generation: 1, stream: "main",
-      thinker_fields: {
-        dates: "1960-2020", eminence: "major", structural_roles: ["leader"],
-        key_concept_ids: ["c1"], institutional_base: "MIT",
+      fields: {
+        dates: "1960-2020", eminence: "major", structural_roles: "leader",
+        institutional_base: "MIT",
       },
     },
     {
       id: "c1", node_type: "concept", name: "Concept One", generation: 1, stream: "main",
-      concept_fields: {
+      fields: {
         originator_id: "t1", concept_type: "framework",
         abstraction_level: "theoretical", status: "active",
       },
@@ -29,25 +29,24 @@ const minimalParsed: GraphIR = {
   ],
   edges: [
     {
-      from: "t1", to: "c1", edge_type: "originates", edge_category: "thinker_concept",
+      from: "t1", to: "c1", edge_type: "originates",
       directed: true, weight: 1.0, visual: { style: "solid", show_arrow: true },
     },
   ],
 };
 
 describe("migrateFromParser", () => {
-  it("maps thinker → person with correct properties", () => {
+  it("maps thinker node with fields as properties", () => {
     const { template, data } = migrateFromParser(minimalParsed);
-    const person = data.nodes.find((n) => n.id === "t1");
-    expect(person).toBeDefined();
-    expect(person!.node_type).toBe("person");
-    expect(person!.properties.importance).toBe("major");
-    expect(person!.properties.date_from).toBe("1960");
-    expect(person!.properties.date_to).toBe("2020");
-    expect(template.node_types.find((t) => t.id === "person")).toBeDefined();
+    const thinker = data.nodes.find((n) => n.id === "t1");
+    expect(thinker).toBeDefined();
+    expect(thinker!.node_type).toBe("thinker");
+    expect(thinker!.properties.eminence).toBe("major");
+    expect(thinker!.properties.dates).toBe("1960-2020");
+    expect(template.node_types.find((t) => t.id === "thinker")).toBeDefined();
   });
 
-  it("keeps concept as concept", () => {
+  it("maps concept node with fields as properties", () => {
     const { data } = migrateFromParser(minimalParsed);
     const concept = data.nodes.find((n) => n.id === "c1");
     expect(concept!.node_type).toBe("concept");
@@ -83,20 +82,18 @@ describe("migrateFromParser", () => {
 });
 
 describe("graphIRFromData round-trip", () => {
-  it("backfills thinker_fields for person nodes", () => {
+  it("round-trips thinker node properties", () => {
     const { template, data } = migrateFromParser(minimalParsed);
     const ir = graphIRFromData(template, data);
-    const person = ir.nodes.find((n) => n.id === "t1");
-    expect(person!.thinker_fields).toBeDefined();
-    expect(person!.thinker_fields!.eminence).toBe("major");
+    const thinker = ir.nodes.find((n) => n.id === "t1");
+    expect(thinker!.properties?.eminence).toBe("major");
   });
 
-  it("backfills concept_fields for concept nodes", () => {
+  it("round-trips concept node properties", () => {
     const { template, data } = migrateFromParser(minimalParsed);
     const ir = graphIRFromData(template, data);
     const concept = ir.nodes.find((n) => n.id === "c1");
-    expect(concept!.concept_fields).toBeDefined();
-    expect(concept!.concept_fields!.concept_type).toBe("framework");
+    expect(concept!.properties?.concept_type).toBe("framework");
   });
 });
 

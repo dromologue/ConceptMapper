@@ -58,27 +58,6 @@ fn section_paths_from_header_text() {
     assert_eq!(subsection.unwrap().path, vec!["2. Node Types", "2.1 Thinker Node"]);
 }
 
-// AC-002-05: The example taxonomy produces expected sections
-#[test]
-fn taxonomy_sections_structure() {
-    let input = include_str!("../collins_network_taxonomy.md");
-    let lines = lex(input);
-    let sections = split_sections(lines);
-
-    // Check that key sections exist
-    let section_names: Vec<String> = sections.iter()
-        .map(|s| s.path.join(" > "))
-        .collect();
-
-    // Should have sections for the major parts
-    assert!(section_names.iter().any(|s| s.contains("Node Types")),
-        "missing Node Types section. Found: {:?}", section_names);
-    assert!(section_names.iter().any(|s| s.contains("Edge Types")),
-        "missing Edge Types section");
-    assert!(section_names.iter().any(|s| s.contains("Structural Roles")),
-        "missing Structural Roles section");
-}
-
 // AC-002 edge case: h1 headers are not section boundaries
 #[test]
 fn h1_not_section_boundary() {

@@ -226,7 +226,8 @@ export function Sidebar({
       }
       if (!isFinite(minYear)) continue;
 
-      sections.push({ compositeKey, label: "Date Range", minYear, maxYear });
+      const typeLabel = config?.label ?? typeId;
+      sections.push({ compositeKey, label: `${typeLabel} Date Range`, minYear, maxYear });
     }
     return sections;
   }, [nodeTypeConfigs, nodes]);
@@ -457,7 +458,7 @@ export function Sidebar({
                         onClick={() => onSelectNode(n)}
                       >
                         <span
-                          className={`sidebar-node-indicator ${config.shape === "rectangle" ? "concept" : ""}`}
+                          className={`sidebar-node-indicator ${config.shape !== "circle" ? "non-circle" : ""}`}
                           style={{
                             backgroundColor: streams.find((s) => s.id === n.stream)?.color ?? "#666",
                           }}

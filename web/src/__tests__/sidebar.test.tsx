@@ -258,9 +258,9 @@ describe("Sidebar", () => {
       { id: "n2", name: "Bob", node_type: "person", stream: "s2", generation: 1, properties: { importance: "minor", date_from: "1947" } },
     ];
     render(<Sidebar {...defaultProps} nodes={nodesWithDates} />);
-    expect(screen.getByText("Date Range")).toBeInTheDocument();
+    expect(screen.getByText("Person Date Range")).toBeInTheDocument();
     // Expand Date Range section
-    await user.click(screen.getByText("Date Range"));
+    await user.click(screen.getByText("Person Date Range"));
     // Date inputs use type="date" with min/max attributes
     const dateInputs = document.querySelectorAll('input[type="date"]');
     expect(dateInputs.length).toBe(2);

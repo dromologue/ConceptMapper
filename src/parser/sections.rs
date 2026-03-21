@@ -3,7 +3,7 @@ use crate::parser::lexer::{ClassifiedLine, LineType};
 /// A section of the document, defined by markdown headers.
 #[derive(Debug, Clone)]
 pub struct Section {
-    /// Header path, e.g., ["2. Node Types", "2.1 Thinker Node"]
+    /// Header path, e.g., ["Node Types", "Task Node"]
     pub path: Vec<String>,
     /// The classified lines belonging to this section (excluding the header itself)
     pub lines: Vec<ClassifiedLine>,

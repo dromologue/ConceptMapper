@@ -17,12 +17,12 @@
 | REQ-001 | AC-001-06 | `tests/lexer_tests.rs` | `blank_lines_classified` | passing |
 | REQ-001 | AC-001-07 | `tests/lexer_tests.rs` | `prose_lines_classified` | passing |
 | REQ-001 | AC-001-08 | `tests/lexer_tests.rs` | `line_numbers_are_one_indexed`, `raw_content_preserved` | passing |
-| REQ-001 | AC-001-09 | `tests/lexer_tests.rs` | `lexer_processes_full_taxonomy` | passing |
+| REQ-001 | AC-001-09 | — | — | pending (requires external taxonomy file) |
 | REQ-002 | AC-002-01 | `tests/sections_tests.rs` | `h2_headers_create_top_level_sections` | passing |
 | REQ-002 | AC-002-02 | `tests/sections_tests.rs` | `h3_headers_create_subsections` | passing |
 | REQ-002 | AC-002-03 | `tests/sections_tests.rs` | `preamble_before_first_header` | passing |
 | REQ-002 | AC-002-04 | `tests/sections_tests.rs` | `section_paths_from_header_text` | passing |
-| REQ-002 | AC-002-05 | `tests/sections_tests.rs` | `taxonomy_sections_structure` | passing |
+| REQ-002 | AC-002-05 | — | — | pending (requires external taxonomy file) |
 | REQ-003 | AC-003-01..10 | `tests/node_parser_tests.rs` | `parse_argyris_thinker_node` | passing |
 | REQ-003 | AC-003-11 | `tests/node_parser_tests.rs` | `thinker_missing_id_produces_error`, `thinker_missing_name_produces_error` | passing |
 | REQ-003 | AC-003-12 | `tests/node_parser_tests.rs` | `thinker_unknown_fields_ignored` | passing |
@@ -107,7 +107,7 @@
 | Spec | Criteria | Test File | Test Name | Status |
 |------|----------|-----------|-----------|--------|
 | REQ-047 | AC-047-01..08 (edge click editing) | `src/__tests__/edge-popover.test.tsx` | 5 tests | passing |
-| REQ-048 | AC-048-01..07 (unified fields) | `src/__tests__/taxonomy-wizard.test.tsx` | `shared fields`, `label overrides`, `backward compat` | passing |
+| REQ-048 | AC-048-01..07 (wizard flow) | `src/__tests__/taxonomy-wizard.test.tsx` | 19 tests: dimensions, title, node types, streams, generations, edges, review, create, edit mode | passing |
 | REQ-049 | AC-049-01..03 (start screen map text) | — | — | pending (requires integration test) |
 | REQ-050 | AC-050-01..05 (edge types persisted) | `src/__tests__/migration.test.ts` | `dataFromGraphIR includes edge_types` | passing |
 | REQ-051 | AC-051-01..03 (activity bar labels) | `src/__tests__/activity-bar.test.tsx` | `displays custom icons from node type configs` | passing |
@@ -115,6 +115,26 @@
 | REQ-053 | AC-053-01..05 (notes persistence) | `src/__tests__/migration.test.ts` | `preserves node notes through round-trip` | passing |
 | REQ-054 | AC-054-01..03 (sidebar template labels) | `src/__tests__/sidebar.test.tsx` | `shows categories section` (now "Streams") | passing |
 | REQ-041 | AC-041-05..06 (weight round-trip) | `src/__tests__/migration.test.ts` | `preserves edge weight through round-trip` | passing |
+
+## Additional Passing Tests (not yet mapped to spec requirements)
+
+| Test File | Tests | Coverage |
+|-----------|-------|----------|
+| `src/__tests__/detail-panel-notes.test.tsx` | 12 tests | Detail panel editing, notes pane, edge notes |
+| `src/__tests__/detail-panel.test.tsx` | ~15 tests | Config-driven detail panel, custom fields |
+| `src/__tests__/add-node-modal.test.tsx` | 7 tests | Node creation modal, field validation |
+| `src/__tests__/add-edge-modal.test.tsx` | 7 tests | Edge creation modal, template edge types |
+| `src/__tests__/chat-pane.test.tsx` | 4 tests | LLM chat UI, send button state |
+| `src/__tests__/collapse-logic.test.ts` | 11 tests | Node collapse/expand, cascade hiding |
+| `src/__tests__/filters.test.ts` | ~20 tests | Attribute filtering, date range, OR logic |
+| `src/__tests__/llm-context.test.tsx` | 3 tests | LLM context provider |
+| `src/__tests__/llm-prompts.test.ts` | 6 tests | Prompt construction for mapping and chat |
+| `src/__tests__/llm-provider.test.ts` | ~5 tests | LLM provider configuration |
+| `src/__tests__/normalize.test.ts` | 8 tests | Fenced KV normalization |
+| `src/__tests__/mapping-modal.test.tsx` | ~5 tests | Content mapping modal |
+| `src/__tests__/settings-modal.test.tsx` | ~5 tests | Settings modal rendering |
+| `src/__tests__/help-panel.test.tsx` | 1 test | Help panel search field |
+| `src/__tests__/theme.test.tsx` | 4 tests | Theme configuration |
 
 ## Principle Compliance
 

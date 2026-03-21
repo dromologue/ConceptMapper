@@ -45,23 +45,16 @@ function getStreamColor(node: SimNode, streams: GraphIR["metadata"]["streams"], 
 
 function isNodePrimary(node: SimNode, viewMode: ViewMode, nodeTypeConfigs: NodeTypeConfig[]): boolean {
   if (viewMode === "full") return true;
-  // Legacy compat
-  if (viewMode === "people") {
-    const config = getNodeTypeConfig(nodeTypeConfigs, node.node_type);
-    return config ? config.shape === "circle" : node.node_type !== "concept";
-  }
-  if (viewMode === "concepts") {
-    const config = getNodeTypeConfig(nodeTypeConfigs, node.node_type);
-    return config ? config.shape === "rectangle" : node.node_type === "concept";
-  }
-  // Dynamic: viewMode is a node type id — show only nodes of that type
+  // viewMode is a node type id — show only nodes of that type
   return node.node_type === viewMode;
 }
 
-function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): "circle" | "rectangle" {
+type NodeShape = "circle" | "rectangle" | "diamond" | "hexagon" | "triangle" | "pill";
+
+function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): NodeShape {
   const config = getNodeTypeConfig(nodeTypeConfigs, node.node_type);
   if (config) return config.shape;
-  return node.node_type === "concept" ? "rectangle" : "circle";
+  return "circle";
 }
 
 export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, onRegisterFitToView }: Props) {
@@ -530,8 +523,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         existing.node_type = n.node_type;
         existing.generation = n.generation;
         existing.stream = n.stream;
-        existing.thinker_fields = n.thinker_fields;
-        existing.concept_fields = n.concept_fields;
+        existing.fields = n.fields;
         existing.properties = n.properties;
         existing.content = n.content;
         existing.notes = n.notes;
@@ -760,34 +752,48 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const effectiveR = isRevealed ? r * 0.7 : r;
       const shape = getNodeShape(node, configs);
 
+      // Draw shape path
+      ctx.beginPath();
       if (shape === "rectangle") {
         const w = effectiveR * 2.5;
         const h = effectiveR * 1.6;
-        ctx.beginPath();
         ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, 4);
-        ctx.fillStyle = color;
-        ctx.fill();
-        if (isSelected || isHovered || isEdgeSource) {
-          ctx.strokeStyle = isEdgeSource ? th.canvasEdgeSourceStroke : th.canvasSelectionStroke;
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        } else if (!isAdding && mode === "concepts" && node.properties?.status === "contested") {
-          ctx.setLineDash([3, 3]);
-          ctx.strokeStyle = th.canvasLabelDim;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-          ctx.setLineDash([]);
+      } else if (shape === "diamond") {
+        const s = effectiveR * 1.4;
+        ctx.moveTo(node.x, node.y - s);
+        ctx.lineTo(node.x + s, node.y);
+        ctx.lineTo(node.x, node.y + s);
+        ctx.lineTo(node.x - s, node.y);
+        ctx.closePath();
+      } else if (shape === "hexagon") {
+        const s = effectiveR * 1.1;
+        for (let i = 0; i < 6; i++) {
+          const angle = (Math.PI / 3) * i - Math.PI / 6;
+          const px = node.x + s * Math.cos(angle);
+          const py = node.y + s * Math.sin(angle);
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
         }
+        ctx.closePath();
+      } else if (shape === "triangle") {
+        const s = effectiveR * 1.3;
+        ctx.moveTo(node.x, node.y - s);
+        ctx.lineTo(node.x + s * 0.87, node.y + s * 0.5);
+        ctx.lineTo(node.x - s * 0.87, node.y + s * 0.5);
+        ctx.closePath();
+      } else if (shape === "pill") {
+        const w = effectiveR * 2.4;
+        const h = effectiveR * 1.2;
+        ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, h / 2);
       } else {
-        ctx.beginPath();
+        // circle (default)
         ctx.arc(node.x, node.y, effectiveR, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
-        if (isSelected || isHovered || isEdgeSource) {
-          ctx.strokeStyle = isEdgeSource ? th.canvasEdgeSourceStroke : th.canvasSelectionStroke;
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
+      }
+      ctx.fillStyle = color;
+      ctx.fill();
+      if (isSelected || isHovered || isEdgeSource) {
+        ctx.strokeStyle = isEdgeSource ? th.canvasEdgeSourceStroke : th.canvasSelectionStroke;
+        ctx.lineWidth = 2;
+        ctx.stroke();
       }
 
       // Notes indicator

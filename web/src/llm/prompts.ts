@@ -48,7 +48,6 @@ Output a JSON object matching this schema:
       "from": "<node id>",
       "to": "<node id>",
       "edge_type": "<relationship type>",
-      "edge_category": "thinker_thinker|thinker_concept|concept_concept",
       "directed": true,
       "weight": 1.0
     }

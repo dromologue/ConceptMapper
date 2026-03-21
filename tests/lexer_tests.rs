@@ -144,27 +144,6 @@ fn raw_content_preserved() {
     assert_eq!(lines[0].raw, "  indented line  ");
 }
 
-// AC-001-09: The lexer processes the full taxonomy example without panic
-#[test]
-fn lexer_processes_full_taxonomy() {
-    let input = include_str!("../collins_network_taxonomy.md");
-    let lines = lex(input);
-
-    // Should produce lines without panicking
-    assert!(lines.len() > 400, "expected 400+ lines, got {}", lines.len());
-
-    // Verify some expected line types exist
-    let has_headers = lines.iter().any(|l| matches!(&l.line_type, LineType::Header { .. }));
-    let has_fences = lines.iter().any(|l| matches!(&l.line_type, LineType::FenceOpen));
-    let has_kv = lines.iter().any(|l| matches!(&l.line_type, LineType::KVPair { .. }));
-    let has_tables = lines.iter().any(|l| matches!(&l.line_type, LineType::TableRow { .. }));
-
-    assert!(has_headers, "expected Header lines");
-    assert!(has_fences, "expected FenceOpen lines");
-    assert!(has_kv, "expected KVPair lines");
-    assert!(has_tables, "expected TableRow lines");
-}
-
 // AC-001 edge case: Indented KV pairs inside fences
 #[test]
 fn indented_kv_pairs_inside_fence() {

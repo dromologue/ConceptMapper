@@ -13,7 +13,7 @@ export interface FieldConfig {
 export interface NodeTypeConfig {
   id: string;            // e.g. "person"
   label: string;         // e.g. "Person"
-  shape: "circle" | "rectangle";
+  shape: "circle" | "rectangle" | "diamond" | "hexagon" | "triangle" | "pill";
   icon?: string;         // single char for sidebar, defaults to label[0]
   size_field?: string;   // key of the field that drives node size
   size_map?: Record<string, number>;  // field value → radius
@@ -117,32 +117,11 @@ export interface GraphNode {
   name: string;
   generation?: number;
   stream?: string;
-  thinker_fields?: ThinkerFields;
-  concept_fields?: ConceptFields;
-  /** Generic key-value fields for non-thinker/concept node types (from Rust parser). */
+  /** All custom key-value fields for this node. */
   fields?: Record<string, string>;
   properties?: Record<string, string | string[] | number | undefined>;
   content?: NodeContent;
   notes?: string;
-}
-
-export interface ThinkerFields {
-  dates?: string;
-  eminence: string;
-  structural_roles: string[];
-  active_period?: string;
-  key_concept_ids: string[];
-  institutional_base?: string;
-  is_placeholder?: boolean;
-}
-
-export interface ConceptFields {
-  originator_id: string;
-  date_introduced?: string;
-  concept_type: string;
-  abstraction_level: string;
-  status: string;
-  parent_concept_id?: string;
 }
 
 export interface NodeContent {
@@ -156,7 +135,6 @@ export interface GraphEdge {
   from: string;
   to: string;
   edge_type: string;
-  edge_category: "thinker_thinker" | "thinker_concept" | "concept_concept" | "generic";
   directed: boolean;
   weight: number;
   note?: string;

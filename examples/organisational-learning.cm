@@ -1,0 +1,1034 @@
+# Organisational Learning — Three Levers and Nine Probes
+
+<!-- Exported from concept-mapper, 2026-03-21. -->
+
+## Generations
+
+| Gen | Period | Label | Attention Space Count |
+|-----|--------|-------|-----------------------|
+| 1 | pre-1940 | Founders | 3 |
+| 2 | 1940–1970 | Classical | 4 |
+| 3 | 1970–1990 | Modern | 5 |
+| 4 | 1990–present | Contemporary | 4 |
+
+## Streams
+
+| Stream ID | Name | Colour | Description |
+|-----------|------|--------|-------------|
+| identity | Identity | #4A90D9 | Identity must be safe enough to change |
+| information | Information | #50C878 | Information must be clean enough to act on |
+| institution | Institution | #E67E22 | Institutional form must be convivial enough to permit learning |
+| management | Management | #9B59B6 | Management theory and practice |
+| psychology | Psychology | #E74C3C | Individual cognition, learning, and behaviour |
+
+## Thinker Nodes
+
+```
+id:               bourdieu
+name:             Pierre Bourdieu
+dates:            1930–2002
+eminence:         dominant
+generation:       3
+stream:           identity
+institutional_base: Collège de France
+notes:            Habitus, capital, hysteresis — the mechanisms of identity reproduction and resistance to change
+```
+
+```
+id:               bateson
+name:             Gregory Bateson
+dates:            1904–1980
+eminence:         dominant
+generation:       2
+stream:           information
+institutional_base: Palo Alto
+notes:            Double bind theory — contradictory messages at different logical levels with no permission to name the contradiction
+```
+
+```
+id:               illich
+name:             Ivan Illich
+dates:            1926–2002
+eminence:         dominant
+generation:       3
+stream:           institution
+institutional_base: CIDOC, Cuernavaca
+notes:            Radical critique of institutions: hidden curriculum, iatrogenesis, radical monopoly, conviviality
+```
+
+```
+id:               goffman
+name:             Erving Goffman
+dates:            1922–1982
+eminence:         dominant
+generation:       2
+stream:           information
+institutional_base: University of Pennsylvania
+notes:            Front stage/back stage, face-work, stigma, interaction order — the micro-mechanisms that maintain double binds
+```
+
+```
+id:               giddens
+name:             Anthony Giddens
+dates:            b. 1938
+eminence:         major
+generation:       3
+stream:           identity
+institutional_base: Cambridge, LSE
+notes:            Ontological security; structuration theory — signification, domination, legitimation must move together
+```
+
+```
+id:               kahneman
+name:             Daniel Kahneman
+dates:            1934–2024
+eminence:         major
+generation:       3
+stream:           psychology
+institutional_base: Princeton
+notes:            Losses loom twice as large as gains; resistance fiercest at the beginning
+```
+
+```
+id:               argyris
+name:             Chris Argyris
+dates:            1923–2013
+eminence:         major
+generation:       2
+stream:           information
+institutional_base: Harvard Business School
+notes:            Defensive routines, Model II, espoused theory vs theory-in-use
+```
+
+```
+id:               heifetz
+name:             Ronald Heifetz
+dates:            b. 1951
+eminence:         major
+generation:       4
+stream:           institution
+institutional_base: Harvard Kennedy School
+notes:            Adaptive leadership; the holding environment; distinguish technical from adaptive work
+```
+
+```
+id:               freire
+name:             Paulo Freire
+dates:            1921–1997
+eminence:         major
+generation:       3
+stream:           identity
+institutional_base: University of Recife
+notes:            Banking education vs problem-posing education; pedagogy of the oppressed
+```
+
+```
+id:               edmondson
+name:             Amy Edmondson
+dates:            b. 1959
+eminence:         major
+generation:       4
+stream:           information
+institutional_base: Harvard Business School
+notes:            Psychological safety is the floor; safety without high standards produces comfort, not learning
+```
+
+```
+id:               wenger
+name:             Etienne Wenger
+dates:            b. 1952
+eminence:         major
+generation:       4
+stream:           identity
+institutional_base: Institute for Research on Learning
+notes:            Legitimate peripheral participation; communities of practice; learning IS participation
+```
+
+```
+id:               nonaka
+name:             Ikujiro Nonaka
+dates:            b. 1935
+eminence:         major
+generation:       3
+stream:           management
+institutional_base: Hitotsubashi University
+notes:            SECI model; the critical step is externalisation (tacit to explicit through dialogue)
+```
+
+```
+id:               drucker
+name:             Peter Drucker
+dates:            1909–2005
+eminence:         major
+generation:       2
+stream:           management
+institutional_base: Claremont Graduate University
+notes:            The knowledge worker must define the task; abandonment review — would we start now?
+```
+
+```
+id:               seligman
+name:             Martin Seligman
+dates:            b. 1942
+eminence:         secondary
+generation:       3
+stream:           psychology
+institutional_base: University of Pennsylvania
+notes:            Learned helplessness; explanatory style — permanent, pervasive, personal predicts helplessness
+```
+
+```
+id:               bandura
+name:             Albert Bandura
+dates:            1925–2021
+eminence:         secondary
+generation:       3
+stream:           psychology
+institutional_base: Stanford
+notes:            Mastery experience is the most powerful recovery path; self-efficacy
+```
+
+```
+id:               dweck
+name:             Carol Dweck
+dates:            b. 1946
+eminence:         secondary
+generation:       4
+stream:           psychology
+institutional_base: Stanford
+notes:            Organisations that celebrate talent reinforce fixed mindset; those that celebrate effort reinforce growth
+```
+
+```
+id:               weick
+name:             Karl Weick
+dates:            b. 1936
+eminence:         secondary
+generation:       3
+stream:           management
+institutional_base: University of Michigan
+notes:            Small wins — demonstrate through action not argument; sensemaking
+```
+
+```
+id:               schon
+name:             Donald Schön
+dates:            1930–1997
+eminence:         secondary
+generation:       3
+stream:           information
+institutional_base: MIT
+notes:            Frame reflection; most undiscussables are not facts people are hiding but frames they do not realise they hold
+```
+
+```
+id:               westrum
+name:             Ron Westrum
+dates:            b. 1939
+eminence:         secondary
+generation:       3
+stream:           information
+institutional_base: Eastern Michigan University
+notes:            Organisational typology: pathological (messengers punished), bureaucratic (messengers slowed), generative (information flows)
+```
+
+```
+id:               deming
+name:             W. Edwards Deming
+dates:            1900–1993
+eminence:         major
+generation:       2
+stream:           management
+institutional_base: New York University
+notes:            Most variation is common cause (system); blaming individuals teaches them to hide system information
+```
+
+```
+id:               peters
+name:             Tom Peters
+dates:            b. 1942
+eminence:         secondary
+generation:       3
+stream:           management
+institutional_base: McKinsey, independent
+notes:            Close to the customer, close to the work; MBWA is an epistemological commitment
+```
+
+```
+id:               normann
+name:             Richard Normann
+dates:            1943–2003
+eminence:         secondary
+generation:       3
+stream:           management
+institutional_base: SMG, Stockholm
+notes:            The map is not just incomplete; it actively misleads by providing a sense of understanding that prevents seeking real understanding
+```
+
+```
+id:               taylor
+name:             Frederick Taylor
+dates:            1856–1915
+eminence:         major
+generation:       1
+stream:           management
+institutional_base: Bethlehem Steel
+notes:            Scientific management; the separation of thinking from doing
+```
+
+```
+id:               weber
+name:             Max Weber
+dates:            1864–1920
+eminence:         major
+generation:       1
+stream:           institution
+institutional_base: University of Munich
+notes:            Bureaucratic rationality; the iron cage — the system built for rational purposes becomes a prison
+```
+
+```
+id:               stacey
+name:             Ralph Stacey
+dates:            b. 1942
+eminence:         secondary
+generation:       4
+stream:           institution
+institutional_base: University of Hertfordshire
+notes:            Complex responsive processes; in a convivial institution people make gestures and attend to responses
+```
+
+```
+id:               march
+name:             James March
+dates:            1928–2018
+eminence:         secondary
+generation:       3
+stream:           institution
+institutional_base: Stanford
+notes:            Exploitation/exploration balance; the manipulative institution is an exploitation machine
+```
+
+```
+id:               taleb
+name:             Nassim Nicholas Taleb
+dates:            b. 1960
+eminence:         secondary
+generation:       4
+stream:           institution
+institutional_base: NYU Tandon
+notes:            Inability to abandon creates fragility; hidden liabilities shatter rather than degrade
+```
+
+```
+id:               follett
+name:             Mary Parker Follett
+dates:            1868–1933
+eminence:         secondary
+generation:       1
+stream:           institution
+institutional_base: Independent
+notes:            Integration over domination or compromise; joint study — parties study the situation together, not negotiate from fixed positions
+```
+
+## Concept Nodes
+
+```
+id:               habitus
+name:             Habitus
+originator_id:    bourdieu
+date_introduced:  1972
+concept_type:     mechanism
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           identity
+notes:            Durable, transposable dispositions acquired through lived experience; operates below conscious awareness
+```
+
+```
+id:               capital
+name:             Capital (Forms)
+originator_id:    bourdieu
+date_introduced:  1979
+concept_type:     framework
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           identity
+notes:            What you are worth in the field; economic, cultural, social, symbolic; transformation threatens capital devaluation
+```
+
+```
+id:               hysteresis
+name:             Hysteresis
+originator_id:    bourdieu
+date_introduced:  1977
+concept_type:     mechanism
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           identity
+notes:            The lag between a changed field and an unchanged habitus; the mechanism of resistance; entirely rational
+```
+
+```
+id:               double_bind
+name:             Double Bind
+originator_id:    bateson
+date_introduced:  1956
+concept_type:     mechanism
+abstraction_level: theoretical
+status:           active
+generation:       2
+stream:           information
+notes:            Contradictory messages at different logical levels with no permission to name the contradiction
+```
+
+```
+id:               hidden_curriculum
+name:             Hidden Curriculum
+originator_id:    illich
+date_introduced:  1971
+concept_type:     mechanism
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           institution
+notes:            Lessons taught by the institutional form itself: learning requires experts; capability is certified by completion; the organisation does not trust you
+```
+
+```
+id:               radical_monopoly
+name:             Radical Monopoly
+originator_id:    illich
+date_introduced:  1973
+concept_type:     mechanism
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           institution
+notes:            Not a monopoly over competing products but over the conditions of the activity itself
+```
+
+```
+id:               iatrogenesis
+name:             Iatrogenesis
+originator_id:    illich
+date_introduced:  1975
+concept_type:     framework
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           institution
+notes:            When the cure causes the disease — clinical, social, and cultural levels; each deepens the next
+```
+
+```
+id:               conviviality
+name:             Conviviality
+originator_id:    illich
+date_introduced:  1973
+concept_type:     distinction
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           institution
+notes:            Convivial institutions provide resources people use for their own purposes; manipulative institutions prescribe, control, and credential
+```
+
+```
+id:               front_back_stage
+name:             Front Stage / Back Stage
+originator_id:    goffman
+date_introduced:  1959
+concept_type:     distinction
+abstraction_level: theoretical
+status:           active
+generation:       2
+stream:           information
+notes:            Managed performance vs dropped performance; the gap between formal meetings and hallway conversations
+```
+
+```
+id:               face_work
+name:             Face-Work
+originator_id:    goffman
+date_introduced:  1967
+concept_type:     mechanism
+abstraction_level: theoretical
+status:           active
+generation:       2
+stream:           information
+notes:            Mutual face protection; both parties benefit from the silence; interventions fail because face-work overrides training
+```
+
+```
+id:               stigma
+name:             Stigma
+originator_id:    goffman
+date_introduced:  1963
+concept_type:     mechanism
+abstraction_level: theoretical
+status:           active
+generation:       2
+stream:           identity
+notes:            Transformation creates stigma; communicated through expressions given off; the stigmatised are excluded from needed conversations
+```
+
+```
+id:               ontological_security
+name:             Ontological Security
+originator_id:    giddens
+date_introduced:  1984
+concept_type:     principle
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           identity
+notes:            Routines provide existential continuity; disruption produces anxiety disproportionate to rational threat
+```
+
+```
+id:               structuration
+name:             Structuration
+originator_id:    giddens
+date_introduced:  1984
+concept_type:     framework
+abstraction_level: meta-theoretical
+status:           active
+generation:       3
+stream:           identity
+notes:            Signification, domination, and legitimation must move together; when they don't, the organisation IS a double bind
+```
+
+```
+id:               loss_aversion
+name:             Loss Aversion
+originator_id:    kahneman
+date_introduced:  1979
+concept_type:     mechanism
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           psychology
+notes:            Losses loom twice as large as gains; resistance fiercest at the beginning
+```
+
+```
+id:               defensive_routines
+name:             Defensive Routines
+originator_id:    argyris
+date_introduced:  1985
+concept_type:     mechanism
+abstraction_level: theoretical
+status:           active
+generation:       2
+stream:           information
+notes:            The gap between espoused theory and theory-in-use; organisational patterns that prevent double-loop learning
+```
+
+```
+id:               espoused_vs_inuse
+name:             Espoused Theory vs Theory-in-Use
+originator_id:    argyris
+date_introduced:  1974
+concept_type:     distinction
+abstraction_level: theoretical
+status:           active
+generation:       2
+stream:           information
+notes:            What people say they do vs what they actually do; the core diagnostic distinction
+```
+
+```
+id:               frame_reflection
+name:             Frame Reflection
+originator_id:    schon
+date_introduced:  1983
+concept_type:     mechanism
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           information
+notes:            Most undiscussables are not facts people are hiding but frames they do not realise they hold
+```
+
+```
+id:               psychological_safety
+name:             Psychological Safety
+originator_id:    edmondson
+date_introduced:  1999
+concept_type:     principle
+abstraction_level: operational
+status:           active
+generation:       4
+stream:           information
+notes:            The floor for learning; safety without high standards produces comfort, not learning
+```
+
+```
+id:               adaptive_leadership
+name:             Adaptive Leadership
+originator_id:    heifetz
+date_introduced:  1994
+concept_type:     framework
+abstraction_level: theoretical
+status:           active
+generation:       4
+stream:           institution
+notes:            Distinguish technical from adaptive work; the holding environment; regulate the temperature
+```
+
+```
+id:               banking_education
+name:             Banking Education
+originator_id:    freire
+date_introduced:  1968
+concept_type:     distinction
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           identity
+notes:            Depositing knowledge vs problem-posing education; positions people as recipients rather than agents
+```
+
+```
+id:               legitimate_peripheral_participation
+name:             Legitimate Peripheral Participation
+originator_id:    wenger
+date_introduced:  1991
+concept_type:     mechanism
+abstraction_level: theoretical
+status:           active
+generation:       4
+stream:           identity
+notes:            Newcomers learn by doing genuine tasks at the edges of practice; learning IS participation
+```
+
+```
+id:               seci_model
+name:             SECI Model
+originator_id:    nonaka
+date_introduced:  1995
+concept_type:     framework
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           management
+notes:            Socialisation, Externalisation, Combination, Internalisation; the critical step is externalisation through dialogue
+```
+
+```
+id:               learned_helplessness
+name:             Learned Helplessness
+originator_id:    seligman
+date_introduced:  1967
+concept_type:     mechanism
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           psychology
+notes:            Not a mood but a sedimented disposition formed through repeated experience that effort does not produce results
+```
+
+```
+id:               mastery_experience
+name:             Mastery Experience
+originator_id:    bandura
+date_introduced:  1977
+concept_type:     mechanism
+abstraction_level: operational
+status:           active
+generation:       3
+stream:           psychology
+notes:            The most powerful recovery path from learned helplessness; actually doing the thing and succeeding
+```
+
+```
+id:               growth_mindset
+name:             Growth Mindset
+originator_id:    dweck
+date_introduced:  2006
+concept_type:     distinction
+abstraction_level: operational
+status:           active
+generation:       4
+stream:           psychology
+notes:            Organisations that celebrate talent reinforce fixed mindset; those that celebrate effort reinforce growth
+```
+
+```
+id:               small_wins
+name:             Small Wins
+originator_id:    weick
+date_introduced:  1984
+concept_type:     prescription
+abstraction_level: operational
+status:           active
+generation:       3
+stream:           management
+notes:            Demonstrate through action not argument; make learning visible before it produces measurable output
+```
+
+```
+id:               org_typology
+name:             Organisational Typology
+originator_id:    westrum
+date_introduced:  2004
+concept_type:     framework
+abstraction_level: operational
+status:           active
+generation:       3
+stream:           information
+notes:            Pathological (messengers punished), bureaucratic (messengers slowed), generative (information flows regardless of hierarchy)
+```
+
+```
+id:               common_cause_variation
+name:             Common Cause Variation
+originator_id:    deming
+date_introduced:  1950
+concept_type:     principle
+abstraction_level: theoretical
+status:           active
+generation:       2
+stream:           management
+notes:            Most variation is system; blaming individuals teaches them to hide system information
+```
+
+```
+id:               knowledge_worker
+name:             Knowledge Worker
+originator_id:    drucker
+date_introduced:  1959
+concept_type:     principle
+abstraction_level: theoretical
+status:           active
+generation:       2
+stream:           management
+notes:            The knowledge worker must define the task; definition requires intimacy with the domain
+```
+
+```
+id:               exploitation_exploration
+name:             Exploitation / Exploration
+originator_id:    march
+date_introduced:  1991
+concept_type:     distinction
+abstraction_level: theoretical
+status:           active
+generation:       3
+stream:           institution
+notes:            The manipulative institution is an exploitation machine; exploration is structurally prevented
+```
+
+```
+id:               iron_cage
+name:             Iron Cage
+originator_id:    weber
+date_introduced:  1905
+concept_type:     mechanism
+abstraction_level: theoretical
+status:           active
+generation:       1
+stream:           institution
+notes:            The system built for rational purposes becomes a prison preventing purposes from evolving
+```
+
+```
+id:               integration
+name:             Integration
+originator_id:    follett
+date_introduced:  1924
+concept_type:     distinction
+abstraction_level: theoretical
+status:           active
+generation:       1
+stream:           institution
+notes:            Domination (one side wins), compromise (both give up), integration (discover a solution neither had imagined)
+```
+
+```
+id:               scientific_management
+name:             Scientific Management
+originator_id:    taylor
+date_introduced:  1911
+concept_type:     framework
+abstraction_level: operational
+status:           contested
+generation:       1
+stream:           management
+notes:            The separation of thinking from doing; hierarchical layers systematically remove decision-makers from reality
+```
+
+## Edges
+
+### Thinker-to-Thinker
+
+```
+from: argyris          to: edmondson            type: teacher_pupil
+  note: Edmondson extends Argyris's work on defensive routines into psychological safety
+
+from: argyris          to: schon                type: alliance
+  note: Co-developed reflective practice and theory of action
+
+from: bourdieu         to: giddens              type: rivalry
+  note: Both address structure-agency; different mechanisms (habitus vs structuration)
+
+from: bateson          to: argyris              type: chain
+  note: Double bind theory directly informs Argyris's work on defensive routines
+
+from: bateson          to: goffman              type: alliance
+  note: Both study interaction patterns; Goffman operationalises micro-mechanisms of the double bind
+
+from: illich           to: freire               type: alliance
+  note: Both critique institutional education; Freire from pedagogy, Illich from institutional analysis
+
+from: taylor           to: drucker              type: chain
+  note: Drucker responds to and transcends Taylor's separation of thinking from doing
+
+from: taylor           to: deming               type: chain
+  note: Deming's systems view is a direct response to Taylor's reductionism
+
+from: weber            to: illich               type: chain
+  note: Illich's institutional critique extends Weber's iron cage to education and learning
+
+from: weber            to: march                type: chain
+  note: March's exploitation/exploration extends Weber's analysis of bureaucratic rationality
+
+from: deming           to: westrum              type: chain
+  note: Westrum extends Deming's systems thinking to organisational information flow
+
+from: seligman         to: bandura              type: alliance
+  note: Both study resilience; Seligman diagnoses helplessness, Bandura prescribes mastery experience
+
+from: seligman         to: dweck                type: chain
+  note: Dweck extends Seligman's explanatory style into growth/fixed mindset distinction
+
+from: follett          to: heifetz              type: chain
+  note: Heifetz's adaptive leadership builds on Follett's integration concept
+
+from: goffman          to: edmondson            type: chain
+  note: Edmondson's safety concept operationalises conditions for bypassing Goffman's face-work
+
+from: drucker          to: nonaka               type: chain
+  note: Nonaka extends Drucker's knowledge worker concept with the SECI model
+
+from: kahneman         to: weick                type: alliance
+  note: Both inform understanding of resistance; Kahneman explains loss aversion, Weick prescribes small wins
+
+from: stacey           to: illich               type: alliance
+  note: Both critique institutional control; Stacey from complexity, Illich from social criticism
+
+```
+
+### Thinker-to-Concept
+
+```
+from: bourdieu         to: habitus              type: originates
+  note: Core concept: durable dispositions acquired through lived experience
+
+from: bourdieu         to: capital              type: originates
+  note: Forms of capital determine position in the field
+
+from: bourdieu         to: hysteresis           type: originates
+  note: The lag between changed field and unchanged habitus
+
+from: bateson          to: double_bind          type: originates
+  note: Contradictory messages at different logical levels
+
+from: illich           to: hidden_curriculum    type: originates
+  note: Lessons taught by the institutional form itself
+
+from: illich           to: radical_monopoly     type: originates
+  note: Monopoly over the conditions of the activity
+
+from: illich           to: iatrogenesis         type: originates
+  note: When the cure causes the disease at clinical, social, cultural levels
+
+from: illich           to: conviviality         type: originates
+  note: Convivial vs manipulative institutions
+
+from: goffman          to: front_back_stage     type: originates
+  note: Managed performance vs dropped performance
+
+from: goffman          to: face_work            type: originates
+  note: Mutual face protection maintaining double binds
+
+from: goffman          to: stigma               type: originates
+  note: Transformation creates stigma; communicated through expressions given off
+
+from: giddens          to: ontological_security type: originates
+  note: Routines provide existential continuity
+
+from: giddens          to: structuration        type: originates
+  note: Signification, domination, legitimation must move together
+
+from: kahneman         to: loss_aversion        type: originates
+  note: Losses loom twice as large as gains
+
+from: argyris          to: defensive_routines   type: originates
+  note: Organisational patterns preventing double-loop learning
+
+from: argyris          to: espoused_vs_inuse    type: originates
+  note: What people say vs what they do
+
+from: schon            to: frame_reflection     type: originates
+  note: Undiscussables are frames, not hidden facts
+
+from: edmondson        to: psychological_safety type: originates
+  note: The floor for learning
+
+from: heifetz          to: adaptive_leadership  type: originates
+  note: Distinguishing technical from adaptive work
+
+from: freire           to: banking_education    type: originates
+  note: Depositing knowledge vs active construction
+
+from: wenger           to: legitimate_peripheral_participation type: originates
+  note: Learning through genuine participation at edges of practice
+
+from: nonaka           to: seci_model           type: originates
+  note: Knowledge creation through socialisation, externalisation, combination, internalisation
+
+from: seligman         to: learned_helplessness type: originates
+  note: Sedimented disposition from repeated failure of effort
+
+from: bandura          to: mastery_experience   type: originates
+  note: Most powerful recovery from helplessness
+
+from: dweck            to: growth_mindset       type: originates
+  note: Celebrate effort over talent
+
+from: weick            to: small_wins           type: originates
+  note: Demonstrate through action not argument
+
+from: westrum          to: org_typology         type: originates
+  note: Pathological, bureaucratic, generative
+
+from: deming           to: common_cause_variation type: originates
+  note: Most variation is system, not individual
+
+from: drucker          to: knowledge_worker     type: originates
+  note: Knowledge worker must define the task
+
+from: march            to: exploitation_exploration type: originates
+  note: Balance between exploitation and exploration
+
+from: weber            to: iron_cage            type: originates
+  note: Rational systems become prisons
+
+from: follett          to: integration          type: originates
+  note: Beyond domination and compromise
+
+from: taylor           to: scientific_management type: originates
+  note: The separation of thinking from doing
+
+from: heifetz          to: adaptive_leadership  type: develops
+  note: Holding environment concept; regulate the temperature
+  weight: 0.7
+
+from: goffman          to: double_bind          type: develops
+  note: Operationalises the micro-mechanisms that maintain the double bind
+
+from: giddens          to: double_bind          type: develops
+  note: Structural double bind: when signification, domination, legitimation contradict
+  weight: 0.7
+
+from: illich           to: banking_education    type: develops
+  note: Hidden curriculum concept extends Freire's banking education critique
+
+```
+
+### Concept-to-Concept
+
+```
+from: double_bind      to: defensive_routines   type: extends
+  note: Defensive routines are the organisational form of the double bind
+
+from: double_bind      to: front_back_stage     type: extends
+  note: Front/back stage is the interaction mechanism that maintains the double bind
+
+from: habitus          to: learned_helplessness type: extends
+  note: Learned helplessness is helplessness sedimented into habitus
+
+from: habitus          to: hysteresis           type: enables
+  note: Hysteresis is habitus under field change — the mechanism of resistance
+
+from: loss_aversion    to: hysteresis           type: enables
+  note: Loss aversion amplifies hysteresis; resistance fiercest at beginning
+
+from: learned_helplessness to: mastery_experience   type: opposes
+  note: Mastery experience is the direct antidote to learned helplessness
+
+from: banking_education to: legitimate_peripheral_participation type: opposes
+  note: Banking deposits knowledge; LPP generates knowledge through participation
+
+from: hidden_curriculum to: banking_education    type: extends
+  note: Hidden curriculum is what the institutional form teaches beyond content
+
+from: radical_monopoly to: iatrogenesis         type: enables
+  note: Radical monopoly creates the conditions for institutional iatrogenesis
+
+from: conviviality     to: radical_monopoly     type: opposes
+  note: Convivial institutions are the antidote to radical monopoly
+
+from: iron_cage        to: radical_monopoly     type: enables
+  note: Weber's iron cage is the structural precondition for Illich's radical monopoly
+
+from: scientific_management to: knowledge_worker     type: opposes
+  note: Taylor separates thinking from doing; Drucker reunites them
+
+from: defensive_routines to: psychological_safety type: opposes
+  note: Psychological safety is the condition under which defensive routines dissolve
+
+from: espoused_vs_inuse to: front_back_stage     type: extends
+  note: Front/back stage is the interaction mechanism; espoused/in-use is the knowledge structure
+
+from: exploitation_exploration to: conviviality         type: extends
+  note: Convivial institutions enable exploration; manipulative ones enforce exploitation
+
+from: small_wins       to: mastery_experience   type: extends
+  note: Small wins create mastery experiences at organisational scale
+
+from: growth_mindset   to: mastery_experience   type: extends
+  note: Growth mindset is the disposition that enables mastery experience
+
+from: frame_reflection to: espoused_vs_inuse    type: extends
+  note: Frame reflection reveals the frames behind the espoused/in-use gap
+
+from: adaptive_leadership to: integration          type: extends
+  note: Adaptive leadership extends Follett's integration into the holding environment concept
+
+from: org_typology     to: psychological_safety type: extends
+  note: Generative culture (Westrum) is the organisational context for psychological safety
+
+from: structuration    to: double_bind          type: reframes
+  note: Giddens reframes double bind as structural: signification, domination, legitimation contradicting
+
+from: common_cause_variation to: defensive_routines   type: enables
+  note: Blaming individuals (ignoring common cause) creates defensive routines
+
+```
+
+## External Shocks
+
+```
+date: 1990s
+description: The learning organisation movement (Senge, Fifth Discipline) creates institutional demand for organisational learning programmes — the very institutionalisation Illich warned against
+
+date: 2020s
+description: AI transformation programmes replicate the same pattern: process mistaken for condition, institutional learning programmes degrading the conditions they claim to create
+
+```
+
+## Structural Observations
+
+- **Central thesis**: Learning is a condition, not a process; three conditions (identity, information, institution) must be present
+- **Dominant thinkers**: Bourdieu (identity), Bateson (information), Illich (institution) provide the foundational mechanisms
+- **Key chain**: Bateson → Argyris → Edmondson traces the information condition from theory to operational practice
+- **Critical rivalry**: Convivial vs manipulative institutions (Illich) maps onto exploitation/exploration (March)
+- **Cross-condition links**: Double bind (information) connects to habitus (identity) through structuration (Giddens); hidden curriculum (institution) undermines identity condition
+- **Attention space**: 4–5 active positions per generation; contemporary generation dominated by Edmondson, Heifetz, Wenger, Dweck, Stacey
+- **Practical synthesis**: The nine probes operationalise the three conditions as diagnostic instruments for leaders

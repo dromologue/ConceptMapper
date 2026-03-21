@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 /// The top-level Graph IR — the contract between Rust and React.
@@ -58,20 +58,16 @@ pub struct Node {
     pub name: String,
     pub generation: Option<i32>,
     pub stream: Option<String>,
+    /// All custom key-value fields for this node.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub thinker_fields: Option<ThinkerFields>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub concept_fields: Option<ConceptFields>,
-    /// Generic key-value fields for non-thinker/concept node types.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fields: Option<HashMap<String, String>>,
+    pub fields: Option<BTreeMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<NodeContent>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
 }
 
-/// Rich content for a node, populated from concept library extraction or manual authoring.
+/// Rich content for a node, populated from extraction or manual authoring.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NodeContent {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -91,48 +87,11 @@ pub struct ConnectionProse {
     pub text: String,
 }
 
-/// Used internally for edge category resolution. Not serialized on nodes.
-#[derive(Debug, Clone, PartialEq)]
-pub enum NodeTypeTag {
-    Thinker,
-    Concept,
-    Generic,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ThinkerFields {
-    pub dates: Option<String>,
-    pub eminence: String,
-    pub structural_roles: Vec<String>,
-    pub active_period: Option<String>,
-    pub key_concept_ids: Vec<String>,
-    pub institutional_base: Option<String>,
-    /// True for auto-generated placeholder nodes (e.g., "Unknown Author")
-    #[serde(default, skip_serializing_if = "is_false")]
-    pub is_placeholder: bool,
-}
-
-fn is_false(v: &bool) -> bool {
-    !v
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConceptFields {
-    pub originator_id: String,
-    pub date_introduced: Option<String>,
-    pub concept_type: String,
-    pub abstraction_level: String,
-    pub status: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent_concept_id: Option<String>,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Edge {
     pub from: String,
     pub to: String,
     pub edge_type: String,
-    pub edge_category: EdgeCategory,
     pub directed: bool,
     #[serde(default = "default_weight")]
     pub weight: f64,
@@ -143,15 +102,6 @@ pub struct Edge {
 
 fn default_weight() -> f64 {
     1.0
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum EdgeCategory {
-    ThinkerThinker,
-    ThinkerConcept,
-    ConceptConcept,
-    Generic,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

@@ -405,7 +405,7 @@ body {
   flex-shrink: 0;
 }
 
-.sidebar-node-indicator.concept {
+.sidebar-node-indicator.non-circle {
   border-radius: 1px;
 }
 
@@ -1338,7 +1338,7 @@ canvas:active {
   flex-shrink: 0;
 }
 
-.search-result .type-indicator.concept {
+.search-result .type-indicator.non-circle {
   border-radius: 2px;
 }
 

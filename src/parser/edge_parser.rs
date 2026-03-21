@@ -1,65 +1,16 @@
 use crate::parser::lexer::{ClassifiedLine, LineType};
 use crate::parser::errors::ParseError;
 
-/// Edge types from the Collins taxonomy.
-#[derive(Debug, Clone, PartialEq)]
-pub enum EdgeType {
-    // Thinker-to-Thinker
-    TeacherPupil,
-    Chain,
-    Rivalry,
-    Alliance,
-    Synthesis,
-    Institutional,
-    // Thinker-to-Concept
-    Originates,
-    Develops,
-    Contests,
-    Applies,
-    // Concept-to-Concept
-    Extends,
-    Opposes,
-    Subsumes,
-    Enables,
-    Reframes,
-}
-
-/// A parsed edge.
+/// A parsed edge. Edge types are user-defined strings, not an enum.
 #[derive(Debug, Clone)]
 pub struct ParsedEdge {
     pub from: String,
     pub to: String,
-    pub edge_type: EdgeType,
+    pub edge_type: String,
     pub note: Option<String>,
-    /// Edge importance weight (0.0–1.0). Defaults to 1.0 for explicit taxonomy edges.
+    /// Edge importance weight (0.0–10.0). Defaults to 1.0 for explicit taxonomy edges.
     pub weight: f64,
     pub line_number: usize,
-}
-
-fn parse_edge_type(value: &str, line: usize) -> Result<EdgeType, ParseError> {
-    match value.trim().to_lowercase().as_str() {
-        "teacher_pupil" => Ok(EdgeType::TeacherPupil),
-        "chain" => Ok(EdgeType::Chain),
-        "rivalry" => Ok(EdgeType::Rivalry),
-        "alliance" => Ok(EdgeType::Alliance),
-        "synthesis" => Ok(EdgeType::Synthesis),
-        "institutional" => Ok(EdgeType::Institutional),
-        "originates" => Ok(EdgeType::Originates),
-        "develops" => Ok(EdgeType::Develops),
-        "contests" => Ok(EdgeType::Contests),
-        "applies" => Ok(EdgeType::Applies),
-        "extends" => Ok(EdgeType::Extends),
-        "opposes" => Ok(EdgeType::Opposes),
-        "subsumes" => Ok(EdgeType::Subsumes),
-        "enables" => Ok(EdgeType::Enables),
-        "reframes" => Ok(EdgeType::Reframes),
-        other => Err(ParseError {
-            line,
-            context: format!("type: {}", other),
-            message: format!("invalid edge type '{}'", other),
-            suggestion: Some("valid edge types: teacher_pupil, chain, rivalry, alliance, synthesis, institutional, originates, develops, contests, applies, extends, opposes, subsumes, enables, reframes".to_string()),
-        }),
-    }
 }
 
 /// Parse edges from a fenced block. Multiple edges may appear in one block,
@@ -82,7 +33,6 @@ pub fn parse_edges(lines: &[ClassifiedLine]) -> Result<Vec<ParsedEdge>, Vec<Pars
             }
             LineType::BlankLine => {
                 // Blank lines separate edges but don't start new groups
-                // Only flush if we have content
             }
             _ => {
                 if !current_group.is_empty() {
@@ -132,19 +82,11 @@ fn parse_single_edge(lines: &[&ClassifiedLine]) -> Result<ParsedEdge, Vec<ParseE
                             to = Some(t);
                         }
                         if let Some(et) = parts.edge_type {
-                            match parse_edge_type(&et, line.line_number) {
-                                Ok(t) => edge_type = Some(t),
-                                Err(e) => errors.push(e),
-                            }
+                            edge_type = Some(et);
                         }
                     }
                     "to" => to = Some(value.trim().to_string()),
-                    "type" => {
-                        match parse_edge_type(value, line.line_number) {
-                            Ok(t) => edge_type = Some(t),
-                            Err(e) => errors.push(e),
-                        }
-                    }
+                    "type" => edge_type = Some(value.trim().to_string()),
                     "note" => note_parts.push(value.trim().to_string()),
                     "weight" => {
                         if let Ok(w) = value.trim().parse::<f64>() {

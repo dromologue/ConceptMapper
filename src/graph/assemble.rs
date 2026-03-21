@@ -1,11 +1,11 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use crate::graph::ir::*;
 use crate::parser::errors::{ParseError, ParseWarning};
 use crate::parser::lexer::{lex, ClassifiedLine, LineType};
 use crate::parser::sections::split_sections;
-use crate::parser::node_parser::{self, AbstractionLevel, GenericNode};
-use crate::parser::edge_parser::{self, EdgeType};
+use crate::parser::node_parser::{self, GenericNode};
+use crate::parser::edge_parser;
 use crate::parser::table_parser;
 use crate::parser::metadata_parser;
 
@@ -20,8 +20,6 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> Result<ParseRes
     let lines = lex(input);
     let sections = split_sections(lines);
 
-    let mut thinker_nodes = Vec::new();
-    let mut concept_nodes = Vec::new();
     let mut generic_nodes: Vec<GenericNode> = Vec::new();
     let mut edges = Vec::new();
     let mut generations = Vec::new();
@@ -48,22 +46,18 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> Result<ParseRes
         let path_str = section.path.join(" > ").to_lowercase();
 
         // Dispatch based on section path
-        if path_str.contains("generation") && !path_str.contains("concept") {
+        if path_str.contains("generation") && !path_str.contains("node") {
             generations = parse_generations(&section.lines);
-        } else if path_str.contains("stream") && !path_str.contains("concept") {
+        } else if path_str.contains("stream") && !path_str.contains("node") {
             streams = parse_streams(&section.lines);
-        } else if path_str.contains("thinker") && path_str.contains("node") {
-            parse_thinker_blocks(&section.lines, &mut thinker_nodes, &mut errors);
-        } else if path_str.contains("concept") && path_str.contains("node") {
-            parse_concept_blocks(&section.lines, &mut concept_nodes, &mut errors);
-        } else if path_str.contains("edge") || path_str.contains("thinker-to") || path_str.contains("concept-to") {
+        } else if path_str.contains("edge") {
             parse_edge_blocks(&section.lines, &mut edges, &mut errors);
         } else if path_str.contains("external") && path_str.contains("shock") {
             parse_shock_blocks(&section.lines, &mut external_shocks);
         } else if path_str.contains("structural") && path_str.contains("observation") {
             structural_observations = metadata_parser::parse_observations(&section.lines);
         } else if path_str.contains("node") {
-            // Generic: any "## [TypeName] Nodes" section not matching thinker/concept
+            // Any "## [TypeName] Nodes" section
             if let Some(node_type) = extract_node_type_from_path(&path_str) {
                 parse_generic_blocks(&section.lines, &node_type, &mut generic_nodes, &mut errors);
             }
@@ -74,32 +68,10 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> Result<ParseRes
         return Err(errors);
     }
 
-    // Build node map for edge category resolution
-    let mut node_map: HashMap<String, NodeTypeTag> = HashMap::new();
-    for t in &thinker_nodes {
-        if node_map.contains_key(&t.id) {
-            errors.push(ParseError {
-                line: 0,
-                context: format!("id: {}", t.id),
-                message: format!("duplicate node ID '{}'", t.id),
-                suggestion: Some("each node must have a unique id".to_string()),
-            });
-        }
-        node_map.insert(t.id.clone(), NodeTypeTag::Thinker);
-    }
-    for c in &concept_nodes {
-        if node_map.contains_key(&c.id) {
-            errors.push(ParseError {
-                line: 0,
-                context: format!("id: {}", c.id),
-                message: format!("duplicate node ID '{}'", c.id),
-                suggestion: Some("each node must have a unique id".to_string()),
-            });
-        }
-        node_map.insert(c.id.clone(), NodeTypeTag::Concept);
-    }
+    // Check for duplicate node IDs
+    let mut node_ids: HashMap<String, ()> = HashMap::new();
     for g in &generic_nodes {
-        if node_map.contains_key(&g.id) {
+        if node_ids.contains_key(&g.id) {
             errors.push(ParseError {
                 line: 0,
                 context: format!("id: {}", g.id),
@@ -107,171 +79,50 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> Result<ParseRes
                 suggestion: Some("each node must have a unique id".to_string()),
             });
         }
-        node_map.insert(g.id.clone(), NodeTypeTag::Generic);
+        node_ids.insert(g.id.clone(), ());
     }
 
     if !errors.is_empty() {
         return Err(errors);
     }
 
-    // Check if we need an Unknown Author sentinel
-    let needs_unknown_author = concept_nodes.iter()
-        .any(|c| c.originator_id == "unknown_author");
-
-    // Convert thinker nodes to IR nodes
-    let mut ir_nodes: Vec<Node> = thinker_nodes.iter().map(|t| {
-        Node {
-            id: t.id.clone(),
-            node_type: "thinker".to_string(),
-            name: t.name.clone(),
-            generation: Some(t.generation),
-            stream: Some(t.stream.clone()),
-            thinker_fields: Some(ThinkerFields {
-                dates: t.dates.clone(),
-                eminence: format!("{:?}", t.eminence).to_lowercase(),
-                structural_roles: t.structural_roles.clone(),
-                active_period: t.active_period.clone(),
-                key_concept_ids: t.key_concept_ids.clone(),
-                institutional_base: t.institutional_base.clone(),
-                is_placeholder: false,
-            }),
-            concept_fields: None,
-            fields: None,
-            content: None,
-            notes: t.notes.clone(),
-        }
-    }).collect();
-
-    // Add Unknown Author sentinel if needed
-    if needs_unknown_author && !node_map.contains_key("unknown_author") {
-        ir_nodes.push(Node {
-            id: "unknown_author".to_string(),
-            node_type: "thinker".to_string(),
-            name: "Unknown Author".to_string(),
-            generation: None,
-            stream: None,
-            thinker_fields: Some(ThinkerFields {
-                dates: None,
-                eminence: "minor".to_string(),
-                structural_roles: vec![],
-                active_period: None,
-                key_concept_ids: vec![],
-                institutional_base: None,
-                is_placeholder: true,
-            }),
-            concept_fields: None,
-            fields: None,
-            content: None,
-            notes: Some("Placeholder — assign originator via concept detail panel".to_string()),
-        });
-        node_map.insert("unknown_author".to_string(), NodeTypeTag::Thinker);
-    }
-
-    // Convert concept nodes to IR nodes
-    for c in &concept_nodes {
-        // Inherit generation/stream from parent if present
-        let gen = c.generation.or_else(|| {
-            c.parent_concept_id.as_ref().and_then(|pid| {
-                concept_nodes.iter().find(|p| p.id == *pid).and_then(|p| p.generation)
-            })
-        });
-        let stream = c.stream.clone().or_else(|| {
-            c.parent_concept_id.as_ref().and_then(|pid| {
-                concept_nodes.iter().find(|p| p.id == *pid).and_then(|p| p.stream.clone())
-            })
-        });
-
-        ir_nodes.push(Node {
-            id: c.id.clone(),
-            node_type: "concept".to_string(),
-            name: c.name.clone(),
-            generation: gen,
-            stream: stream,
-            thinker_fields: None,
-            concept_fields: Some(ConceptFields {
-                originator_id: c.originator_id.clone(),
-                date_introduced: c.date_introduced.clone(),
-                concept_type: format!("{:?}", c.concept_type).to_lowercase(),
-                abstraction_level: match c.abstraction_level {
-                    AbstractionLevel::MetaTheoretical => "meta-theoretical".to_string(),
-                    ref al => format!("{:?}", al).to_lowercase(),
-                },
-                status: format!("{:?}", c.status).to_lowercase(),
-                parent_concept_id: c.parent_concept_id.clone(),
-            }),
-            fields: None,
-            content: None,
-            notes: c.notes.clone(),
-        });
-    }
-
     // Convert generic nodes to IR nodes
-    for g in &generic_nodes {
-        ir_nodes.push(Node {
+    let ir_nodes: Vec<Node> = generic_nodes.iter().map(|g| {
+        Node {
             id: g.id.clone(),
             node_type: g.node_type.clone(),
             name: g.name.clone(),
             generation: g.generation,
             stream: g.stream.clone(),
-            thinker_fields: None,
-            concept_fields: None,
-            fields: if g.fields.is_empty() { None } else { Some(g.fields.clone()) },
+            fields: if g.fields.is_empty() { None } else { Some(g.fields.iter().map(|(k, v)| (k.clone(), v.clone())).collect::<BTreeMap<_, _>>()) },
             content: None,
             notes: g.notes.clone(),
-        });
-    }
+        }
+    }).collect();
 
     // Convert edges to IR edges
     let mut ir_edges: Vec<Edge> = Vec::new();
 
-    // Add originates edges for concepts with known originators
-    for c in &concept_nodes {
-        if node_map.contains_key(&c.originator_id) {
-            // Check if an explicit originates edge already exists
-            let already_exists = edges.iter().any(|e| {
-                e.from == c.originator_id && e.to == c.id && e.edge_type == EdgeType::Originates
-            });
-            if !already_exists {
-                // Don't auto-create if there's already an explicit edge
-            }
-        }
-    }
-
     for e in &edges {
-        // Resolve edge category
-        let from_type = node_map.get(&e.from);
-        let to_type = node_map.get(&e.to);
-
-        if from_type.is_none() {
+        if !node_ids.contains_key(&e.from) {
             warnings.push(ParseWarning {
                 line: e.line_number,
                 message: format!("edge references unknown node '{}'", e.from),
             });
         }
-        if to_type.is_none() {
+        if !node_ids.contains_key(&e.to) {
             warnings.push(ParseWarning {
                 line: e.line_number,
                 message: format!("edge references unknown node '{}'", e.to),
             });
         }
 
-        let edge_category = match (from_type, to_type) {
-            (Some(NodeTypeTag::Thinker), Some(NodeTypeTag::Thinker)) => EdgeCategory::ThinkerThinker,
-            (Some(NodeTypeTag::Thinker), Some(NodeTypeTag::Concept)) => EdgeCategory::ThinkerConcept,
-            (Some(NodeTypeTag::Concept), Some(NodeTypeTag::Concept)) => EdgeCategory::ConceptConcept,
-            (Some(NodeTypeTag::Concept), Some(NodeTypeTag::Thinker)) => EdgeCategory::ThinkerConcept,
-            _ => EdgeCategory::Generic,
-        };
-
         let (directed, visual) = edge_visual(&e.edge_type);
-        let edge_type_str = format!("{:?}", e.edge_type);
-        let edge_type_str = to_snake_case(&edge_type_str);
 
         ir_edges.push(Edge {
             from: e.from.clone(),
             to: e.to.clone(),
-            edge_type: edge_type_str,
-            edge_category,
+            edge_type: e.edge_type.clone(),
             directed,
             weight: e.weight,
             note: e.note.clone(),
@@ -302,38 +153,27 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> Result<ParseRes
     Ok(ParseResult { graph, warnings })
 }
 
-fn edge_visual(edge_type: &EdgeType) -> (bool, EdgeVisual) {
+/// Default edge visual based on edge type string.
+/// The frontend can override these from the .cmt template.
+fn edge_visual(edge_type: &str) -> (bool, EdgeVisual) {
     match edge_type {
-        EdgeType::Rivalry | EdgeType::Opposes => (false, EdgeVisual {
+        "rivalry" | "opposes" => (false, EdgeVisual {
             style: "dashed".to_string(),
             color: Some("#D94A4A".to_string()),
             show_arrow: false,
         }),
-        EdgeType::Alliance | EdgeType::Institutional => (false, EdgeVisual {
+        "alliance" | "institutional" => (false, EdgeVisual {
             style: "dotted".to_string(),
             color: Some("#999999".to_string()),
             show_arrow: false,
         }),
-        EdgeType::TeacherPupil | EdgeType::Chain | EdgeType::Synthesis |
-        EdgeType::Originates | EdgeType::Develops | EdgeType::Extends |
-        EdgeType::Subsumes | EdgeType::Enables | EdgeType::Reframes |
-        EdgeType::Contests | EdgeType::Applies => (true, EdgeVisual {
+        // Default: directed solid edge for all other types
+        _ => (true, EdgeVisual {
             style: "solid".to_string(),
             color: None,
             show_arrow: true,
         }),
     }
-}
-
-fn to_snake_case(s: &str) -> String {
-    let mut result = String::new();
-    for (i, c) in s.chars().enumerate() {
-        if c.is_uppercase() && i > 0 {
-            result.push('_');
-        }
-        result.push(c.to_lowercase().next().unwrap());
-    }
-    result
 }
 
 fn parse_generations(lines: &[ClassifiedLine]) -> Vec<Generation> {
@@ -380,32 +220,6 @@ fn parse_streams(lines: &[ClassifiedLine]) -> Vec<Stream> {
             description: get("Description"),
         }
     }).collect()
-}
-
-fn parse_thinker_blocks(
-    lines: &[ClassifiedLine],
-    thinkers: &mut Vec<node_parser::ThinkerNode>,
-    errors: &mut Vec<ParseError>,
-) {
-    for block in extract_fenced_blocks(lines) {
-        match node_parser::parse_thinker_node(&block) {
-            Ok(node) => thinkers.push(node),
-            Err(mut errs) => errors.append(&mut errs),
-        }
-    }
-}
-
-fn parse_concept_blocks(
-    lines: &[ClassifiedLine],
-    concepts: &mut Vec<node_parser::ConceptNode>,
-    errors: &mut Vec<ParseError>,
-) {
-    for block in extract_fenced_blocks(lines) {
-        match node_parser::parse_concept_node(&block) {
-            Ok(node) => concepts.push(node),
-            Err(mut errs) => errors.append(&mut errs),
-        }
-    }
 }
 
 fn parse_generic_blocks(

@@ -3,7 +3,6 @@ import type { LLMConfig, AppConfig, ChatMessage } from "../types/llm";
 import { DEFAULT_NODE_CONFIG, DEFAULT_PERSON_CONFIG, DEFAULT_CONCEPT_CONFIG } from "../migration";
 
 export const defaultNodeTypeConfigs: NodeTypeConfig[] = [DEFAULT_NODE_CONFIG];
-// Legacy configs for backward-compat tests
 export const legacyNodeTypeConfigs: NodeTypeConfig[] = [DEFAULT_PERSON_CONFIG, DEFAULT_CONCEPT_CONFIG];
 
 export const sampleStreams = [
@@ -31,15 +30,6 @@ export const argyris: GraphNode = {
     tags: "Harvard Business School",
     structural_roles: "intellectual_leader, chain_originator",
   },
-  thinker_fields: {
-    dates: "1923–2013",
-    eminence: "dominant",
-    structural_roles: ["intellectual_leader", "chain_originator"],
-    active_period: "1960–1995",
-    key_concept_ids: ["double_loop"],
-    institutional_base: "Harvard Business School",
-    is_placeholder: false,
-  },
 };
 
 export const senge: GraphNode = {
@@ -54,15 +44,6 @@ export const senge: GraphNode = {
     tags: "MIT Sloan",
     structural_roles: "synthesiser",
   },
-  thinker_fields: {
-    dates: "b. 1947",
-    eminence: "major",
-    structural_roles: ["synthesiser"],
-    active_period: "1990–2010",
-    key_concept_ids: ["learning_organisation"],
-    institutional_base: "MIT Sloan",
-    is_placeholder: false,
-  },
 };
 
 export const dekker: GraphNode = {
@@ -76,15 +57,6 @@ export const dekker: GraphNode = {
     date_from: "1969",
     tags: "Griffith University",
     structural_roles: "intellectual_leader",
-  },
-  thinker_fields: {
-    dates: "b. 1969",
-    eminence: "major",
-    structural_roles: ["intellectual_leader"],
-    active_period: "2006–present",
-    key_concept_ids: ["just_culture", "drift_into_failure"],
-    institutional_base: "Griffith University",
-    is_placeholder: false,
   },
 };
 
@@ -101,13 +73,6 @@ export const doubleLoop: GraphNode = {
     originator_id: "argyris",
     date_introduced: "1977",
   },
-  concept_fields: {
-    originator_id: "argyris",
-    date_introduced: "1977",
-    concept_type: "distinction",
-    abstraction_level: "theoretical",
-    status: "active",
-  },
 };
 
 export const cynefin: GraphNode = {
@@ -123,29 +88,22 @@ export const cynefin: GraphNode = {
     originator_id: "snowden",
     date_introduced: "1999",
   },
-  concept_fields: {
-    originator_id: "snowden",
-    date_introduced: "1999",
-    concept_type: "framework",
-    abstraction_level: "operational",
-    status: "active",
-  },
 };
 
 export const sampleEdges: GraphEdge[] = [
   {
-    from: "argyris", to: "senge", edge_type: "chain", edge_category: "thinker_thinker",
+    from: "argyris", to: "senge", edge_type: "chain",
     directed: true, weight: 1.0,
     note: "Learning organisation draws directly on Argyris' learning theory",
     visual: { style: "solid", show_arrow: true },
   },
   {
-    from: "argyris", to: "double_loop", edge_type: "originates", edge_category: "thinker_concept",
+    from: "argyris", to: "double_loop", edge_type: "originates",
     directed: true, weight: 1.0,
     visual: { style: "solid", show_arrow: true },
   },
   {
-    from: "cynefin", to: "double_loop", edge_type: "reframes", edge_category: "concept_concept",
+    from: "cynefin", to: "double_loop", edge_type: "reframes",
     directed: true, weight: 1.0,
     note: "Double-loop works in the complicated domain; complex requires probe-sense-respond",
     visual: { style: "solid", show_arrow: true },
