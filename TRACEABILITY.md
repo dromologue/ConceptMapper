@@ -137,6 +137,7 @@
 | REQ-067 | AC-067-01..08 (outline notes) | `src/__tests__/detail-panel-notes.test.tsx` | outline editor, indent hint, outline items | passing |
 | REQ-068 | AC-068-01..04 (edge notes pane) | `src/__tests__/edge-popover.test.tsx` | popover has weight+delete only, notes in bottom pane | passing |
 | REQ-069 | AC-069-01..05 (node selection highlight) | — | manual verification (strong dimming, mutual exclusivity) | passing |
+| REQ-070 | AC-070-01..11 (MCP server) | — | `swift build` + stdio tests (initialize, tools/list, tools/call) | passing |
 
 ## Additional Passing Tests (not yet mapped to spec requirements)
 

@@ -538,6 +538,108 @@ Select any two nodes to find the shortest path between them. The path is highlig
 The k-core number of a node indicates which "shell" of the network it belongs to. The innermost core (highest k) contains the most tightly interconnected concepts — the structural bedrock of the network. Peripheral nodes (k=1) are connected to only one part of the network.`,
   },
 
+  // ── MCP Server ──────────────────────────────────────────────────
+  {
+    id: "mcp-server",
+    title: "MCP Server: Using ConceptLLM with AI Assistants",
+    tags: ["mcp", "server", "claude", "ai", "llm", "api", "tools", "integration", "model context protocol"],
+    content: `ConceptLLM includes an MCP (Model Context Protocol) server that lets AI assistants like Claude directly read, search, create, and edit concept maps.
+
+**What is MCP?**
+
+MCP is a protocol that allows AI assistants to use external tools. When configured, your AI assistant gains 15 tools for working with your concept maps — searching nodes, adding relationships, creating new maps from templates, and more.
+
+**Setup for Claude Desktop**
+
+1. Build the MCP server (one-time):
+
+Open Terminal and run:
+\`\`\`
+cd /path/to/concept-mapper/mcp-server
+swift build -c release
+\`\`\`
+
+2. Find the built binary:
+\`\`\`
+.build/release/ConceptMCP
+\`\`\`
+
+3. Add to Claude Desktop's configuration file at:
+\`~/Library/Application Support/Claude/claude_desktop_config.json\`
+
+Add this to the "mcpServers" section:
+\`\`\`json
+{
+  "mcpServers": {
+    "conceptllm": {
+      "command": "/path/to/concept-mapper/mcp-server/.build/release/ConceptMCP"
+    }
+  }
+}
+\`\`\`
+
+4. Restart Claude Desktop. You should see ConceptLLM tools available.
+
+**Custom directories**
+
+By default, the MCP server reads maps from:
+\`~/Library/Application Support/ConceptLLM/Maps/\`
+and templates from:
+\`~/Library/Application Support/ConceptLLM/templates/\`
+
+Override with flags:
+\`\`\`
+ConceptMCP --maps-dir ~/my-maps --templates-dir ~/my-templates
+\`\`\`
+
+**Available Tools (15)**
+
+*Navigation:*
+- **list_maps** — List all concept maps with node/edge counts
+- **list_templates** — List all available templates
+- **open_map** — Read a complete map (nodes, edges, streams, generations)
+- **open_template** — Read a template's taxonomy structure
+
+*Search:*
+- **search_nodes** — Find nodes by name, type, or property value
+- **get_node** — Get full details of a node (properties, notes, connections)
+- **get_connections** — Get all edges connected to a node
+
+*Create & Edit:*
+- **add_node** — Add a new node to a map
+- **update_node** — Update a node's name, properties, notes, stream, or generation
+- **delete_node** — Remove a node and all its edges
+- **add_edge** — Create a relationship between two nodes
+- **update_edge** — Change an edge's note, weight, or type
+- **delete_edge** — Remove a relationship
+
+*Map Management:*
+- **create_map** — Create a new map from a template
+- **get_map_stats** — Get network statistics (density, node types, edge types)
+
+**Example conversation with Claude**
+
+You: "Open the organisational learning map and find all nodes connected to Bourdieu"
+
+Claude will use \`open_map\` then \`get_connections\` to show you Bourdieu's network of concepts and relationships.
+
+You: "Add a new thinker node for Hannah Arendt in the institution stream, generation 2"
+
+Claude will use \`add_node\` to create the node and save the .cm file.
+
+You: "Create an edge from Arendt to the concept of public space with type 'originates'"
+
+Claude will use \`add_edge\` to establish the relationship.
+
+**Changes are saved immediately** to the .cm files. If ConceptLLM is open, reload the file to see the AI's changes.
+
+**Troubleshooting**
+
+- *Tools not appearing in Claude Desktop:* Check the path in claude_desktop_config.json. The binary must exist at the specified path. Restart Claude Desktop after config changes.
+- *"File not found" errors:* The MCP server looks in the default ConceptLLM directories. If your maps are elsewhere, use --maps-dir.
+- *Maps not appearing in ConceptLLM:* Save new maps to ~/Library/Application Support/ConceptLLM/Maps/ so they show on the start screen.`,
+  },
+
   // ── FAQ ──────────────────────────────────────────────────────────
   {
     id: "faq",
