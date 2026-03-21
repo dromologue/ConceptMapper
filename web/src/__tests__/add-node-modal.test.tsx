@@ -24,14 +24,14 @@ describe("AddNodeModal — Default node type", () => {
     render(<AddNodeModal {...defaultProps} />);
     expect(screen.getByPlaceholderText("e.g. New Node")).toBeInTheDocument();
     expect(screen.getByText("Category")).toBeInTheDocument();
-    expect(screen.getByText("Horizon")).toBeInTheDocument();
+    expect(screen.getByText("Phase")).toBeInTheDocument();
   });
 
-  it("renders essential fields (name, category, horizon)", () => {
+  it("renders essential fields (name, category, phase)", () => {
     render(<AddNodeModal {...defaultProps} />);
     expect(screen.getByText("Name")).toBeInTheDocument();
     expect(screen.getByText("Category")).toBeInTheDocument();
-    expect(screen.getByText("Horizon")).toBeInTheDocument();
+    expect(screen.getByText("Phase")).toBeInTheDocument();
   });
 
   it("disables Add button when name is empty", () => {

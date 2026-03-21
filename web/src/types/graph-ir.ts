@@ -37,7 +37,7 @@ export interface TaxonomyTemplate {
   node_types: NodeTypeConfig[];
   edge_types?: EdgeTypeConfig[];
   stream_label?: string;       // e.g. "Category", "Stream", "Domain"
-  generation_label?: string;   // e.g. "Horizon", "Generation", "Phase"
+  generation_label?: string;   // e.g. "Phase", "Horizon", "Generation"
 }
 
 /** .cm data file format (v2 JSON) */

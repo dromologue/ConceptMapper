@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { GraphNode, GraphEdge, Stream, Generation, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
 import { getNodeTypeConfig } from "../migration";
+import { EDGE_LABELS } from "../utils/edge-labels";
 
 interface Props {
   node: GraphNode;
@@ -15,16 +16,9 @@ interface Props {
   onNavigateToNode: (nodeId: string) => void;
   onOpenNotes: () => void;
   notesOpen?: boolean;
+  onNodeDelete?: (nodeId: string) => void;
   style?: React.CSSProperties;
 }
-
-const EDGE_LABELS: Record<string, string> = {
-  teacher_pupil: "Teacher \u2192 Pupil", chain: "Chain", rivalry: "Rivalry",
-  alliance: "Alliance", synthesis: "Synthesis", institutional: "Institutional",
-  originates: "Originates", develops: "Develops", contests: "Contests",
-  applies: "Applies", extends: "Extends", opposes: "Opposes",
-  subsumes: "Subsumes", enables: "Enables", reframes: "Reframes",
-};
 
 /** Text input with local state — only commits on blur or after 500ms idle */
 function DebouncedField({ label, value, nodeId, onCommit }: {
@@ -79,12 +73,12 @@ function DebouncedTextarea({ label, value, nodeId, onCommit }: {
 
 export function DetailPanel({
   node, edges, nodes, streams, generations, nodeTypeConfigs, template,
-  onNodeUpdate, onNavigateToNode, onOpenNotes, notesOpen, style,
+  onNodeUpdate, onNavigateToNode, onOpenNotes, notesOpen, onNodeDelete, style,
 }: Props) {
   // Use singular form for field labels — strip trailing 's' if present
   // Use template labels if set, otherwise generic defaults
   const rawStreamLabel = template?.stream_label || "Stream";
-  const rawGenLabel = template?.generation_label || "Generation";
+  const rawGenLabel = template?.generation_label || "Phase";
   const streamLabel = rawStreamLabel.endsWith("s") ? rawStreamLabel.slice(0, -1) : rawStreamLabel;
   const generationLabel = rawGenLabel.endsWith("s") ? rawGenLabel.slice(0, -1) : rawGenLabel;
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
@@ -148,6 +142,19 @@ export function DetailPanel({
           >
             {notesOpen ? "Close Notes" : "Edit Notes"}
           </button>
+          {onNodeDelete && (
+            <button
+              className="detail-delete-btn"
+              onClick={() => {
+                if (window.confirm("Delete node and all its connections?")) {
+                  onNodeDelete(node.id);
+                }
+              }}
+              title="Delete node"
+            >
+              Delete
+            </button>
+          )}
         </div>
       </div>
 

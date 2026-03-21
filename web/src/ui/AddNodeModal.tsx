@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Stream, Generation, NodeTypeConfig } from "../types/graph-ir";
+import type { Stream, Generation, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
 
 interface Props {
   nodeTypeConfigs: NodeTypeConfig[];
@@ -9,9 +9,10 @@ interface Props {
   onCancel: () => void;
   /** Pre-select a specific node type */
   initialNodeType?: string;
+  template?: TaxonomyTemplate | null;
 }
 
-export function AddNodeModal({ nodeTypeConfigs, streams, generations, onAdd, onCancel, initialNodeType }: Props) {
+export function AddNodeModal({ nodeTypeConfigs, streams, generations, onAdd, onCancel, initialNodeType, template }: Props) {
   const [selectedType, setSelectedType] = useState(initialNodeType ?? nodeTypeConfigs[0]?.id ?? "");
   const [name, setName] = useState("");
   const [stream, setStream] = useState(streams[0]?.id ?? "");
@@ -83,13 +84,13 @@ export function AddNodeModal({ nodeTypeConfigs, streams, generations, onAdd, onC
             />
           </div>
           <div className="modal-field">
-            <label>Category</label>
+            <label>{template?.stream_label || "Category"}</label>
             <select value={stream} onChange={(e) => setStream(e.target.value)}>
               {streams.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <div className="modal-field">
-            <label>Horizon</label>
+            <label>{template?.generation_label || "Phase"}</label>
             <select value={generation} onChange={(e) => setGeneration(Number(e.target.value))}>
               {generations.map((g) => <option key={g.number} value={g.number}>{g.number}: {g.label ?? g.period ?? ""}</option>)}
             </select>

@@ -26,7 +26,7 @@ When you first open the app you see the **Start Screen** with three options:
 
 2. **Open File** -- Load an existing .cm or .json concept map file. You can also use File > Open (Cmd+O) from the menu bar.
 
-3. **Map Text** -- (Requires LLM setup and at least one saved template.) Paste or upload text and let an AI extract nodes and relationships into an existing taxonomy structure.
+3. **Map Text** -- (Coming soon.) Use an external LLM to extract nodes and relationships into a taxonomy structure. See "Using an LLM to Map Content" in this help for the current workflow.
 
 If you have previously saved templates, they appear below these buttons. Click one to start a new map pre-loaded with that template's structure.
 
@@ -34,7 +34,7 @@ If you have previously saved templates, they appear below these buttons. Click o
 - Click "New Taxonomy" and follow the 6-step wizard.
 - Add a few nodes using the sidebar buttons.
 - Draw edges between nodes to define relationships.
-- Open Settings (gear icon) to choose a theme and optionally configure an LLM provider.`,
+- Open Settings (gear icon) to choose a theme.`,
   },
 
   // ── Core Concepts ────────────────────────────────────────────────
@@ -76,8 +76,7 @@ If you have previously saved templates, they appear below these buttons. Click o
 - Network icon: Full view (all nodes)
 - Filtered view icons: One per node type defined in your taxonomy (dynamically generated, not hardcoded)
 - Sidebar icon: Toggle the sidebar panel
-- Mapping icon: Open Map Text modal (only visible when LLM is configured)
-- Chat icon: Toggle the chat pane (only visible when LLM is configured)
+- (Map Text and Chat icons will appear in a future release when built-in LLM support is enabled)
 - Help icon: Open the searchable help panel
 - Taxonomy icon (bottom): Edit the current taxonomy structure
 - Gear icon (bottom): Open Settings
@@ -91,9 +90,8 @@ If you have previously saved templates, they appear below these buttons. Click o
 
 **Auxiliary Panel** (right, appears when a node is selected) -- The Properties panel showing the selected node's attributes, with an inline name editor, stream/generation selectors, custom fields, and a connections list. A resize handle between the canvas and this panel lets you adjust width.
 
-**Bottom Panes** (below the canvas, when open):
-- Notes pane: Inline markdown editor for the selected node's notes
-- Chat pane: Conversation with the LLM about your concept map`,
+**Bottom Pane** (below the canvas, when open):
+- Notes pane: Inline markdown editor for the selected node's notes`,
   },
 
   // ── Activity Bar Buttons ─────────────────────────────────────────
@@ -111,17 +109,13 @@ If you have previously saved templates, they appear below these buttons. Click o
 
 3. **Toggle Sidebar** (panel icon) -- Shows or hides the left Explorer sidebar.
 
-4. **Map Text** (converging arrows icon) -- Opens the Map Text modal where you can paste text for AI-powered extraction. Only visible when an LLM provider is configured in Settings.
-
-5. **Chat** (speech bubble icon) -- Toggles the chat pane at the bottom of the canvas. Only visible when an LLM provider is configured.
-
-6. **Help** (question mark icon) -- Opens the searchable help panel overlay.
+4. **Help** (question mark icon) -- Opens the searchable help panel overlay.
 
 **Bottom group:**
 
-7. **Edit Taxonomy** (list icon) -- Re-opens the taxonomy wizard to modify the current map's structure (node types, categories, horizons, edge types).
+5. **Edit Taxonomy** (list icon) -- Re-opens the taxonomy wizard to modify the current map's structure (node types, categories, phases, edge types).
 
-8. **Settings** (gear icon) -- Opens the Settings modal for theme, LLM configuration, stream colours, and edge colours.`,
+6. **Settings** (gear icon) -- Opens the Settings modal for theme, stream colours, and edge colours.`,
   },
 
   // ── Adding and Editing Nodes ─────────────────────────────────────
@@ -225,115 +219,90 @@ See a summary of everything you defined. From here you can also click **"Save as
 Navigation: Use Back/Next buttons at the bottom. Press Escape to cancel.`,
   },
 
-  // ── LLM Setup ────────────────────────────────────────────────────
+  // ── Using an LLM to Map Content ─────────────────────────────────
   {
-    id: "llm-setup",
-    title: "Setting Up an LLM Provider",
-    tags: ["llm", "ai", "api", "key", "anthropic", "openai", "ollama", "configure", "setup", "settings"],
-    content: `ConceptLLM can use a large language model to extract concepts from text and to chat about your map. This is optional -- the app works fully without it.
+    id: "llm-mapping",
+    title: "Using an LLM to Map Content to a Template",
+    tags: ["llm", "ai", "claude", "gpt", "mapping", "extract", "prompt", "template", "generate"],
+    content: `You can use any LLM (Claude, GPT-4, Llama, etc.) to generate concept map content that you then open in ConceptLLM. The workflow is: design your taxonomy in the app, export or describe it to the LLM, and have the LLM produce a .cm file you can open.
 
-**To configure an LLM:**
+**Step 1: Design your taxonomy**
 
-1. Click the **gear icon** (Settings) in the Activity Bar.
-2. Scroll to the **LLM Configuration** section.
-3. Choose a provider. The settings panel shows step-by-step setup instructions for each one:
+Use the Taxonomy Wizard (New Taxonomy on the start screen) to define:
+- Node types with their fields (e.g. Person with importance, dates, tags)
+- Streams/categories with colours
+- Phases/generations with labels
+- Edge types with styles
 
-   **Anthropic (recommended):**
-   - Create a free account at console.anthropic.com
-   - Add a payment method (pay-as-you-go, typically ~$0.01 per request)
-   - Click the "Get Anthropic API Key" link in the settings panel -- it takes you directly to the API Keys page
-   - Create a new key and paste it into the API Key field
-   - Keys start with "sk-ant-" -- the field validates the format automatically
+Save it as a template (.cmt) for reuse.
 
-   **OpenAI:**
-   - Create an account at platform.openai.com
-   - Add a payment method in Billing
-   - Click the "Get OpenAI API Key" link to go straight to the API Keys page
-   - Create a new secret key and paste it in
-   - Keys start with "sk-"
+**Step 2: Export the template for the LLM**
 
-   **Ollama (free, local):**
-   - Install Ollama from ollama.com
-   - Run: ollama pull llama3.2
-   - No API key needed -- everything runs on your machine
+Open your .cmt file in a text editor -- it is plain JSON. Copy the full contents. This gives the LLM the exact structure it needs to produce compatible output.
 
-4. The API key field shows green when the format looks correct, amber if something seems off.
-5. Optionally change the **model** name -- the field suggests popular models.
-6. Optionally adjust **temperature** (0.0 = deterministic, 1.0 = creative; default 0.3).
-7. Click **"Test Connection"** -- error messages explain what went wrong (invalid key, payment needed, rate limit, etc.).
-8. Click **"Save"** to persist your configuration.
+**Step 3: Prompt the LLM**
 
-Once saved, the Map Text and Chat buttons appear in the Activity Bar.
+Use a prompt like this (adapt to your content):
 
-**API key security:**
-- In the macOS app, your configuration is stored via the Swift bridge in the app's sandboxed storage, not in the browser.
-- The key is sent only to the configured provider's API endpoint.
-- For Ollama, everything stays on your local machine.
+---
+I have a concept-mapping tool that uses this taxonomy template:
 
-**Supported models:**
-- Anthropic: claude-sonnet-4-20250514, claude-opus-4-20250514, claude-haiku-4-20250506
-- OpenAI: gpt-4o, gpt-4o-mini, gpt-4-turbo, o1
-- Ollama: llama3.2, mistral, mixtral, codellama, phi3 (or any model you have pulled)`,
-  },
+\`\`\`json
+[paste your .cmt template here]
+\`\`\`
 
-  // ── Map Text Feature ─────────────────────────────────────────────
-  {
-    id: "map-text",
-    title: "Map Text: AI-Powered Concept Extraction",
-    tags: ["map", "text", "mapping", "extract", "ai", "llm", "paste", "upload", "file"],
-    content: `The Map Text feature uses an LLM to read a passage of text and extract nodes and relationships into your taxonomy structure.
+Please analyse the following text and produce a .cm concept map file. The output must be a markdown file using EXACTLY this format:
 
-**Prerequisites:**
-- An LLM provider configured and saved in Settings.
-- At least one saved template (so the LLM knows what categories and node types to use).
+**CRITICAL: Every property line inside a fenced code block MUST use "key: value" format with a colon.** Do not omit the colon — the parser requires it.
 
-**How to use it:**
+Sections required:
 
-1. Click the **Map Text button** (converging arrows icon) in the Activity Bar, or click "Map Text" on the start screen.
-2. If you have multiple templates, **pick which taxonomy** to map into. If the map already has a template, it is pre-selected.
-3. Either:
-   - **Paste text** directly into the text area, or
-   - Click **"Upload File"** to load a .txt, .md, or .markdown file.
-4. Click **"Map to Taxonomy"**.
-5. The LLM reads your text and returns a structured JSON with nodes, edges, and metadata matching your taxonomy's streams, generations, and node types.
-6. The result loads as a new concept map on the canvas.
+1. **## Generations** -- a markdown table with columns: Gen, Period, Label, Attention Space Count
+2. **## Streams** -- a markdown table with columns: Stream ID, Name, Colour, Description
+3. **## [Type] Nodes** -- one section per node type (e.g. "## Task Nodes", "## Person Nodes"). Each node is a fenced code block (\`\`\`) containing key: value pairs. Required keys: id, name, generation, stream. Include ALL fields from the template's node type definition. End with notes: if applicable.
+4. **## Edges** -- fenced code blocks with "from: [id] to: [id] type: [edge_type]" lines, each followed by "  note: [description]"
 
-**Tips:**
-- Longer, more detailed text produces better results.
-- The LLM uses the taxonomy's stream names, generation labels, and node type definitions to categorize what it finds.
-- If the result is not what you expected, click "Try Again" or adjust the text and re-map.
-- You can always manually edit the resulting map after extraction.
-- A lower temperature (0.1-0.3) tends to produce more consistent, structured output.`,
-  },
+Use the stream IDs, generation numbers, and edge types defined in the template. Assign each node to the most appropriate stream and generation.
 
-  // ── Chat Feature ─────────────────────────────────────────────────
-  {
-    id: "chat",
-    title: "Chat: Talk to the LLM About Your Map",
-    tags: ["chat", "ai", "llm", "ask", "question", "conversation", "talk"],
-    content: `The Chat pane lets you have a conversation with the LLM about your concept map. The LLM has full context of all your nodes, edges, streams, and generations.
+Here is the text to analyse:
 
-**How to use it:**
+[paste your source text]
+---
 
-1. Click the **Chat button** (speech bubble icon) in the Activity Bar.
-2. A pane opens below the canvas.
-3. Type a question or instruction and press **Enter** (or click Send).
-4. The LLM responds with analysis, suggestions, or answers about your map.
+**Step 4: Open the result**
 
-**Example questions you can ask:**
-- "What are the main intellectual traditions in this map?"
-- "Which thinkers have the most connections?"
-- "Summarise the relationship between [Person A] and [Person B]."
-- "What concepts are contested?"
-- "Suggest additional thinkers who might belong in the [Stream] category."
-- "What gaps do you see in this map?"
+Save the LLM's output as a .cm file and open it in ConceptLLM (File > Open or Cmd+O). The app parses the markdown format and renders the concept map.
 
-**Notes:**
-- The chat maintains conversation history within the session.
-- Each message sends the full current state of your map to the LLM, so it always has up-to-date context.
-- Press Shift+Enter for multi-line input (single Enter sends).
-- The chat pane is resizable by dragging the border between it and the canvas.
-- Opening the chat pane closes the notes pane (and vice versa).`,
+**Tips for better results:**
+- Include the full .cmt template so the LLM knows exact field names and options.
+- Ask the LLM to use the specific stream IDs and generation numbers from the template.
+- For select-type fields (like importance or status), tell the LLM to use only the defined options.
+- Review and edit the generated .cm file before opening -- fix any formatting issues.
+- Longer, more detailed source text produces richer maps.
+- You can iteratively add content: open the generated map, then manually add nodes and edges the LLM missed.
+
+**Example node block format:**
+
+\`\`\`
+id:               my_node_id
+name:             My Node Name
+generation:       2
+stream:           my_stream
+priority:         high
+status:           active
+tags:             keyword1, keyword2
+notes:            Detailed description of this node
+\`\`\`
+
+**Example edge block format:**
+
+\`\`\`
+from: node_a to: node_b type: chain
+  note: Description of how A relates to B
+
+from: node_c to: node_d type: rivalry
+  note: Description of the tension between C and D
+\`\`\``,
   },
 
   // ── Canvas Navigation ────────────────────────────────────────────
@@ -373,21 +342,26 @@ Once saved, the Map Text and Chat buttons appear in the Activity Bar.
     id: "sidebar-filtering",
     title: "Sidebar: Explorer, Streams, and Filtering",
     tags: ["sidebar", "explorer", "filter", "stream", "category", "list"],
-    content: `The sidebar (toggle with the panel icon in the Activity Bar) has three sections:
+    content: `The sidebar (toggle with the panel icon in the Activity Bar) has several sections:
 
 **Action Buttons** (top)
 One "+ [Type]" button per node type defined in your taxonomy, plus a "+ Edge" button. During edge-drawing mode, this button changes to "Cancel Edge".
 
-**Streams** (collapsible)
-Lists all streams/categories with their colour dots. Click a stream to filter the canvas to show only nodes in that category. Click additional streams to show multiple. A "Show All" button appears when filtering is active.
+**Filter Sections** (collapsible, collapsed by default)
+Click any section header to expand it:
+
+- **Streams** -- Lists all streams/categories with colour dots. Click a value to uncheck it (hide nodes of that category). Click again to re-check. A "Show All" button appears when any filter is active.
+- **Phases** -- Lists all generations/phases. Same toggle behaviour.
+- **Attribute Filters** -- One section per filterable field from your node type configs. Select-type fields always appear. Text fields appear when they have 30 or fewer unique values. Click values to uncheck/recheck.
+- **Date Range** -- If your node types have date_from/date_to fields, a date range filter appears with From/To year inputs.
+
+**Filter logic:**
+- Between categories (e.g. Streams AND Phases): nodes must pass ALL active filters.
+- Within a category (e.g. two streams checked): nodes matching ANY checked value are shown.
+- Unchecked values hide matching nodes from both the canvas and the node list.
 
 **Nodes** (collapsible)
-A searchable, scrollable list of all nodes sorted alphabetically. Each entry shows:
-- A colour indicator matching the node's stream
-- The node name
-- A type icon (first character of the type label)
-
-Use the filter input at the top of the node list to search by name. Click a node to select it on the canvas and open its Properties panel.`,
+A searchable, scrollable list of all visible nodes (respects active filters) sorted alphabetically. Each entry shows a colour indicator and the node name. Use the filter input to search by name. Click a node to select it on the canvas.`,
   },
 
   // ── Notes Editor ─────────────────────────────────────────────────
@@ -460,7 +434,9 @@ Override the default colour for any stream/category. Click the colour swatch to 
 **Edge Type Colours**
 Override colours for specific edge types (e.g. make "rivalry" edges bright red, "alliance" edges blue). Only edge types present in your current map appear here.
 
-All colour customisations persist across sessions via local storage.`,
+All colour customisations persist across sessions via local storage.
+
+(LLM configuration will be available in a future release.)`,
   },
 
   // ── File Formats ─────────────────────────────────────────────────
@@ -518,10 +494,6 @@ The app auto-saves to the source .cm file as you make changes (with a 2-second d
 - Enter -- New line
 - Standard text editing shortcuts (Cmd+A, Cmd+C, Cmd+V, etc.)
 
-**Chat:**
-- Enter -- Send message
-- Shift+Enter -- New line in message
-
 **General:**
 - Cmd+? -- Toggle help overlay (native macOS help)`,
   },
@@ -549,28 +521,8 @@ A: Edge deletion is not yet available through the UI. You can edit the .cm file 
 **Q: Where are my files saved?**
 A: When you open or create a .cm file, the app auto-saves to that file path with a 2-second debounce after each change. The save indicator in the status bar confirms when a save occurs.
 
-**Q: Do I need an API key to use the app?**
-A: No. The LLM features (Map Text and Chat) are optional. The full concept mapping experience works without any AI integration.
-
-**Q: Which LLM provider should I choose?**
-A: Anthropic (Claude) tends to produce the best structured output for taxonomy mapping. OpenAI (GPT-4o) is a strong alternative. Ollama is free and local but results depend on which model you run -- larger models work better.
-
-**Q: Why do I not see the Map Text or Chat buttons?**
-A: These buttons only appear after you configure and save an LLM provider in Settings. Open Settings (gear icon) and complete the LLM Configuration section.
-
-**Q: The LLM returned bad or incomplete results from Map Text. What can I do?**
-A: Try these approaches:
-1. Click "Try Again" -- results can vary between runs.
-2. Provide more detailed source text.
-3. Lower the temperature to 0.1-0.2 for more deterministic output.
-4. Use a more capable model (e.g. claude-sonnet-4 instead of haiku, or gpt-4o instead of gpt-4o-mini).
-5. Edit the resulting map manually after extraction.
-
-**Q: Is my API key secure?**
-A: In the macOS app, configuration is stored in the app's sandboxed storage via the Swift bridge. Your key is only sent to the provider's API endpoint. For maximum security, use Ollama (fully local, no API key needed).
-
-**Q: Can I use this in a web browser?**
-A: The app is designed as a macOS native app with a WKWebView. While the React UI can technically run in a browser, file operations and LLM calls for Anthropic/OpenAI require the native Swift bridge. Ollama works in the browser if you have it running locally.
+**Q: Can I use AI to populate a concept map?**
+A: Yes. Design your taxonomy in the app, export the .cmt template, and use any LLM (Claude, GPT-4, etc.) to generate a .cm file from your source text. See "Using an LLM to Map Content" in this help for detailed instructions and a prompt template.
 
 **Q: What does "Save as Template" do?**
 A: It stores the current taxonomy structure (node types, streams, generations) without any nodes or edges. The template appears on the start screen for quick reuse when creating new maps.
@@ -587,9 +539,6 @@ A: If a node type has a select-type field (e.g. "Importance" with options major,
 **Q: How do I share a map with someone?**
 A: Send them the .cm file. They can open it in ConceptLLM. The file is self-contained JSON. You can also export a markdown version or a PNG image for people who do not have the app.
 
-**Q: Can the chat modify my map?**
-A: Currently, the chat is read-only -- the LLM can analyse and answer questions about your map but cannot make direct changes to it. You would need to manually apply any suggestions.
-
 **Q: What happens if I close the app without saving?**
 A: If you opened a file, the app auto-saves changes as you work (2-second debounce). If you created a new taxonomy and never saved the file, the data may be lost.`,
   },
@@ -601,20 +550,6 @@ A: If you opened a file, the app auto-saves changes as you work (2-second deboun
     tags: ["trouble", "error", "problem", "fix", "issue", "bug", "not working"],
     content: `**"No nodes found" error when opening a file**
 The file may not be in a recognised format. ConceptLLM expects either a v2 JSON data file (.cm) or a legacy structured markdown file. Check that the file has the correct structure.
-
-**LLM test connection fails**
-- Anthropic/OpenAI: Verify your API key is correct and has not expired. Check that you have billing enabled on your account.
-- Ollama: Ensure the Ollama server is running (run "ollama serve" in terminal). Verify the base URL is correct (default: http://localhost:11434).
-- All providers: Check your internet connection for cloud providers.
-
-**"Browser mode only supports Ollama" error**
-If you are testing in a web browser instead of the macOS app, only Ollama is supported because Anthropic and OpenAI API calls require the native Swift bridge to avoid CORS restrictions.
-
-**Map Text returns empty or malformed results**
-- Ensure your source text is substantial enough for the LLM to work with.
-- Try a more capable model.
-- Lower the temperature for more structured output.
-- Check the browser console (View > Developer > JavaScript Console in the macOS app, if inspectable) for error details.
 
 **Canvas is blank after creating a taxonomy**
 This is expected -- a new taxonomy has no nodes yet. Use the sidebar's "+ [Type]" buttons to add nodes, or use Map Text to populate from a text source.
@@ -628,12 +563,7 @@ Auto-save requires that the file was opened from disk (giving the app a file pat
 **Theme colours look wrong after updating**
 Try closing and re-opening Settings. Colour overrides are stored in local storage -- clear them by clicking the X button next to each colour override in Settings.
 
-**Chat says "Error" in the response**
-Check the error message in the chat response. Common causes:
-- API key expired or invalid
-- Model not available on your account
-- Rate limit exceeded
-- Network connectivity issue
-For Ollama: the model may not be pulled yet (run "ollama pull [model-name]").`,
+**Filters seem to have no effect**
+If clicking a filter value does not change the visible nodes, the filter may only have one unique value (all nodes match). Check the filter section -- if there is only one option, unchecking it hides all nodes of that type.`,
   },
 ];

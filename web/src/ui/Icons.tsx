@@ -129,6 +129,18 @@ export function IconChevronDown({ size = defaults.size, className }: IconProps) 
   );
 }
 
+export function IconFitView({ size = defaults.size, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <rect x="1" y="1" width="14" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+      <polyline points="1,5 1,1 5,1" stroke="currentColor" strokeWidth="1.5" fill="none" />
+      <polyline points="11,1 15,1 15,5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+      <polyline points="15,11 15,15 11,15" stroke="currentColor" strokeWidth="1.5" fill="none" />
+      <polyline points="5,15 1,15 1,11" stroke="currentColor" strokeWidth="1.5" fill="none" />
+    </svg>
+  );
+}
+
 export function IconHelp({ size = defaults.size, className }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>

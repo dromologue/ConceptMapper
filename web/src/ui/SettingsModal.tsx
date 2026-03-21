@@ -184,8 +184,8 @@ export function SettingsModal({ streams, edgeTypes, onClose }: Props) {
           </div>
         </div>
 
-        {/* LLM Configuration */}
-        <div className="settings-section">
+        {/* LLM Configuration — hidden for now, will be enabled in a later release */}
+        <div className="settings-section" style={{ display: "none" }}>
           <div className="field-label" style={{ marginBottom: 8 }}>LLM Configuration</div>
 
           <div className="settings-field">

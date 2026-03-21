@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import type { GraphNode, GraphEdge } from "../types/graph-ir";
+import { EDGE_LABELS } from "../utils/edge-labels";
 
 interface Props {
   node: GraphNode;
@@ -9,15 +10,6 @@ interface Props {
   onClose?: () => void;
   style?: React.CSSProperties;
 }
-
-const EDGE_LABELS: Record<string, string> = {
-  teacher_pupil: "Teacher \u2192 Pupil", chain: "Chain", rivalry: "Rivalry",
-  alliance: "Alliance", synthesis: "Synthesis", institutional: "Institutional",
-  originates: "Originates", develops: "Develops", contests: "Contests",
-  applies: "Applies", extends: "Extends", opposes: "Opposes",
-  subsumes: "Subsumes", enables: "Enables", reframes: "Reframes",
-  // Note: this must match the labels in DetailPanel.tsx and GraphCanvas.tsx
-};
 
 const ZWS = "\u200B"; // zero-width space for empty lines
 

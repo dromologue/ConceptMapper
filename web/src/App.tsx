@@ -21,6 +21,9 @@ import { ThemeProvider, useTheme } from "./theme/ThemeContext";
 import { LLMProvider, useLLM } from "./llm/LLMContext";
 import { registerLLMCallbacks } from "./llm/provider";
 import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData } from "./migration";
+import { createEmptyFilterState } from "./utils/filters";
+import type { FilterState } from "./utils/filters";
+import { normalizeFencedKV } from "./utils/normalize";
 import "./App.css";
 
 export type ViewMode = string; // "full" or a node type id
@@ -56,12 +59,14 @@ function AppInner() {
   const [showAddEdgeModal, setShowAddEdgeModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
+  const [searchHighlight, setSearchHighlight] = useState(-1);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [auxPanelWidth, setAuxPanelWidth] = useState(340);
   const [notesHeight, setNotesHeight] = useState(250);
   const [notesOpen, setNotesOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeStreams, setActiveStreams] = useState<Set<string> | null>(null);
+  const [filters, setFilters] = useState<FilterState>(createEmptyFilterState());
   const [showSettings, setShowSettings] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showTaxonomyWizard, setShowTaxonomyWizard] = useState(false);
@@ -74,9 +79,12 @@ function AppInner() {
   const [showMappingModal, setShowMappingModal] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatHeight, setChatHeight] = useState(300);
+  const [centerOnNode, setCenterOnNode] = useState<{ id: string; ts: number } | null>(null);
+  const fitToViewRef = useRef<(() => void) | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<import("./types/graph-ir").GraphEdge | null>(null);
   const [edgePopoverPos, setEdgePopoverPos] = useState<{ x: number; y: number } | null>(null);
   const [loadedNativeTemplates, setLoadedNativeTemplates] = useState<Map<string, TaxonomyWizardInitial>>(new Map());
+  const [, setTemplateVersion] = useState(0);
 
   const [parserReady, setParserReady] = useState(false);
 
@@ -96,7 +104,9 @@ function AppInner() {
       try {
         // Try markdown parser first (primary format for .cm files)
         if (!content.trimStart().startsWith("{")) {
-          const result = parseMarkdown(content);
+          // Normalize key-value lines inside fenced blocks: "key    value" → "key: value"
+          const normalized = normalizeFencedKV(content);
+          const result = parseMarkdown(normalized);
           const data = result.graph;
           if (result.warnings.length > 0) {
             console.warn("Parse warnings:", result.warnings.map((w) => `line ${w.line}: ${w.message}`));
@@ -108,6 +118,7 @@ function AppInner() {
             setTemplate(migratedTemplate);
             setSelectedNode(null);
             setRevealedNodes(new Set());
+            setFilters(createEmptyFilterState());
             setError(null);
             setSourceFilePath(filePath ?? null);
             return;
@@ -125,12 +136,16 @@ function AppInner() {
                 streams: cmData.streams ?? template?.streams ?? [],
                 generations: cmData.generations ?? template?.generations ?? [],
                 node_types: cmData.node_types ?? template?.node_types ?? DEFAULT_NODE_TYPES,
+                edge_types: cmData.edge_types ?? template?.edge_types,
+                stream_label: (parsed as Record<string, unknown>).stream_label as string | undefined ?? template?.stream_label,
+                generation_label: (parsed as Record<string, unknown>).generation_label as string | undefined ?? template?.generation_label,
               };
               const ir = graphIRFromData(tmpl, cmData);
               setGraphData(ir);
               setTemplate(ir.metadata.template ?? tmpl);
               setSelectedNode(null);
               setRevealedNodes(new Set());
+              setFilters(createEmptyFilterState());
               setError(null);
               setSourceFilePath(filePath ?? null);
               return;
@@ -214,11 +229,11 @@ function AppInner() {
     win.templateLoaded = (json: string) => {
       try {
         const tmpl = JSON.parse(json) as TaxonomyTemplate;
-        // If we have a graph, set as active template
+        // The .cmt template always wins — it defines the canonical structure
         if (graphData) {
           setTemplate(tmpl);
         }
-        // Also cache it by title for the empty state
+        // Cache it by title for the empty state and taxonomy wizard
         setLoadedNativeTemplates((prev) => {
           const next = new Map(prev);
           next.set(tmpl.title, {
@@ -409,16 +424,57 @@ function AppInner() {
     setShowAddEdgeModal(false);
   }, []);
 
-  // Escape key to cancel edge drawing
+  const handleDeleteNode = useCallback((nodeId: string) => {
+    if (!graphData) return;
+    setGraphData({
+      ...graphData,
+      nodes: graphData.nodes.filter((n) => n.id !== nodeId),
+      edges: graphData.edges.filter((e) => e.from !== nodeId && e.to !== nodeId),
+    });
+    setSelectedNode(null);
+    setNotesOpen(false);
+  }, [graphData]);
+
+  const handleDeleteEdge = useCallback((fromId: string, toId: string) => {
+    if (!graphData) return;
+    setGraphData({
+      ...graphData,
+      edges: graphData.edges.filter((e) => !(e.from === fromId && e.to === toId)),
+    });
+    setSelectedEdge(null);
+    setEdgePopoverPos(null);
+  }, [graphData]);
+
+  // Keyboard shortcuts: Escape to cancel edge drawing, Delete/Backspace to delete
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        return;
+      }
       if (e.key === "Escape" && interactionMode !== "normal") {
         handleCancelAddEdge();
+      }
+      if (e.key === "Delete" || e.key === "Backspace") {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (selectedEdge) {
+          e.preventDefault();
+          if (window.confirm("Delete this edge?")) {
+            handleDeleteEdge(selectedEdge.from, selectedEdge.to);
+          }
+        } else if (selectedNode) {
+          e.preventDefault();
+          if (window.confirm("Delete node and all its connections?")) {
+            handleDeleteNode(selectedNode.id);
+          }
+        }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [interactionMode, handleCancelAddEdge]);
+  }, [interactionMode, handleCancelAddEdge, selectedNode, selectedEdge, handleDeleteNode, handleDeleteEdge]);
 
   const isNativeApp = !!(window as unknown as Record<string, unknown>).webkit;
 
@@ -578,6 +634,7 @@ function AppInner() {
       const templateJson = JSON.stringify({
         title: data.title,
         description: data.description,
+        format_instructions: "When generating .cm files from this template: use markdown with fenced code blocks for nodes. Every property line MUST use 'key: value' format with a colon separator. Required node keys: id, name, generation, stream. Include all fields defined in the node type. Edges use 'from: [id] to: [id] type: [edge_type]' format.",
         streams: data.streams,
         generations: data.generations,
         node_types: data.node_types,
@@ -676,7 +733,7 @@ function AppInner() {
         const startY = e.clientY;
         const startH = currentHeight;
         const onMouseMove = (moveEvent: MouseEvent) => {
-          const delta = startY - moveEvent.clientX;
+          const delta = startY - moveEvent.clientY;
           setter(Math.max(120, Math.min(500, startH + delta)));
         };
         const onMouseUp = () => {
@@ -689,20 +746,96 @@ function AppInner() {
     []
   );
 
-  const handleStreamToggle = (streamId: string) => {
-    setActiveStreams((prev) => {
-      if (!prev) {
-        return new Set([streamId]);
+  const handleStreamToggle = (streamId: string, allStreamIds: string[]) => {
+    setFilters((prev) => {
+      const streams = prev.streams;
+      if (!streams) {
+        // First click: uncheck this stream (show all EXCEPT this one)
+        const next = new Set(allStreamIds);
+        next.delete(streamId);
+        return { ...prev, streams: next };
       }
-      const next = new Set(prev);
+      const next = new Set(streams);
       if (next.has(streamId)) {
         next.delete(streamId);
-        if (next.size === 0) return null;
+        // Empty set = nothing shown (user unticked everything)
+        return { ...prev, streams: next };
       } else {
         next.add(streamId);
+        // All re-checked → reset to null (all shown)
+        return { ...prev, streams: next.size >= allStreamIds.length ? null : next };
       }
-      return next;
     });
+  };
+
+  const handleGenerationToggle = (gen: number, allGens: number[]) => {
+    setFilters((prev) => {
+      const gens = prev.generations;
+      if (!gens) {
+        const next = new Set(allGens);
+        next.delete(gen);
+        return { ...prev, generations: next };
+      }
+      const next = new Set(gens);
+      if (next.has(gen)) {
+        next.delete(gen);
+        return { ...prev, generations: next };
+      } else {
+        next.add(gen);
+        return { ...prev, generations: next.size >= allGens.length ? null : next };
+      }
+    });
+  };
+
+  const handleAttributeToggle = (compositeKey: string, value: string, allValues: string[]) => {
+    setFilters((prev) => {
+      const attrs = new Map(prev.attributes);
+      const current = attrs.get(compositeKey);
+      if (!current) {
+        // First click: uncheck this value (show all EXCEPT this one)
+        const next = new Set(allValues);
+        next.delete(value);
+        attrs.set(compositeKey, next);
+      } else {
+        const next = new Set(current);
+        if (next.has(value)) {
+          next.delete(value);
+          // Empty set = nothing shown (user unticked everything)
+          attrs.set(compositeKey, next);
+        } else {
+          next.add(value);
+          // All re-checked → reset to null (all shown)
+          if (next.size >= allValues.length) {
+            attrs.set(compositeKey, null);
+          } else {
+            attrs.set(compositeKey, next);
+          }
+        }
+      }
+      // Clean up null entries
+      for (const [k, v] of attrs) {
+        if (v === null) attrs.delete(k);
+      }
+      return { ...prev, attributes: attrs };
+    });
+  };
+
+  const handleDateRangeChange = (compositeKey: string, field: "from" | "to", value: string) => {
+    setFilters((prev) => {
+      const ranges = new Map(prev.dateRanges);
+      const current = ranges.get(compositeKey) ?? { from: null, to: null };
+      const updated = { ...current, [field]: value || null };
+      if (updated.from === null && updated.to === null) {
+        ranges.delete(compositeKey);
+      } else {
+        ranges.set(compositeKey, updated);
+      }
+      return { ...prev, dateRanges: ranges };
+    });
+  };
+
+  const handleShowAllFilters = () => {
+    setFilters(createEmptyFilterState());
   };
 
   const searchResults = searchQuery.trim().length > 0 && graphData
@@ -716,6 +849,7 @@ function AppInner() {
       setSelectedNode(node);
       setSearchQuery("");
       setSearchFocused(false);
+      setCenterOnNode({ id: node.id, ts: Date.now() });
       if (viewMode !== "full") {
         setRevealedNodes((prev) => new Set(prev).add(node.id));
       }
@@ -773,6 +907,7 @@ function AppInner() {
                         e.stopPropagation();
                         const updated = templates.filter((_, idx) => idx !== i);
                         localStorage.setItem("cm-templates", JSON.stringify(updated));
+                        setTemplateVersion((v) => v + 1);
                         setError(null);
                       }}
                     >
@@ -843,20 +978,38 @@ function AppInner() {
         <div className="search-container">
           <IconSearch size={14} className="search-icon" />
           <input
+            ref={searchInputRef}
             className="search-input"
             type="text"
             placeholder="Search nodes... (\u2318K)"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setSearchHighlight(-1); }}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setSearchHighlight((h) => Math.min(h + 1, searchResults.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setSearchHighlight((h) => Math.max(h - 1, 0));
+              } else if (e.key === "Enter" && searchHighlight >= 0 && searchResults[searchHighlight]) {
+                e.preventDefault();
+                handleSearchSelect(searchResults[searchHighlight]);
+                setSearchHighlight(-1);
+              } else if (e.key === "Escape") {
+                setSearchQuery("");
+                setSearchHighlight(-1);
+                searchInputRef.current?.blur();
+              }
+            }}
           />
           {searchFocused && searchResults.length > 0 && (
             <div className="search-dropdown">
-              {searchResults.map((n) => {
+              {searchResults.map((n, idx) => {
                 const typeConfig = nodeTypeConfigs.find((t) => t.id === n.node_type);
                 return (
-                  <div key={n.id} className="search-result" onMouseDown={() => handleSearchSelect(n)}>
+                  <div key={n.id} className={`search-result${idx === searchHighlight ? " search-result-highlight" : ""}`} onMouseDown={() => handleSearchSelect(n)}>
                     <span
                       className={`type-indicator ${typeConfig?.shape === "rectangle" ? "concept" : ""}`}
                       style={{
@@ -886,8 +1039,9 @@ function AppInner() {
           onOpenMapping={() => setShowMappingModal(true)}
           onToggleChat={() => { setChatOpen(!chatOpen); if (chatOpen) return; setNotesOpen(false); }}
           chatOpen={chatOpen}
-          llmAvailable={isLLMConfigured}
+          llmAvailable={false /* LLM features hidden — enable in a later release */}
           onOpenHelp={() => setShowHelp(true)}
+          onFitToView={() => fitToViewRef.current?.()}
           nodeTypeConfigs={nodeTypeConfigs}
         />
 
@@ -897,10 +1051,13 @@ function AppInner() {
             streams={graphData.metadata.streams}
             nodeTypeConfigs={nodeTypeConfigs}
             template={template}
-            activeStreams={activeStreams}
+            filters={filters}
             onStreamToggle={handleStreamToggle}
-            onShowAll={() => setActiveStreams(null)}
-            onSelectNode={(node) => { setSelectedNode(node); }}
+            onGenerationToggle={handleGenerationToggle}
+            onAttributeToggle={handleAttributeToggle}
+            onDateRangeChange={handleDateRangeChange}
+            onShowAll={handleShowAllFilters}
+            onSelectNode={(node) => { setSelectedNode(node); setCenterOnNode({ id: node.id, ts: Date.now() }); }}
             selectedNodeId={selectedNode?.id ?? null}
             onAddNode={(nodeType) => setShowAddNode(nodeType)}
             onAddEdge={handleStartAddEdge}
@@ -919,7 +1076,7 @@ function AppInner() {
               revealedNodes={revealedNodes}
               interactionMode={interactionMode}
               edgeSourceId={edgeSource}
-              activeStreams={activeStreams}
+              filters={filters}
               theme={theme}
               nodeTypeConfigs={nodeTypeConfigs}
               collapsedNodes={collapsedNodes}
@@ -933,6 +1090,8 @@ function AppInner() {
               }}
               onSelectEdge={handleSelectEdge}
               selectedEdgeKey={selectedEdge ? `${selectedEdge.from}|${selectedEdge.to}` : null}
+              centerOnNode={centerOnNode}
+              onRegisterFitToView={(fn) => { fitToViewRef.current = fn; }}
             />
             {selectedEdge && edgePopoverPos && (
               <EdgePopover
@@ -940,6 +1099,7 @@ function AppInner() {
                 position={edgePopoverPos}
                 onUpdate={handleEdgeUpdate}
                 onClose={() => { setSelectedEdge(null); setEdgePopoverPos(null); }}
+                onDelete={handleDeleteEdge}
                 edgeTypeLabel={
                   template?.edge_types?.find((et) => et.id === selectedEdge.edge_type)?.label
                   ?? selectedEdge.edge_type
@@ -995,6 +1155,7 @@ function AppInner() {
                 onNavigateToNode={handleNavigateToNode}
                 onOpenNotes={() => setNotesOpen(!notesOpen)}
                 notesOpen={notesOpen}
+                onNodeDelete={handleDeleteNode}
               />
             </div>
           </>
@@ -1018,6 +1179,7 @@ function AppInner() {
           onAdd={handleAddNode}
           onCancel={() => setShowAddNode(null)}
           initialNodeType={showAddNode}
+          template={template}
         />
       )}
       {showAddEdgeModal && edgeSource && edgeTarget && (
@@ -1173,7 +1335,7 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): str
         const props = node.properties ?? {};
         for (const [key, value] of Object.entries(props)) {
           if (value != null && value !== "") {
-            lines.push(`${key.padEnd(18)}${value}`);
+            lines.push(`${key}: ${value}`);
           }
         }
       }
@@ -1183,13 +1345,17 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): str
     }
   }
 
-  if (data.edges.length > 0) {
+  // Filter out orphaned edges (referencing deleted nodes)
+  const validNodeIds = new Set(data.nodes.map((n) => n.id));
+  const validEdges = data.edges.filter((e) => validNodeIds.has(e.from) && validNodeIds.has(e.to));
+
+  if (validEdges.length > 0) {
     lines.push("## Edges\n");
 
     // Group edges by category, using node type labels for section names
     const nodeTypeOf = new Map(data.nodes.map((n) => [n.id, n.node_type]));
-    const edgeBuckets = new Map<string, typeof data.edges>();
-    for (const e of data.edges) {
+    const edgeBuckets = new Map<string, typeof validEdges>();
+    for (const e of validEdges) {
       const fromType = nodeTypeOf.get(e.from) ?? "unknown";
       const toType = nodeTypeOf.get(e.to) ?? "unknown";
       const key = `${fromType}-to-${toType}`;

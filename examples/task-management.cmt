@@ -1,6 +1,7 @@
 {
   "title": "Task Management",
   "description": "A taxonomy for classifying and relating tasks, milestones, and deliverables across workstreams and phases.",
+  "format_instructions": "When generating .cm files from this template: use markdown with fenced code blocks for nodes. Every property line MUST use 'key: value' format with a colon separator. Required node keys: id, name, generation, stream. Include all fields defined in the node type. Edges use 'from: [id] to: [id] type: [edge_type]' format.",
   "stream_label": "Workstreams",
   "generation_label": "Phases",
   "streams": [

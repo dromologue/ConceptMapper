@@ -128,7 +128,7 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
   const [title, setTitle] = useState(initialData?.title ?? "");
   const [description, setDescription] = useState(initialData?.description ?? "");
   const [streamLabel, setStreamLabel] = useState(initialData?.stream_label ?? "Categories");
-  const [generationLabel, setGenerationLabel] = useState(initialData?.generation_label ?? "Horizons");
+  const [generationLabel, setGenerationLabel] = useState(initialData?.generation_label ?? "Phases");
 
   // Step 2: Shared Fields + Node Types
   const [sharedFields, setSharedFields] = useState<WizardField[]>(() => {
@@ -597,7 +597,7 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
         {/* Step 4: Generations */}
         {step === 4 && (
           <>
-            <div className="wizard-step-label">Define {generationLabel || "Horizons"}</div>
+            <div className="wizard-step-label">Define {generationLabel || "Phases"}</div>
             <div className="wizard-list-header">
               <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
                 Horizons are time periods or phases (e.g. 1950–1970, Founders)

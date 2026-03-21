@@ -6,10 +6,11 @@ interface Props {
   position: { x: number; y: number };
   onUpdate: (fromId: string, toId: string, updates: Partial<GraphEdge>) => void;
   onClose: () => void;
+  onDelete?: (fromId: string, toId: string) => void;
   edgeTypeLabel?: string;
 }
 
-export function EdgePopover({ edge, position, onUpdate, onClose, edgeTypeLabel }: Props) {
+export function EdgePopover({ edge, position, onUpdate, onClose, onDelete, edgeTypeLabel }: Props) {
   const [weight, setWeight] = useState(edge.weight ?? 1);
   const [note, setNote] = useState(edge.note ?? "");
   const ref = useRef<HTMLDivElement>(null);
@@ -90,6 +91,18 @@ export function EdgePopover({ edge, position, onUpdate, onClose, edgeTypeLabel }
           placeholder="Edge note..."
         />
       </div>
+      {onDelete && (
+        <button
+          className="edge-popover-delete"
+          onClick={() => {
+            if (window.confirm("Delete this edge?")) {
+              onDelete(edge.from, edge.to);
+            }
+          }}
+        >
+          Delete Edge
+        </button>
+      )}
     </div>
   );
 }

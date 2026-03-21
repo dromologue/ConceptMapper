@@ -950,45 +950,81 @@ The user can open taxonomy files or graph JSON files into the visualization via 
 
 ---
 
-## REQ-026: Universal Attribute Filtering
+## REQ-026: Attribute-Based Sidebar Filtering
 
-Every node attribute (stream, generation, eminence, concept_type, abstraction_level, status, structural_role) can be used as a filter to show only nodes matching the selected values. This replaces fixed "People" and "Concepts" view modes with a flexible, composable filter system.
+The sidebar provides unified filtering across streams, generations, and all select-type fields defined in template node type configs. Filtering HIDES nodes (not dims). Filter sections and values are built dynamically from template config and graph data.
 
 **Preconditions:**
 - Graph is rendered (REQ-009)
+- Node type configs are loaded (from template or defaults)
 
 **Trigger:**
-- User opens the filter panel and selects attribute values to filter by
+- User clicks filter items in the sidebar's filter sections
 
 **Expected Behavior:**
-- A filter panel is accessible from the toolbar
-- Each filterable attribute shows its possible values with checkboxes
-- Only nodes matching ALL active filters are shown (AND logic within categories, OR logic within a single attribute)
-- Edges are shown only when both endpoints are visible
-- Filters combine with view modes (REQ-021)
-- Active filter count is shown on the filter button
+- Sidebar displays filter sections for: streams (using template stream_label), generations (using template generation_label), and one section per select-type field from node type configs
+- Filter values are the union of template-defined options and actual values in graph data
+- Clicking a value toggles it: first click isolates to that value, subsequent clicks add/remove values
+- Between filter categories: AND logic (must pass all)
+- Within a category: OR logic (match any selected value)
+- Attribute filters are scoped per node type via composite key (`nodeType.fieldKey`) — nodes of other types are unaffected
+- Filtered-out nodes are hidden from both the canvas and the sidebar node list
+- Edges auto-hide when both endpoints are hidden
+- Hidden nodes remain in the force simulation (layout stability)
+- "Show All" button appears when any filter is active, resets all filters
 
 **Acceptance Criteria:**
-- [ ] AC-026-01: A "Filter" button in the toolbar opens/closes a filter panel
-- [ ] AC-026-02: The filter panel lists all filterable attributes: node_type, stream, generation, eminence, concept_type, abstraction_level, status
-- [ ] AC-026-03: Each attribute shows checkboxes for its possible values (derived from the current graph data)
-- [ ] AC-026-04: Unchecking a value hides nodes with that value; checking shows them
-- [ ] AC-026-05: All values are checked by default (full graph visible)
-- [ ] AC-026-06: A "Reset" button restores all filters to default (all checked)
-- [ ] AC-026-07: Active filter count is shown as a badge on the Filter button (e.g., "Filter (3)")
-- [ ] AC-026-08: Filtering by node_type: "thinker" / "concept" replaces the People/Concepts view toggle
-- [ ] AC-026-09: Filtering by stream shows only nodes in selected streams
-- [ ] AC-026-10: Filtering by generation shows only nodes in selected generations
-- [ ] AC-026-11: Filtering by eminence shows only thinkers of selected eminence tiers
-- [ ] AC-026-12: Filtering by concept_type shows only concepts of selected types
-- [ ] AC-026-13: Hidden nodes remain in the force simulation (layout stability)
-- [ ] AC-026-14: Edges between hidden nodes are hidden
+- [ ] AC-026-01: Sidebar displays a streams filter section using template `stream_label` (or "Streams" default)
+- [ ] AC-026-02: Sidebar displays a generations filter section using template `generation_label` (or "Generations" default)
+- [ ] AC-026-03: Sidebar dynamically creates filter sections for each select-type field in node type configs
+- [ ] AC-026-04: Filter values include both template-defined options and values present in graph data
+- [ ] AC-026-05: All values shown (unfiltered) by default — `createEmptyFilterState()` returns null for all categories
+- [ ] AC-026-06: Clicking a value when no filter is active isolates to that value (creates a Set with one item)
+- [ ] AC-026-07: Clicking additional values adds them to the active set (OR within category)
+- [ ] AC-026-08: Clicking an active value removes it; if set becomes empty, filter resets to null (all shown)
+- [ ] AC-026-09: Nodes failing any active filter are hidden from the canvas (not dimmed)
+- [ ] AC-026-10: Nodes failing any active filter are hidden from the sidebar node list
+- [ ] AC-026-11: Edges between two hidden nodes are hidden
+- [ ] AC-026-12: Attribute filters only apply to nodes matching the filter's node type (composite key scoping)
+- [ ] AC-026-13: "Show All" button visible only when `isFilterActive(filters)` returns true
+- [ ] AC-026-14: "Show All" resets all filters (streams, generations, attributes) to empty state
 - [ ] AC-026-15: Filter state is preserved across view mode changes
+- [ ] AC-026-16: `isNodeFilterVisible` is a pure function testable without DOM
+- [ ] AC-026-17: Nodes with no value for a filtered property are hidden when that filter is active
+- [ ] AC-026-18: Text fields with ≤30 unique values in data are shown as discrete filter sections (same chip UI as select fields)
+- [ ] AC-026-19: Text fields with >30 unique values are excluded (too many for discrete filtering)
+- [ ] AC-026-20: Textarea fields are always excluded from filter sections
+- [ ] AC-026-21: Empty graph renders no filter sections
+- [ ] AC-026-22: Filter sections are collapsible with chevron toggle
+- [ ] AC-026-23: Date range filter appears for node types with `date_from`/`date_to` fields
+- [ ] AC-026-24: Date range filter has From/To year inputs with min/max placeholders from data
+- [ ] AC-026-25: Date range filter hides nodes whose start year is before the From value
+- [ ] AC-026-26: Date range filter hides nodes whose end year is after the To value
+- [ ] AC-026-27: Date range filter hides nodes with no date value when filter is active
+- [ ] AC-026-28: Date range filter only applies to matching node types (composite key scoping)
+- [ ] AC-026-29: Date values are parsed from strings like "1923", "b. 1947", "~1930" (extracts 4-digit year)
+- [ ] AC-026-30: Default labels are "Phases" (not "Generations") and use template `generation_label` when set
+- [ ] AC-026-31: Hidden nodes cannot be clicked on the canvas (`findNodeAt` respects filters)
+- [ ] AC-026-32: Loading a new file resets all filters to empty state
+- [ ] AC-026-33: Filter discovery is data-driven — scans actual node properties, not just config fields
+- [ ] AC-026-34: Properties with keys not in config appear as filters (using formatted key as label)
+- [ ] AC-026-35: `exportToMarkdown` writes all properties with `key: value` colon format (not space-padded)
+- [ ] AC-026-36: `normalizeFencedKV` pre-processor converts `key    value` lines to `key: value` inside fences
+- [ ] AC-026-37: First click on a filter value unchecks it (excludes), not isolates
+- [ ] AC-026-38: Re-checking all values in a category resets filter to null (all shown)
+- [ ] AC-026-39: Saved templates include `format_instructions` field for LLM compatibility
+- [ ] AC-026-40: Date range filter uses native date picker (`<input type="date">`)
 
 **Edge Cases:**
-- All filters unchecked in one attribute: no nodes match, empty graph shown with message
-- Filtering by concept_type when no concepts exist: attribute section hidden
-- Combining node_type=thinker + stream=psychology: shows only psychology thinkers
+- Node has no value for a filtered select field → hidden (excluded from filter)
+- Same field name on different node types → separate filter sections via composite key
+- Text fields with many unique values (>30) → excluded from filters
+- All values removed from a filter → filter resets to null (all shown), not empty set
+- Date range with only From set → filters by lower bound only
+- Date range with only To set → filters by upper bound only
+- Node with "b. 1947" in date_from → parsed as year 1947
+- Properties exported without colons → normalizeFencedKV fixes on reload
+- ISO dates (2026-03-15), month strings (2026-03), year-only (1923) all work in date range filter
 
 ---
 

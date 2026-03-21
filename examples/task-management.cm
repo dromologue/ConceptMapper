@@ -29,10 +29,11 @@ id:               gather_requirements
 name:             Gather Requirements
 generation:       1
 stream:           planning
-assignee          Product Manager
-estimate          5d
-priority          high
-status            done
+date_from: 2026-01
+date_to: 2026-01
+priority: critical
+status: done
+tags: stakeholders
 notes:            Interview stakeholders, document user stories, define acceptance criteria
 ```
 
@@ -41,10 +42,11 @@ id:               user_research
 name:             User Research
 generation:       1
 stream:           design
-assignee          UX Lead
-estimate          5d
-priority          high
-status            done
+date_from: 2026-01
+date_to: 2026-02
+priority: high
+status: done
+tags: research
 notes:            Conduct user interviews, analyse pain points, create personas
 ```
 
@@ -53,10 +55,11 @@ id:               design_system
 name:             Design System Setup
 generation:       2
 stream:           design
-assignee          Designer
-estimate          3d
-priority          medium
-status            in_progress
+date_from: 2026-02
+date_to: 2026-02
+priority: high
+status: done
+tags: design-system
 notes:            Define colour palette, typography, component library, spacing grid
 ```
 
@@ -65,10 +68,11 @@ id:               wireframes
 name:             Create Wireframes
 generation:       2
 stream:           design
-assignee          UX Lead
-estimate          4d
-priority          high
-status            in_progress
+date_from: 2026-02
+date_to: 2026-03
+priority: high
+status: done
+tags: design-system
 notes:            Low-fidelity wireframes for all key screens
 ```
 
@@ -77,10 +81,11 @@ id:               api_design
 name:             API Design
 generation:       2
 stream:           backend
-assignee          Tech Lead
-estimate          3d
-priority          critical
-status            done
+date_from: 2026-02
+date_to: 2026-03
+priority: critical
+status: done
+tags: architecture
 notes:            Define REST endpoints, auth flow, data models, error handling
 ```
 
@@ -89,10 +94,11 @@ id:               db_schema
 name:             Database Schema
 generation:       2
 stream:           backend
-assignee          Backend Dev
-estimate          2d
-priority          high
-status            done
+date_from: 2026-02
+date_to: 2026-03
+priority: high
+status: done
+tags: architecture
 notes:            Design tables, indexes, migrations. PostgreSQL.
 ```
 
@@ -101,10 +107,11 @@ id:               ci_pipeline
 name:             CI/CD Pipeline
 generation:       2
 stream:           devops
-assignee          DevOps Engineer
-estimate          2d
-priority          high
-status            done
+date_from: 2026-02
+date_to: 2026-03
+priority: high
+status: done
+tags: infrastructure
 notes:            GitHub Actions: lint, test, build, deploy to staging
 ```
 
@@ -113,10 +120,11 @@ id:               auth_service
 name:             Auth Service
 generation:       3
 stream:           backend
-assignee          Backend Dev
-estimate          5d
-priority          critical
-status            in_progress
+date_from: 2026-03
+date_to: 2026-04
+priority: critical
+status: in_progress
+tags: security
 notes:            JWT tokens, OAuth2 social login, session management, rate limiting
 ```
 
@@ -125,10 +133,11 @@ id:               crud_endpoints
 name:             CRUD Endpoints
 generation:       3
 stream:           backend
-assignee          Backend Dev
-estimate          4d
-priority          high
-status            todo
+date_from: 2026-03
+date_to: 2026-04
+priority: high
+status: in_progress
+tags: api
 notes:            Implement create/read/update/delete for all resources
 ```
 
@@ -137,10 +146,11 @@ id:               component_library
 name:             Component Library
 generation:       3
 stream:           frontend
-assignee          Frontend Dev
-estimate          5d
-priority          high
-status            in_progress
+date_from: 2026-03
+date_to: 2026-04
+priority: high
+status: in_progress
+tags: design-system
 notes:            Build reusable React components: buttons, forms, modals, tables
 ```
 
@@ -149,10 +159,11 @@ id:               dashboard_ui
 name:             Dashboard UI
 generation:       3
 stream:           frontend
-assignee          Frontend Dev
-estimate          8d
-priority          critical
-status            todo
+date_from: 2026-04
+date_to: 2026-05
+priority: critical
+status: todo
+tags: frontend
 notes:            Main dashboard with data visualisation, filters, real-time updates
 ```
 
@@ -161,10 +172,11 @@ id:               notification_service
 name:             Notification Service
 generation:       3
 stream:           backend
-assignee          Backend Dev
-estimate          3d
-priority          medium
-status            todo
+date_from: 2026-04
+date_to: 2026-05
+priority: medium
+status: todo
+tags: backend
 notes:            Email and in-app notifications, webhooks, digest scheduling
 ```
 
@@ -173,10 +185,11 @@ id:               staging_env
 name:             Staging Environment
 generation:       3
 stream:           devops
-assignee          DevOps Engineer
-estimate          3d
-priority          high
-status            in_progress
+date_from: 2026-03
+date_to: 2026-04
+priority: high
+status: in_progress
+tags: infrastructure
 notes:            Mirror production: load balancer, DB replica, CDN, monitoring
 ```
 
@@ -185,10 +198,11 @@ id:               integration_tests
 name:             Integration Tests
 generation:       4
 stream:           backend
-assignee          QA Lead
-estimate          4d
-priority          high
-status            todo
+date_from: 2026-05
+date_to: 2026-06
+priority: high
+status: todo
+tags: testing
 notes:            End-to-end API tests, database fixtures, auth flow testing
 ```
 
@@ -197,10 +211,11 @@ id:               performance_audit
 name:             Performance Audit
 generation:       4
 stream:           frontend
-assignee          Frontend Dev
-estimate          2d
-priority          medium
-status            todo
+date_from: 2026-05
+date_to: 2026-06
+priority: medium
+status: todo
+tags: quality
 notes:            Lighthouse scores, bundle size analysis, lazy loading, caching
 ```
 
@@ -209,10 +224,11 @@ id:               accessibility_review
 name:             Accessibility Review
 generation:       4
 stream:           design
-assignee          UX Lead
-estimate          2d
-priority          medium
-status            todo
+date_from: 2026-05
+date_to: 2026-06
+priority: medium
+status: todo
+tags: quality
 notes:            WCAG 2.1 AA compliance, screen reader testing, keyboard navigation
 ```
 
@@ -221,10 +237,11 @@ id:               security_audit
 name:             Security Audit
 generation:       4
 stream:           devops
-assignee          Security Engineer
-estimate          3d
-priority          critical
-status            todo
+date_from: 2026-05
+date_to: 2026-06
+priority: critical
+status: todo
+tags: security
 notes:            OWASP top 10, dependency scanning, penetration testing
 ```
 
@@ -233,10 +250,11 @@ id:               production_deploy
 name:             Production Deploy
 generation:       5
 stream:           devops
-assignee          DevOps Engineer
-estimate          2d
-priority          critical
-status            todo
+date_from: 2026-06
+date_to: 2026-06
+priority: critical
+status: todo
+tags: infrastructure
 notes:            Blue-green deployment, DNS cutover, rollback plan
 ```
 
@@ -245,10 +263,11 @@ id:               monitoring_setup
 name:             Monitoring Setup
 generation:       5
 stream:           devops
-assignee          DevOps Engineer
-estimate          2d
-priority          high
-status            todo
+date_from: 2026-06
+date_to: 2026-06
+priority: high
+status: todo
+tags: infrastructure
 notes:            Grafana dashboards, PagerDuty alerts, log aggregation
 ```
 
@@ -257,10 +276,11 @@ id:               user_onboarding
 name:             User Onboarding Flow
 generation:       5
 stream:           frontend
-assignee          Frontend Dev
-estimate          3d
-priority          high
-status            todo
+date_from: 2026-06
+date_to: 2026-06
+priority: medium
+status: todo
+tags: frontend
 notes:            Welcome wizard, guided tour, sample data, help tooltips
 ```
 
@@ -271,10 +291,11 @@ id:               mvp_release
 name:             MVP Release
 generation:       3
 stream:           planning
-due_date          Week 8
-owner             Tech Lead
-priority          critical
-status            todo
+due_date: 2026-04-15
+owner: Product Lead
+priority: critical
+status: todo
+tags: milestone
 notes:            Minimum viable product: auth + dashboard + core CRUD
 ```
 
@@ -283,10 +304,11 @@ id:               beta_milestone
 name:             Beta Milestone
 generation:       4
 stream:           planning
-due_date          Week 10
-owner             Product Manager
-priority          critical
-status            todo
+due_date: 2026-06-01
+owner: QA Lead
+priority: critical
+status: todo
+tags: milestone
 notes:            Feature-complete, tested, deployed to staging, ready for beta users
 ```
 
@@ -295,10 +317,11 @@ id:               launch_milestone
 name:             Launch Milestone
 generation:       5
 stream:           planning
-due_date          Week 12
-owner             Product Manager
-priority          critical
-status            todo
+due_date: 2026-06-15
+owner: Engineering Manager
+priority: critical
+status: todo
+tags: milestone
 notes:            Production deployment, monitoring live, users onboarded
 ```
 

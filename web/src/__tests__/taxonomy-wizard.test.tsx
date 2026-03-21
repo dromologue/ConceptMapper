@@ -74,11 +74,11 @@ describe("TaxonomyWizard", () => {
     expect(screen.getByText("Define Categories")).toBeInTheDocument();
   });
 
-  it("step 4: renders horizons", async () => {
+  it("step 4: renders phases", async () => {
     const user = userEvent.setup();
     render(<TaxonomyWizard {...defaultProps} />);
     await navigateToStep(user, 4);
-    expect(screen.getByText("Define Horizons")).toBeInTheDocument();
+    expect(screen.getByText("Define Phases")).toBeInTheDocument();
   });
 
   it("step 5: renders edge types", async () => {

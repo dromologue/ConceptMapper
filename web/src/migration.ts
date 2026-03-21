@@ -48,6 +48,7 @@ export const DEFAULT_NODE_CONFIG: NodeTypeConfig = {
   fields: [
     { key: "importance", label: "Importance", type: "text" },
     { key: "status", label: "Status", type: "text" },
+    { key: "owner", label: "Owner", type: "text" },
     { key: "precursor", label: "Precursor", type: "text" },
     { key: "date_from", label: "From", type: "text" },
     { key: "date_to", label: "To", type: "text" },

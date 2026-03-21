@@ -29,7 +29,7 @@ describe("HelpPanel", () => {
   it("has sections for key features", () => {
     render(<HelpPanel onClose={vi.fn()} />);
     expect(screen.getByText("Getting Started")).toBeInTheDocument();
-    expect(screen.getByText("Setting Up an LLM Provider")).toBeInTheDocument();
+    expect(screen.getByText("Using an LLM to Map Content to a Template")).toBeInTheDocument();
     expect(screen.getByText("Canvas Navigation and Interaction")).toBeInTheDocument();
     expect(screen.getByText("Keyboard Shortcuts")).toBeInTheDocument();
     expect(screen.getByText("Troubleshooting")).toBeInTheDocument();
