@@ -1,0 +1,63 @@
+{
+  "title": "Intellectual History",
+  "description": "Map thinkers and their concepts across disciplines and generations, following the Collins approach to sociology of philosophies.",
+  "format_instructions": "When generating .cm files from this template: use markdown with fenced code blocks for nodes. Every property line MUST use 'key: value' format with a colon separator. Required node keys: id, name, generation, stream. Include all fields defined in the node type. Edges use 'from: [id] to: [id] type: [edge_type]' format.",
+  "stream_label": "Disciplines",
+  "generation_label": "Generations",
+  "streams": [
+    { "id": "philosophy", "name": "Philosophy", "color": "#4A90D9", "description": "Epistemology, metaphysics, ethics, logic" },
+    { "id": "sociology", "name": "Sociology", "color": "#50C878", "description": "Social structures, institutions, stratification" },
+    { "id": "psychology", "name": "Psychology", "color": "#9B59B6", "description": "Cognition, behavior, development" },
+    { "id": "economics", "name": "Economics", "color": "#E67E22", "description": "Markets, institutions, political economy" },
+    { "id": "political_science", "name": "Political Science", "color": "#E74C3C", "description": "Power, governance, political theory" }
+  ],
+  "generations": [
+    { "number": 1, "period": "pre-1900", "label": "Founders" },
+    { "number": 2, "period": "1900–1940", "label": "Classical" },
+    { "number": 3, "period": "1940–1970", "label": "Mid-Century" },
+    { "number": 4, "period": "1970–2000", "label": "Modern" },
+    { "number": 5, "period": "2000–present", "label": "Contemporary" }
+  ],
+  "node_types": [
+    {
+      "id": "thinker",
+      "label": "Thinker",
+      "shape": "circle",
+      "icon": "T",
+      "size_field": "importance",
+      "size_map": { "dominant": 20, "major": 14, "secondary": 10, "minor": 6 },
+      "fields": [
+        { "key": "importance", "label": "Importance", "type": "select", "options": ["dominant", "major", "secondary", "minor"] },
+        { "key": "date_from", "label": "Born", "type": "text" },
+        { "key": "date_to", "label": "Died", "type": "text" },
+        { "key": "institutional_base", "label": "Institutional Base", "type": "text" },
+        { "key": "structural_roles", "label": "Structural Roles", "type": "text" },
+        { "key": "tags", "label": "Tags", "type": "text" }
+      ]
+    },
+    {
+      "id": "concept",
+      "label": "Concept",
+      "shape": "rectangle",
+      "icon": "C",
+      "size_field": "abstraction_level",
+      "size_map": { "meta-theoretical": 16, "theoretical": 13, "operational": 10, "concrete": 7 },
+      "fields": [
+        { "key": "concept_type", "label": "Type", "type": "select", "options": ["framework", "principle", "distinction", "mechanism", "prescription", "synthesis"] },
+        { "key": "abstraction_level", "label": "Abstraction", "type": "select", "options": ["meta-theoretical", "theoretical", "operational", "concrete"] },
+        { "key": "status", "label": "Status", "type": "select", "options": ["active", "absorbed", "contested", "dormant", "superseded"] },
+        { "key": "originator", "label": "Originator", "type": "text" },
+        { "key": "date_introduced", "label": "Date Introduced", "type": "text" }
+      ]
+    }
+  ],
+  "edge_types": [
+    { "id": "chain", "label": "Chain", "color": "#888888", "directed": true, "style": "solid" },
+    { "id": "teacher_pupil", "label": "Teacher–Pupil", "color": "#4A90D9", "directed": true, "style": "solid" },
+    { "id": "rivalry", "label": "Rivalry", "color": "#D94A4A", "directed": false, "style": "dashed" },
+    { "id": "alliance", "label": "Alliance", "color": "#999999", "directed": false, "style": "dotted" },
+    { "id": "originates", "label": "Originates", "color": "#50C878", "directed": true, "style": "solid" },
+    { "id": "develops", "label": "Develops", "color": "#1ABC9C", "directed": true, "style": "solid" },
+    { "id": "critiques", "label": "Critiques", "color": "#E74C3C", "directed": true, "style": "dashed" }
+  ]
+}

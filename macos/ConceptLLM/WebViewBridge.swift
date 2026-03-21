@@ -55,7 +55,7 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
                 FileHandler.saveToPath(content: content, path: path)
             }
         case "saveNewTaxonomy":
-            // Taxonomy wizard: save new .cm file and callback with path
+            // Taxonomy wizard: save new .cm file into Maps folder and callback with path
             if let data = body.data(using: .utf8),
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
                let content = json["content"],
@@ -70,12 +70,36 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
                 }
             }
         case "listTemplates":
+            // Copy bundled templates on first call
+            FileHandler.copyBundledTemplates()
             FileHandler.listTemplates { [weak self] results in
                 if let jsonData = try? JSONSerialization.data(withJSONObject: results),
                    let jsonString = String(data: jsonData, encoding: .utf8) {
                     self?.webView?.evaluateJavaScript(
                         "window.templatesLoaded?.('\(jsonString.replacingOccurrences(of: "'", with: "\\'"))');"
                     ) { _, _ in }
+                }
+            }
+        case "listMaps":
+            FileHandler.listMaps { [weak self] results in
+                if let jsonData = try? JSONSerialization.data(withJSONObject: results),
+                   let jsonString = String(data: jsonData, encoding: .utf8) {
+                    self?.webView?.evaluateJavaScript(
+                        "window.mapsLoaded?.('\(jsonString.replacingOccurrences(of: "'", with: "\\'"))');"
+                    ) { _, _ in }
+                }
+            }
+        case "loadMap":
+            // JS sends JSON with { path } — load a .cm file from the Maps folder
+            if let data = body.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+               let path = json["path"] {
+                let url = URL(fileURLWithPath: path)
+                do {
+                    let content = try String(contentsOf: url, encoding: .utf8)
+                    loadFileContent(content, filename: url.lastPathComponent, filePath: path)
+                } catch {
+                    // silently ignore
                 }
             }
         case "loadTemplate":

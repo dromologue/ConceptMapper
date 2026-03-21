@@ -45,6 +45,38 @@ enum FileHandler {
         }
     }
 
+    // MARK: - Maps
+
+    /// Returns (and creates if needed) the Maps folder for saved .cm files.
+    static func getMapsFolder() -> URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let folder = appSupport.appendingPathComponent("ConceptLLM/Maps")
+        if !FileManager.default.fileExists(atPath: folder.path) {
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        }
+        return folder
+    }
+
+    /// Enumerate .cm files in the Maps folder.
+    static func listMaps(completion: @escaping @MainActor ([Any]) -> Void) {
+        let folder = getMapsFolder()
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])
+                .filter { $0.pathExtension == "cm" }
+                .sorted { a, b in
+                    let da = (try? a.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date.distantPast
+                    let db = (try? b.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date.distantPast
+                    return da > db // newest first
+                }
+            let results = files.map { url -> [String: String] in
+                return ["name": url.deletingPathExtension().lastPathComponent, "path": url.path]
+            }
+            completion(results)
+        } catch {
+            completion([])
+        }
+    }
+
     // MARK: - Templates
 
     /// Returns (and creates if needed) the templates folder.
@@ -55,6 +87,26 @@ enum FileHandler {
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
         return folder
+    }
+
+    /// Copy bundled .cmt templates from app Resources into the templates folder if not already present.
+    static func copyBundledTemplates() {
+        let folder = getTemplatesFolder()
+        guard let resourceURL = Bundle.main.resourceURL else { return }
+        let bundledDir = resourceURL.appendingPathComponent("templates")
+        guard FileManager.default.fileExists(atPath: bundledDir.path) else { return }
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: bundledDir, includingPropertiesForKeys: nil)
+                .filter { $0.pathExtension == "cmt" }
+            for file in files {
+                let dest = folder.appendingPathComponent(file.lastPathComponent)
+                if !FileManager.default.fileExists(atPath: dest.path) {
+                    try FileManager.default.copyItem(at: file, to: dest)
+                }
+            }
+        } catch {
+            // silently ignore — not critical
+        }
     }
 
     /// Enumerate .cmt template files in the templates folder.

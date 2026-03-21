@@ -21,11 +21,15 @@ targets:
       - path: Resources/web
         type: folder
         buildPhase: resources
+      - path: Resources/templates
+        type: folder
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.dromologue.ConceptLLM
         INFOPLIST_FILE: ConceptLLM/Info.plist
         CODE_SIGN_ENTITLEMENTS: ConceptLLM/ConceptLLM.entitlements
         PRODUCT_NAME: ConceptLLM
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"

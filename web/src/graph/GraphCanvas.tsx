@@ -230,11 +230,17 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     gens.forEach((g, i) => { genY.set(g, height * (0.1 + (0.8 * i) / Math.max(gens.length - 1, 1))); });
 
     const configs = nodeTypeConfigsRef.current;
+    const hasStreams = streamIds.length > 0;
+    const hasGens = gens.length > 0;
     const simulation = d3.forceSimulation<SimNode>(nodes)
       .force("link", d3.forceLink<SimNode, SimLink>(links).id((d) => d.id).distance((d) => 120 / Math.max(0.5, (d as SimLink).edge.weight ?? 1)).strength(0.2))
       .force("charge", d3.forceManyBody().strength(-400).distanceMax(800))
-      .force("x", d3.forceX<SimNode>((d) => streamX.get(d.stream ?? "") ?? width / 2).strength(0.3))
-      .force("y", d3.forceY<SimNode>((d) => genY.get(d.generation ?? 0) ?? height / 2).strength(0.5))
+      .force("x", hasStreams
+        ? d3.forceX<SimNode>((d) => streamX.get(d.stream ?? "") ?? width / 2).strength(0.3)
+        : d3.forceX<SimNode>(width / 2).strength(0.05))
+      .force("y", hasGens
+        ? d3.forceY<SimNode>((d) => genY.get(d.generation ?? 0) ?? height / 2).strength(0.5)
+        : d3.forceY<SimNode>(height / 2).strength(0.05))
       .force("collide", d3.forceCollide<SimNode>((d) => getNodeRadius(d, "full", configs) + 12))
       .alphaDecay(0.015);
 

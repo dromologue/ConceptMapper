@@ -84,7 +84,7 @@ function AppInner() {
   const [selectedEdge, setSelectedEdge] = useState<import("./types/graph-ir").GraphEdge | null>(null);
   const [edgePopoverPos, setEdgePopoverPos] = useState<{ x: number; y: number } | null>(null);
   const [loadedNativeTemplates, setLoadedNativeTemplates] = useState<Map<string, TaxonomyWizardInitial>>(new Map());
-  const [, setTemplateVersion] = useState(0);
+  const [nativeMaps, setNativeMaps] = useState<{ name: string; path: string }[]>([]);
 
   const [parserReady, setParserReady] = useState(false);
 
@@ -250,6 +250,16 @@ function AppInner() {
       }
     };
 
+    // Maps bridge function — receives list of saved .cm files
+    win.mapsLoaded = (json: string) => {
+      try {
+        const list = JSON.parse(json) as { name: string; path: string }[];
+        setNativeMaps(list);
+      } catch (err) {
+        console.error("Maps load error:", err);
+      }
+    };
+
     return () => {
       delete win.loadFileContentBase64;
       delete win.getGraphJSON;
@@ -259,6 +269,7 @@ function AppInner() {
       delete win.showTaxonomyWizard;
       delete win.templatesLoaded;
       delete win.templateLoaded;
+      delete win.mapsLoaded;
     };
   }, [loadFileContent, graphData, nodeTypeConfigs, templateFilePath]);
 
@@ -485,10 +496,11 @@ function AppInner() {
     webkit?.messageHandlers?.[handler]?.postMessage(payload ?? {});
   }, []);
 
-  // Request native templates on mount
+  // Request native templates and maps on mount
   useEffect(() => {
     if (isNativeApp) {
       sendToSwift("listTemplates");
+      sendToSwift("listMaps");
     }
   }, [isNativeApp, sendToSwift]);
 
@@ -600,6 +612,46 @@ function AppInner() {
     setShowTaxonomyWizard(false);
     setTaxonomyEditData(undefined);
   }, [isNativeApp, sendToSwift, graphData, taxonomyEditData]);
+
+  // Create a new empty map using an existing template's structure (no wizard)
+  const handleNewFileFromTemplate = useCallback((tmplData: TaxonomyWizardInitial) => {
+    const mapTitle = "Untitled Map";
+    const newTemplate: TaxonomyTemplate = {
+      title: tmplData.title,
+      description: tmplData.description,
+      streams: tmplData.streams,
+      generations: tmplData.generations,
+      node_types: tmplData.node_types ?? DEFAULT_NODE_TYPES,
+      edge_types: tmplData.edge_types,
+      stream_label: tmplData.stream_label,
+      generation_label: tmplData.generation_label,
+    };
+
+    const newGraph: GraphIR = {
+      version: "2.0",
+      metadata: {
+        title: mapTitle,
+        generations: tmplData.generations,
+        streams: tmplData.streams,
+        external_shocks: [],
+        structural_observations: [],
+        template: newTemplate,
+      },
+      nodes: [],
+      edges: [],
+    };
+
+    setTemplate(newTemplate);
+    setGraphData(newGraph);
+    setSelectedNode(null);
+    setError(null);
+
+    // Save to disk
+    const md = exportToMarkdown(newGraph, newTemplate.node_types);
+    if (isNativeApp) {
+      sendToSwift("saveNewTaxonomy", JSON.stringify({ content: md, title: mapTitle }));
+    }
+  }, [isNativeApp, sendToSwift]);
 
   // Open wizard in edit mode with current taxonomy data
   const handleEditTaxonomy = useCallback(() => {
@@ -871,66 +923,70 @@ function AppInner() {
             </div>
           )}
           <div className="empty-state-title">Concept Mapper</div>
-          <div className="empty-state-subtitle">Create a new taxonomy or open an existing file</div>
 
-          {/* Templates — shown prominently when available */}
-          {templates.length > 0 && (
-            <div className="empty-state-templates">
-              <div className="empty-state-templates-label">Start from a template</div>
-              <div className="empty-state-templates-list">
+          <div className="start-columns">
+            {/* Left column: Templates */}
+            <div className="start-column">
+              <div className="start-column-header">Templates</div>
+              <div className="start-list">
                 {templates.map((t, i) => (
-                  <button
-                    key={i}
-                    className="empty-state-template-btn"
-                    onClick={() => { setTaxonomyEditData(t); setShowTaxonomyWizard(true); }}
-                  >
-                    {t.title}
-                    <span className="template-meta">
-                      {t.node_types?.length ?? 0} types, {t.streams.length} categories, {t.generations.length} horizons
-                    </span>
-                    {isLLMConfigured && (
-                      <button
-                        className="template-map-btn"
-                        title="Map text to this template"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowMappingModal(true);
-                        }}
-                      >
-                        Map Text
-                      </button>
-                    )}
+                  <div key={`t-${i}`} className="start-item-row">
                     <button
-                      className="template-delete-btn"
-                      title="Remove template"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const updated = templates.filter((_, idx) => idx !== i);
-                        localStorage.setItem("cm-templates", JSON.stringify(updated));
-                        setTemplateVersion((v) => v + 1);
-                        setError(null);
-                      }}
+                      className="start-item"
+                      onClick={() => { setTaxonomyEditData(t); setShowTaxonomyWizard(true); }}
+                      title="Edit template in wizard"
                     >
-                      &times;
+                      <span className="start-item-name">{t.title}</span>
+                      <span className="start-item-meta">
+                        {t.node_types?.length ?? 0} types
+                        {t.streams.length > 0 ? ` \u00B7 ${t.streams.length} ${t.stream_label?.toLowerCase() ?? "categories"}` : ""}
+                        {t.generations.length > 0 ? ` \u00B7 ${t.generations.length} ${t.generation_label?.toLowerCase() ?? "phases"}` : ""}
+                      </span>
                     </button>
+                    <button
+                      className="start-item-action"
+                      onClick={() => handleNewFileFromTemplate(t)}
+                      title="Create a new empty map from this template"
+                    >
+                      New File
+                    </button>
+                  </div>
+                ))}
+                {templates.length === 0 && (
+                  <div className="start-empty">No templates yet</div>
+                )}
+              </div>
+              <button className="start-action" onClick={() => { setTaxonomyEditData(undefined); setShowTaxonomyWizard(true); }}>
+                + New Taxonomy
+              </button>
+            </div>
+
+            {/* Right column: Saved Maps */}
+            <div className="start-column">
+              <div className="start-column-header">Maps</div>
+              <div className="start-list">
+                {nativeMaps.map((m, i) => (
+                  <button
+                    key={`m-${i}`}
+                    className="start-item"
+                    onClick={() => sendToSwift("loadMap", JSON.stringify({ path: m.path }))}
+                  >
+                    <span className="start-item-name">{m.name}</span>
                   </button>
                 ))}
+                {nativeMaps.length === 0 && (
+                  <div className="start-empty">No saved maps yet</div>
+                )}
               </div>
-            </div>
-          )}
-
-          <div className="empty-state-actions">
-            <button className="empty-state-btn primary" onClick={() => { setTaxonomyEditData(undefined); setShowTaxonomyWizard(true); }}>
-              New Taxonomy
-            </button>
-            {isLLMConfigured && (
-              <button className="empty-state-btn primary" onClick={() => setShowMappingModal(true)}>
-                Map Text
+              <button className="start-action" onClick={handleImportFile}>
+                Open File...
               </button>
-            )}
-            <button className="empty-state-btn secondary" onClick={handleImportFile}>
-              Open File
-            </button>
+              {isLLMConfigured && (
+                <button className="start-action" onClick={() => setShowMappingModal(true)}>
+                  Map Text
+                </button>
+              )}
+            </div>
           </div>
         </div>
         {showTaxonomyWizard && (
