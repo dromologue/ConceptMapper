@@ -498,6 +498,46 @@ The app auto-saves to the source .cm file as you make changes (with a 2-second d
 - Cmd+? -- Toggle help overlay (native macOS help)`,
   },
 
+  // ── Network Analysis ────────────────────────────────────────
+  {
+    id: "network-analysis",
+    title: "Network Analysis Tools",
+    tags: ["analysis", "centrality", "community", "path", "metrics", "degree", "betweenness", "influence", "bridge"],
+    content: `The Network Analysis panel (graph icon in the Activity Bar) provides quantitative tools for understanding your concept map's structure.
+
+**Overview Metrics**
+
+- **Density** -- What fraction of all possible connections actually exist. Dense networks (close to 1.0) mean everything connects to everything; sparse networks (close to 0) have selective connections.
+- **Average Degree** -- The typical number of connections per node. Higher means a more interconnected network.
+- **Diameter** -- The longest shortest path between any two nodes. Measures how "wide" the network is — how many steps to get from one extreme to the other.
+- **Modularity** -- How cleanly the network divides into distinct groups. High modularity (above 0.3) means clear communities; low means an integrated, cross-cutting network.
+
+**Node Metrics (What makes a node important?)**
+
+- **Connections** (Degree) -- Simply how many edges a node has. The most connected nodes are the most "active" in the network.
+- **Bridge Score** (Betweenness Centrality) -- How often a node sits on the shortest path between other nodes. High bridge scores identify concepts that act as connectors or bottlenecks between different parts of the network. A node with few connections but a high bridge score is structurally critical.
+- **Influence** (Eigenvector Centrality) -- Whether a node is connected to other important nodes. This is recursive prestige — it is not enough to have many connections; they need to be connections to well-connected nodes.
+- **Reach** (Closeness Centrality) -- How quickly a node can reach every other node. Nodes with high reach are at the "centre" of the network in terms of average distance.
+
+**Communities**
+
+The app detects natural groupings in your network using label propagation — nodes that are more densely connected to each other than to the rest of the network form a community. Toggle "Color by community" to see these groupings visually overlaid on the canvas. Click a community to highlight just its members.
+
+Compare detected communities against your own stream/category assignments — differences often reveal unexpected structural patterns.
+
+**Path Finder**
+
+Select any two nodes to find the shortest path between them. The path is highlighted on the canvas in orange. The result shows:
+
+- **Distance** -- Number of steps (edges) between the two nodes.
+- **Routes** -- How many equally-short paths exist. Multiple routes mean the connection is structurally redundant (robust). A single route means it is fragile.
+- **Weakest Link** -- The single edge on the path whose removal would most increase the distance between the two nodes. This surfaces hidden dependencies.
+
+**K-Core (in Node Rankings)**
+
+The k-core number of a node indicates which "shell" of the network it belongs to. The innermost core (highest k) contains the most tightly interconnected concepts — the structural bedrock of the network. Peripheral nodes (k=1) are connected to only one part of the network.`,
+  },
+
   // ── FAQ ──────────────────────────────────────────────────────────
   {
     id: "faq",

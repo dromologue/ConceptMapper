@@ -8,6 +8,7 @@ import { isNodeFilterVisible } from "../utils/filters";
 import { getNodeTypeConfig, getConfigNodeRadius } from "../migration";
 import { computeCollapseState } from "./collapse-utils";
 import { EDGE_LABELS } from "../utils/edge-labels";
+import { communityColor } from "../ui/AnalysisPanel";
 
 // --- Organic rendering helpers ---
 
@@ -85,6 +86,9 @@ interface Props {
   centerOnNode?: { id: string; ts: number } | null;
   onRegisterFitToView?: (fn: () => void) => void;
   onRegisterZoom?: (fns: { zoomIn: () => void; zoomOut: () => void }) => void;
+  communityOverlay?: Map<string, number>;
+  highlightedPath?: string[] | null;
+  highlightedCommunity?: number | null;
 }
 
 function getNodeRadius(node: SimNode, viewMode: ViewMode, nodeTypeConfigs: NodeTypeConfig[]): number {
@@ -116,7 +120,7 @@ function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): NodeSha
   return "circle";
 }
 
-export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, onRegisterFitToView, onRegisterZoom }: Props) {
+export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, onRegisterFitToView, onRegisterZoom, communityOverlay, highlightedPath, highlightedCommunity }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const transformRef = useRef(d3.zoomIdentity);
@@ -144,6 +148,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const gensRef = useRef<number[]>([]);
   const themeRef = useRef(theme);
   const lookRef = useRef(look);
+  const communityOverlayRef = useRef(communityOverlay);
+  const highlightedPathRef = useRef(highlightedPath);
+  const highlightedCommunityRef = useRef(highlightedCommunity);
   const nodeTypeConfigsRef = useRef(nodeTypeConfigs);
   const collapsedRef = useRef(collapsedNodes ?? new Set<string>());
   const onToggleCollapseRef = useRef(onToggleCollapse);
@@ -157,6 +164,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { dataRef.current = data; }, [data]);
   useEffect(() => { themeRef.current = theme; redraw(); }, [theme]);
   useEffect(() => { lookRef.current = look; redraw(); }, [look]);
+  useEffect(() => { communityOverlayRef.current = communityOverlay; redraw(); }, [communityOverlay]);
+  useEffect(() => { highlightedPathRef.current = highlightedPath; redraw(); }, [highlightedPath]);
+  useEffect(() => { highlightedCommunityRef.current = highlightedCommunity; redraw(); }, [highlightedCommunity]);
   useEffect(() => { viewModeRef.current = viewMode; redraw(); }, [viewMode]);
   useEffect(() => { revealedRef.current = revealedNodes; redraw(); }, [revealedNodes]);
   useEffect(() => { interactionRef.current = interactionMode; redraw(); }, [interactionMode]);
@@ -722,15 +732,50 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const isEdgeHovered = hoveredEdge === l;
       const isEdgeSelected = selectedEdgeKey === `${source.id}|${target.id}` || selectedEdgeKey === `${target.id}|${source.id}`;
 
+      // Check if this edge is on the highlighted path
+      const hPath = highlightedPathRef.current;
+      let isOnPath = false;
+      if (hPath && hPath.length > 1) {
+        for (let pi = 0; pi < hPath.length - 1; pi++) {
+          if ((hPath[pi] === source.id && hPath[pi + 1] === target.id) ||
+              (hPath[pi] === target.id && hPath[pi + 1] === source.id)) {
+            isOnPath = true;
+            break;
+          }
+        }
+      }
+
       if (visual.style === "dashed") ctx.setLineDash([6, 4]);
       else if (visual.style === "dotted") ctx.setLineDash([2, 4]);
       else ctx.setLineDash([]);
+
+      // Dim edges not connected to highlighted community
+      const commMap = communityOverlayRef.current;
+      const hCommEdge = highlightedCommunityRef.current;
+      const sourceInComm = commMap ? commMap.get(source.id) === hCommEdge : true;
+      const targetInComm = commMap ? commMap.get(target.id) === hCommEdge : true;
+      const edgeDimmedByCommunity = hCommEdge != null && !sourceInComm && !targetInComm;
+      const edgeBridgeToCommunity = hCommEdge != null && (sourceInComm !== targetInComm);
 
       // Weight scales line thickness: weight 1.0 = normal, 2.0 = double, etc.
       const weightScale = Math.max(0.3, Math.min(4, l.edge.weight ?? 1));
 
       let edgeLw: number;
-      if (isEdgeHovered || isEdgeSelected) {
+      if (edgeDimmedByCommunity) {
+        ctx.strokeStyle = "#444444";
+        ctx.globalAlpha = 0.02;
+        edgeLw = 0.2;
+      } else if (edgeBridgeToCommunity) {
+        ctx.strokeStyle = "#FF6B35";
+        ctx.globalAlpha = 0.7;
+        edgeLw = 1.8 * weightScale;
+        ctx.setLineDash([4, 3]);
+      } else if (isOnPath) {
+        ctx.strokeStyle = "#FF6B35";
+        ctx.globalAlpha = 1;
+        edgeLw = 3 * weightScale;
+        ctx.setLineDash([]);
+      } else if (isEdgeHovered || isEdgeSelected) {
         ctx.strokeStyle = th.canvasEdgeHover;
         ctx.globalAlpha = 0.9;
         edgeLw = 2.5 * weightScale;
@@ -833,7 +878,19 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       if (!isVisible(node)) return;
 
       const r = getNodeRadius(node, mode, configs);
-      const color = getStreamColor(node, currentData.metadata.streams, th.streamColorOverrides);
+      const communityMap = communityOverlayRef.current;
+      const hComm = highlightedCommunityRef.current;
+      let color: string;
+      if (communityMap) {
+        const comm = communityMap.get(node.id);
+        color = comm != null ? communityColor(comm) : "#666";
+        if (hComm != null && comm !== hComm) {
+          color = "#444444";
+          ctx.globalAlpha = 0.06;
+        }
+      } else {
+        color = getStreamColor(node, currentData.metadata.streams, th.streamColorOverrides);
+      }
       const isPrimary = isAdding || isNodePrimary(node, mode, configs);
       const isRevealed = !isPrimary && revealed.has(node.id);
       const isHighlighted = connectedToHighlight.size === 0 || connectedToHighlight.has(node.id);

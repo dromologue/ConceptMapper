@@ -250,3 +250,40 @@ Export the current canvas view as PNG or PDF with configurable background.
 **AC-062-06**: PNG export creates an off-screen canvas and triggers blob download.
 **AC-062-07**: PDF export uses jsPDF to create a single-page PDF with the canvas image.
 **AC-062-08**: Download triggers via blob URL with appropriate filename.
+
+## Network Analysis
+
+### REQ-063: Network Analysis Engine
+Pure computation module providing graph metrics across three levels: node, path, and group.
+
+**AC-063-01**: Degree centrality ("Connections") computed for all nodes, normalized 0–1.
+**AC-063-02**: Betweenness centrality ("Bridge Score") uses Brandes' BFS algorithm.
+**AC-063-03**: Closeness centrality ("Reach") measures average distance to all reachable nodes.
+**AC-063-04**: Eigenvector centrality ("Influence") uses power iteration (max 100 iterations, 1e-6 tolerance).
+**AC-063-05**: Community detection via label propagation (max 50 iterations).
+**AC-063-06**: Modularity score (Newman's Q) computed for detected communities.
+**AC-063-07**: Shortest path between any two nodes via BFS, returning all shortest paths.
+**AC-063-08**: K-core decomposition identifies nested connectivity shells.
+**AC-063-09**: Path fragility identifies the edge whose removal most increases distance between two nodes.
+**AC-063-10**: Graph density and network diameter computed as overview metrics.
+
+### REQ-064: Analysis Panel
+Slide-out panel accessible from the activity bar showing analysis results.
+
+**AC-064-01**: Analysis button in activity bar toggles the panel open/closed.
+**AC-064-02**: Overview section shows: node count, edge count, density, avg degree, diameter, modularity, community count.
+**AC-064-03**: Node Rankings table with columns: Name, Connections, Bridge Score, Influence, Reach. Sortable by each column.
+**AC-064-04**: Communities section lists detected communities with member count and color dot.
+**AC-064-05**: Community color overlay toggle colors nodes by community assignment.
+**AC-064-06**: Path Finder with from/to node selectors, Find Path button, and path result display.
+**AC-064-07**: Path result shows: distance, route count, weakest link, and the path chain as clickable nodes.
+
+### REQ-065: Analysis Canvas Integration
+Canvas rendering integrates with analysis results for visual feedback.
+
+**AC-065-01**: Shortest path highlighted on canvas with distinct orange color and thicker line.
+**AC-065-02**: Community overlay replaces stream colors with community-assigned colors.
+**AC-065-03**: Highlighted community dims nodes not in that community (alpha 0.2).
+**AC-065-04**: Edges between non-community nodes are greyed out (alpha 0.08, thin).
+**AC-065-05**: Bridge edges (one endpoint in community, one outside) are semi-dimmed (alpha 0.25).
+**AC-065-06**: Clicking a community name in the panel focuses the view on that community's members.

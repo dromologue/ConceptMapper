@@ -231,6 +231,9 @@ struct WebView: NSViewRepresentable {
         // Allow file:// access for local resources
         config.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
 
+        // Disable caching to always load fresh bundle resources
+        config.websiteDataStore = WKWebsiteDataStore.nonPersistent()
+
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
         webView.isInspectable = true

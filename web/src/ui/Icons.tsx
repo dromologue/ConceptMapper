@@ -151,6 +151,19 @@ export function IconHelp({ size = defaults.size, className }: IconProps) {
   );
 }
 
+export function IconAnalysis({ size = defaults.size, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <circle cx="5" cy="4" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="11" cy="4" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="8" cy="11" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <line x1="6.5" y1="5.5" x2="7" y2="9.5" stroke="currentColor" strokeWidth="1" />
+      <line x1="9.5" y1="5.5" x2="9" y2="9.5" stroke="currentColor" strokeWidth="1" />
+      <line x1="7" y1="4" x2="9" y2="4" stroke="currentColor" strokeWidth="1" />
+    </svg>
+  );
+}
+
 export function IconExport({ size = defaults.size, className }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>

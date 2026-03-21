@@ -74,11 +74,21 @@ body {
   align-items: center;
   gap: 2px;
   padding-top: 8px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
 }
 
 .activity-bar-bottom {
-  margin-top: auto;
+  flex-shrink: 0;
+  padding-top: 4px;
   padding-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border-top: 1px solid var(--bg-hover, #2a2a4a);
 }
 
 .activity-bar-btn {
@@ -910,6 +920,12 @@ canvas:active {
   background-repeat: no-repeat;
   background-position: right 4px center;
   padding-right: 18px;
+}
+.editor-field-value {
+  flex: 1;
+  padding: 4px 8px;
+  color: var(--text-secondary, #ccc);
+  font-size: 12px;
 }
 .editor-field input:focus, .editor-field select:focus {
   border-bottom-color: var(--accent, #4A90D9);
@@ -2756,4 +2772,253 @@ select.settings-input {
 
 .modal-confirm-btn:hover {
   opacity: 0.9;
+}
+
+/* ===== Analysis Panel ===== */
+
+.analysis-panel {
+  width: 280px;
+  min-width: 280px;
+  background: var(--sidebar-bg, #16213e);
+  border-left: 1px solid var(--bg-hover, #2a2a4a);
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.analysis-header {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--bg-hover);
+}
+
+.analysis-empty {
+  padding: 20px 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.analysis-type-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--bg-hover, #2a2a4a);
+}
+
+.analysis-type-btn {
+  padding: 3px 8px;
+  border: 1px solid var(--bg-hover);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.analysis-type-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.analysis-type-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.analysis-section {
+  border-bottom: 1px solid var(--bg-hover, #2a2a4a);
+}
+
+.analysis-section-header {
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.analysis-section-header:hover {
+  background: var(--bg-hover);
+}
+
+.analysis-section-body {
+  padding: 4px 12px 10px;
+}
+
+.analysis-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+
+.analysis-stat-label {
+  color: var(--text-muted);
+}
+
+.analysis-stat-value {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Rankings table */
+.analysis-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.analysis-table th {
+  text-align: left;
+  padding: 4px 4px;
+  color: var(--text-muted);
+  font-weight: 500;
+  border-bottom: 1px solid var(--bg-hover);
+  font-size: 10px;
+}
+
+.analysis-th-sortable {
+  cursor: pointer;
+}
+
+.analysis-th-sortable:hover {
+  color: var(--text-primary);
+}
+
+.analysis-table td {
+  padding: 3px 4px;
+  color: var(--text-secondary);
+}
+
+.analysis-cell-name {
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analysis-row {
+  cursor: pointer;
+}
+
+.analysis-row:hover {
+  background: var(--bg-hover);
+}
+
+.analysis-row-selected {
+  background: var(--bg-hover);
+  color: var(--accent-light);
+}
+
+.analysis-show-all {
+  display: block;
+  width: 100%;
+  padding: 4px;
+  margin-top: 4px;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+}
+
+/* Communities */
+.analysis-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0 8px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.analysis-community-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.analysis-community-item:hover, .analysis-community-item.active {
+  color: var(--text-primary);
+}
+
+.analysis-community-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.analysis-community-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--accent-light);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.analysis-community-label:hover {
+  text-decoration: underline;
+}
+
+.analysis-community-count {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* Path finder */
+.analysis-path-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.analysis-path-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.analysis-path-result {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bg-hover);
+}
+
+.analysis-path-no-route {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 4px 0;
+}
+
+.analysis-path-chain {
+  margin-top: 6px;
+  line-height: 1.6;
+}
+
+.analysis-path-node {
+  color: var(--accent-light);
+  cursor: pointer;
+}
+
+.analysis-path-node:hover {
+  text-decoration: underline;
+}
+
+.analysis-path-arrow {
+  color: var(--text-dim);
 }

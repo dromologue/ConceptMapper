@@ -14,6 +14,9 @@ import type { TaxonomyWizardResult, TaxonomyWizardInitial } from "./ui/TaxonomyW
 import { MappingModal } from "./ui/MappingModal";
 import { ChatPane } from "./ui/ChatPane";
 import { ExportImageModal } from "./ui/ExportImageModal";
+import { AnalysisPanel } from "./ui/AnalysisPanel";
+import { analyzeNetwork, findShortestPaths } from "./utils/graph-analysis";
+import type { NetworkAnalysis, PathResult } from "./utils/graph-analysis";
 import type { ExportImageOptions } from "./ui/ExportImageModal";
 import { jsPDF } from "jspdf";
 import { HelpPanel } from "./ui/HelpPanel";
@@ -80,6 +83,15 @@ function AppInner() {
   const fitToViewRef = useRef<(() => void) | null>(null);
   const zoomFnsRef = useRef<{ zoomIn: () => void; zoomOut: () => void } | null>(null);
   const [showExportImage, setShowExportImage] = useState(false);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [analysis, setAnalysis] = useState<NetworkAnalysis | null>(null);
+  const [analysisNodeTypes, setAnalysisNodeTypes] = useState<Set<string> | null>(null);
+  const [pathResult, setPathResult] = useState<PathResult | null>(null);
+  const [pathFrom, setPathFrom] = useState<string | null>(null);
+  const [pathTo, setPathTo] = useState<string | null>(null);
+  const [highlightedCommunity, setHighlightedCommunity] = useState<number | null>(null);
+  const [communityOverlay, setCommunityOverlay] = useState(false);
+  const [highlightedPath, setHighlightedPath] = useState<string[] | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<import("./types/graph-ir").GraphEdge | null>(null);
   const [edgePopoverPos, setEdgePopoverPos] = useState<{ x: number; y: number } | null>(null);
   const [loadedNativeTemplates, setLoadedNativeTemplates] = useState<Map<string, TaxonomyWizardInitial>>(new Map());
@@ -89,6 +101,35 @@ function AppInner() {
 
   // Active node type configs — from template or defaults
   const nodeTypeConfigs: NodeTypeConfig[] = template?.node_types ?? DEFAULT_NODE_TYPES;
+
+  // Compute network analysis when graph data or node type filter changes
+  useEffect(() => {
+    if (!graphData || graphData.nodes.length === 0) { setAnalysis(null); return; }
+    let filteredNodes = graphData.nodes;
+    let filteredEdges = graphData.edges;
+    if (analysisNodeTypes !== null) {
+      const nodeIds = new Set(filteredNodes.filter((n) => analysisNodeTypes.has(n.node_type)).map((n) => n.id));
+      filteredNodes = graphData.nodes.filter((n) => nodeIds.has(n.id));
+      filteredEdges = graphData.edges.filter((e) => nodeIds.has(e.from) && nodeIds.has(e.to));
+    }
+    const result = analyzeNetwork(filteredNodes, filteredEdges);
+    setAnalysis(result);
+  }, [graphData, analysisNodeTypes]);
+
+  // Path finder handler
+  const handleFindPath = useCallback((fromId: string, toId: string) => {
+    if (!graphData) return;
+    const result = findShortestPaths(graphData.nodes, graphData.edges, fromId, toId);
+    setPathResult(result);
+    if (result.paths.length > 0) {
+      setHighlightedPath(result.paths[0]);
+    }
+  }, [graphData]);
+
+  const handleClearPath = useCallback(() => {
+    setPathResult(null);
+    setHighlightedPath(null);
+  }, []);
 
   // Initialize WASM parser on startup
   useEffect(() => {
@@ -1118,6 +1159,8 @@ function AppInner() {
           onOpenHelp={() => setShowHelp(true)}
           onFitToView={() => fitToViewRef.current?.()}
           onExportImage={() => setShowExportImage(true)}
+          onToggleAnalysis={() => setAnalysisOpen(!analysisOpen)}
+          analysisOpen={analysisOpen}
           nodeTypeConfigs={nodeTypeConfigs}
         />
 
@@ -1170,6 +1213,9 @@ function AppInner() {
               centerOnNode={centerOnNode}
               onRegisterFitToView={(fn) => { fitToViewRef.current = fn; }}
               onRegisterZoom={(fns) => { zoomFnsRef.current = fns; }}
+              communityOverlay={communityOverlay ? analysis?.communities : undefined}
+              highlightedPath={highlightedPath}
+              highlightedCommunity={highlightedCommunity}
             />
             <div className="zoom-controls">
               <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomIn()} title="Zoom in">+</button>
@@ -1239,9 +1285,44 @@ function AppInner() {
                 onOpenNotes={() => setNotesOpen(!notesOpen)}
                 notesOpen={notesOpen}
                 onNodeDelete={handleDeleteNode}
+                analysis={analysis}
               />
             </div>
           </>
+        )}
+
+        {analysisOpen && (
+          <AnalysisPanel
+            analysis={analysis}
+            nodes={graphData.nodes}
+            nodeTypeConfigs={nodeTypeConfigs}
+            analysisNodeTypes={analysisNodeTypes}
+            onSetAnalysisNodeTypes={setAnalysisNodeTypes}
+            selectedNodeId={selectedNode?.id ?? null}
+            pathResult={pathResult}
+            onSelectNode={(id) => {
+              const node = graphData.nodes.find((n) => n.id === id);
+              if (node) setSelectedNode(node);
+            }}
+            onHighlightCommunity={setHighlightedCommunity}
+            onFocusCommunity={(memberIds) => {
+              // Reveal only community members and their inter-connections, then fit to view
+              setRevealedNodes(new Set(memberIds));
+              setCommunityOverlay(true);
+              setHighlightedCommunity(analysis?.communities.get(memberIds[0]) ?? null);
+              // Brief delay to let render update, then fit to view
+              setTimeout(() => fitToViewRef.current?.(), 100);
+            }}
+            highlightedCommunity={highlightedCommunity}
+            communityOverlay={communityOverlay}
+            onToggleCommunityOverlay={() => setCommunityOverlay(!communityOverlay)}
+            onFindPath={handleFindPath}
+            onClearPath={handleClearPath}
+            pathFrom={pathFrom}
+            pathTo={pathTo}
+            onSetPathFrom={setPathFrom}
+            onSetPathTo={setPathTo}
+          />
         )}
       </div>
 

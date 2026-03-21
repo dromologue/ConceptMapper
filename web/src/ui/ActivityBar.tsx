@@ -1,5 +1,5 @@
 import type { NodeTypeConfig } from "../types/graph-ir";
-import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconMapping, IconChat, IconHelp, IconFitView, IconExport } from "./Icons";
+import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconMapping, IconChat, IconHelp, IconFitView, IconExport, IconAnalysis } from "./Icons";
 
 interface Props {
   viewMode: string; // "full" or a node type id
@@ -15,6 +15,8 @@ interface Props {
   onOpenHelp?: () => void;
   onFitToView?: () => void;
   onExportImage?: () => void;
+  onToggleAnalysis?: () => void;
+  analysisOpen?: boolean;
   nodeTypeConfigs?: NodeTypeConfig[];
 }
 
@@ -30,6 +32,8 @@ export function ActivityBar({
   onOpenHelp,
   onFitToView,
   onExportImage,
+  onToggleAnalysis,
+  analysisOpen,
   nodeTypeConfigs,
 }: Props) {
   return (
@@ -102,6 +106,13 @@ export function ActivityBar({
         )}
       </div>
       <div className="activity-bar-bottom">
+        <button
+          className={`activity-bar-btn ${analysisOpen ? "active" : ""}`}
+          onClick={onToggleAnalysis ?? (() => {})}
+          title="Network Analysis"
+        >
+          <IconAnalysis size={20} />
+        </button>
         <button
           className="activity-bar-btn"
           onClick={onEditTaxonomy}

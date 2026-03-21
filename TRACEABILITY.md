@@ -130,6 +130,9 @@
 | REQ-060 | AC-060-01..05 (zoom controls) | — | manual verification (canvas overlay) | passing |
 | REQ-061 | AC-061-01..07 (organic look) | `src/__tests__/theme.test.tsx` | organic theme exists, look field on all themes | passing |
 | REQ-062 | AC-062-01..08 (image export) | `src/__tests__/export-image-modal.test.tsx` | 7 tests: format, background, resolution, export handler | passing |
+| REQ-063 | AC-063-01..10 (analysis engine) | `src/__tests__/graph-analysis.test.ts` | 31 tests: degree, betweenness, closeness, eigenvector, paths, communities, k-core, density, diameter | passing |
+| REQ-064 | AC-064-01..07 (analysis panel) | — | manual verification (panel UI) | passing |
+| REQ-065 | AC-065-01..06 (canvas integration) | — | manual verification (path highlight, community overlay, edge dimming) | passing |
 
 ## Additional Passing Tests (not yet mapped to spec requirements)
 

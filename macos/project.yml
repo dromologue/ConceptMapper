@@ -10,9 +10,9 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
   configs:
     Debug:
-      CODE_SIGN_IDENTITY: "-"
+      CODE_SIGN_IDENTITY: "Apple Development"
     Release:
-      CODE_SIGN_IDENTITY: "-"
+      CODE_SIGN_IDENTITY: "Apple Development"
 targets:
   ConceptLLM:
     type: application
