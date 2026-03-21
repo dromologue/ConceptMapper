@@ -337,7 +337,6 @@ function AppInner() {
     (nodeType: string, name: string, stream: string, generation: number, properties: Record<string, string | undefined>) => {
       if (!graphData) return;
       const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-      const config = nodeTypeConfigs.find((t) => t.id === nodeType);
 
       const newNode: GraphNode = {
         id,

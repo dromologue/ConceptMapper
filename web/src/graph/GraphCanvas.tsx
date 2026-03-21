@@ -43,7 +43,7 @@ function getStreamColor(node: SimNode, streams: GraphIR["metadata"]["streams"], 
   return streams.find((s) => s.id === node.stream)?.color ?? "#666";
 }
 
-function isNodePrimary(node: SimNode, viewMode: ViewMode, nodeTypeConfigs: NodeTypeConfig[]): boolean {
+function isNodePrimary(node: SimNode, viewMode: ViewMode, _nodeTypeConfigs: NodeTypeConfig[]): boolean {
   if (viewMode === "full") return true;
   // viewMode is a node type id — show only nodes of that type
   return node.node_type === viewMode;

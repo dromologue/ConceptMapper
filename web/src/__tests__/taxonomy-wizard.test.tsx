@@ -208,6 +208,24 @@ describe("TaxonomyWizard", () => {
     expect(fieldInputs.length).toBeGreaterThanOrEqual(1);
   });
 
+  it("shape dropdown offers all 6 shape options", async () => {
+    const user = userEvent.setup();
+    render(<TaxonomyWizard {...defaultProps} />);
+    await navigateToStep(user, "node_types");
+    // Find the shape select — the default node has shape "circle"
+    const shapeSelect = screen.getByDisplayValue("Circle");
+    expect(shapeSelect).toBeInTheDocument();
+    // Check all options exist
+    const options = shapeSelect.querySelectorAll("option");
+    const values = [...options].map((o) => o.getAttribute("value"));
+    expect(values).toContain("circle");
+    expect(values).toContain("rectangle");
+    expect(values).toContain("diamond");
+    expect(values).toContain("hexagon");
+    expect(values).toContain("triangle");
+    expect(values).toContain("pill");
+  });
+
   it("edit mode shows existing node types", async () => {
     const user = userEvent.setup();
     render(

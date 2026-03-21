@@ -1,6 +1,8 @@
 # Concept Mapper Specification
 
-> Parse Collins Network Taxonomy markdown into a typed Graph IR; render as an interactive force-directed map. Extract structured networks from rich prose sources via a two-stage pipeline.
+> Parse structured taxonomy markdown into a typed Graph IR; render as an interactive force-directed map.
+
+**Note (2026-03-21):** The parser is now fully generic. References to hardcoded "ThinkerNode", "ConceptNode", `thinker_fields`, `concept_fields`, `EdgeCategory`, and `EdgeType` enum in REQ-003 through REQ-007 are superseded by the generic-only model (REQ-046 in `specs/ui-features.md`). All nodes are parsed as `GenericNode` with user-defined fields. All edge types are free-form strings. The canonical test file is `examples/organisational-learning.cm`.
 
 ---
 
@@ -27,7 +29,7 @@ The parser classifies each line of the input taxonomy markdown into a line type,
 - [ ] AC-001-06: Empty or whitespace-only lines are classified as `BlankLine`
 - [ ] AC-001-07: All other lines are classified as `Prose`
 - [ ] AC-001-08: Every ClassifiedLine includes `line_number: usize` (1-indexed) and `raw: String`
-- [ ] AC-001-09: The lexer processes the full `collins_network_taxonomy.md` example without panic
+- [ ] AC-001-09: The lexer processes the full `examples/organisational-learning.cm` example without panic
 
 **Edge Cases:**
 - Lines inside fences that don't match KV pattern: classified as `Prose` (e.g., free text in notes)

@@ -115,10 +115,7 @@ export function migrateFromParser(parsed: GraphIR): { template: TaxonomyTemplate
  * Merge a template + data into a runtime GraphIR (for rendering).
  */
 export function graphIRFromData(template: TaxonomyTemplate, data: ConceptMapData): GraphIR {
-  const configMap = new Map(template.node_types.map((t) => [t.id, t]));
-
   const nodes: GraphNode[] = data.nodes.map((dn) => {
-    const config = configMap.get(dn.node_type);
     const node: GraphNode = {
       id: dn.id,
       node_type: dn.node_type,

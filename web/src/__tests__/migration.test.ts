@@ -160,3 +160,32 @@ describe("dataFromGraphIR", () => {
     expect(extracted.edges[0].note).toBe("Strong influence relationship");
   });
 });
+
+describe("generic node model", () => {
+  it("IR has no thinker_fields, concept_fields, or edge_category", () => {
+    const { template, data } = migrateFromParser(minimalParsed);
+    const ir = graphIRFromData(template, data);
+    const json = JSON.stringify(ir);
+    expect(json).not.toContain("thinker_fields");
+    expect(json).not.toContain("concept_fields");
+    expect(json).not.toContain("edge_category");
+  });
+
+  it("all node types use properties uniformly", () => {
+    const { data } = migrateFromParser(minimalParsed);
+    for (const node of data.nodes) {
+      expect(node.properties).toBeDefined();
+      expect(typeof node.node_type).toBe("string");
+    }
+  });
+
+  it("auto-derives node type configs from data", () => {
+    const { template } = migrateFromParser(minimalParsed);
+    const thinkerConfig = template.node_types.find((t) => t.id === "thinker");
+    expect(thinkerConfig).toBeDefined();
+    expect(thinkerConfig!.fields.length).toBeGreaterThan(0);
+    const conceptConfig = template.node_types.find((t) => t.id === "concept");
+    expect(conceptConfig).toBeDefined();
+    expect(conceptConfig!.fields.length).toBeGreaterThan(0);
+  });
+});

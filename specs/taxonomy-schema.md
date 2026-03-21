@@ -1,15 +1,17 @@
-# Collins Network Taxonomy Schema
+# Taxonomy Schema
 
-> The canonical reference for converting any intellectual content into a structured network that concept-mapper can parse and visualize.
+> The canonical reference for converting any content into a structured network that concept-mapper can parse and visualize.
 
-Give this document to an LLM along with your source material. The LLM should produce a markdown file in the exact format described below. The concept-mapper parser will consume that file and produce an interactive force-directed graph.
+Give this document to an LLM along with your source material and a `.cmt` template file. The LLM should produce a markdown `.cm` file in the format described below. The parser will consume that file and produce an interactive force-directed graph.
+
+**Generic model:** The parser treats all node and edge types as user-defined. The "Thinker" and "Concept" examples below are one template pattern — you can define any node types (e.g., Task, Milestone, Institution, Leader) with any custom fields via a `.cmt` template. Only `id` and `name` are required for any node. All other fields are custom key-value pairs stored in a generic `fields` map.
 
 ---
 
 ## Overview
 
-The taxonomy describes intellectual networks as a graph with:
-- **Nodes**: Thinkers (people) and Concepts (ideas, frameworks, theories)
+The taxonomy describes networks as a graph with:
+- **Nodes**: User-defined types (e.g., Thinker, Concept, Task, Milestone) with custom fields
 - **Edges**: Typed relationships between nodes
 - **Metadata**: Generations, streams, external shocks, and structural observations
 

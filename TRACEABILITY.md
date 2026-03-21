@@ -116,6 +116,18 @@
 | REQ-054 | AC-054-01..03 (sidebar template labels) | `src/__tests__/sidebar.test.tsx` | `shows categories section` (now "Streams") | passing |
 | REQ-041 | AC-041-05..06 (weight round-trip) | `src/__tests__/migration.test.ts` | `preserves edge weight through round-trip` | passing |
 
+## Generic Model & New Features
+
+| Spec | Criteria | Test File | Test Name | Status |
+|------|----------|-----------|-----------|--------|
+| REQ-046 | AC-046-01..07 (generic-only nodes) | `tests/node_parser_tests.rs` | 14 tests: generic thinker/concept parsing, fields in HashMap | passing |
+| REQ-046 | AC-046-06 (generic edge types) | `tests/edge_parser_tests.rs` | `custom_edge_types_accepted` | passing |
+| REQ-055 | AC-055-01..02 (extended shapes) | `src/__tests__/taxonomy-wizard.test.tsx` | shape options in wizard | pending (manual canvas verification) |
+| REQ-056 | AC-056-01..02 (per-type date range) | `src/__tests__/sidebar.test.tsx` | `renders date range filter...` | passing |
+| REQ-057 | AC-057-01..05 (integration test) | `tests/integration_tests.rs` | `parse_organisational_learning_example` | passing |
+| REQ-058 | AC-058-01..08 (build pipeline) | — | `scripts/build-app.sh` manual verification | passing |
+| REQ-059 | AC-059-01..06 (App Store sandbox) | — | entitlements + project.yml manual verification | passing |
+
 ## Additional Passing Tests (not yet mapped to spec requirements)
 
 | Test File | Tests | Coverage |

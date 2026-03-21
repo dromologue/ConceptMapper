@@ -153,13 +153,65 @@ Sidebar section headers use template-defined labels instead of hardcoded names.
 **AC-054-02**: Node list is grouped by node type with full type label as header.
 **AC-054-03**: When template labels are customised in the wizard, sidebar updates on save.
 
-## Generic Node Types (Rust Parser)
+## Generic Node & Edge Types
 
-### REQ-046: Generic Node Parsing
-Rust parser handles any `## [TypeName] Nodes` section, not just Thinker/Concept.
+### REQ-046: Generic-Only Node Model
+All nodes are parsed as GenericNode. There are no hardcoded node types (thinker, concept, etc.) in the parser. Node types, fields, and validation are defined by user templates (.cmt files).
 
-**AC-046-01**: Only `id` and `name` are required fields for generic nodes.
-**AC-046-02**: All other key-value pairs stored in a `fields` HashMap.
-**AC-046-03**: Generic nodes appear in the IR with `node_type` set to the section name.
-**AC-046-04**: Edge category defaults to `generic` when either endpoint is a generic node.
-**AC-046-05**: Web migration maps generic node `fields` to `properties`.
+**AC-046-01**: Only `id` and `name` are required fields for any node.
+**AC-046-02**: All other key-value pairs stored in a `fields` BTreeMap.
+**AC-046-03**: Nodes appear in the IR with `node_type` extracted from the section header (e.g. "## Thinker Nodes" → type "thinker").
+**AC-046-04**: No `thinker_fields`, `concept_fields`, or `edge_category` in the IR — all fields are in the generic `fields` map.
+**AC-046-05**: Web migration maps node `fields` to `properties` uniformly for all node types.
+**AC-046-06**: Edge types are free-form strings, not an enum. Any string is accepted as an edge type.
+**AC-046-07**: The Rust parser has no structural bias toward any specific node or edge type.
+
+### REQ-055: Extended Node Shapes
+Node types can use shapes beyond circle and rectangle.
+
+**AC-055-01**: The shape type union includes: `circle`, `rectangle`, `diamond`, `hexagon`, `triangle`, `pill`.
+**AC-055-02**: The taxonomy wizard dropdown offers all 6 shape options.
+**AC-055-03**: GraphCanvas renders diamond as a rotated square path.
+**AC-055-04**: GraphCanvas renders hexagon as a 6-sided regular polygon.
+**AC-055-05**: GraphCanvas renders triangle as an equilateral triangle pointing up.
+**AC-055-06**: GraphCanvas renders pill as a stadium/rounded rectangle with fully rounded ends.
+**AC-055-07**: Hit testing works for all shapes (distance-from-center approximation).
+
+### REQ-056: Per-Type Date Range Filters
+Date range filter sections in the sidebar are labeled with their node type name.
+
+**AC-056-01**: Each node type with date fields gets its own date range section (e.g. "Thinker Date Range").
+**AC-056-02**: The section label uses the node type config label, not just "Date Range".
+
+### REQ-057: Integration Test with Example Data
+The organisational-learning.cm example file serves as the canonical integration test for the parser.
+
+**AC-057-01**: `cargo run -- examples/organisational-learning.cm` parses successfully.
+**AC-057-02**: The output contains 61 nodes and 77 edges.
+**AC-057-03**: The output has no `thinker_fields`, `concept_fields`, or `edge_category` keys.
+**AC-057-04**: All node fields are in the `fields` BTreeMap (deterministic key ordering).
+**AC-057-05**: A Rust integration test verifies the example file parses without errors.
+
+## App Store & Build Pipeline
+
+### REQ-058: Unified Build Pipeline
+A single build script runs the full test → build → package pipeline.
+
+**AC-058-01**: `scripts/build-app.sh` validates prerequisites (cargo, wasm-pack, npm, xcodebuild, xcodegen).
+**AC-058-02**: Pipeline runs `cargo test` and `npm test` before building; fails fast on test failure.
+**AC-058-03**: Pipeline builds WASM, React SPA, copies assets, regenerates Xcode project, builds macOS app.
+**AC-058-04**: `--skip-tests` flag skips test steps.
+**AC-058-05**: `--archive` flag produces .xcarchive for App Store submission.
+**AC-058-06**: `--debug` flag builds Debug configuration instead of Release.
+**AC-058-07**: `--open` flag opens the built app after successful build.
+**AC-058-08**: Code signature is verified at the end of every build.
+
+### REQ-059: App Store Sandboxing & Entitlements
+The macOS app runs in App Sandbox with minimum required entitlements.
+
+**AC-059-01**: `com.apple.security.app-sandbox` is enabled.
+**AC-059-02**: `com.apple.security.network.client` is enabled (for LLM API calls).
+**AC-059-03**: `com.apple.security.files.user-selected.read-write` is enabled (for open/save panels).
+**AC-059-04**: Hardened runtime is enabled (`ENABLE_HARDENED_RUNTIME: YES`).
+**AC-059-05**: Info.plist includes `NSHumanReadableCopyright` and `LSApplicationCategoryType`.
+**AC-059-06**: ExportOptions.plist exists for App Store archive export.
