@@ -188,7 +188,7 @@ describe("Sidebar", () => {
     await user.click(screen.getByText("Importance"));
     await user.click(screen.getByText("major"));
     expect(onAttributeToggle).toHaveBeenCalledWith(
-      "person.importance", "major",
+      "person", "importance", "major",
       expect.arrayContaining(["dominant", "major", "minor", "secondary"])
     );
   });
@@ -197,8 +197,8 @@ describe("Sidebar", () => {
     const filters = {
       streams: new Set(["s1"]),
       generations: null,
-      attributes: new Map(),
-      dateRanges: new Map(),
+      attributes: [],
+      dateRanges: [],
     };
     render(<Sidebar {...defaultProps} filters={filters} />);
     expect(screen.getByText("Alice")).toBeInTheDocument();
@@ -210,8 +210,8 @@ describe("Sidebar", () => {
     const filters = {
       streams: new Set(["s1"]),
       generations: null,
-      attributes: new Map(),
-      dateRanges: new Map(),
+      attributes: [],
+      dateRanges: [],
     };
     render(<Sidebar {...defaultProps} filters={filters} />);
     expect(screen.getByText("Show All")).toBeInTheDocument();
@@ -228,8 +228,8 @@ describe("Sidebar", () => {
     const filters = {
       streams: new Set(["s1"]),
       generations: null,
-      attributes: new Map(),
-      dateRanges: new Map(),
+      attributes: [],
+      dateRanges: [],
     };
     render(<Sidebar {...defaultProps} filters={filters} onShowAll={onShowAll} />);
 

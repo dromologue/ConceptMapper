@@ -48,13 +48,31 @@ Taxonomy markdown export (REQ-020) must produce valid, re-parseable output:
 - **Adversarial field values**: Fuzz test with values containing taxonomy syntax (fence markers, KV colons, newlines). Assert the exporter escapes/rejects them safely.
 - **Content preservation**: Assert that rich content (key_works, critiques) survives the round-trip without data loss.
 
+### 9. State Management Patterns
+Application state is organized into domain-specific Zustand stores (`web/src/stores/`):
+
+- **useGraphStore**: Graph data, selection, interaction mode, filters, all mutation actions, undo/redo history
+- **useUIStore**: Modal management (unified `activeModal`), panel visibility, search, dimensions, canvas zoom triggers
+- **useAnalysisStore**: Network analysis results, path finding, community overlay
+- **useFileStore**: Template, file paths, parser status, native maps
+
+Stores are testable in isolation via `getState()`/`setState()` without React rendering. Cross-store communication uses direct imports (e.g., `useGraphStore` imports `useUIStore`).
+
+### 10. LLM Client Architecture
+LLM communication uses a polymorphic `LLMClient` interface (`web/src/llm/client.ts`):
+- `BridgeLLMClient`: Swift WKWebView bridge transport (macOS app)
+- `OllamaLLMClient`: Direct HTTP to local Ollama API (browser)
+- `createLLMClient()` factory selects the right implementation
+
 ## Patterns to Follow
-- `cargo test` for Rust, Vitest for React — both run in CI
+- `cargo test` for Rust, Vitest for React — both run in CI (GitHub Actions)
 - Serde for JSON serialization of the IR
 - React Testing Library for component behavior tests (not snapshots)
+- Zustand stores for state management (testable without React rendering)
 - Descriptive test names that reference the specification
 - Mock/stub external dependencies (LLM API) in CI; real calls in scheduled integration tests
 - Use `#[ignore]` attribute for Rust tests that require LLM API access; run with `cargo test -- --ignored` in integration
+- `ErrorBoundary` wraps the app root to catch rendering errors gracefully
 
 ## Anti-Patterns to Avoid
 - `unwrap()` in library code (use `Result` types with meaningful errors)

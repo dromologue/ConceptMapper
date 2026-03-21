@@ -74,7 +74,9 @@
 | REQ-018 | AC-018-01..06 (node editing) | `src/__tests__/editing.test.ts` | — | pending |
 | REQ-018 | AC-018-07..10 (unknown author) | `src/__tests__/editing.test.ts` | — | pending |
 | REQ-018 | AC-018-11..15 (create/delete) | `src/__tests__/editing.test.ts` | — | pending |
-| REQ-018 | AC-018-16..20 (edit state) | `src/__tests__/editing.test.ts` | — | pending |
+| REQ-018 | AC-018-16 (undo) | `src/__tests__/stores/useGraphStore.test.ts` | `undo restores previous state` | passing |
+| REQ-018 | AC-018-17 (redo) | `src/__tests__/stores/useGraphStore.test.ts` | `redo restores undone state` | passing |
+| REQ-018 | AC-018-18..20 (edit state) | `src/__tests__/editing.test.ts` | — | pending |
 | REQ-019 | AC-019-01..09 | `src/__tests__/export-image.test.ts` | — | pending |
 | REQ-020 | AC-020-01..07 (structure) | `src/__tests__/export-markdown.test.ts`, `tests/export_tests.rs` | — | pending |
 | REQ-020 | AC-020-08..13 (content fidelity) | `tests/export_tests.rs` | — | pending |
@@ -139,6 +141,21 @@
 | REQ-069 | AC-069-01..05 (node selection highlight) | — | manual verification (strong dimming, mutual exclusivity) | passing |
 | REQ-070 | AC-070-01..11 (MCP server) | — | `swift build` + stdio tests (initialize, tools/list, tools/call) | passing |
 
+## Architecture Improvements
+
+| Spec | Criteria | Test File | Test Name | Status |
+|------|----------|-----------|-----------|--------|
+| REQ-071 | AC-071-01..04 (CI/CD) | — | `.github/workflows/ci.yml` exists | passing |
+| REQ-072 | AC-072-01..04 (error boundary) | `src/__tests__/error-boundary.test.tsx` | 3 tests: renders children, fallback UI, reload button | passing |
+| REQ-073 | AC-073-01..04 (unified properties) | `src/__tests__/migration.test.ts` | `maps thinker node with fields as properties` | passing |
+| REQ-074 | AC-074-01..04 (typed filters) | `src/__tests__/filters.test.ts` | ~20 tests: typed AttributeFilter, DateRangeFilter arrays | passing |
+| REQ-075 | AC-075-01..05 (Zustand stores) | `src/__tests__/stores/useGraphStore.test.ts` | 30 tests: state, mutations, undo/redo, filters | passing |
+| REQ-075 | AC-075-02 (UI store) | `src/__tests__/stores/useUIStore.test.ts` | 18 tests: modals, panels, search, zoom | passing |
+| REQ-076 | AC-076-01..03 (declarative canvas) | — | manual verification (props added to GraphCanvas) | passing |
+| REQ-077 | AC-077-01..05 (LLM client) | `src/__tests__/llm-client.test.ts` | 7 tests: OllamaLLMClient, createLLMClient factory | passing |
+| REQ-078 | AC-078-01..06 (undo/redo) | `src/__tests__/stores/useGraphStore.test.ts` | `undo restores previous state`, `redo restores undone state`, `history capped at 50` | passing |
+| REQ-079 | AC-079-01 (Rust safety) | `tests/edge_parser_tests.rs` | all edge parser tests | passing |
+
 ## Additional Passing Tests (not yet mapped to spec requirements)
 
 | Test File | Tests | Coverage |
@@ -158,6 +175,10 @@
 | `src/__tests__/settings-modal.test.tsx` | ~5 tests | Settings modal rendering |
 | `src/__tests__/help-panel.test.tsx` | 1 test | Help panel search field |
 | `src/__tests__/theme.test.tsx` | 4 tests | Theme configuration |
+| `src/__tests__/error-boundary.test.tsx` | 3 tests | Error boundary fallback UI, reload |
+| `src/__tests__/stores/useGraphStore.test.ts` | 30 tests | Graph mutations, undo/redo, filters |
+| `src/__tests__/stores/useUIStore.test.ts` | 18 tests | Modals, panels, search, zoom triggers |
+| `src/__tests__/llm-client.test.ts` | 7 tests | LLM client interface, Ollama, factory |
 
 ## Principle Compliance
 

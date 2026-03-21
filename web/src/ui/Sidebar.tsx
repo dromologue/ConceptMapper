@@ -1,17 +1,20 @@
 import { useState, useMemo, useCallback } from "react";
 import type { GraphNode, Stream, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
 import type { FilterState } from "../utils/filters";
-import { isFilterActive, isNodeFilterVisible } from "../utils/filters";
+import { isFilterActive, isNodeFilterVisible, findAttributeFilter, findDateRangeFilter } from "../utils/filters";
 import { IconChevronDown } from "./Icons";
 
 interface FilterSection {
-  compositeKey: string;
+  nodeType: string;
+  field: string;
   label: string;
   values: string[];
 }
 
 interface DateFilterSection {
-  compositeKey: string;  // "nodeType.fromField|toField"
+  nodeType: string;
+  fromField: string;
+  toField?: string;
   label: string;
   minYear: number;
   maxYear: number;
@@ -40,8 +43,8 @@ interface Props {
   filters: FilterState;
   onStreamToggle: (streamId: string, allStreamIds: string[]) => void;
   onGenerationToggle: (gen: number, allGens: number[]) => void;
-  onAttributeToggle: (compositeKey: string, value: string, allValues: string[]) => void;
-  onDateRangeChange: (compositeKey: string, field: "from" | "to", value: string) => void;
+  onAttributeToggle: (nodeType: string, field: string, value: string, allValues: string[]) => void;
+  onDateRangeChange: (nodeType: string, fromField: string, toField: string | undefined, bound: "from" | "to", value: string) => void;
   onShowAll: () => void;
   onSelectNode: (node: GraphNode) => void;
   selectedNodeId: string | null;
@@ -126,7 +129,6 @@ export function Sidebar({
         // Skip date-like keys (handled by date filter)
         if (isDateKey(key)) continue;
 
-        const compositeKey = `${config.id}.${key}`;
         const valueSet = new Set<string>();
 
         // Include template options for select fields
@@ -149,7 +151,7 @@ export function Sidebar({
         // Use config label if available, otherwise format key
         const label = configField?.label ?? formatKey(key);
 
-        sections.push({ compositeKey, label, values: [...valueSet].sort() });
+        sections.push({ nodeType: config.id, field: key, label, values: [...valueSet].sort() });
       }
     }
 
@@ -165,14 +167,13 @@ export function Sidebar({
       }
       for (const key of allKeys) {
         if (isDateKey(key)) continue;
-        const compositeKey = `${typeId}.${key}`;
         const valueSet = new Set<string>();
         for (const n of typeNodes) {
           const val = n.properties?.[key];
           if (val != null && typeof val === "string" && val !== "") valueSet.add(val);
         }
         if (valueSet.size === 0 || valueSet.size > MAX_TEXT_FILTER_VALUES) continue;
-        sections.push({ compositeKey, label: formatKey(key), values: [...valueSet].sort() });
+        sections.push({ nodeType: typeId, field: key, label: formatKey(key), values: [...valueSet].sort() });
       }
     }
 
@@ -212,9 +213,9 @@ export function Sidebar({
       // Try to pair from/to
       const fromKey = [...dateKeys].find((k) => k.includes("from") || k === "date_from") ?? [...dateKeys][0];
       const toKey = [...dateKeys].find((k) => k.includes("to") || k === "date_to") ?? fromKey;
-      const compositeKey = `${typeId}.${fromKey}|${toKey}`;
-      if (processed.has(compositeKey)) continue;
-      processed.add(compositeKey);
+      const dedupKey = `${typeId}.${fromKey}|${toKey}`;
+      if (processed.has(dedupKey)) continue;
+      processed.add(dedupKey);
 
       let minYear = Infinity;
       let maxYear = -Infinity;
@@ -227,7 +228,7 @@ export function Sidebar({
       if (!isFinite(minYear)) continue;
 
       const typeLabel = config?.label ?? typeId;
-      sections.push({ compositeKey, label: `${typeLabel} Date Range`, minYear, maxYear });
+      sections.push({ nodeType: typeId, fromField: fromKey, toField: toKey !== fromKey ? toKey : undefined, label: `${typeLabel} Date Range`, minYear, maxYear });
     }
     return sections;
   }, [nodeTypeConfigs, nodes]);
@@ -339,11 +340,13 @@ export function Sidebar({
 
       {/* Attribute filter sections */}
       {filterSections.map((section) => {
-        const isOpen = attributeSectionsOpen[section.compositeKey] ?? false;
-        const selectedVals = filters.attributes.get(section.compositeKey);
+        const sectionKey = `${section.nodeType}.${section.field}`;
+        const isOpen = attributeSectionsOpen[sectionKey] ?? false;
+        const attrFilter = findAttributeFilter(filters, section.nodeType, section.field);
+        const selectedVals = attrFilter?.values;
         return (
-          <div key={section.compositeKey} className="sidebar-section">
-            <div className="sidebar-section-header" onClick={() => toggleAttrSection(section.compositeKey)}>
+          <div key={sectionKey} className="sidebar-section">
+            <div className="sidebar-section-header" onClick={() => toggleAttrSection(sectionKey)}>
               <span>{section.label}</span>
               <span className={`sidebar-chevron ${isOpen ? "open" : ""}`}>
                 <IconChevronDown size={12} />
@@ -357,7 +360,7 @@ export function Sidebar({
                     <div
                       key={val}
                       className={`sidebar-filter-item ${active ? "" : "inactive"}`}
-                      onClick={() => onAttributeToggle(section.compositeKey, val, section.values)}
+                      onClick={() => onAttributeToggle(section.nodeType, section.field, val, section.values)}
                     >
                       <span className="sidebar-filter-check" data-checked={active ? "true" : "false"} />
                       <span className="sidebar-filter-label">{val}</span>
@@ -372,11 +375,13 @@ export function Sidebar({
 
       {/* Date range filter sections */}
       {dateFilterSections.map((section) => {
-        const isOpen = attributeSectionsOpen[section.compositeKey] ?? false;
-        const range = filters.dateRanges.get(section.compositeKey);
+        const sectionKey = `${section.nodeType}.${section.fromField}|${section.toField ?? section.fromField}`;
+        const isOpen = attributeSectionsOpen[sectionKey] ?? false;
+        const drFilter = findDateRangeFilter(filters, section.nodeType, section.fromField, section.toField);
+        const range = drFilter?.range;
         return (
-          <div key={section.compositeKey} className="sidebar-section">
-            <div className="sidebar-section-header" onClick={() => toggleAttrSection(section.compositeKey)}>
+          <div key={sectionKey} className="sidebar-section">
+            <div className="sidebar-section-header" onClick={() => toggleAttrSection(sectionKey)}>
               <span>{section.label}</span>
               <span className={`sidebar-chevron ${isOpen ? "open" : ""}`}>
                 <IconChevronDown size={12} />
@@ -393,7 +398,7 @@ export function Sidebar({
                       value={range?.from ?? ""}
                       min={`${section.minYear}-01-01`}
                       max={`${section.maxYear}-12-31`}
-                      onChange={(e) => onDateRangeChange(section.compositeKey, "from", e.target.value)}
+                      onChange={(e) => onDateRangeChange(section.nodeType, section.fromField, section.toField, "from", e.target.value)}
                     />
                   </label>
                   <label className="sidebar-date-label">
@@ -404,7 +409,7 @@ export function Sidebar({
                       value={range?.to ?? ""}
                       min={`${section.minYear}-01-01`}
                       max={`${section.maxYear}-12-31`}
-                      onChange={(e) => onDateRangeChange(section.compositeKey, "to", e.target.value)}
+                      onChange={(e) => onDateRangeChange(section.nodeType, section.fromField, section.toField, "to", e.target.value)}
                     />
                   </label>
                 </div>

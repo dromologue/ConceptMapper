@@ -117,8 +117,6 @@ export interface GraphNode {
   name: string;
   generation?: number;
   stream?: string;
-  /** All custom key-value fields for this node. */
-  fields?: Record<string, string>;
   properties?: Record<string, string | string[] | number | undefined>;
   content?: NodeContent;
   notes?: string;

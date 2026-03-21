@@ -27,6 +27,7 @@ import { initParser, parseMarkdown } from "./parser";
 import { ThemeProvider, useTheme } from "./theme/ThemeContext";
 import { LLMProvider, useLLM } from "./llm/LLMContext";
 import { registerLLMCallbacks } from "./llm/provider";
+import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData } from "./migration";
 import { createEmptyFilterState } from "./utils/filters";
 import type { FilterState } from "./utils/filters";
@@ -34,7 +35,7 @@ import { normalizeFencedKV } from "./utils/normalize";
 import "./App.css";
 
 export type ViewMode = string; // "full" or a node type id
-export type InteractionMode = "normal" | "add-edge-source" | "add-edge-target";
+export type { InteractionMode } from "./stores/useGraphStore";
 
 function mergeNodeUpdate(node: GraphNode, updates: Partial<GraphNode>): GraphNode {
   const merged = { ...node, ...updates };
@@ -47,14 +48,29 @@ function mergeNodeUpdate(node: GraphNode, updates: Partial<GraphNode>): GraphNod
 function AppInner() {
   const { theme, look } = useTheme();
   const { isLLMConfigured } = useLLM();
-  const [graphData, setGraphData] = useState<GraphIR | null>(null);
+  const [graphData, setGraphDataRaw] = useState<GraphIR | null>(null);
+  const undoStack = useRef<GraphIR[]>([]);
+  const redoStack = useRef<GraphIR[]>([]);
+
+  // Wrapper that pushes to undo history before mutating
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only uses refs and stable setGraphDataRaw
+  const setGraphData = useCallback((data: GraphIR | null | ((prev: GraphIR | null) => GraphIR | null)) => {
+    setGraphDataRaw((prev) => {
+      const next = typeof data === 'function' ? data(prev) : data;
+      if (prev && next && prev !== next) {
+        undoStack.current = [...undoStack.current.slice(-49), prev];
+        redoStack.current = [];
+      }
+      return next;
+    });
+  }, []);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [viewMode, setViewMode] = useState("full");
   const [error, setError] = useState<string | null>(null);
   const [revealedNodes, setRevealedNodes] = useState<Set<string>>(new Set());
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
   const [showAddNode, setShowAddNode] = useState<string | null>(null); // node type id or null
-  const [interactionMode, setInteractionMode] = useState<InteractionMode>("normal");
+  const [interactionMode, setInteractionMode] = useState<import("./stores/useGraphStore").InteractionMode>("normal");
   const [edgeSource, setEdgeSource] = useState<string | null>(null);
   const [edgeTarget, setEdgeTarget] = useState<string | null>(null);
   const [showAddEdgeModal, setShowAddEdgeModal] = useState(false);
@@ -534,6 +550,36 @@ function AppInner() {
   // Keyboard shortcuts: Escape to cancel edge drawing, Delete/Backspace to delete
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        e.preventDefault();
+        if (undoStack.current.length > 0) {
+          const prev = undoStack.current[undoStack.current.length - 1];
+          undoStack.current = undoStack.current.slice(0, -1);
+          setGraphDataRaw((current) => {
+            if (current) redoStack.current = [current, ...redoStack.current];
+            return prev;
+          });
+          setSelectedNode(null);
+        }
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && e.shiftKey) {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        e.preventDefault();
+        if (redoStack.current.length > 0) {
+          const next = redoStack.current[0];
+          redoStack.current = redoStack.current.slice(1);
+          setGraphDataRaw((current) => {
+            if (current) undoStack.current = [...undoStack.current, current];
+            return next;
+          });
+          setSelectedNode(null);
+        }
+        return;
+      }
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         searchInputRef.current?.focus();
@@ -914,48 +960,53 @@ function AppInner() {
     });
   };
 
-  const handleAttributeToggle = (compositeKey: string, value: string, allValues: string[]) => {
+  const handleAttributeToggle = (nodeType: string, field: string, value: string, allValues: string[]) => {
     setFilters((prev) => {
-      const attrs = new Map(prev.attributes);
-      const current = attrs.get(compositeKey);
-      if (!current) {
+      const attrs = [...prev.attributes];
+      const idx = attrs.findIndex((a) => a.nodeType === nodeType && a.field === field);
+      if (idx < 0) {
         // First click: uncheck this value (show all EXCEPT this one)
         const next = new Set(allValues);
         next.delete(value);
-        attrs.set(compositeKey, next);
+        attrs.push({ nodeType, field, values: next });
       } else {
-        const next = new Set(current);
-        if (next.has(value)) {
+        const current = attrs[idx].values;
+        if (!current) {
+          const next = new Set(allValues);
           next.delete(value);
-          // Empty set = nothing shown (user unticked everything)
-          attrs.set(compositeKey, next);
+          attrs[idx] = { nodeType, field, values: next };
         } else {
-          next.add(value);
-          // All re-checked → reset to null (all shown)
-          if (next.size >= allValues.length) {
-            attrs.set(compositeKey, null);
+          const next = new Set(current);
+          if (next.has(value)) {
+            next.delete(value);
+            attrs[idx] = { nodeType, field, values: next };
           } else {
-            attrs.set(compositeKey, next);
+            next.add(value);
+            if (next.size >= allValues.length) {
+              // All re-checked → remove filter entry
+              attrs.splice(idx, 1);
+            } else {
+              attrs[idx] = { nodeType, field, values: next };
+            }
           }
         }
-      }
-      // Clean up null entries
-      for (const [k, v] of attrs) {
-        if (v === null) attrs.delete(k);
       }
       return { ...prev, attributes: attrs };
     });
   };
 
-  const handleDateRangeChange = (compositeKey: string, field: "from" | "to", value: string) => {
+  const handleDateRangeChange = (nodeType: string, fromField: string, toField: string | undefined, bound: "from" | "to", value: string) => {
     setFilters((prev) => {
-      const ranges = new Map(prev.dateRanges);
-      const current = ranges.get(compositeKey) ?? { from: null, to: null };
-      const updated = { ...current, [field]: value || null };
+      const ranges = [...prev.dateRanges];
+      const idx = ranges.findIndex((d) => d.nodeType === nodeType && d.fromField === fromField && d.toField === (toField ?? undefined));
+      const current = idx >= 0 ? ranges[idx].range : { from: null, to: null };
+      const updated = { ...current, [bound]: value || null };
       if (updated.from === null && updated.to === null) {
-        ranges.delete(compositeKey);
+        if (idx >= 0) ranges.splice(idx, 1);
+      } else if (idx >= 0) {
+        ranges[idx] = { nodeType, fromField, toField, range: updated };
       } else {
-        ranges.set(compositeKey, updated);
+        ranges.push({ nodeType, fromField, toField, range: updated });
       }
       return { ...prev, dateRanges: ranges };
     });
@@ -1611,11 +1662,13 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): str
 
 function App() {
   return (
-    <ThemeProvider>
-      <LLMProvider>
-        <AppInner />
-      </LLMProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <LLMProvider>
+          <AppInner />
+        </LLMProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -4,6 +4,11 @@ import type {
   NodeTypeConfig, FieldConfig,
 } from "./types/graph-ir";
 
+/** Raw node shape from the WASM parser (Rust outputs `fields`, not `properties`) */
+interface RawParsedNode extends Omit<GraphNode, 'properties'> {
+  fields?: Record<string, string>;
+}
+
 // --- Default Node Type Configs ---
 
 // Legacy configs — kept for backward compatibility with old .cm files
@@ -55,12 +60,15 @@ export const DEFAULT_NODE_TYPES: NodeTypeConfig[] = [DEFAULT_NODE_CONFIG];
  * Maps "thinker" → "person" with renamed fields.
  */
 export function migrateFromParser(parsed: GraphIR): { template: TaxonomyTemplate; data: ConceptMapData } {
+  // The WASM parser outputs nodes with `fields` (Rust convention), cast to RawParsedNode
+  const rawNodes = parsed.nodes as unknown as RawParsedNode[];
+
   // Derive node type configs from the actual node types present in the data
-  const typeIds = new Set(parsed.nodes.map((n) => n.node_type));
+  const typeIds = new Set(rawNodes.map((n) => n.node_type));
   const nodeTypes: NodeTypeConfig[] = [];
   for (const typeId of typeIds) {
     // Derive fields from the actual data for this type
-    const typeNodes = parsed.nodes.filter((n) => n.node_type === typeId);
+    const typeNodes = rawNodes.filter((n) => n.node_type === typeId);
     const fieldKeys = new Set<string>();
     for (const n of typeNodes) {
       if (n.fields) {
@@ -89,7 +97,7 @@ export function migrateFromParser(parsed: GraphIR): { template: TaxonomyTemplate
     node_types: nodeTypes.length > 0 ? nodeTypes : DEFAULT_NODE_TYPES,
   };
 
-  const nodes: DataNode[] = parsed.nodes.map((n) => ({
+  const nodes: DataNode[] = rawNodes.map((n) => ({
     id: n.id,
     node_type: n.node_type,
     name: n.name,
@@ -154,7 +162,7 @@ export function dataFromGraphIR(graphIR: GraphIR, templateRef: string = ""): Con
     name: n.name,
     generation: n.generation,
     stream: n.stream,
-    properties: n.properties ?? buildPropertiesFromFields(n),
+    properties: n.properties ?? {},
     notes: n.notes,
   }));
 
@@ -171,11 +179,6 @@ export function dataFromGraphIR(graphIR: GraphIR, templateRef: string = ""): Con
     external_shocks: graphIR.metadata.external_shocks,
     structural_observations: graphIR.metadata.structural_observations,
   };
-}
-
-/** Build properties from node fields */
-function buildPropertiesFromFields(n: GraphNode): Record<string, string | string[] | number | undefined> {
-  return { ...(n.fields ?? {}) };
 }
 
 /**

@@ -5,27 +5,50 @@ export interface DateRange {
   to: string | null;    // ISO or year string, null = no upper bound
 }
 
+export interface AttributeFilter {
+  nodeType: string;
+  field: string;
+  values: Set<string> | null;  // null = all shown (filter inactive for this attr)
+}
+
+export interface DateRangeFilter {
+  nodeType: string;
+  fromField: string;
+  toField?: string;
+  range: DateRange;
+}
+
 export interface FilterState {
   streams: Set<string> | null;       // null = all shown
   generations: Set<number> | null;   // null = all shown
-  attributes: Map<string, Set<string> | null>;  // key = "nodeType.fieldKey"
-  dateRanges: Map<string, DateRange>;  // key = "nodeType.fromField|toField"
+  attributes: AttributeFilter[];
+  dateRanges: DateRangeFilter[];
 }
 
 export function createEmptyFilterState(): FilterState {
-  return { streams: null, generations: null, attributes: new Map(), dateRanges: new Map() };
+  return { streams: null, generations: null, attributes: [], dateRanges: [] };
 }
 
 export function isFilterActive(filters: FilterState): boolean {
   if (filters.streams !== null) return true;
   if (filters.generations !== null) return true;
-  for (const v of filters.attributes.values()) {
-    if (v !== null) return true;
+  for (const attr of filters.attributes) {
+    if (attr.values !== null) return true;
   }
-  for (const v of filters.dateRanges.values()) {
-    if (v.from !== null || v.to !== null) return true;
+  for (const dr of filters.dateRanges) {
+    if (dr.range.from !== null || dr.range.to !== null) return true;
   }
   return false;
+}
+
+/** Find an attribute filter by nodeType and field */
+export function findAttributeFilter(filters: FilterState, nodeType: string, field: string): AttributeFilter | undefined {
+  return filters.attributes.find((a) => a.nodeType === nodeType && a.field === field);
+}
+
+/** Find a date range filter by nodeType and fields */
+export function findDateRangeFilter(filters: FilterState, nodeType: string, fromField: string, toField?: string): DateRangeFilter | undefined {
+  return filters.dateRanges.find((d) => d.nodeType === nodeType && d.fromField === fromField && d.toField === (toField ?? undefined));
 }
 
 /**
@@ -36,13 +59,10 @@ export function isFilterActive(filters: FilterState): boolean {
 function parseDateNum(val: string | undefined | null): number | null {
   if (val == null || val === "") return null;
   const s = String(val);
-  // Full ISO date: 2026-03-15
   const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (isoMatch) return parseInt(isoMatch[1] + isoMatch[2] + isoMatch[3], 10);
-  // Month: 2026-03
   const monthMatch = s.match(/^(\d{4})-(\d{2})$/);
   if (monthMatch) return parseInt(monthMatch[1] + monthMatch[2] + "01", 10);
-  // Year only: extract 4 digits
   const yearMatch = s.match(/(\d{4})/);
   if (yearMatch) return parseInt(yearMatch[1] + "0101", 10);
   return null;
@@ -60,44 +80,33 @@ export function isNodeFilterVisible(node: GraphNode, filters: FilterState): bool
   }
 
   // Attribute filters: AND between categories, OR within each
-  for (const [compositeKey, selectedValues] of filters.attributes) {
-    if (selectedValues === null) continue;
-    const dotIdx = compositeKey.indexOf(".");
-    if (dotIdx < 0) continue;
-    const nodeType = compositeKey.slice(0, dotIdx);
-    const fieldKey = compositeKey.slice(dotIdx + 1);
+  for (const attr of filters.attributes) {
+    if (attr.values === null) continue;
+    if (node.node_type !== attr.nodeType) continue;
 
-    // Only apply to matching node types
-    if (node.node_type !== nodeType) continue;
-
-    const val = node.properties?.[fieldKey];
-    if (val == null || !selectedValues.has(String(val))) return false;
+    const val = node.properties?.[attr.field];
+    if (val == null || !attr.values.has(String(val))) return false;
   }
 
   // Date range filters
-  for (const [compositeKey, range] of filters.dateRanges) {
-    if (range.from === null && range.to === null) continue;
-    const dotIdx = compositeKey.indexOf(".");
-    if (dotIdx < 0) continue;
-    const nodeType = compositeKey.slice(0, dotIdx);
-    const fieldsPart = compositeKey.slice(dotIdx + 1);
+  for (const dr of filters.dateRanges) {
+    if (dr.range.from === null && dr.range.to === null) continue;
+    if (node.node_type !== dr.nodeType) continue;
 
-    if (node.node_type !== nodeType) continue;
-
-    const [fromField, toField] = fieldsPart.split("|");
+    const fromField = dr.fromField;
+    const toField = dr.toField ?? fromField;
     const nodeFrom = parseDateNum(node.properties?.[fromField] as string | undefined);
-    const nodeTo = parseDateNum(node.properties?.[toField ?? fromField] as string | undefined);
+    const nodeTo = parseDateNum(node.properties?.[toField] as string | undefined);
 
-    // Use whichever date the node has — prefer from, fallback to to
     const nodeStart = nodeFrom ?? nodeTo;
-    if (nodeStart == null) return false; // no date → hidden when date filter active
+    if (nodeStart == null) return false;
 
-    if (range.from !== null) {
-      const rangeFrom = parseDateNum(range.from);
+    if (dr.range.from !== null) {
+      const rangeFrom = parseDateNum(dr.range.from);
       if (rangeFrom !== null && nodeStart < rangeFrom) return false;
     }
-    if (range.to !== null) {
-      const rangeTo = parseDateNum(range.to);
+    if (dr.range.to !== null) {
+      const rangeTo = parseDateNum(dr.range.to);
       if (rangeTo !== null) {
         const nodeEnd = nodeTo ?? nodeFrom ?? nodeStart;
         if (nodeEnd > rangeTo) return false;

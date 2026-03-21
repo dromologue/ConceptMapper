@@ -84,6 +84,8 @@ interface Props {
   onSelectEdge?: (edge: GraphEdge | null, pos?: { x: number; y: number }) => void;
   selectedEdgeKey?: string | null; // "from|to" key for highlighting
   centerOnNode?: { id: string; ts: number } | null;
+  fitToViewTrigger?: number;
+  zoomAction?: { action: 'in' | 'out'; ts: number } | null;
   onRegisterFitToView?: (fn: () => void) => void;
   onRegisterZoom?: (fns: { zoomIn: () => void; zoomOut: () => void }) => void;
   hiddenLabelTypes?: Set<string>;
@@ -121,7 +123,7 @@ function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): NodeSha
   return "circle";
 }
 
-export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity }: Props) {
+export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const transformRef = useRef(d3.zoomIdentity);
@@ -600,7 +602,6 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         existing.node_type = n.node_type;
         existing.generation = n.generation;
         existing.stream = n.stream;
-        existing.fields = n.fields;
         existing.properties = n.properties;
         existing.content = n.content;
         existing.notes = n.notes;
@@ -1112,6 +1113,28 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       zoomOut: () => zoomBy(0.67),
     });
   }, [onRegisterZoom]);
+
+  // Declarative fit-to-view trigger
+  useEffect(() => {
+    if (fitToViewTrigger && fitToViewTrigger > 0) fitToView();
+  }, [fitToViewTrigger]);
+
+  // Declarative zoom action trigger
+  useEffect(() => {
+    if (!zoomAction) return;
+    const canvas = canvasRef.current;
+    if (!canvas || !zoomBehaviorRef.current) return;
+    const factor = zoomAction.action === 'in' ? 1.5 : 0.67;
+    const t = transformRef.current;
+    const cx = canvas.width / (2 * (window.devicePixelRatio || 1));
+    const cy = canvas.height / (2 * (window.devicePixelRatio || 1));
+    const newK = Math.max(0.1, Math.min(5, t.k * factor));
+    const newT = d3.zoomIdentity
+      .translate(cx - (cx - t.x) * (newK / t.k), cy - (cy - t.y) * (newK / t.k))
+      .scale(newK);
+    d3.select(canvas).transition().duration(300)
+      .call(zoomBehaviorRef.current!.transform, newT);
+  }, [zoomAction]);
 
   // Center on a specific node when requested
   useEffect(() => {

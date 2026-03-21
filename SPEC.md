@@ -642,8 +642,8 @@ The user can edit all node and edge content directly in the GUI. This includes r
 - [ ] AC-018-15: Deleting an edge removes it without affecting connected nodes
 
 *Edit State Management:*
-- [ ] AC-018-16: Undo (Ctrl/Cmd+Z) reverts the last edit operation
-- [ ] AC-018-17: Redo (Ctrl/Cmd+Shift+Z) reapplies the last undone operation
+- [x] AC-018-16: Undo (Ctrl/Cmd+Z) reverts the last edit operation
+- [x] AC-018-17: Redo (Ctrl/Cmd+Shift+Z) reapplies the last undone operation
 - [ ] AC-018-18: Unsaved edits are indicated in the UI (e.g., "modified" badge, dot on export button)
 - [ ] AC-018-19: Editing a node does not disrupt the force simulation (node stays in position)
 - [ ] AC-018-20: All edits produce valid Graph IR (enum fields constrained to valid values via dropdowns)
@@ -868,8 +868,8 @@ A persistent toolbar provides quick access to view modes, node/edge creation, ex
 - [ ] AC-023-11: Both download buttons show the "modified" indicator when unsaved edits exist (REQ-018 AC-018-18)
 
 *Edit Controls:*
-- [ ] AC-023-12: Undo button (with Ctrl/Cmd+Z shortcut)
-- [ ] AC-023-13: Redo button (with Ctrl/Cmd+Shift+Z shortcut)
+- [x] AC-023-12: Undo button (with Ctrl/Cmd+Z shortcut)
+- [x] AC-023-13: Redo button (with Ctrl/Cmd+Shift+Z shortcut)
 - [ ] AC-023-14: Buttons are disabled when no undo/redo history exists
 
 *Notes Editing (in detail panel — see REQ-018 AC-018-06):*
@@ -1418,3 +1418,155 @@ Notes and other graph edits are auto-saved back to the source file via the Swift
 - [ ] AC-039-05: `saveToPath` message handler registered in `WKUserContentController`
 - [ ] AC-039-06: Auto-save debounces at 2 seconds after graph data changes
 - [ ] AC-039-07: Save indicator shows "Saved" text that fades after 2 seconds
+
+---
+
+## REQ-071: CI/CD Pipeline
+
+Automated testing runs on every push and pull request to the master branch.
+
+**Expected Behavior:**
+- GitHub Actions workflow runs Rust tests and web tests in parallel
+- Rust job: `cargo test --all`
+- Web job: `npm ci`, `npm run lint`, `npm test`, `npm run build`
+
+**Acceptance Criteria:**
+- [x] AC-071-01: `.github/workflows/ci.yml` exists with push/PR triggers on master
+- [x] AC-071-02: Rust job runs `cargo test --all` on ubuntu-latest
+- [x] AC-071-03: Web job runs lint, test, and build in `web/` directory
+- [x] AC-071-04: Web job uses Node 20 with npm cache
+
+---
+
+## REQ-072: Error Boundary
+
+A React error boundary catches rendering errors and displays a recovery UI instead of a white screen.
+
+**Expected Behavior:**
+- Unhandled errors in the component tree show a "Something went wrong" message
+- A "Reload" button restarts the application
+- Errors are logged to console for debugging
+
+**Acceptance Criteria:**
+- [x] AC-072-01: `ErrorBoundary` component wraps `AppInner` in the component tree
+- [x] AC-072-02: Child rendering errors display fallback UI with error message
+- [x] AC-072-03: "Reload" button calls `window.location.reload()`
+- [x] AC-072-04: `componentDidCatch` logs error and component stack to console
+
+---
+
+## REQ-073: Unified Property Model
+
+Graph nodes use a single `properties` field for all custom data. The legacy `fields` property from the Rust parser output is converted to `properties` during migration.
+
+**Expected Behavior:**
+- `GraphNode` type has only `properties` (no `fields`)
+- WASM parser output (which uses Rust's `fields`) is converted by `migrateFromParser()`
+- All components read from `node.properties`
+
+**Acceptance Criteria:**
+- [x] AC-073-01: `GraphNode` interface has no `fields` property
+- [x] AC-073-02: `migrateFromParser()` converts `fields` → `properties` via `RawParsedNode` cast
+- [x] AC-073-03: `GraphCanvas` node sync uses only `properties`
+- [x] AC-073-04: All existing tests pass with unified model
+
+---
+
+## REQ-074: Typed Filter State
+
+Filter state uses typed objects instead of composite string keys for attribute and date range filters.
+
+**Expected Behavior:**
+- `AttributeFilter` objects have `nodeType`, `field`, and `values` properties
+- `DateRangeFilter` objects have `nodeType`, `fromField`, `toField`, and `range` properties
+- No composite key string parsing at runtime
+
+**Acceptance Criteria:**
+- [x] AC-074-01: `FilterState.attributes` is `AttributeFilter[]` (not `Map<string, Set>`)
+- [x] AC-074-02: `FilterState.dateRanges` is `DateRangeFilter[]` (not `Map<string, DateRange>`)
+- [x] AC-074-03: `isNodeFilterVisible()` iterates typed arrays without string splitting
+- [x] AC-074-04: Sidebar passes structured objects to filter callbacks
+
+---
+
+## REQ-075: Zustand State Management
+
+Application state is organized into domain-specific Zustand stores for testability and separation of concerns.
+
+**Expected Behavior:**
+- `useUIStore`: modal state, panel visibility, search, dimensions, canvas controls
+- `useGraphStore`: graph data, selection, interaction mode, filters, mutations, undo/redo
+- `useAnalysisStore`: network analysis, path finding, community overlay
+- `useFileStore`: template, file paths, parser status, native maps
+
+**Acceptance Criteria:**
+- [x] AC-075-01: Four Zustand stores exist in `web/src/stores/`
+- [x] AC-075-02: `useUIStore` has unified modal state (`activeModal` + `modalData`)
+- [x] AC-075-03: `useGraphStore` includes all graph mutation actions with undo/redo
+- [x] AC-075-04: Stores are independently testable via `getState()`/`setState()`
+- [x] AC-075-05: Store tests cover initial state, mutations, undo/redo, and filter handlers
+
+---
+
+## REQ-076: Declarative GraphCanvas API
+
+GraphCanvas supports declarative props for zoom and fit-to-view actions, replacing imperative ref callbacks.
+
+**Expected Behavior:**
+- `fitToViewTrigger` (number): incrementing triggers a fit-to-view
+- `zoomAction` ({ action, ts }): triggers zoom in/out
+- Legacy `onRegisterFitToView`/`onRegisterZoom` props remain for backward compatibility
+
+**Acceptance Criteria:**
+- [x] AC-076-01: `fitToViewTrigger` prop triggers `fitToView()` via useEffect
+- [x] AC-076-02: `zoomAction` prop triggers zoom by factor via useEffect
+- [x] AC-076-03: Legacy ref-based props still work alongside declarative props
+
+---
+
+## REQ-077: Unified LLM Client Interface
+
+LLM communication uses a polymorphic `LLMClient` interface with implementations for each transport.
+
+**Expected Behavior:**
+- `LLMClient` interface with `sendMessage(config, request): Promise<string>`
+- `BridgeLLMClient`: Swift WKWebView bridge transport
+- `OllamaLLMClient`: Direct HTTP to Ollama API
+- `createLLMClient()` factory selects implementation based on environment
+
+**Acceptance Criteria:**
+- [x] AC-077-01: `LLMClient` interface defined in `web/src/llm/client.ts`
+- [x] AC-077-02: `BridgeLLMClient` sends via Swift bridge with 2-minute timeout
+- [x] AC-077-03: `OllamaLLMClient` sends direct HTTP to `/api/chat`
+- [x] AC-077-04: `createLLMClient()` returns correct implementation by environment
+- [x] AC-077-05: Browser mode rejects non-Ollama providers with descriptive error
+
+---
+
+## REQ-078: Undo/Redo System
+
+Graph edits can be undone and redone via keyboard shortcuts, with a 50-entry history cap.
+
+**Expected Behavior:**
+- Every graph mutation (add/delete/update node or edge) pushes the previous state to an undo stack
+- Cmd+Z pops the undo stack and pushes current state to redo stack
+- Cmd+Shift+Z pops the redo stack
+- History is capped at 50 entries to bound memory usage
+- Keyboard shortcuts are ignored when focus is in text inputs
+
+**Acceptance Criteria:**
+- [x] AC-078-01: `setGraphData` wrapper pushes previous state to undo stack before mutation
+- [x] AC-078-02: Cmd+Z restores previous graph state and clears selection
+- [x] AC-078-03: Cmd+Shift+Z re-applies undone state
+- [x] AC-078-04: History capped at 50 entries (oldest dropped)
+- [x] AC-078-05: New mutations clear the redo stack
+- [x] AC-078-06: Shortcuts are no-ops when focus is in INPUT/TEXTAREA/SELECT
+
+---
+
+## REQ-079: Rust Parser Safety
+
+The Rust parser avoids `unwrap()` on Option values, using safe destructuring patterns instead.
+
+**Acceptance Criteria:**
+- [x] AC-079-01: `parse_single_edge()` uses `if let (Some, Some, Some)` instead of `.unwrap()`

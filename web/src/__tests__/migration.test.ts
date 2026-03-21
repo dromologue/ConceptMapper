@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import { migrateFromParser, graphIRFromData, dataFromGraphIR } from "../migration";
 import type { GraphIR } from "../types/graph-ir";
 
-const minimalParsed: GraphIR = {
+// Simulates raw WASM parser output which uses `fields` (Rust convention)
+const minimalParsed = {
   version: "1.0",
   metadata: {
     title: "Test",
@@ -33,7 +34,7 @@ const minimalParsed: GraphIR = {
       directed: true, weight: 1.0, visual: { style: "solid", show_arrow: true },
     },
   ],
-};
+} as unknown as GraphIR;
 
 describe("migrateFromParser", () => {
   it("maps thinker node with fields as properties", () => {
@@ -54,17 +55,17 @@ describe("migrateFromParser", () => {
   });
 
   it("handles generic node types via fields", () => {
-    const withGeneric: GraphIR = {
+    const withGeneric = {
       ...minimalParsed,
       nodes: [
-        ...minimalParsed.nodes,
+        ...(minimalParsed as unknown as { nodes: unknown[] }).nodes,
         {
           id: "inst1", node_type: "institution", name: "MIT",
           generation: 1, stream: "main",
           fields: { founded: "1861", location: "Cambridge, MA" },
         },
       ],
-    };
+    } as unknown as GraphIR;
     const { template, data } = migrateFromParser(withGeneric);
     const inst = data.nodes.find((n) => n.id === "inst1");
     expect(inst).toBeDefined();

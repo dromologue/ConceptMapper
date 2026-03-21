@@ -102,6 +102,27 @@ Concepts may contain sub-concepts (e.g., Cynefin contains Clear, Complicated, Co
 - Can be collapsed into their parent in the visualization (treated as a subgraph cluster)
 - Inherit `stream` and `generation` from their parent when not explicitly set
 
+### 11. Frontend State Management
+Frontend state is organized into domain-specific Zustand stores (`web/src/stores/`):
+
+- **useGraphStore**: Graph data, node/edge selection, interaction mode, filters, undo/redo history (50-entry cap), all mutation actions
+- **useUIStore**: Unified modal management (`activeModal` + `modalData`), panel visibility, search state, panel dimensions, declarative canvas zoom triggers
+- **useAnalysisStore**: Network analysis results, path finding, community detection overlay
+- **useFileStore**: Template management, file paths, parser readiness, native maps, error state
+
+Cross-store communication flows one-way: `useGraphStore` → `useUIStore` (e.g., closing modals after mutations). Stores are independently testable via `getState()`/`setState()` without React rendering.
+
+### 12. LLM Client Architecture
+LLM communication is abstracted behind a polymorphic `LLMClient` interface:
+- **BridgeLLMClient**: Sends via Swift WKWebView bridge (macOS native app)
+- **OllamaLLMClient**: Direct HTTP to local Ollama `/api/chat` endpoint (browser)
+- **createLLMClient()** factory selects the implementation based on runtime environment
+
+### 13. Error Resilience
+- **ErrorBoundary** wraps the app root to catch rendering errors and display recovery UI
+- **Undo/redo** system (50-entry history) allows recovery from unintended graph mutations
+- **CI/CD pipeline** (GitHub Actions) catches regressions on every push/PR
+
 ## Patterns to Follow
 - Pass data across the Rust/React boundary as typed JSON matching a shared schema
 - Keep the Rust CLI and WASM entry point as thin wrappers around the same core library
@@ -110,6 +131,8 @@ Concepts may contain sub-concepts (e.g., Cynefin contains Clear, Complicated, Co
 - Design IR fields for progressive enhancement: basic metadata always present, rich content optional
 - All native file I/O goes through Swift; JS never touches the filesystem directly
 - The React SPA must work both in WKWebView (production) and a browser (development/testing)
+- Use Zustand stores for state management; test stores in isolation from rendering
+- Use typed filter objects instead of composite string keys
 
 ## Anti-Patterns to Avoid
 - Rust code that knows about React rendering concerns

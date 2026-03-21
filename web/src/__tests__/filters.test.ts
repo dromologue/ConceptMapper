@@ -20,7 +20,7 @@ describe("createEmptyFilterState", () => {
     const state = createEmptyFilterState();
     expect(state.streams).toBeNull();
     expect(state.generations).toBeNull();
-    expect(state.attributes.size).toBe(0);
+    expect(state.attributes).toHaveLength(0);
   });
 });
 
@@ -40,16 +40,18 @@ describe("isFilterActive", () => {
   });
 
   it("returns true when attribute filter is set", () => {
-    const attrs = new Map<string, Set<string> | null>();
-    attrs.set("person.importance", new Set(["major"]));
-    const state: FilterState = { ...createEmptyFilterState(), attributes: attrs };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      attributes: [{ nodeType: "person", field: "importance", values: new Set(["major"]) }],
+    };
     expect(isFilterActive(state)).toBe(true);
   });
 
-  it("returns false when attribute map has only null values", () => {
-    const attrs = new Map<string, Set<string> | null>();
-    attrs.set("person.importance", null);
-    const state: FilterState = { ...createEmptyFilterState(), attributes: attrs };
+  it("returns false when attribute has only null values", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      attributes: [{ nodeType: "person", field: "importance", values: null }],
+    };
     expect(isFilterActive(state)).toBe(false);
   });
 });
@@ -97,51 +99,54 @@ describe("isNodeFilterVisible", () => {
   // --- Attribute filtering ---
 
   it("shows node when its property matches the attribute filter", () => {
-    const attrs = new Map<string, Set<string> | null>();
-    attrs.set("person.importance", new Set(["major"]));
-    const state: FilterState = { ...createEmptyFilterState(), attributes: attrs };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      attributes: [{ nodeType: "person", field: "importance", values: new Set(["major"]) }],
+    };
     expect(isNodeFilterVisible(makeNode({ properties: { importance: "major" } }), state)).toBe(true);
   });
 
   it("hides node when its property does NOT match the attribute filter", () => {
-    const attrs = new Map<string, Set<string> | null>();
-    attrs.set("person.importance", new Set(["dominant"]));
-    const state: FilterState = { ...createEmptyFilterState(), attributes: attrs };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      attributes: [{ nodeType: "person", field: "importance", values: new Set(["dominant"]) }],
+    };
     expect(isNodeFilterVisible(makeNode({ properties: { importance: "major" } }), state)).toBe(false);
   });
 
   it("does not apply attribute filter to nodes of a different type", () => {
-    const attrs = new Map<string, Set<string> | null>();
-    attrs.set("person.importance", new Set(["dominant"]));
-    const state: FilterState = { ...createEmptyFilterState(), attributes: attrs };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      attributes: [{ nodeType: "person", field: "importance", values: new Set(["dominant"]) }],
+    };
     // concept node should NOT be affected by person.importance filter
     expect(isNodeFilterVisible(makeNode({ node_type: "concept", properties: { importance: "minor" } }), state)).toBe(true);
   });
 
   it("hides node with no value for a filtered property", () => {
-    const attrs = new Map<string, Set<string> | null>();
-    attrs.set("person.importance", new Set(["major"]));
-    const state: FilterState = { ...createEmptyFilterState(), attributes: attrs };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      attributes: [{ nodeType: "person", field: "importance", values: new Set(["major"]) }],
+    };
     expect(isNodeFilterVisible(makeNode({ properties: {} }), state)).toBe(false);
   });
 
   it("ignores null attribute filter entries", () => {
-    const attrs = new Map<string, Set<string> | null>();
-    attrs.set("person.importance", null);
-    const state: FilterState = { ...createEmptyFilterState(), attributes: attrs };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      attributes: [{ nodeType: "person", field: "importance", values: null }],
+    };
     expect(isNodeFilterVisible(makeNode(), state)).toBe(true);
   });
 
   // --- Combined filters (AND between categories) ---
 
   it("requires ALL active filter categories to pass (AND logic)", () => {
-    const attrs = new Map<string, Set<string> | null>();
-    attrs.set("person.importance", new Set(["major"]));
     const state: FilterState = {
       streams: new Set(["s1"]),
       generations: new Set([1]),
-      attributes: attrs,
-      dateRanges: new Map(),
+      attributes: [{ nodeType: "person", field: "importance", values: new Set(["major"]) }],
+      dateRanges: [],
     };
     // Passes all three
     expect(isNodeFilterVisible(makeNode({ stream: "s1", generation: 1, properties: { importance: "major" } }), state)).toBe(true);
@@ -161,9 +166,10 @@ describe("isNodeFilterVisible", () => {
   });
 
   it("supports OR within attribute filters", () => {
-    const attrs = new Map<string, Set<string> | null>();
-    attrs.set("person.importance", new Set(["major", "dominant"]));
-    const state: FilterState = { ...createEmptyFilterState(), attributes: attrs };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      attributes: [{ nodeType: "person", field: "importance", values: new Set(["major", "dominant"]) }],
+    };
     expect(isNodeFilterVisible(makeNode({ properties: { importance: "major" } }), state)).toBe(true);
     expect(isNodeFilterVisible(makeNode({ properties: { importance: "dominant" } }), state)).toBe(true);
     expect(isNodeFilterVisible(makeNode({ properties: { importance: "minor" } }), state)).toBe(false);
@@ -172,66 +178,74 @@ describe("isNodeFilterVisible", () => {
   // --- Date range filtering ---
 
   it("shows node when its date is within the range", () => {
-    const ranges = new Map();
-    ranges.set("person.date_from|date_to", { from: "1920", to: "2020" });
-    const state: FilterState = { ...createEmptyFilterState(), dateRanges: ranges };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      dateRanges: [{ nodeType: "person", fromField: "date_from", toField: "date_to", range: { from: "1920", to: "2020" } }],
+    };
     expect(isNodeFilterVisible(makeNode({ properties: { date_from: "1923", date_to: "2013" } }), state)).toBe(true);
   });
 
   it("hides node when its end date exceeds the range", () => {
-    const ranges = new Map();
-    ranges.set("person.date_from|date_to", { from: "1920", to: "1950" });
-    const state: FilterState = { ...createEmptyFilterState(), dateRanges: ranges };
-    // Node started in range but ended after range
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      dateRanges: [{ nodeType: "person", fromField: "date_from", toField: "date_to", range: { from: "1920", to: "1950" } }],
+    };
     expect(isNodeFilterVisible(makeNode({ properties: { date_from: "1923", date_to: "2013" } }), state)).toBe(false);
   });
 
   it("hides node when its start date is before the range", () => {
-    const ranges = new Map();
-    ranges.set("person.date_from|date_to", { from: "1950", to: null });
-    const state: FilterState = { ...createEmptyFilterState(), dateRanges: ranges };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      dateRanges: [{ nodeType: "person", fromField: "date_from", toField: "date_to", range: { from: "1950", to: null } }],
+    };
     expect(isNodeFilterVisible(makeNode({ properties: { date_from: "1923", date_to: "2013" } }), state)).toBe(false);
   });
 
   it("hides node when its end date is after the range", () => {
-    const ranges = new Map();
-    ranges.set("person.date_from|date_to", { from: null, to: "1900" });
-    const state: FilterState = { ...createEmptyFilterState(), dateRanges: ranges };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      dateRanges: [{ nodeType: "person", fromField: "date_from", toField: "date_to", range: { from: null, to: "1900" } }],
+    };
     expect(isNodeFilterVisible(makeNode({ properties: { date_from: "1923", date_to: "2013" } }), state)).toBe(false);
   });
 
   it("hides node with no date when date range filter is active", () => {
-    const ranges = new Map();
-    ranges.set("person.date_from|date_to", { from: "1900", to: null });
-    const state: FilterState = { ...createEmptyFilterState(), dateRanges: ranges };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      dateRanges: [{ nodeType: "person", fromField: "date_from", toField: "date_to", range: { from: "1900", to: null } }],
+    };
     expect(isNodeFilterVisible(makeNode({ properties: {} }), state)).toBe(false);
   });
 
   it("ignores date range filter for nodes of different type", () => {
-    const ranges = new Map();
-    ranges.set("person.date_from|date_to", { from: "1950", to: null });
-    const state: FilterState = { ...createEmptyFilterState(), dateRanges: ranges };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      dateRanges: [{ nodeType: "person", fromField: "date_from", toField: "date_to", range: { from: "1950", to: null } }],
+    };
     expect(isNodeFilterVisible(makeNode({ node_type: "concept", properties: { date_from: "1900" } }), state)).toBe(true);
   });
 
   it("parses years from strings like 'b. 1947'", () => {
-    const ranges = new Map();
-    ranges.set("person.date_from|date_to", { from: "1940", to: "1960" });
-    const state: FilterState = { ...createEmptyFilterState(), dateRanges: ranges };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      dateRanges: [{ nodeType: "person", fromField: "date_from", toField: "date_to", range: { from: "1940", to: "1960" } }],
+    };
     expect(isNodeFilterVisible(makeNode({ properties: { date_from: "b. 1947" } }), state)).toBe(true);
   });
 
   it("ignores date range with both null bounds", () => {
-    const ranges = new Map();
-    ranges.set("person.date_from|date_to", { from: null, to: null });
-    const state: FilterState = { ...createEmptyFilterState(), dateRanges: ranges };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      dateRanges: [{ nodeType: "person", fromField: "date_from", toField: "date_to", range: { from: null, to: null } }],
+    };
     expect(isNodeFilterVisible(makeNode({ properties: {} }), state)).toBe(true);
   });
 
   it("works with ISO date strings from date picker", () => {
-    const ranges = new Map();
-    ranges.set("person.date_from|date_to", { from: "2026-01-01", to: "2026-06-30" });
-    const state: FilterState = { ...createEmptyFilterState(), dateRanges: ranges };
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      dateRanges: [{ nodeType: "person", fromField: "date_from", toField: "date_to", range: { from: "2026-01-01", to: "2026-06-30" } }],
+    };
     // Node within range
     expect(isNodeFilterVisible(makeNode({ properties: { date_from: "2026-03", date_to: "2026-05" } }), state)).toBe(true);
     // Node after range

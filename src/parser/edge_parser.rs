@@ -141,14 +141,18 @@ fn parse_single_edge(lines: &[&ClassifiedLine]) -> Result<ParsedEdge, Vec<ParseE
         Some(note_parts.join(" "))
     };
 
-    Ok(ParsedEdge {
-        from: from.unwrap(),
-        to: to.unwrap(),
-        edge_type: edge_type.unwrap(),
-        note,
-        weight,
-        line_number: first_line,
-    })
+    if let (Some(from), Some(to), Some(edge_type)) = (from, to, edge_type) {
+        Ok(ParsedEdge {
+            from,
+            to,
+            edge_type,
+            note,
+            weight,
+            line_number: first_line,
+        })
+    } else {
+        Err(errors)
+    }
 }
 
 struct InlineEdgeParts {
