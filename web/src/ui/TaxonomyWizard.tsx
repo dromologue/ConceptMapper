@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import type { Stream, Generation, NodeTypeConfig, FieldConfig, EdgeTypeConfig, FieldType } from "../types/graph-ir";
+import { useState, useEffect, useCallback } from "react";
+import type { Classifier, NodeTypeConfig, FieldConfig, EdgeTypeConfig, FieldType, Stream, Generation } from "../types/graph-ir";
 
 const DEFAULT_COLORS = ["#4A90D9", "#50C878", "#FF7F50", "#9B59B6", "#F1C40F", "#E74C3C", "#1ABC9C", "#E67E22"];
 const DEFAULT_EDGE_COLORS = ["#888888", "#4A90D9", "#D94A4A", "#50C878", "#9B59B6", "#E67E22", "#F1C40F"];
@@ -18,16 +18,11 @@ function slugify(name: string): string {
 
 // --- Wizard internal types ---
 
-interface WizardStream {
-  id?: string;
-  name: string;
-  color: string;
-  description: string;
-}
-
-interface WizardGeneration {
-  period: string;
+interface WizardClassifier {
+  id: string;
   label: string;
+  layout: "x" | "y" | "none";
+  values: { id: string; label: string; color: string; description: string }[];
 }
 
 interface WizardField {
@@ -62,21 +57,20 @@ interface WizardNodeType {
 export interface TaxonomyWizardResult {
   title: string;
   description?: string;
-  streams: Stream[];
-  generations: Generation[];
+  classifiers: Classifier[];
   node_types: NodeTypeConfig[];
   edge_types?: EdgeTypeConfig[];
-  stream_label?: string;
-  generation_label?: string;
 }
 
 export interface TaxonomyWizardInitial {
   title: string;
   description?: string;
-  streams: Stream[];
-  generations: Generation[];
+  classifiers?: Classifier[];
   node_types?: NodeTypeConfig[];
   edge_types?: EdgeTypeConfig[];
+  // Legacy fields for backward compat
+  streams?: Stream[];
+  generations?: Generation[];
   stream_label?: string;
   generation_label?: string;
 }
@@ -107,27 +101,19 @@ function configsToWizardNodeTypes(configs: NodeTypeConfig[]): WizardNodeType[] {
   }));
 }
 
-// --- Step IDs (dynamic) ---
-type StepId = "dimensions" | "title" | "node_types" | "streams" | "generations" | "edges" | "review" | "create";
+// --- Step IDs ---
+type StepId = "title" | "node_types" | "classifiers" | "edges" | "review" | "create";
+
+const STEPS: StepId[] = ["title", "node_types", "classifiers", "edges", "review", "create"];
 
 export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTemplate }: Props) {
   const isEditMode = !!initialData;
 
-  // Step 1: Dimensions (which axes to use)
-  const [streamsEnabled, setStreamsEnabled] = useState(() =>
-    initialData ? initialData.streams.length > 0 : true
-  );
-  const [generationsEnabled, setGenerationsEnabled] = useState(() =>
-    initialData ? initialData.generations.length > 0 : true
-  );
-  const [streamLabel, setStreamLabel] = useState(initialData?.stream_label ?? "Categories");
-  const [generationLabel, setGenerationLabel] = useState(initialData?.generation_label ?? "Phases");
-
-  // Step 2: Title
+  // Title
   const [title, setTitle] = useState(initialData?.title ?? "");
   const [description, setDescription] = useState(initialData?.description ?? "");
 
-  // Step 3: Node Types
+  // Node Types
   const [nodeTypes, setNodeTypes] = useState<WizardNodeType[]>(() => {
     if (initialData?.node_types?.length) {
       return configsToWizardNodeTypes(initialData.node_types);
@@ -142,22 +128,52 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
     }];
   });
 
-  // Step 4 (optional): Streams
-  const [streams, setStreams] = useState<WizardStream[]>(() => {
-    if (initialData?.streams.length) {
-      return initialData.streams.map((s) => ({
-        id: s.id, name: s.name, color: s.color ?? DEFAULT_COLORS[0], description: s.description ?? "",
+  // Classifiers
+  const [classifiers, setClassifiers] = useState<WizardClassifier[]>(() => {
+    if (initialData?.classifiers?.length) {
+      return initialData.classifiers.map((c) => ({
+        id: c.id,
+        label: c.label,
+        layout: c.layout ?? "none",
+        values: c.values.map((v) => ({
+          id: v.id,
+          label: v.label,
+          color: v.color ?? DEFAULT_COLORS[0],
+          description: v.description ?? "",
+        })),
       }));
     }
-    return [{ name: "", color: DEFAULT_COLORS[0], description: "" }];
-  });
-
-  // Step 5 (optional): Generations
-  const [generations, setGenerations] = useState<WizardGeneration[]>(() => {
-    if (initialData?.generations.length) {
-      return initialData.generations.map((g) => ({ period: g.period ?? "", label: g.label ?? "" }));
+    // Convert legacy streams/generations
+    const cls: WizardClassifier[] = [];
+    if (initialData?.streams?.length) {
+      cls.push({
+        id: initialData.stream_label?.toLowerCase().replace(/\s+/g, "_") ?? "stream",
+        label: initialData.stream_label ?? "Categories",
+        layout: "x",
+        values: initialData.streams.map((s) => ({
+          id: s.id,
+          label: s.name,
+          color: s.color ?? DEFAULT_COLORS[0],
+          description: s.description ?? "",
+        })),
+      });
     }
-    return [{ period: "", label: "" }];
+    if (initialData?.generations?.length) {
+      cls.push({
+        id: initialData.generation_label?.toLowerCase().replace(/\s+/g, "_") ?? "generation",
+        label: initialData.generation_label ?? "Phases",
+        layout: "y",
+        values: initialData.generations.map((g) => ({
+          id: String(g.number),
+          label: g.label ?? String(g.number),
+          color: "",
+          description: g.period ?? "",
+        })),
+      });
+    }
+    return cls.length > 0
+      ? cls
+      : [{ id: "category", label: "Categories", layout: "x", values: [{ id: "", label: "", color: DEFAULT_COLORS[0], description: "" }] }];
   });
 
   // Edge Types
@@ -171,19 +187,9 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
     return [...DEFAULT_EDGE_TYPES];
   });
 
-  // Compute dynamic step sequence
-  const steps = useMemo((): StepId[] => {
-    const s: StepId[] = ["dimensions", "title", "node_types"];
-    if (streamsEnabled) s.push("streams");
-    if (generationsEnabled) s.push("generations");
-    s.push("edges", "review", "create");
-    return s;
-  }, [streamsEnabled, generationsEnabled]);
-
+  const steps = STEPS;
   const [stepIdx, setStepIdx] = useState(0);
-  // Clamp stepIdx if steps shrink (user disables a dimension while past it)
-  const clampedStepIdx = stepIdx >= steps.length ? steps.length - 1 : stepIdx;
-  const currentStep = steps[clampedStepIdx] ?? "dimensions";
+  const currentStep = steps[stepIdx] ?? "title";
   const totalSteps = steps.length;
 
   // Escape to cancel
@@ -196,15 +202,13 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
   // Validation per step
   const canNext = useCallback(() => {
     switch (currentStep) {
-      case "dimensions": return true; // always valid
       case "title": return title.trim().length > 0;
       case "node_types": return nodeTypes.length > 0 && nodeTypes.every((t) => t.label.trim().length > 0);
-      case "streams": return streams.every((s) => s.name.trim().length > 0);
-      case "generations": return generations.length > 0;
+      case "classifiers": return classifiers.length > 0 && classifiers.every((c) => c.label.trim().length > 0 && c.values.every((v) => v.label.trim().length > 0));
       case "edges": return edgeTypes.length > 0 && edgeTypes.every((e) => e.label.trim().length > 0);
       default: return true;
     }
-  }, [currentStep, title, nodeTypes, streams, generations, edgeTypes]);
+  }, [currentStep, title, nodeTypes, classifiers, edgeTypes]);
 
   const handleNext = useCallback(() => {
     if (stepIdx < totalSteps - 1 && canNext()) setStepIdx(stepIdx + 1);
@@ -237,18 +241,17 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
   }, [nodeTypes]);
 
   const buildResult = useCallback((): TaxonomyWizardResult => {
-    const resultStreams: Stream[] = streamsEnabled
-      ? streams.map((s) => ({
-          id: s.id || slugify(s.name), name: s.name.trim(), color: s.color,
-          description: s.description.trim() || undefined,
-        }))
-      : [];
-
-    const resultGenerations: Generation[] = generationsEnabled
-      ? generations.map((g, i) => ({
-          number: i + 1, period: g.period.trim() || undefined, label: g.label.trim() || undefined,
-        }))
-      : [];
+    const resultClassifiers: Classifier[] = classifiers.map((cls) => ({
+      id: cls.id || slugify(cls.label),
+      label: cls.label.trim(),
+      layout: cls.layout === "none" ? undefined : cls.layout,
+      values: cls.values.map((v, i) => ({
+        id: v.id || slugify(v.label),
+        label: v.label.trim(),
+        color: v.color || (cls === classifiers[0] ? DEFAULT_COLORS[i % DEFAULT_COLORS.length] : undefined),
+        description: v.description.trim() || undefined,
+      })),
+    }));
 
     const resultEdgeTypes: EdgeTypeConfig[] = edgeTypes.map((e) => ({
       id: e.id || slugify(e.label), label: e.label.trim(), color: e.color,
@@ -258,15 +261,11 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
     return {
       title: title.trim(),
       description: description.trim() || undefined,
-      streams: resultStreams,
-      generations: resultGenerations,
+      classifiers: resultClassifiers,
       node_types: buildNodeTypeConfigs(),
       edge_types: resultEdgeTypes,
-      stream_label: streamsEnabled ? streamLabel.trim() || undefined : undefined,
-      generation_label: generationsEnabled ? generationLabel.trim() || undefined : undefined,
     };
-  }, [title, description, streams, generations, edgeTypes, buildNodeTypeConfigs,
-      streamLabel, generationLabel, streamsEnabled, generationsEnabled]);
+  }, [title, description, classifiers, edgeTypes, buildNodeTypeConfigs]);
 
   const handleCreate = useCallback(() => { onComplete(buildResult()); }, [buildResult, onComplete]);
 
@@ -276,19 +275,48 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
     setTimeout(() => setTemplateSaved(false), 2000);
   }, [buildResult, onSaveTemplate]);
 
-  // --- Helpers for streams, generations, edges, node types ---
+  // --- Classifier helpers ---
 
-  const addStream = () => { setStreams([...streams, { name: "", color: DEFAULT_COLORS[streams.length % DEFAULT_COLORS.length], description: "" }]); };
-  const removeStream = (i: number) => { if (streams.length > 1) setStreams(streams.filter((_, idx) => idx !== i)); };
-  const updateStream = (i: number, field: keyof WizardStream, value: string) => {
-    setStreams(streams.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
+  const addClassifier = () => {
+    setClassifiers([...classifiers, {
+      id: "", label: "", layout: "none",
+      values: [{ id: "", label: "", color: DEFAULT_COLORS[classifiers.length % DEFAULT_COLORS.length], description: "" }],
+    }]);
+  };
+  const removeClassifier = (i: number) => {
+    if (classifiers.length > 1) setClassifiers(classifiers.filter((_, idx) => idx !== i));
+  };
+  const updateClassifier = (i: number, updates: Partial<WizardClassifier>) => {
+    setClassifiers(classifiers.map((c, idx) => {
+      if (idx !== i) return c;
+      const updated = { ...c, ...updates };
+      if (updates.label !== undefined && !c.id) updated.id = slugify(updates.label);
+      return updated;
+    }));
+  };
+  const addClassifierValue = (clsIdx: number) => {
+    const cls = classifiers[clsIdx];
+    const newVal = { id: "", label: "", color: DEFAULT_COLORS[cls.values.length % DEFAULT_COLORS.length], description: "" };
+    updateClassifier(clsIdx, { values: [...cls.values, newVal] });
+  };
+  const removeClassifierValue = (clsIdx: number, valIdx: number) => {
+    const cls = classifiers[clsIdx];
+    if (cls.values.length > 1) {
+      updateClassifier(clsIdx, { values: cls.values.filter((_, idx) => idx !== valIdx) });
+    }
+  };
+  const updateClassifierValue = (clsIdx: number, valIdx: number, updates: Partial<WizardClassifier["values"][0]>) => {
+    const cls = classifiers[clsIdx];
+    const newValues = cls.values.map((v, idx) => {
+      if (idx !== valIdx) return v;
+      const updated = { ...v, ...updates };
+      if (updates.label !== undefined && !v.id) updated.id = slugify(updates.label);
+      return updated;
+    });
+    updateClassifier(clsIdx, { values: newValues });
   };
 
-  const addGeneration = () => { setGenerations([...generations, { period: "", label: "" }]); };
-  const removeGeneration = (i: number) => { if (generations.length > 1) setGenerations(generations.filter((_, idx) => idx !== i)); };
-  const updateGeneration = (i: number, field: keyof WizardGeneration, value: string) => {
-    setGenerations(generations.map((g, idx) => idx === i ? { ...g, [field]: value } : g));
-  };
+  // --- Edge helpers ---
 
   const addEdgeType = () => { setEdgeTypes([...edgeTypes, { id: "", label: "", color: DEFAULT_EDGE_COLORS[edgeTypes.length % DEFAULT_EDGE_COLORS.length], directed: true, style: "solid" }]); };
   const removeEdgeType = (i: number) => { if (edgeTypes.length > 1) setEdgeTypes(edgeTypes.filter((_, idx) => idx !== i)); };
@@ -300,6 +328,8 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
       return updated;
     }));
   };
+
+  // --- Node type helpers ---
 
   const addNodeType = () => { setNodeTypes([...nodeTypes, { id: "", label: "", shape: "circle", icon: "", fields: [], collapsed: false }]); };
   const removeNodeType = (i: number) => { if (nodeTypes.length > 1) setNodeTypes(nodeTypes.filter((_, idx) => idx !== i)); };
@@ -373,61 +403,6 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
         </div>
 
         <div className="wizard-content">
-
-        {/* --- Step: Dimensions --- */}
-        {currentStep === "dimensions" && (
-          <>
-            <div className="wizard-step-label">What do you want to map?</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
-              Choose which dimensions your visualisation uses. Each enabled dimension becomes a layout axis.
-            </div>
-
-            {/* Nodes — always on */}
-            <div className="wizard-dimension-row">
-              <input type="checkbox" checked disabled className="wizard-dimension-toggle" />
-              <span className="wizard-dimension-fixed">Things (nodes)</span>
-              <span className="wizard-dimension-desc">always on</span>
-            </div>
-
-            {/* Grouping / Streams */}
-            <div className={`wizard-dimension-row${!streamsEnabled ? " disabled" : ""}`}>
-              <input
-                type="checkbox"
-                checked={streamsEnabled}
-                onChange={(e) => setStreamsEnabled(e.target.checked)}
-                className="wizard-dimension-toggle"
-              />
-              <input
-                type="text"
-                className="wizard-dimension-label"
-                value={streamLabel}
-                onChange={(e) => setStreamLabel(e.target.value)}
-                placeholder="e.g. Categories, Domains, Streams"
-                disabled={!streamsEnabled}
-              />
-              <span className="wizard-dimension-desc">x-axis grouping</span>
-            </div>
-
-            {/* Timeline / Generations */}
-            <div className={`wizard-dimension-row${!generationsEnabled ? " disabled" : ""}`}>
-              <input
-                type="checkbox"
-                checked={generationsEnabled}
-                onChange={(e) => setGenerationsEnabled(e.target.checked)}
-                className="wizard-dimension-toggle"
-              />
-              <input
-                type="text"
-                className="wizard-dimension-label"
-                value={generationLabel}
-                onChange={(e) => setGenerationLabel(e.target.value)}
-                placeholder="e.g. Phases, Generations, Horizons"
-                disabled={!generationsEnabled}
-              />
-              <span className="wizard-dimension-desc">y-axis ordering</span>
-            </div>
-          </>
-        )}
 
         {/* --- Step: Title --- */}
         {currentStep === "title" && (
@@ -516,7 +491,7 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
                           style={{ width: 90, fontSize: 12 }}>
                           <option value="text">Text</option>
                           <option value="select">Select</option>
-                          <option value="textarea">Textarea</option>
+                          <option value="time">Date</option>
                         </select>
                         {f.type === "select" && (
                           <input type="text"
@@ -584,56 +559,50 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
           </>
         )}
 
-        {/* --- Step: Streams / Grouping --- */}
-        {currentStep === "streams" && (
+        {/* --- Step: Classifiers --- */}
+        {currentStep === "classifiers" && (
           <>
-            <div className="wizard-step-label">Define {streamLabel || "Categories"}</div>
-            <div className="wizard-list-header">
-              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                {streamLabel || "Categories"} group related nodes along the x-axis
-              </span>
-              <button type="button" className="wizard-add-btn" onClick={addStream}>+ Add</button>
+            <div className="wizard-step-label">Define Classifiers</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
+              Classifiers organise nodes into groups. The first classifier drives node colour.
             </div>
-            {streams.map((s, i) => (
-              <div key={i} className="wizard-stream-row">
-                <input type="color" className="wizard-color-input" value={s.color}
-                  onChange={(e) => updateStream(i, "color", e.target.value)} title="Color" />
-                <input type="text" value={s.name}
-                  onChange={(e) => updateStream(i, "name", e.target.value)}
-                  placeholder="Name" autoFocus={i === 0} />
-                <input type="text" value={s.description}
-                  onChange={(e) => updateStream(i, "description", e.target.value)}
-                  placeholder="Description (optional)" style={{ flex: 1.5 }} />
-                <button type="button" className="wizard-remove-btn"
-                  onClick={() => removeStream(i)} disabled={streams.length <= 1}
-                  title="Remove">&times;</button>
-              </div>
-            ))}
-          </>
-        )}
-
-        {/* --- Step: Generations / Timeline --- */}
-        {currentStep === "generations" && (
-          <>
-            <div className="wizard-step-label">Define {generationLabel || "Phases"}</div>
-            <div className="wizard-list-header">
-              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                {generationLabel || "Phases"} order nodes along the y-axis
-              </span>
-              <button type="button" className="wizard-add-btn" onClick={addGeneration}>+ Add</button>
-            </div>
-            {generations.map((g, i) => (
-              <div key={i} className="wizard-gen-row">
-                <span className="wizard-gen-number">{i + 1}</span>
-                <input type="text" value={g.period}
-                  onChange={(e) => updateGeneration(i, "period", e.target.value)}
-                  placeholder="Period (e.g. 1960–1980)" autoFocus={i === 0} />
-                <input type="text" value={g.label}
-                  onChange={(e) => updateGeneration(i, "label", e.target.value)}
-                  placeholder="Label (e.g. Founders)" />
-                <button type="button" className="wizard-remove-btn"
-                  onClick={() => removeGeneration(i)} disabled={generations.length <= 1}
-                  title="Remove">&times;</button>
+            <button type="button" className="wizard-add-btn" onClick={addClassifier} style={{ marginBottom: 8 }}>+ Add Classifier</button>
+            {classifiers.map((cls, ci) => (
+              <div key={ci} className="wizard-node-type-card">
+                <div className="wizard-node-type-header">
+                  <input type="text" value={cls.label}
+                    onChange={(e) => updateClassifier(ci, { label: e.target.value })}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder="Classifier name" style={{ flex: 1, fontWeight: 600 }} />
+                  <select value={cls.layout} onChange={(e) => updateClassifier(ci, { layout: e.target.value as "x" | "y" | "none" })}
+                    style={{ width: 100, fontSize: 12 }}>
+                    <option value="x">X-axis</option>
+                    <option value="y">Y-axis</option>
+                    <option value="none">Filter only</option>
+                  </select>
+                  <button type="button" className="wizard-remove-btn"
+                    onClick={() => removeClassifier(ci)} disabled={classifiers.length <= 1}>&times;</button>
+                </div>
+                <div className="wizard-node-type-body">
+                  {cls.values.map((v, vi) => (
+                    <div key={vi} className="wizard-stream-row">
+                      {ci === 0 && (
+                        <input type="color" className="wizard-color-input" value={v.color || DEFAULT_COLORS[vi % DEFAULT_COLORS.length]}
+                          onChange={(e) => updateClassifierValue(ci, vi, { color: e.target.value })} title="Color" />
+                      )}
+                      <input type="text" value={v.label}
+                        onChange={(e) => updateClassifierValue(ci, vi, { label: e.target.value })}
+                        placeholder="Value label" />
+                      <input type="text" value={v.description}
+                        onChange={(e) => updateClassifierValue(ci, vi, { description: e.target.value })}
+                        placeholder="Description (optional)" style={{ flex: 1.5 }} />
+                      <button type="button" className="wizard-remove-btn"
+                        onClick={() => removeClassifierValue(ci, vi)} disabled={cls.values.length <= 1}>&times;</button>
+                    </div>
+                  ))}
+                  <button type="button" className="wizard-add-btn" onClick={() => addClassifierValue(ci)}
+                    style={{ marginTop: 4 }}>+ Add Value</button>
+                </div>
               </div>
             ))}
           </>
@@ -687,14 +656,6 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
               )}
             </div>
             <div className="wizard-review-section">
-              <h4>Dimensions</h4>
-              <div className="wizard-review-item">
-                {streamsEnabled ? `${streamLabel} (x-axis)` : "No grouping axis"}
-                {streamsEnabled && generationsEnabled && " + "}
-                {generationsEnabled ? `${generationLabel} (y-axis)` : !streamsEnabled ? " + No timeline axis" : ""}
-              </div>
-            </div>
-            <div className="wizard-review-section">
               <h4>Node Types ({nodeTypes.length})</h4>
               {nodeTypes.map((nt, i) => (
                 <div key={i} className="wizard-review-item">
@@ -704,30 +665,18 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
                 </div>
               ))}
             </div>
-            {streamsEnabled && (
-              <div className="wizard-review-section">
-                <h4>{streamLabel} ({streams.length})</h4>
-                {streams.map((s, i) => (
-                  <div key={i} className="wizard-review-item">
-                    <span className="wizard-review-dot" style={{ backgroundColor: s.color }} />
-                    {s.name}
-                    {s.description && <span style={{ color: "var(--text-dim)", marginLeft: 8, fontSize: 11 }}>— {s.description}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
-            {generationsEnabled && (
-              <div className="wizard-review-section">
-                <h4>{generationLabel} ({generations.length})</h4>
-                {generations.map((g, i) => (
-                  <div key={i} className="wizard-review-item">
-                    <span style={{ color: "var(--text-muted)", fontWeight: 600, width: 20 }}>{i + 1}</span>
-                    {g.label || "Untitled"}
-                    {g.period && <span style={{ color: "var(--text-dim)", marginLeft: 8, fontSize: 11 }}>{g.period}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="wizard-review-section">
+              <h4>Classifiers ({classifiers.length})</h4>
+              {classifiers.map((cls, i) => (
+                <div key={i} className="wizard-review-item">
+                  <span style={{ fontWeight: 600 }}>{cls.label}</span>
+                  <span style={{ color: "var(--text-dim)", marginLeft: 6, fontSize: 11 }}>
+                    ({cls.layout === "x" ? "x-axis" : cls.layout === "y" ? "y-axis" : "filter only"})
+                  </span>
+                  <span style={{ marginLeft: 8, fontSize: 11 }}>{cls.values.length} value{cls.values.length !== 1 ? "s" : ""}</span>
+                </div>
+              ))}
+            </div>
             <div className="wizard-review-section">
               <h4>Edge Types ({edgeTypes.length})</h4>
               {edgeTypes.map((e, i) => (
@@ -750,9 +699,7 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
           <>
             <div className="wizard-step-label">{isEditMode ? "Save Changes" : "Create Taxonomy"}</div>
             <div style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 16 }}>
-              Ready to {isEditMode ? "save" : "create"} your taxonomy with {nodeTypes.length} node type{nodeTypes.length > 1 ? "s" : ""}
-              {streamsEnabled ? `, ${streams.length} ${streamLabel.toLowerCase()}` : ""}
-              {generationsEnabled ? `, ${generations.length} ${generationLabel.toLowerCase()}` : ""}.
+              Ready to {isEditMode ? "save" : "create"} your taxonomy with {nodeTypes.length} node type{nodeTypes.length > 1 ? "s" : ""}, {classifiers.length} classifier{classifiers.length > 1 ? "s" : ""}.
             </div>
           </>
         )}

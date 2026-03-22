@@ -28,7 +28,7 @@ import { ThemeProvider, useTheme } from "./theme/ThemeContext";
 import { LLMProvider, useLLM } from "./llm/LLMContext";
 import { registerLLMCallbacks } from "./llm/provider";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
-import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData } from "./migration";
+import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData, getTemplateClassifiers } from "./migration";
 import { createEmptyFilterState } from "./utils/filters";
 import type { FilterState } from "./utils/filters";
 import { normalizeFencedKV } from "./utils/normalize";
@@ -664,12 +664,9 @@ function AppInner() {
     const newTemplate: TaxonomyTemplate = {
       title: data.title,
       description: data.description,
-      streams: data.streams,
-      generations: data.generations,
+      classifiers: data.classifiers,
       node_types: data.node_types,
       edge_types: data.edge_types,
-      stream_label: data.stream_label,
-      generation_label: data.generation_label,
     };
 
     if (graphData && taxonomyEditData) {
@@ -679,8 +676,9 @@ function AppInner() {
         metadata: {
           ...graphData.metadata,
           title: data.title,
-          streams: data.streams,
-          generations: data.generations,
+          classifiers: data.classifiers,
+          streams: [],
+          generations: [],
           structural_observations: data.description
             ? [data.description, ...graphData.metadata.structural_observations.slice(1)]
             : graphData.metadata.structural_observations,
@@ -695,8 +693,9 @@ function AppInner() {
         version: "2.0",
         metadata: {
           title: data.title,
-          generations: data.generations,
-          streams: data.streams,
+          classifiers: data.classifiers,
+          generations: [],
+          streams: [],
           external_shocks: [],
           structural_observations: data.description ? [data.description] : [],
           template: newTemplate,
@@ -738,20 +737,21 @@ function AppInner() {
     const newTemplate: TaxonomyTemplate = {
       title: tmplData.title,
       description: tmplData.description,
+      classifiers: tmplData.classifiers,
       streams: tmplData.streams,
       generations: tmplData.generations,
       node_types: tmplData.node_types ?? DEFAULT_NODE_TYPES,
       edge_types: tmplData.edge_types,
-      stream_label: tmplData.stream_label,
-      generation_label: tmplData.generation_label,
     };
+    const classifiers = getTemplateClassifiers(newTemplate);
 
     const newGraph: GraphIR = {
       version: "2.0",
       metadata: {
         title: mapTitle,
-        generations: tmplData.generations,
-        streams: tmplData.streams,
+        classifiers,
+        generations: tmplData.generations ?? [],
+        streams: tmplData.streams ?? [],
         external_shocks: [],
         structural_observations: [],
         template: newTemplate,
@@ -778,12 +778,11 @@ function AppInner() {
     setTaxonomyEditData({
       title: graphData.metadata.title ?? "",
       description: graphData.metadata.structural_observations[0] ?? undefined,
+      classifiers: graphData.metadata.classifiers,
       streams: graphData.metadata.streams,
       generations: graphData.metadata.generations,
       node_types: nodeTypeConfigs,
       edge_types: template?.edge_types,
-      stream_label: template?.stream_label,
-      generation_label: template?.generation_label,
     });
     setShowTaxonomyWizard(true);
   }, [graphData, nodeTypeConfigs, template]);
@@ -793,25 +792,19 @@ function AppInner() {
     const tmpl: TaxonomyWizardInitial = {
       title: data.title,
       description: data.description,
-      streams: data.streams,
-      generations: data.generations,
+      classifiers: data.classifiers,
       node_types: data.node_types,
       edge_types: data.edge_types,
-      stream_label: data.stream_label,
-      generation_label: data.generation_label,
     };
 
     if (isNativeApp) {
       const templateJson = JSON.stringify({
         title: data.title,
         description: data.description,
-        format_instructions: "When generating .cm files from this template: use markdown with fenced code blocks for nodes. Every property line MUST use 'key: value' format with a colon separator. Required node keys: id, name, generation, stream. Include all fields defined in the node type. Edges use 'from: [id] to: [id] type: [edge_type]' format.",
-        streams: data.streams,
-        generations: data.generations,
+        format_instructions: "When generating .cm files from this template: use markdown with fenced code blocks for nodes. Every property line MUST use 'key: value' format with a colon separator. Required node keys: id, name. Classifier values use the classifier id as the key. Tags use comma-separated format. Edges use 'from: [id] to: [id] type: [edge_type]' format.",
+        classifiers: data.classifiers,
         node_types: data.node_types,
         edge_types: data.edge_types,
-        stream_label: data.stream_label,
-        generation_label: data.generation_label,
       }, null, 2);
       sendToSwift("saveTemplate", JSON.stringify({ content: templateJson, title: data.title }));
     }
@@ -1074,8 +1067,7 @@ function AppInner() {
                       <span className="start-item-name">{t.title}</span>
                       <span className="start-item-meta">
                         {t.node_types?.length ?? 0} types
-                        {t.streams.length > 0 ? ` \u00B7 ${t.streams.length} ${t.stream_label?.toLowerCase() ?? "categories"}` : ""}
-                        {t.generations.length > 0 ? ` \u00B7 ${t.generations.length} ${t.generation_label?.toLowerCase() ?? "phases"}` : ""}
+                        {(t.classifiers?.length ?? 0) > 0 ? ` \u00B7 ${t.classifiers!.length} classifier${t.classifiers!.length > 1 ? "s" : ""}` : ""}
                       </span>
                     </button>
                     <button
