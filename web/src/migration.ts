@@ -191,7 +191,7 @@ export function getNodeTypeConfig(nodeTypes: NodeTypeConfig[], nodeType: string)
 /**
  * Get node radius from config, falling back to defaults.
  */
-export function getConfigNodeRadius(config: NodeTypeConfig | undefined, properties: Record<string, string | string[] | number | undefined> | undefined, _viewMode: string): number {
+export function getConfigNodeRadius(config: NodeTypeConfig | undefined, properties: Record<string, string | string[] | number | undefined> | undefined): number {
   if (!config || !config.size_field || !config.size_map) return 10;
   const sizeValue = properties?.[config.size_field];
   if (typeof sizeValue === "string" && config.size_map[sizeValue] != null) {

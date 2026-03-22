@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- Props interface co-exported */
 import { useState, useMemo } from "react";
 import type { NetworkAnalysis, PathResult } from "../utils/graph-analysis";
 import type { GraphNode, NodeTypeConfig } from "../types/graph-ir";

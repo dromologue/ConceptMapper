@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- context + hook co-export */
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { LLMConfig, AppConfig } from "../types/llm";
 
@@ -31,32 +32,33 @@ function sendToSwift(handler: string, payload?: unknown) {
 }
 
 export function LLMProvider({ children }: { children: ReactNode }) {
-  const [config, setConfig] = useState<AppConfig | null>(null);
-
-  // Load config on mount
-  useEffect(() => {
-    if (isNativeApp()) {
-      // Register callback before requesting
-      const win = window as unknown as Record<string, unknown>;
-      win.configLoaded = (json: string) => {
-        try {
-          const parsed = JSON.parse(json) as AppConfig;
-          setConfig(parsed);
-        } catch {
-          setConfig({});
-        }
-      };
-      sendToSwift("loadConfig");
-      return () => { delete win.configLoaded; };
-    } else {
-      // Browser fallback: localStorage
+  const [config, setConfig] = useState<AppConfig | null>(() => {
+    // Browser: initialize from localStorage synchronously
+    if (!isNativeApp()) {
       try {
         const raw = lsGet(LS_LLM_CONFIG);
-        setConfig(raw ? JSON.parse(raw) : {});
+        return raw ? JSON.parse(raw) : {};
+      } catch {
+        return {};
+      }
+    }
+    return null;
+  });
+
+  // Native app: load config via Swift bridge
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    const win = window as unknown as Record<string, unknown>;
+    win.configLoaded = (json: string) => {
+      try {
+        const parsed = JSON.parse(json) as AppConfig;
+        setConfig(parsed);
       } catch {
         setConfig({});
       }
-    }
+    };
+    sendToSwift("loadConfig");
+    return () => { delete win.configLoaded; };
   }, []);
 
   const updateLLMConfig = useCallback((llmConfig: LLMConfig) => {

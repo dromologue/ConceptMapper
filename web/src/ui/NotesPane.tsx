@@ -40,17 +40,15 @@ function serializeOutline(items: OutlineItem[]): string {
 }
 
 export function NotesPane({ node, edges, nodes, onNodeUpdate }: Props) {
+  return <NotesPaneInner key={node.id} node={node} edges={edges} nodes={nodes} onNodeUpdate={onNodeUpdate} />;
+}
+
+function NotesPaneInner({ node, edges, nodes, onNodeUpdate }: Props) {
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
   const [items, setItems] = useState<OutlineItem[]>(() => parseOutline(node.notes ?? ""));
   const [focusedLine, setFocusedLine] = useState(0);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
-
-  // Reset when node changes
-  useEffect(() => {
-    setItems(parseOutline(node.notes ?? ""));
-    setFocusedLine(0);
-  }, [node.id]);
 
   // Focus the right input when focusedLine changes
   useEffect(() => {

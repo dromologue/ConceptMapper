@@ -94,10 +94,10 @@ interface Props {
   highlightedCommunity?: number | null;
 }
 
-function getNodeRadius(node: SimNode, viewMode: ViewMode, nodeTypeConfigs: NodeTypeConfig[]): number {
+function getNodeRadius(node: SimNode, _viewMode: ViewMode, nodeTypeConfigs: NodeTypeConfig[]): number {
   const config = getNodeTypeConfig(nodeTypeConfigs, node.node_type);
   if (config) {
-    return getConfigNodeRadius(config, node.properties, viewMode);
+    return getConfigNodeRadius(config, node.properties);
   }
   // Legacy fallback
   if (node.node_type === "concept") return 8;
@@ -109,6 +109,7 @@ function getStreamColor(node: SimNode, streams: GraphIR["metadata"]["streams"], 
   return streams.find((s) => s.id === node.stream)?.color ?? "#666";
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function isNodePrimary(node: SimNode, viewMode: ViewMode, _nodeTypeConfigs: NodeTypeConfig[]): boolean {
   if (viewMode === "full") return true;
   // viewMode is a node type id — show only nodes of that type
@@ -163,11 +164,22 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const onSelectEdgeRef = useRef(onSelectEdge);
   const hasChildrenRef = useRef<Set<string>>(new Set());
 
+  function redraw() {
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    const { width, height } = canvasSizeRef.current;
+    if (width && height) draw(ctx, width, height);
+  }
+
   useEffect(() => { onSelectNodeRef.current = onSelectNode; }, [onSelectNode]);
   useEffect(() => { onSelectEdgeRef.current = onSelectEdge; }, [onSelectEdge]);
   useEffect(() => { onToggleCollapseRef.current = onToggleCollapse; }, [onToggleCollapse]);
-  useEffect(() => { collapsedRef.current = collapsedNodes ?? new Set(); redraw(); }, [collapsedNodes]);
   useEffect(() => { dataRef.current = data; }, [data]);
+
+  // Sync prop values to refs and trigger canvas redraw. These effects intentionally
+  // omit `redraw` from deps — it reads only from refs and is stable.
+  /* eslint-disable react-hooks/exhaustive-deps */
+  useEffect(() => { collapsedRef.current = collapsedNodes ?? new Set(); redraw(); }, [collapsedNodes]);
   useEffect(() => { themeRef.current = theme; redraw(); }, [theme]);
   useEffect(() => { lookRef.current = look; redraw(); }, [look]);
   useEffect(() => { selectedNodeIdRef.current = selectedNodeId; redraw(); }, [selectedNodeId]);
@@ -182,13 +194,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { filtersRef.current = filters; redraw(); }, [filters]);
   useEffect(() => { nodeTypeConfigsRef.current = nodeTypeConfigs; redraw(); }, [nodeTypeConfigs]);
   useEffect(() => { selectedEdgeKeyRef.current = selectedEdgeKey; redraw(); }, [selectedEdgeKey]);
-
-  function redraw() {
-    const ctx = ctxRef.current;
-    if (!ctx) return;
-    const { width, height } = canvasSizeRef.current;
-    if (width && height) draw(ctx, width, height);
-  }
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   function fitToView() {
     const ns = nodesRef.current;
@@ -268,7 +274,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     });
     observer.observe(canvas.parentElement);
     return () => observer.disconnect();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- one-time setup with stable resizeCanvas
 
   // Initial simulation setup (once)
   useEffect(() => {
@@ -583,7 +589,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     });
 
     return () => { simulation.stop(); simInitializedRef.current = false; };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- one-time simulation setup
 
   // Update simulation in-place when data changes
   useEffect(() => {
@@ -635,7 +641,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     } else {
       redraw();
     }
-  }, [data]);
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps -- redraw reads from refs
 
   function findNodeAt(canvasX: number, canvasY: number): SimNode | null {
     const t = transformRef.current;

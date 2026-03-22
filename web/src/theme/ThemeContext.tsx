@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- context + hook co-export */
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { ThemeConfig } from "./themes";
 import { getThemeById, THEMES } from "./themes";

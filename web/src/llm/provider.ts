@@ -29,7 +29,7 @@ export function makeRequestId(): string {
 /** Extract JSON from LLM response (strips markdown fences, finds {...} boundaries) */
 export function extractJSON(text: string): string {
   // Strip markdown code fences
-  let cleaned = text.replace(/```(?:json)?\s*/g, "").replace(/```\s*/g, "");
+  const cleaned = text.replace(/```(?:json)?\s*/g, "").replace(/```\s*/g, "");
 
   // Find the first { and last } for JSON object
   const start = cleaned.indexOf("{");

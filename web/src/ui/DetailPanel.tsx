@@ -22,15 +22,14 @@ interface Props {
   style?: React.CSSProperties;
 }
 
-/** Text input with local state — only commits on blur or after 500ms idle */
-function DebouncedField({ label, value, nodeId, onCommit }: {
-  label: string; value: string; nodeId: string;
+/** Text input with local state — only commits on blur or after 500ms idle.
+ *  Use key={nodeId} on the component to reset state when node changes. */
+function DebouncedField({ label, value, onCommit }: {
+  label: string; value: string;
   onCommit: (value: string) => void;
 }) {
   const [local, setLocal] = useState(value);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => { setLocal(value); }, [nodeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (v: string) => {
     setLocal(v);
@@ -47,15 +46,14 @@ function DebouncedField({ label, value, nodeId, onCommit }: {
   );
 }
 
-/** Textarea with local state — only commits on blur or after 500ms idle */
-function DebouncedTextarea({ label, value, nodeId, onCommit }: {
-  label: string; value: string; nodeId: string;
+/** Textarea with local state — only commits on blur or after 500ms idle.
+ *  Use key={nodeId} on the component to reset state when node changes. */
+function DebouncedTextarea({ label, value, onCommit }: {
+  label: string; value: string;
   onCommit: (value: string) => void;
 }) {
   const [local, setLocal] = useState(value);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => { setLocal(value); }, [nodeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (v: string) => {
     setLocal(v);
@@ -215,10 +213,9 @@ export function DetailPanel({
                 if (field.type === "textarea") {
                   return (
                     <DebouncedTextarea
-                      key={field.key}
+                      key={`${node.id}-${field.key}`}
                       label={field.label}
                       value={strValue}
-                      nodeId={node.id}
                       onCommit={(v) => debouncedUpdateProperty(field.key, v)}
                     />
                   );
@@ -227,10 +224,9 @@ export function DetailPanel({
                 // text field (default)
                 return (
                   <DebouncedField
-                    key={field.key}
+                    key={`${node.id}-${field.key}`}
                     label={field.label}
                     value={strValue}
-                    nodeId={node.id}
                     onCommit={(v) => debouncedUpdateProperty(field.key, v)}
                   />
                 );

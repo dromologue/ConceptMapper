@@ -29,18 +29,17 @@ function serializeOutline(items: OutlineItem[]): string {
 }
 
 export function EdgeNotesPane({ edge, nodes, onEdgeUpdate }: Props) {
+  const edgeKey = `${edge.from}|${edge.to}`;
+  return <EdgeNotesPaneInner key={edgeKey} edge={edge} nodes={nodes} onEdgeUpdate={onEdgeUpdate} />;
+}
+
+function EdgeNotesPaneInner({ edge, nodes, onEdgeUpdate }: Props) {
   const fromNode = nodes.find((n) => n.id === edge.from);
   const toNode = nodes.find((n) => n.id === edge.to);
   const [items, setItems] = useState<OutlineItem[]>(() => parseOutline(edge.note ?? ""));
   const [focusedLine, setFocusedLine] = useState(0);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
-  const edgeKey = `${edge.from}|${edge.to}`;
-
-  useEffect(() => {
-    setItems(parseOutline(edge.note ?? ""));
-    setFocusedLine(0);
-  }, [edgeKey]);
 
   useEffect(() => {
     const input = inputRefs.current.get(focusedLine);

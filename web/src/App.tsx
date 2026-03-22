@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import type { GraphIR, GraphNode, GraphEdge, NodeTypeConfig, TaxonomyTemplate, ConceptMapData } from "./types/graph-ir";
 import { GraphCanvas } from "./graph/GraphCanvas";
 import { DetailPanel } from "./ui/DetailPanel";
@@ -17,7 +17,7 @@ import { ExportImageModal } from "./ui/ExportImageModal";
 import { AnalysisPanel } from "./ui/AnalysisPanel";
 import { EdgeNotesPane } from "./ui/EdgeNotesPane";
 import { analyzeNetwork, findShortestPaths } from "./utils/graph-analysis";
-import type { NetworkAnalysis, PathResult } from "./utils/graph-analysis";
+import type { PathResult } from "./utils/graph-analysis";
 import type { ExportImageOptions } from "./ui/ExportImageModal";
 import { jsPDF } from "jspdf";
 import { HelpPanel } from "./ui/HelpPanel";
@@ -53,7 +53,6 @@ function AppInner() {
   const redoStack = useRef<GraphIR[]>([]);
 
   // Wrapper that pushes to undo history before mutating
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- only uses refs and stable setGraphDataRaw
   const setGraphData = useCallback((data: GraphIR | null | ((prev: GraphIR | null) => GraphIR | null)) => {
     setGraphDataRaw((prev) => {
       const next = typeof data === 'function' ? data(prev) : data;
@@ -115,7 +114,7 @@ function AppInner() {
     return () => clearTimeout(timer);
   }, []);
   const [labelMenuOpen, setLabelMenuOpen] = useState(false);
-  const [analysis, setAnalysis] = useState<NetworkAnalysis | null>(null);
+  // analysis is computed via useMemo above
   const [analysisNodeTypes, setAnalysisNodeTypes] = useState<Set<string> | null>(null);
   const [pathResult, setPathResult] = useState<PathResult | null>(null);
   const [pathFrom, setPathFrom] = useState<string | null>(null);
@@ -134,8 +133,8 @@ function AppInner() {
   const nodeTypeConfigs: NodeTypeConfig[] = template?.node_types ?? DEFAULT_NODE_TYPES;
 
   // Compute network analysis when graph data or node type filter changes
-  useEffect(() => {
-    if (!graphData || graphData.nodes.length === 0) { setAnalysis(null); return; }
+  const analysis = useMemo(() => {
+    if (!graphData || graphData.nodes.length === 0) return null;
     let filteredNodes = graphData.nodes;
     let filteredEdges = graphData.edges;
     if (analysisNodeTypes !== null) {
@@ -143,8 +142,7 @@ function AppInner() {
       filteredNodes = graphData.nodes.filter((n) => nodeIds.has(n.id));
       filteredEdges = graphData.edges.filter((e) => nodeIds.has(e.from) && nodeIds.has(e.to));
     }
-    const result = analyzeNetwork(filteredNodes, filteredEdges);
-    setAnalysis(result);
+    return analyzeNetwork(filteredNodes, filteredEdges);
   }, [graphData, analysisNodeTypes]);
 
   // Path finder handler
@@ -234,7 +232,7 @@ function AppInner() {
         setError(err instanceof Error ? err.message : String(err));
       }
     },
-    [template]
+    [template, setGraphData]
   );
 
   // Register LLM response/error callbacks
@@ -344,10 +342,10 @@ function AppInner() {
     };
   }, [loadFileContent, graphData, nodeTypeConfigs, templateFilePath]);
 
-  // Clear revealed nodes when view mode changes
-  useEffect(() => {
+  const handleViewModeChange = useCallback((mode: string) => {
+    setViewMode(mode);
     setRevealedNodes(new Set());
-  }, [viewMode]);
+  }, []);
 
   const handleSelectNode = useCallback(
     (node: GraphNode | null) => {
@@ -394,7 +392,7 @@ function AppInner() {
         prev?.id === nodeId ? mergeNodeUpdate(prev, updates) : prev
       );
     },
-    [graphData]
+    [graphData, setGraphData]
   );
 
   const handleNavigateToNode = useCallback(
@@ -428,7 +426,7 @@ function AppInner() {
       setShowAddNode(null);
       setSelectedNode(newNode);
     },
-    [graphData, nodeTypeConfigs]
+    [graphData, setGraphData]
   );
 
   const handleAddEdge = useCallback(
@@ -459,7 +457,7 @@ function AppInner() {
       setEdgeSource(null);
       setEdgeTarget(null);
     },
-    [graphData, edgeSource, edgeTarget, nodeTypeConfigs]
+    [graphData, setGraphData, edgeSource, edgeTarget, template?.edge_types]
   );
 
   const handleStartAddEdge = useCallback(() => {
@@ -485,7 +483,7 @@ function AppInner() {
     });
     setSelectedNode(null);
     setNotesOpen(false);
-  }, [graphData]);
+  }, [graphData, setGraphData]);
 
   const handleDeleteEdge = useCallback((fromId: string, toId: string) => {
     if (!graphData) return;
@@ -495,7 +493,7 @@ function AppInner() {
     });
     setSelectedEdge(null);
     setEdgePopoverPos(null);
-  }, [graphData]);
+  }, [graphData, setGraphData]);
 
   // Export image handler — captures current canvas to PNG or PDF
   const handleExportImage = useCallback((options: ExportImageOptions) => {
@@ -732,7 +730,7 @@ function AppInner() {
 
     setShowTaxonomyWizard(false);
     setTaxonomyEditData(undefined);
-  }, [isNativeApp, sendToSwift, graphData, taxonomyEditData]);
+  }, [isNativeApp, sendToSwift, graphData, setGraphData, taxonomyEditData]);
 
   // Create a new empty map using an existing template's structure (no wizard)
   const handleNewFileFromTemplate = useCallback((tmplData: TaxonomyWizardInitial) => {
@@ -772,7 +770,7 @@ function AppInner() {
     if (isNativeApp) {
       sendToSwift("saveNewTaxonomy", JSON.stringify({ content: md, title: mapTitle }));
     }
-  }, [isNativeApp, sendToSwift]);
+  }, [isNativeApp, sendToSwift, setGraphData]);
 
   // Open wizard in edit mode with current taxonomy data
   const handleEditTaxonomy = useCallback(() => {
@@ -866,7 +864,7 @@ function AppInner() {
     setSelectedEdge((prev) =>
       prev && prev.from === fromId && prev.to === toId ? { ...prev, ...updates } : prev
     );
-  }, [graphData]);
+  }, [graphData, setGraphData]);
 
   const handleMappingResult = useCallback((cmData: ConceptMapData, tmpl: TaxonomyTemplate) => {
     if (!cmData.version) cmData.version = "2.0";
@@ -877,7 +875,7 @@ function AppInner() {
     setRevealedNodes(new Set());
     setError(null);
     setShowMappingModal(false);
-  }, []);
+  }, [setGraphData]);
 
   const makeResizeHandler = useCallback(
     (setter: React.Dispatch<React.SetStateAction<number>>, currentWidth: number) =>
@@ -1213,7 +1211,7 @@ function AppInner() {
       <div className="workbench">
         <ActivityBar
           viewMode={viewMode}
-          onViewModeChange={setViewMode}
+          onViewModeChange={handleViewModeChange}
           sidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           onOpenSettings={() => setShowSettings(true)}

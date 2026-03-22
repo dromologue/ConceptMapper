@@ -181,7 +181,9 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
   }, [streamsEnabled, generationsEnabled]);
 
   const [stepIdx, setStepIdx] = useState(0);
-  const currentStep = steps[stepIdx] ?? "dimensions";
+  // Clamp stepIdx if steps shrink (user disables a dimension while past it)
+  const clampedStepIdx = stepIdx >= steps.length ? steps.length - 1 : stepIdx;
+  const currentStep = steps[clampedStepIdx] ?? "dimensions";
   const totalSteps = steps.length;
 
   // Escape to cancel
@@ -190,11 +192,6 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onCancel]);
-
-  // Clamp stepIdx if steps shrink (user disables a dimension while past it)
-  useEffect(() => {
-    if (stepIdx >= steps.length) setStepIdx(steps.length - 1);
-  }, [steps.length, stepIdx]);
 
   // Validation per step
   const canNext = useCallback(() => {
