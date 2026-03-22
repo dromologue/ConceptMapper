@@ -1545,25 +1545,8 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): str
   lines.push(`# ${title}\n`);
   lines.push(`<!-- Exported from concept-mapper, ${new Date().toISOString().split("T")[0]}. -->\n`);
 
-  if (data.metadata.generations.length > 0) {
-    lines.push("## Generations\n");
-    lines.push("| Gen | Period | Label | Attention Space Count |");
-    lines.push("|-----|--------|-------|-----------------------|");
-    for (const g of data.metadata.generations) {
-      lines.push(`| ${g.number} | ${g.period ?? ""} | ${g.label ?? ""} | ${g.attention_space_count ?? ""} |`);
-    }
-    lines.push("");
-  }
-
-  if (data.metadata.streams.length > 0) {
-    lines.push("## Streams\n");
-    lines.push("| Stream ID | Name | Colour | Description |");
-    lines.push("|-----------|------|--------|-------------|");
-    for (const s of data.metadata.streams) {
-      lines.push(`| ${s.id} | ${s.name} | ${s.color ?? ""} | ${s.description ?? ""} |`);
-    }
-    lines.push("");
-  }
+  // Structure (classifiers, node types, edge types) lives in the .cmt template.
+  // The .cm file only stores content: nodes, edges, and observations.
 
   // Group nodes by node_type and write each group as "## [Label] Nodes"
   const nodesByType = new Map<string, typeof data.nodes>();
@@ -1588,9 +1571,21 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): str
       lines.push(`id:               ${node.id}`);
       lines.push(`name:             ${node.name}`);
 
-      // Write generation, stream, then all properties as KV pairs
-      if (node.generation != null) lines.push(`generation:       ${node.generation}`);
-      if (node.stream) lines.push(`stream:           ${node.stream}`);
+      // Write classifier values (e.g. category: idea, urgency: now)
+      if (node.classifiers) {
+        for (const [key, value] of Object.entries(node.classifiers)) {
+          if (value != null && value !== "") {
+            lines.push(`${key}: ${value}`);
+          }
+        }
+      }
+
+      // Write tags
+      if (node.tags && node.tags.length > 0) {
+        lines.push(`tags: ${node.tags.join(", ")}`);
+      }
+
+      // Write properties
       const props = node.properties ?? {};
       for (const [key, value] of Object.entries(props)) {
         if (value != null && value !== "") {
