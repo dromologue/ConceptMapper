@@ -13,14 +13,19 @@ const mockNodes = [
 
 const defaultProps = {
   nodes: mockNodes,
-  streams: [
-    { id: "s1", name: "Psychology", color: "#ff0000" },
-    { id: "s2", name: "Sociology", color: "#00ff00" },
+  classifiers: [
+    {
+      id: "stream", label: "Streams", layout: "x" as const,
+      values: [
+        { id: "s1", label: "Psychology", color: "#ff0000" },
+        { id: "s2", label: "Sociology", color: "#00ff00" },
+      ],
+    },
   ],
   nodeTypeConfigs: legacyNodeTypeConfigs,
   filters: createEmptyFilterState(),
-  onStreamToggle: vi.fn(),
-  onGenerationToggle: vi.fn(),
+  onClassifierToggle: vi.fn(),
+  onTagToggle: vi.fn(),
   onAttributeToggle: vi.fn(),
   onDateRangeChange: vi.fn(),
   onShowAll: vi.fn(),
@@ -38,15 +43,14 @@ describe("Sidebar", () => {
     expect(screen.getByText("Explorer")).toBeInTheDocument();
   });
 
-  it("shows filter section headers (collapsed by default)", () => {
+  it("shows classifier section headers (collapsed by default)", () => {
     render(<Sidebar {...defaultProps} />);
     expect(screen.getByText("Streams")).toBeInTheDocument();
-    expect(screen.getByText("Phases")).toBeInTheDocument();
     // Items inside collapsed sections are not rendered
     expect(screen.queryByText("Psychology")).not.toBeInTheDocument();
   });
 
-  it("expands stream section on click and shows items", async () => {
+  it("expands classifier section on click and shows items", async () => {
     const user = userEvent.setup();
     render(<Sidebar {...defaultProps} />);
     await user.click(screen.getByText("Streams"));
@@ -121,15 +125,15 @@ describe("Sidebar", () => {
     expect(screen.getByText("Cancel Edge")).toBeInTheDocument();
   });
 
-  it("calls onStreamToggle with all stream ids when stream is clicked", async () => {
+  it("calls onClassifierToggle when classifier value is clicked", async () => {
     const user = userEvent.setup();
-    const onStreamToggle = vi.fn();
-    render(<Sidebar {...defaultProps} onStreamToggle={onStreamToggle} />);
+    const onClassifierToggle = vi.fn();
+    render(<Sidebar {...defaultProps} onClassifierToggle={onClassifierToggle} />);
 
-    // Expand streams section first
+    // Expand classifier section first
     await user.click(screen.getByText("Streams"));
     await user.click(screen.getByText("Psychology"));
-    expect(onStreamToggle).toHaveBeenCalledWith("s1", ["s1", "s2"]);
+    expect(onClassifierToggle).toHaveBeenCalledWith("stream", "s1", ["s1", "s2"]);
   });
 
   it("groups nodes by type with type headers", () => {
@@ -138,40 +142,17 @@ describe("Sidebar", () => {
     expect(screen.getByText("Concept")).toBeInTheDocument();
   });
 
-  it("expands phases section and shows generation values", async () => {
+  it("uses classifier labels as section headers", async () => {
     const user = userEvent.setup();
-    render(<Sidebar {...defaultProps} />);
-    await user.click(screen.getByText("Phases"));
-    expect(screen.getByText("Phase 1")).toBeInTheDocument();
-    expect(screen.getByText("Phase 2")).toBeInTheDocument();
-  });
-
-  it("uses template labels for streams and generations sections", async () => {
-    const user = userEvent.setup();
-    render(<Sidebar {...defaultProps} template={{
-      title: "Test",
-      streams: [],
-      generations: [{ number: 1, label: "Sprint 1" }, { number: 2, label: "Sprint 2" }],
-      node_types: [],
-      stream_label: "Workstreams",
-      generation_label: "Sprints",
-    }} />);
+    render(<Sidebar {...defaultProps} classifiers={[
+      { id: "workstream", label: "Workstreams", layout: "x", values: [{ id: "ws1", label: "Backend" }] },
+      { id: "sprint", label: "Sprints", layout: "y", values: [{ id: "1", label: "Sprint 1" }, { id: "2", label: "Sprint 2" }] },
+    ]} />);
     expect(screen.getByText("Workstreams")).toBeInTheDocument();
     expect(screen.getByText("Sprints")).toBeInTheDocument();
-    // Expand to see labels
     await user.click(screen.getByText("Sprints"));
     expect(screen.getByText("Sprint 1")).toBeInTheDocument();
     expect(screen.getByText("Sprint 2")).toBeInTheDocument();
-  });
-
-  it("calls onGenerationToggle with all gens when generation is clicked", async () => {
-    const user = userEvent.setup();
-    const onGenerationToggle = vi.fn();
-    render(<Sidebar {...defaultProps} onGenerationToggle={onGenerationToggle} />);
-
-    await user.click(screen.getByText("Phases"));
-    await user.click(screen.getByText("Phase 1"));
-    expect(onGenerationToggle).toHaveBeenCalledWith(1, [1, 2]);
   });
 
   it("renders attribute filter section headers (collapsed)", () => {
@@ -197,8 +178,10 @@ describe("Sidebar", () => {
     const filters = {
       streams: new Set(["s1"]),
       generations: null,
+      classifiers: [],
       attributes: [],
       dateRanges: [],
+      tags: null,
     };
     render(<Sidebar {...defaultProps} filters={filters} />);
     expect(screen.getByText("Alice")).toBeInTheDocument();
@@ -210,8 +193,10 @@ describe("Sidebar", () => {
     const filters = {
       streams: new Set(["s1"]),
       generations: null,
+      classifiers: [],
       attributes: [],
       dateRanges: [],
+      tags: null,
     };
     render(<Sidebar {...defaultProps} filters={filters} />);
     expect(screen.getByText("Show All")).toBeInTheDocument();
@@ -228,8 +213,10 @@ describe("Sidebar", () => {
     const filters = {
       streams: new Set(["s1"]),
       generations: null,
+      classifiers: [],
       attributes: [],
       dateRanges: [],
+      tags: null,
     };
     render(<Sidebar {...defaultProps} filters={filters} onShowAll={onShowAll} />);
 

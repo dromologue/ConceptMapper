@@ -145,8 +145,10 @@ describe("isNodeFilterVisible", () => {
     const state: FilterState = {
       streams: new Set(["s1"]),
       generations: new Set([1]),
+      classifiers: [],
       attributes: [{ nodeType: "person", field: "importance", values: new Set(["major"]) }],
       dateRanges: [],
+      tags: null,
     };
     // Passes all three
     expect(isNodeFilterVisible(makeNode({ stream: "s1", generation: 1, properties: { importance: "major" } }), state)).toBe(true);

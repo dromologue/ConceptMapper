@@ -1,22 +1,26 @@
 import { useState } from "react";
-import type { Stream, Generation, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
+import type { Classifier, NodeTypeConfig } from "../types/graph-ir";
 
 interface Props {
   nodeTypeConfigs: NodeTypeConfig[];
-  streams: Stream[];
-  generations: Generation[];
-  onAdd: (nodeType: string, name: string, stream: string, generation: number, properties: Record<string, string | undefined>) => void;
+  classifiers: Classifier[];
+  onAdd: (nodeType: string, name: string, classifierValues: Record<string, string>, tags: string[], properties: Record<string, string | undefined>) => void;
   onCancel: () => void;
   /** Pre-select a specific node type */
   initialNodeType?: string;
-  template?: TaxonomyTemplate | null;
 }
 
-export function AddNodeModal({ nodeTypeConfigs, streams, generations, onAdd, onCancel, initialNodeType, template }: Props) {
+export function AddNodeModal({ nodeTypeConfigs, classifiers, onAdd, onCancel, initialNodeType }: Props) {
   const [selectedType, setSelectedType] = useState(initialNodeType ?? nodeTypeConfigs[0]?.id ?? "");
   const [name, setName] = useState("");
-  const [stream, setStream] = useState(streams[0]?.id ?? "");
-  const [generation, setGeneration] = useState(generations[0]?.number ?? 1);
+  const [classifierValues, setClassifierValues] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    classifiers.forEach((cls) => {
+      if (cls.values.length > 0) init[cls.id] = cls.values[0].id;
+    });
+    return init;
+  });
+  const [tagsInput, setTagsInput] = useState("");
   const config = nodeTypeConfigs.find((t) => t.id === selectedType);
 
   // Initialize properties with default values from select fields
@@ -39,7 +43,8 @@ export function AddNodeModal({ nodeTypeConfigs, streams, generations, onAdd, onC
       const val = properties[field.key];
       if (val) props[field.key] = val;
     }
-    onAdd(selectedType, name.trim(), stream, generation, props);
+    const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
+    onAdd(selectedType, name.trim(), classifierValues, tags, props);
   };
 
   const updateProp = (key: string, value: string) => {
@@ -83,17 +88,25 @@ export function AddNodeModal({ nodeTypeConfigs, streams, generations, onAdd, onC
               placeholder={config?.label ? `e.g. New ${config.label}` : "Name"}
             />
           </div>
+          {classifiers.map((cls) => (
+            <div className="modal-field" key={cls.id}>
+              <label>{cls.label}</label>
+              <select
+                value={classifierValues[cls.id] ?? ""}
+                onChange={(e) => setClassifierValues((prev) => ({ ...prev, [cls.id]: e.target.value }))}
+              >
+                {cls.values.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+              </select>
+            </div>
+          ))}
           <div className="modal-field">
-            <label>{template?.stream_label || "Category"}</label>
-            <select value={stream} onChange={(e) => setStream(e.target.value)}>
-              {streams.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </div>
-          <div className="modal-field">
-            <label>{template?.generation_label || "Phase"}</label>
-            <select value={generation} onChange={(e) => setGeneration(Number(e.target.value))}>
-              {generations.map((g) => <option key={g.number} value={g.number}>{g.number}: {g.label ?? g.period ?? ""}</option>)}
-            </select>
+            <label>Tags</label>
+            <input
+              type="text"
+              placeholder="tag1, tag2, tag3"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+            />
           </div>
           {/* Config-driven required fields */}
           {config?.fields.filter((f) => f.required || f.type === "select").map((field) => (

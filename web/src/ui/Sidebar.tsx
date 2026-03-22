@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
-import type { GraphNode, Stream, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
+import type { GraphNode, NodeTypeConfig, TaxonomyTemplate, Classifier } from "../types/graph-ir";
 import type { FilterState } from "../utils/filters";
-import { isFilterActive, isNodeFilterVisible, findAttributeFilter, findDateRangeFilter } from "../utils/filters";
+import { isFilterActive, isNodeFilterVisible, findAttributeFilter, findDateRangeFilter, findClassifierFilter } from "../utils/filters";
 import { IconChevronDown } from "./Icons";
 
 interface FilterSection {
@@ -37,12 +37,12 @@ function formatKey(key: string): string {
 
 interface Props {
   nodes: GraphNode[];
-  streams: Stream[];
+  classifiers: Classifier[];
   nodeTypeConfigs: NodeTypeConfig[];
   template?: TaxonomyTemplate | null;
   filters: FilterState;
-  onStreamToggle: (streamId: string, allStreamIds: string[]) => void;
-  onGenerationToggle: (gen: number, allGens: number[]) => void;
+  onClassifierToggle: (classifierId: string, valueId: string, allValueIds: string[]) => void;
+  onTagToggle: (tag: string, allTags: string[]) => void;
   onAttributeToggle: (nodeType: string, field: string, value: string, allValues: string[]) => void;
   onDateRangeChange: (nodeType: string, fromField: string, toField: string | undefined, bound: "from" | "to", value: string) => void;
   onShowAll: () => void;
@@ -62,40 +62,26 @@ function extractYear(val: unknown): number | null {
 }
 
 export function Sidebar({
-  nodes, streams, nodeTypeConfigs, template, filters,
-  onStreamToggle, onGenerationToggle, onAttributeToggle, onDateRangeChange, onShowAll,
+  nodes, classifiers, nodeTypeConfigs, filters,
+  onClassifierToggle, onTagToggle, onAttributeToggle, onDateRangeChange, onShowAll,
   onSelectNode, selectedNodeId,
   onAddNode, onAddEdge,
   interactionMode, onCancelAddEdge,
 }: Props) {
-  const streamSectionLabel = template?.stream_label || "Streams";
-  const generationSectionLabel = template?.generation_label || "Phases";
   const [filter, setFilter] = useState("");
-  const [streamsOpen, setStreamsOpen] = useState(false);
-  const [generationsOpen, setGenerationsOpen] = useState(false);
+  const [classifierSectionsOpen, setClassifierSectionsOpen] = useState<Record<string, boolean>>({});
+  const [tagsOpen, setTagsOpen] = useState(false);
   const [attributeSectionsOpen, setAttributeSectionsOpen] = useState<Record<string, boolean>>({});
   const [nodesOpen, setNodesOpen] = useState(true);
 
-  // Collect unique generation values from data
-  const generations = useMemo(() => {
-    const genSet = new Set<number>();
+  // Collect all unique tags from nodes
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
     for (const n of nodes) {
-      if (n.generation != null) genSet.add(n.generation);
+      if (n.tags) for (const t of n.tags) tagSet.add(t);
     }
-    return [...genSet].sort((a, b) => a - b);
+    return [...tagSet].sort();
   }, [nodes]);
-
-  // Generation labels from template
-  const generationLabels = useMemo(() => {
-    const map = new Map<number, string>();
-    if (template?.generations) {
-      for (const g of template.generations) {
-        if (g.label) map.set(g.number, g.label);
-        else if (g.period) map.set(g.number, g.period);
-      }
-    }
-    return map;
-  }, [template]);
 
   // Dynamic attribute filter sections — data-driven discovery
   // Scans all properties from actual data, uses config labels where available
@@ -277,59 +263,64 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Streams section */}
-      {streams.length > 0 && (
-        <div className="sidebar-section">
-          <div className="sidebar-section-header" onClick={() => setStreamsOpen(!streamsOpen)}>
-            <span>{streamSectionLabel}</span>
-            <span className={`sidebar-chevron ${streamsOpen ? "open" : ""}`}>
-              <IconChevronDown size={12} />
-            </span>
-          </div>
-          {streamsOpen && (
-            <div className="sidebar-section-body">
-              {streams.map((s) => {
-                const active = filters.streams === null || filters.streams.has(s.id);
-                return (
-                  <div
-                    key={s.id}
-                    className={`sidebar-filter-item ${active ? "" : "inactive"}`}
-                    onClick={() => onStreamToggle(s.id, streams.map((st) => st.id))}
-                  >
-                    <span className="sidebar-filter-check" data-checked={active ? "true" : "false"}>
-                      <span className="sidebar-stream-dot" style={{ backgroundColor: s.color || "#999" }} />
-                    </span>
-                    <span className="sidebar-filter-label">{s.name}</span>
-                  </div>
-                );
-              })}
+      {/* Classifier sections */}
+      {classifiers.map((cls, clsIdx) => {
+        const isOpen = classifierSectionsOpen[cls.id] ?? false;
+        return (
+          <div key={cls.id} className="sidebar-section">
+            <div className="sidebar-section-header" onClick={() => setClassifierSectionsOpen((prev) => ({ ...prev, [cls.id]: !isOpen }))}>
+              <span>{cls.label}</span>
+              <span className={`sidebar-chevron ${isOpen ? "open" : ""}`}>
+                <IconChevronDown size={12} />
+              </span>
             </div>
-          )}
-        </div>
-      )}
+            {isOpen && (
+              <div className="sidebar-section-body">
+                {cls.values.map((v) => {
+                  const cf = findClassifierFilter(filters, cls.id);
+                  const active = cf?.values == null || cf.values.has(v.id);
+                  return (
+                    <div
+                      key={v.id}
+                      className={`sidebar-filter-item ${active ? "" : "inactive"}`}
+                      onClick={() => onClassifierToggle(cls.id, v.id, cls.values.map((val) => val.id))}
+                    >
+                      <span className="sidebar-filter-check" data-checked={active ? "true" : "false"}>
+                        {clsIdx === 0 && v.color && (
+                          <span className="sidebar-stream-dot" style={{ backgroundColor: v.color }} />
+                        )}
+                      </span>
+                      <span className="sidebar-filter-label">{v.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
 
-      {/* Generations section */}
-      {generations.length > 0 && (
+      {/* Tags section */}
+      {allTags.length > 0 && (
         <div className="sidebar-section">
-          <div className="sidebar-section-header" onClick={() => setGenerationsOpen(!generationsOpen)}>
-            <span>{generationSectionLabel}</span>
-            <span className={`sidebar-chevron ${generationsOpen ? "open" : ""}`}>
+          <div className="sidebar-section-header" onClick={() => setTagsOpen(!tagsOpen)}>
+            <span>Tags</span>
+            <span className={`sidebar-chevron ${tagsOpen ? "open" : ""}`}>
               <IconChevronDown size={12} />
             </span>
           </div>
-          {generationsOpen && (
+          {tagsOpen && (
             <div className="sidebar-section-body">
-              {generations.map((g) => {
-                const active = filters.generations === null || filters.generations.has(g);
-                const label = generationLabels.get(g) ?? `Phase ${g}`;
+              {allTags.map((tag) => {
+                const active = filters.tags === null || filters.tags.has(tag);
                 return (
                   <div
-                    key={g}
+                    key={tag}
                     className={`sidebar-filter-item ${active ? "" : "inactive"}`}
-                    onClick={() => onGenerationToggle(g, generations)}
+                    onClick={() => onTagToggle(tag, allTags)}
                   >
                     <span className="sidebar-filter-check" data-checked={active ? "true" : "false"} />
-                    <span className="sidebar-filter-label">{label}</span>
+                    <span className="sidebar-filter-label">{tag}</span>
                   </div>
                 );
               })}
@@ -456,7 +447,10 @@ export function Sidebar({
                       <span className="sidebar-type-group-label">{config.label}</span>
                       <span className="sidebar-type-group-count">{typeNodes.length}</span>
                     </div>
-                    {typeNodes.map((n) => (
+                    {typeNodes.map((n) => {
+                      const colorCls = classifiers[0];
+                      const nodeColor = colorCls ? colorCls.values.find((v) => v.id === n.classifiers?.[colorCls.id])?.color ?? "#666" : "#666";
+                      return (
                       <div
                         key={n.id}
                         className={`sidebar-node-item ${n.id === selectedNodeId ? "selected" : ""}`}
@@ -465,12 +459,13 @@ export function Sidebar({
                         <span
                           className={`sidebar-node-indicator ${config.shape !== "circle" ? "non-circle" : ""}`}
                           style={{
-                            backgroundColor: streams.find((s) => s.id === n.stream)?.color ?? "#666",
+                            backgroundColor: nodeColor,
                           }}
                         />
                         <span className="sidebar-node-name">{n.name}</span>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 );
               })}

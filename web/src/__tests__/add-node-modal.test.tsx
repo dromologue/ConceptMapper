@@ -3,13 +3,12 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AddNodeModal } from "../ui/AddNodeModal";
-import { sampleStreams, sampleGenerations, defaultNodeTypeConfigs } from "./fixtures";
+import { sampleClassifiers, defaultNodeTypeConfigs } from "./fixtures";
 
 describe("AddNodeModal — Default node type", () => {
   const defaultProps = {
     nodeTypeConfigs: defaultNodeTypeConfigs,
-    streams: sampleStreams,
-    generations: sampleGenerations,
+    classifiers: sampleClassifiers,
     onAdd: vi.fn(),
     onCancel: vi.fn(),
     initialNodeType: "node",
@@ -20,18 +19,18 @@ describe("AddNodeModal — Default node type", () => {
     expect(screen.getByText("Add Node")).toBeInTheDocument();
   });
 
-  it("renders name input and select fields", () => {
+  it("renders name input and classifier fields", () => {
     render(<AddNodeModal {...defaultProps} />);
     expect(screen.getByPlaceholderText("e.g. New Node")).toBeInTheDocument();
-    expect(screen.getByText("Category")).toBeInTheDocument();
-    expect(screen.getByText("Phase")).toBeInTheDocument();
+    expect(screen.getByText("Streams")).toBeInTheDocument();
+    expect(screen.getByText("Generations")).toBeInTheDocument();
   });
 
-  it("renders essential fields (name, category, phase)", () => {
+  it("renders essential fields (name, classifiers, tags)", () => {
     render(<AddNodeModal {...defaultProps} />);
     expect(screen.getByText("Name")).toBeInTheDocument();
-    expect(screen.getByText("Category")).toBeInTheDocument();
-    expect(screen.getByText("Phase")).toBeInTheDocument();
+    expect(screen.getByText("Streams")).toBeInTheDocument();
+    expect(screen.getByText("Tags")).toBeInTheDocument();
   });
 
   it("disables Add button when name is empty", () => {
@@ -51,9 +50,9 @@ describe("AddNodeModal — Default node type", () => {
     expect(onAdd).toHaveBeenCalledWith(
       "node",            // nodeType
       "Herbert Simon",   // name
-      "psychology",      // first stream
-      2,                 // first generation number
-      expect.any(Object) // properties
+      expect.any(Object), // classifierValues
+      expect.any(Array),  // tags
+      expect.any(Object)  // properties
     );
   });
 

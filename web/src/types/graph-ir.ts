@@ -1,6 +1,6 @@
 // --- Template / Config types ---
 
-export type FieldType = "text" | "select" | "textarea";
+export type FieldType = "text" | "select" | "textarea" | "time";
 
 export interface FieldConfig {
   key: string;
@@ -29,15 +29,33 @@ export interface EdgeTypeConfig {
   style?: string;        // "solid" | "dashed" | "dotted"
 }
 
+// --- Classifier types (replaces streams + generations) ---
+
+export interface ClassifierValue {
+  id: string;
+  label: string;
+  color?: string;        // hex color — meaningful on first classifier (drives node color)
+  description?: string;
+}
+
+export interface Classifier {
+  id: string;            // e.g. "discipline", "phase"
+  label: string;         // e.g. "Disciplines", "Phases"
+  layout?: "x" | "y";   // which axis this classifier drives; omit = filter-only
+  values: ClassifierValue[];
+}
+
 export interface TaxonomyTemplate {
   title: string;
   description?: string;
-  streams: Stream[];
-  generations: Generation[];
+  classifiers?: Classifier[];
   node_types: NodeTypeConfig[];
   edge_types?: EdgeTypeConfig[];
-  stream_label?: string;       // e.g. "Category", "Stream", "Domain"
-  generation_label?: string;   // e.g. "Phase", "Horizon", "Generation"
+  // Legacy fields — kept for backward compat with old .cmt files
+  streams?: Stream[];
+  generations?: Generation[];
+  stream_label?: string;
+  generation_label?: string;
 }
 
 /** .cm data file format (v2 JSON) */
@@ -45,24 +63,29 @@ export interface ConceptMapData {
   version: string;
   template: string;        // .cmt filename or path
   title?: string;
-  streams?: Stream[];
-  generations?: Generation[];
+  classifiers?: Classifier[];
   node_types?: NodeTypeConfig[];
   edge_types?: EdgeTypeConfig[];
   nodes: DataNode[];
   edges: GraphEdge[];
   external_shocks: ExternalShock[];
   structural_observations: string[];
+  // Legacy fields
+  streams?: Stream[];
+  generations?: Generation[];
 }
 
 export interface DataNode {
   id: string;
   node_type: string;       // matches NodeTypeConfig.id
   name: string;
-  generation?: number;
-  stream?: string;
+  tags?: string[];
+  classifiers?: Record<string, string>;
   properties: Record<string, string | string[] | number | undefined>;
   notes?: string;
+  // Legacy fields
+  generation?: number;
+  stream?: string;
 }
 
 // --- Runtime types ---
@@ -78,12 +101,14 @@ export interface Metadata {
   title?: string;
   source_file?: string;
   parsed_at?: string;
-  generations: Generation[];
-  streams: Stream[];
+  classifiers?: Classifier[];
   external_shocks: ExternalShock[];
   structural_observations: string[];
   network_stats?: NetworkStats;
   template?: TaxonomyTemplate;  // merged at runtime after load
+  // Legacy fields — kept for backward compat
+  generations: Generation[];
+  streams: Stream[];
 }
 
 export interface Generation {
@@ -115,11 +140,14 @@ export interface GraphNode {
   id: string;
   node_type: string;
   name: string;
-  generation?: number;
-  stream?: string;
+  tags?: string[];
+  classifiers?: Record<string, string>;
   properties?: Record<string, string | string[] | number | undefined>;
   content?: NodeContent;
   notes?: string;
+  // Legacy fields — kept for backward compat
+  generation?: number;
+  stream?: string;
 }
 
 export interface NodeContent {

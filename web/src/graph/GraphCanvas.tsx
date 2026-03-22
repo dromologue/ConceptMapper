@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import * as d3 from "d3";
-import type { GraphIR, GraphNode, GraphEdge, SimNode, SimLink, NodeTypeConfig } from "../types/graph-ir";
+import type { GraphIR, GraphNode, GraphEdge, SimNode, SimLink, NodeTypeConfig, Classifier } from "../types/graph-ir";
 import type { ViewMode, InteractionMode } from "../App";
 import type { ThemeConfig } from "../theme/themes";
 import type { FilterState } from "../utils/filters";
@@ -104,9 +104,13 @@ function getNodeRadius(node: SimNode, _viewMode: ViewMode, nodeTypeConfigs: Node
   return 10;
 }
 
-function getStreamColor(node: SimNode, streams: GraphIR["metadata"]["streams"], overrides?: Record<string, string>): string {
-  if (overrides && node.stream && overrides[node.stream]) return overrides[node.stream];
-  return streams.find((s) => s.id === node.stream)?.color ?? "#666";
+function getNodeColor(node: SimNode, classifiers: Classifier[], overrides?: Record<string, string>): string {
+  const colorCls = classifiers[0];
+  if (!colorCls) return "#666";
+  const valueId = node.classifiers?.[colorCls.id];
+  if (!valueId) return "#666";
+  if (overrides && overrides[String(valueId)]) return overrides[String(valueId)];
+  return colorCls.values.find((v) => v.id === String(valueId))?.color ?? "#666";
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -148,8 +152,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const canvasSizeRef = useRef({ width: 800, height: 600 });
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const simInitializedRef = useRef(false);
-  const streamIdsRef = useRef<string[]>([]);
-  const gensRef = useRef<number[]>([]);
+  const classifiersRef = useRef<Classifier[]>([]);
   const themeRef = useRef(theme);
   const lookRef = useRef(look);
   const selectedNodeIdRef = useRef(selectedNodeId);
@@ -245,19 +248,33 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
     const simulation = simRef.current;
     if (simulation && simInitializedRef.current) {
-      const sIds = streamIdsRef.current;
-      const gs = gensRef.current;
+      const cls = classifiersRef.current;
+      const xCls = cls.find((c) => c.layout === "x");
+      const yCls = cls.find((c) => c.layout === "y");
+
+      const xPos = new Map<string, number>();
+      if (xCls) {
+        xCls.values.forEach((v, i) => {
+          xPos.set(v.id, width * (0.15 + (0.7 * i) / Math.max(xCls.values.length - 1, 1)));
+        });
+      }
+      const yPos = new Map<string, number>();
+      if (yCls) {
+        yCls.values.forEach((v, i) => {
+          yPos.set(v.id, height * (0.1 + (0.8 * i) / Math.max(yCls.values.length - 1, 1)));
+        });
+      }
 
       simulation.force("x", d3.forceX<SimNode>((d) => {
-        const idx = sIds.indexOf(d.stream ?? "");
-        if (idx >= 0) return width * (0.15 + (0.7 * idx) / Math.max(sIds.length - 1, 1));
-        return width / 2;
+        if (!xCls) return width / 2;
+        const val = d.classifiers?.[xCls.id];
+        return val ? xPos.get(String(val)) ?? width / 2 : width / 2;
       }).strength(0.3));
 
       simulation.force("y", d3.forceY<SimNode>((d) => {
-        const idx = gs.indexOf(d.generation ?? 0);
-        if (idx >= 0) return height * (0.1 + (0.8 * idx) / Math.max(gs.length - 1, 1));
-        return height / 2;
+        if (!yCls) return height / 2;
+        const val = d.classifiers?.[yCls.id];
+        return val ? yPos.get(String(val)) ?? height / 2 : height / 2;
       }).strength(0.5));
 
       simulation.alpha(0.3).restart();
@@ -296,28 +313,39 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     nodesRef.current = nodes;
     linksRef.current = links;
 
-    const streamIds = [...new Set(data.nodes.map((n) => n.stream).filter(Boolean))] as string[];
-    streamIdsRef.current = streamIds;
-    const streamX = new Map<string, number>();
-    streamIds.forEach((s, i) => { streamX.set(s, width * (0.15 + (0.7 * i) / Math.max(streamIds.length - 1, 1))); });
+    const classifiers = data.metadata.classifiers ?? [];
+    classifiersRef.current = classifiers;
+    const xClassifier = classifiers.find((c) => c.layout === "x");
+    const yClassifier = classifiers.find((c) => c.layout === "y");
 
-    const gens = ([...new Set(data.nodes.map((n) => n.generation).filter((g) => g != null))] as number[]).sort((a, b) => a - b);
-    gensRef.current = gens;
-    const genY = new Map<number, number>();
-    gens.forEach((g, i) => { genY.set(g, height * (0.1 + (0.8 * i) / Math.max(gens.length - 1, 1))); });
+    const xPositions = new Map<string, number>();
+    if (xClassifier) {
+      xClassifier.values.forEach((v, i) => {
+        xPositions.set(v.id, width * (0.15 + (0.7 * i) / Math.max(xClassifier.values.length - 1, 1)));
+      });
+    }
+
+    const yPositions = new Map<string, number>();
+    if (yClassifier) {
+      yClassifier.values.forEach((v, i) => {
+        yPositions.set(v.id, height * (0.1 + (0.8 * i) / Math.max(yClassifier.values.length - 1, 1)));
+      });
+    }
 
     const configs = nodeTypeConfigsRef.current;
-    const hasStreams = streamIds.length > 0;
-    const hasGens = gens.length > 0;
     const simulation = d3.forceSimulation<SimNode>(nodes)
       .force("link", d3.forceLink<SimNode, SimLink>(links).id((d) => d.id).distance((d) => 120 / Math.max(0.5, (d as SimLink).edge.weight ?? 1)).strength(0.2))
       .force("charge", d3.forceManyBody().strength(-400).distanceMax(800))
-      .force("x", hasStreams
-        ? d3.forceX<SimNode>((d) => streamX.get(d.stream ?? "") ?? width / 2).strength(0.3)
-        : d3.forceX<SimNode>(width / 2).strength(0.05))
-      .force("y", hasGens
-        ? d3.forceY<SimNode>((d) => genY.get(d.generation ?? 0) ?? height / 2).strength(0.5)
-        : d3.forceY<SimNode>(height / 2).strength(0.05))
+      .force("x", d3.forceX<SimNode>((d) => {
+        if (!xClassifier) return width / 2;
+        const val = d.classifiers?.[xClassifier.id];
+        return val ? xPositions.get(String(val)) ?? width / 2 : width / 2;
+      }).strength(0.3))
+      .force("y", d3.forceY<SimNode>((d) => {
+        if (!yClassifier) return height / 2;
+        const val = d.classifiers?.[yClassifier.id];
+        return val ? yPositions.get(String(val)) ?? height / 2 : height / 2;
+      }).strength(0.5))
       .force("collide", d3.forceCollide<SimNode>((d) => getNodeRadius(d, "full", configs) + 12))
       .alphaDecay(0.015);
 
@@ -864,7 +892,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const showForHighlighted = isHighlighted && t.k > 0.6;
 
       const edgeLabelHidden = hiddenLabelTypesRef.current?.has(`edge:${l.edge.edge_type}`);
-      if (!edgeLabelHidden && (showInFilteredView || showForHighlighted)) {
+      if (!edgeLabelHidden && !edgeDimmedByCommunity && (showInFilteredView || showForHighlighted)) {
         const midX = (source.x + target.x) / 2;
         const midY = (source.y + target.y) / 2;
         const label = EDGE_LABELS[l.edge.edge_type] ?? l.edge.edge_type;
@@ -905,7 +933,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           ctx.globalAlpha = 0.06;
         }
       } else {
-        color = getStreamColor(node, currentData.metadata.streams, th.streamColorOverrides);
+        const classifiers = currentData.metadata.classifiers ?? [];
+        color = getNodeColor(node, classifiers, th.streamColorOverrides);
       }
       const isPrimary = isAdding || isNodePrimary(node, mode, configs);
       const isRevealed = !isPrimary && revealed.has(node.id);
@@ -1024,9 +1053,10 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         ctx.textAlign = "center";
         const baseY = node.y + effectiveR + fontSize + 2;
 
-        const tagsValue = node.properties?.tags;
+        const tagsValue = node.tags;
         const showTags = mode === "people" && !isAdding && tagsValue && t.k > 0.7;
-        const tagsText = showTags ? String(tagsValue) : "";
+        const tagsStr = showTags && tagsValue ? tagsValue.join(", ") : "";
+        const tagsText = showTags ? tagsStr : "";
         const tagsFS = fontSize - 2;
 
         const nameW = ctx.measureText(node.name).width;

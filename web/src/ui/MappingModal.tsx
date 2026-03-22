@@ -102,7 +102,7 @@ export function MappingModal({ template: initialTemplate, savedTemplates, onResu
                   >
                     <span className="mapping-template-title">{t.title}</span>
                     <span className="mapping-meta">
-                      {t.node_types.length} types, {t.streams.length} streams, {t.generations.length} horizons
+                      {t.node_types.length} types, {(t.streams ?? []).length} streams, {(t.generations ?? []).length} horizons
                     </span>
                   </button>
                 ))}
@@ -115,7 +115,7 @@ export function MappingModal({ template: initialTemplate, savedTemplates, onResu
             <div className="mapping-taxonomy-info">
               <span className="field-label">Target: {selectedTemplate.title}</span>
               <span className="mapping-meta">
-                {selectedTemplate.node_types.length} types, {selectedTemplate.streams.length} streams, {selectedTemplate.generations.length} horizons
+                {selectedTemplate.node_types.length} types, {(selectedTemplate.streams ?? []).length} streams, {(selectedTemplate.generations ?? []).length} horizons
               </span>
               {!initialTemplate && (
                 <button

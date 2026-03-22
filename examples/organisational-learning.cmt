@@ -1,21 +1,31 @@
 {
   "title": "Organisational Learning",
   "description": "Map thinkers and concepts across the three conditions for organisational learning: Identity, Information, and Institution.",
-  "format_instructions": "When generating .cm files from this template: use markdown with fenced code blocks for nodes. Every property line MUST use 'key: value' format with a colon separator. Required node keys: id, name, generation, stream. Include all fields defined in the node type. Edges use 'from: [id] to: [id] type: [edge_type]' format.",
-  "stream_label": "Conditions",
-  "generation_label": "Generations",
-  "streams": [
-    { "id": "identity", "name": "Identity", "color": "#4A90D9", "description": "Identity must be safe enough to change (Bourdieu)" },
-    { "id": "information", "name": "Information", "color": "#50C878", "description": "Information must be clean enough to act on (Bateson)" },
-    { "id": "institution", "name": "Institution", "color": "#E67E22", "description": "Institutional form must be convivial enough to permit learning (Illich)" },
-    { "id": "management", "name": "Management", "color": "#9B59B6", "description": "Management theory and practice" },
-    { "id": "psychology", "name": "Psychology", "color": "#E74C3C", "description": "Individual cognition, learning, and behaviour" }
-  ],
-  "generations": [
-    { "number": 1, "period": "pre-1940", "label": "Founders" },
-    { "number": 2, "period": "1940–1970", "label": "Classical" },
-    { "number": 3, "period": "1970–1990", "label": "Modern" },
-    { "number": 4, "period": "1990–present", "label": "Contemporary" }
+  "format_instructions": "When generating .cm files from this template: use markdown with fenced code blocks for nodes. Every property line MUST use 'key: value' format with a colon separator. Required node keys: id, name. Classifier values use the classifier id as the key. Tags use comma-separated format. Edges use 'from: [id] to: [id] type: [edge_type]' format.",
+  "classifiers": [
+    {
+      "id": "condition",
+      "label": "Conditions",
+      "layout": "x",
+      "values": [
+        { "id": "identity", "label": "Identity", "color": "#4A90D9", "description": "Identity must be safe enough to change (Bourdieu)" },
+        { "id": "information", "label": "Information", "color": "#50C878", "description": "Information must be clean enough to act on (Bateson)" },
+        { "id": "institution", "label": "Institution", "color": "#E67E22", "description": "Institutional form must be convivial enough to permit learning (Illich)" },
+        { "id": "management", "label": "Management", "color": "#9B59B6", "description": "Management theory and practice" },
+        { "id": "psychology", "label": "Psychology", "color": "#E74C3C", "description": "Individual cognition, learning, and behaviour" }
+      ]
+    },
+    {
+      "id": "generation",
+      "label": "Generations",
+      "layout": "y",
+      "values": [
+        { "id": "1", "label": "Founders", "description": "pre-1940" },
+        { "id": "2", "label": "Classical", "description": "1940-1970" },
+        { "id": "3", "label": "Modern", "description": "1970-1990" },
+        { "id": "4", "label": "Contemporary", "description": "1990-present" }
+      ]
+    }
   ],
   "node_types": [
     {
@@ -29,8 +39,7 @@
         { "key": "eminence", "label": "Eminence", "type": "select", "options": ["dominant", "major", "secondary", "minor"] },
         { "key": "dates", "label": "Dates", "type": "text" },
         { "key": "institutional_base", "label": "Institutional Base", "type": "text" },
-        { "key": "structural_roles", "label": "Structural Roles", "type": "text" },
-        { "key": "tags", "label": "Tags", "type": "text" }
+        { "key": "structural_roles", "label": "Structural Roles", "type": "text" }
       ]
     },
     {
@@ -51,7 +60,7 @@
   ],
   "edge_types": [
     { "id": "chain", "label": "Chain", "color": "#888888", "directed": true, "style": "solid" },
-    { "id": "teacher_pupil", "label": "Teacher–Pupil", "color": "#4A90D9", "directed": true, "style": "solid" },
+    { "id": "teacher_pupil", "label": "Teacher-Pupil", "color": "#4A90D9", "directed": true, "style": "solid" },
     { "id": "rivalry", "label": "Rivalry", "color": "#D94A4A", "directed": false, "style": "dashed" },
     { "id": "alliance", "label": "Alliance", "color": "#999999", "directed": false, "style": "dotted" },
     { "id": "originates", "label": "Originates", "color": "#50C878", "directed": true, "style": "solid" },

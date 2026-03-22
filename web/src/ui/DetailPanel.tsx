@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { GraphNode, GraphEdge, Stream, Generation, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
+import type { GraphNode, GraphEdge, Classifier, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
 import { getNodeTypeConfig } from "../migration";
 import { EDGE_LABELS } from "../utils/edge-labels";
 import type { NetworkAnalysis } from "../utils/graph-analysis";
@@ -8,8 +8,7 @@ interface Props {
   node: GraphNode;
   edges: GraphEdge[];
   nodes: GraphNode[];
-  streams: Stream[];
-  generations: Generation[];
+  classifiers: Classifier[];
   nodeTypeConfigs: NodeTypeConfig[];
   template?: TaxonomyTemplate | null;
   onClose?: () => void;
@@ -72,15 +71,9 @@ function DebouncedTextarea({ label, value, onCommit }: {
 }
 
 export function DetailPanel({
-  node, edges, nodes, streams, generations, nodeTypeConfigs, template,
+  node, edges, nodes, classifiers, nodeTypeConfigs, template,
   onNodeUpdate, onNavigateToNode, onOpenNotes, notesOpen, onNodeDelete, analysis, style,
 }: Props) {
-  // Use singular form for field labels — strip trailing 's' if present
-  // Use template labels if set, otherwise generic defaults
-  const rawStreamLabel = template?.stream_label || "Stream";
-  const rawGenLabel = template?.generation_label || "Phase";
-  const streamLabel = rawStreamLabel.endsWith("s") ? rawStreamLabel.slice(0, -1) : rawStreamLabel;
-  const generationLabel = rawGenLabel.endsWith("s") ? rawGenLabel.slice(0, -1) : rawGenLabel;
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
   const config = getNodeTypeConfig(nodeTypeConfigs, node.node_type);
 
@@ -173,22 +166,53 @@ export function DetailPanel({
                 <label>Type</label>
                 <span className="editor-field-value">{config?.label ?? node.node_type}</span>
               </div>
-              {/* Stream / Category (built-in) */}
+              {/* Classifiers */}
+              {classifiers.map((cls) => (
+                <div className="editor-field" key={cls.id}>
+                  <label>{cls.label.endsWith("s") ? cls.label.slice(0, -1) : cls.label}</label>
+                  <select
+                    value={node.classifiers?.[cls.id] ?? ""}
+                    onChange={(e) => {
+                      const updated = { ...node.classifiers };
+                      if (e.target.value) updated[cls.id] = e.target.value;
+                      else delete updated[cls.id];
+                      onNodeUpdate(node.id, { classifiers: updated });
+                    }}
+                  >
+                    <option value="">--</option>
+                    {cls.values.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+                  </select>
+                </div>
+              ))}
+              {/* Tags */}
               <div className="editor-field">
-                <label>{streamLabel}</label>
-                <select value={node.stream ?? ""} onChange={(e) => onNodeUpdate(node.id, { stream: e.target.value || undefined })}>
-                  <option value="">--</option>
-                  {streams.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-              </div>
-              {/* Generation / Horizon (built-in) */}
-              <div className="editor-field">
-                <label>{generationLabel}</label>
-                <select value={node.generation ?? ""} onChange={(e) =>
-                  onNodeUpdate(node.id, { generation: e.target.value ? Number(e.target.value) : undefined })}>
-                  <option value="">--</option>
-                  {generations.map((g) => <option key={g.number} value={g.number}>{g.number}{g.label ? ` - ${g.label}` : ""}</option>)}
-                </select>
+                <label>Tags</label>
+                <div className="tag-pills">
+                  {(node.tags ?? []).map((tag, i) => (
+                    <span key={i} className="tag-pill">
+                      {tag}
+                      <button className="tag-remove" onClick={() => {
+                        const newTags = (node.tags ?? []).filter((_, idx) => idx !== i);
+                        onNodeUpdate(node.id, { tags: newTags.length > 0 ? newTags : undefined });
+                      }}>&times;</button>
+                    </span>
+                  ))}
+                  <input
+                    className="tag-input"
+                    type="text"
+                    placeholder="Add tag..."
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === ",") {
+                        e.preventDefault();
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val && !(node.tags ?? []).includes(val)) {
+                          onNodeUpdate(node.id, { tags: [...(node.tags ?? []), val] });
+                        }
+                        (e.target as HTMLInputElement).value = "";
+                      }
+                    }}
+                  />
+                </div>
               </div>
               {/* Dynamic fields from config */}
               {config?.fields.map((field) => {
@@ -206,6 +230,19 @@ export function DetailPanel({
                         <option value="">--</option>
                         {field.options.map((o) => <option key={o} value={o}>{o}</option>)}
                       </select>
+                    </div>
+                  );
+                }
+
+                if (field.type === "time") {
+                  return (
+                    <div className="editor-field" key={`${node.id}-${field.key}`}>
+                      <label>{field.label}</label>
+                      <input
+                        type="date"
+                        value={strValue}
+                        onChange={(e) => debouncedUpdateProperty(field.key, e.target.value)}
+                      />
                     </div>
                   );
                 }

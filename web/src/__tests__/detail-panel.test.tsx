@@ -4,12 +4,11 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DetailPanel } from "../ui/DetailPanel";
 import { NotesPane } from "../ui/NotesPane";
-import { argyris, doubleLoop, sampleEdges, sampleStreams, sampleGenerations, sampleGraphData, legacyNodeTypeConfigs } from "./fixtures";
+import { argyris, doubleLoop, sampleEdges, sampleClassifiers, sampleGraphData, legacyNodeTypeConfigs } from "./fixtures";
 
 const defaultDetailProps = {
   nodes: sampleGraphData.nodes,
-  streams: sampleStreams,
-  generations: sampleGenerations,
+  classifiers: sampleClassifiers,
   nodeTypeConfigs: legacyNodeTypeConfigs,
   onClose: vi.fn(),
   onNodeUpdate: vi.fn(),

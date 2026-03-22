@@ -18,20 +18,32 @@ export interface DateRangeFilter {
   range: DateRange;
 }
 
+export interface ClassifierFilter {
+  classifierId: string;
+  values: Set<string> | null;  // null = all shown
+}
+
 export interface FilterState {
-  streams: Set<string> | null;       // null = all shown
-  generations: Set<number> | null;   // null = all shown
+  classifiers: ClassifierFilter[];
   attributes: AttributeFilter[];
   dateRanges: DateRangeFilter[];
+  tags: Set<string> | null;          // null = all shown
+  // Legacy — keep temporarily
+  streams: Set<string> | null;       // null = all shown
+  generations: Set<number> | null;   // null = all shown
 }
 
 export function createEmptyFilterState(): FilterState {
-  return { streams: null, generations: null, attributes: [], dateRanges: [] };
+  return { streams: null, generations: null, classifiers: [], attributes: [], dateRanges: [], tags: null };
 }
 
 export function isFilterActive(filters: FilterState): boolean {
   if (filters.streams !== null) return true;
   if (filters.generations !== null) return true;
+  for (const cf of filters.classifiers) {
+    if (cf.values !== null) return true;
+  }
+  if (filters.tags !== null) return true;
   for (const attr of filters.attributes) {
     if (attr.values !== null) return true;
   }
@@ -69,6 +81,19 @@ function parseDateNum(val: string | undefined | null): number | null {
 }
 
 export function isNodeFilterVisible(node: GraphNode, filters: FilterState): boolean {
+  // Classifier filters
+  for (const cf of filters.classifiers) {
+    if (cf.values === null) continue;
+    const nodeVal = node.classifiers?.[cf.classifierId];
+    if (nodeVal == null || !cf.values.has(String(nodeVal))) return false;
+  }
+
+  // Tag filter (OR: node must have at least one matching tag)
+  if (filters.tags !== null) {
+    if (!node.tags || node.tags.length === 0) return false;
+    if (!node.tags.some((t) => filters.tags!.has(t))) return false;
+  }
+
   // Streams: OR within
   if (filters.streams !== null) {
     if (!node.stream || !filters.streams.has(node.stream)) return false;
@@ -115,4 +140,8 @@ export function isNodeFilterVisible(node: GraphNode, filters: FilterState): bool
   }
 
   return true;
+}
+
+export function findClassifierFilter(filters: FilterState, classifierId: string): ClassifierFilter | undefined {
+  return filters.classifiers.find((c) => c.classifierId === classifierId);
 }

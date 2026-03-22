@@ -308,8 +308,8 @@ function AppInner() {
           next.set(tmpl.title, {
             title: tmpl.title,
             description: tmpl.description,
-            streams: tmpl.streams,
-            generations: tmpl.generations,
+            streams: tmpl.streams ?? [],
+            generations: tmpl.generations ?? [],
             node_types: tmpl.node_types,
           });
           return next;
@@ -409,7 +409,7 @@ function AppInner() {
 
   // Unified add node handler
   const handleAddNode = useCallback(
-    (nodeType: string, name: string, stream: string, generation: number, properties: Record<string, string | undefined>) => {
+    (nodeType: string, name: string, classifierValues: Record<string, string>, tags: string[], properties: Record<string, string | undefined>) => {
       if (!graphData) return;
       const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 
@@ -417,8 +417,8 @@ function AppInner() {
         id,
         node_type: nodeType,
         name,
-        generation,
-        stream,
+        classifiers: classifierValues,
+        tags: tags.length > 0 ? tags : undefined,
         properties: { ...properties },
       };
 
@@ -917,47 +917,6 @@ function AppInner() {
     []
   );
 
-  const handleStreamToggle = (streamId: string, allStreamIds: string[]) => {
-    setFilters((prev) => {
-      const streams = prev.streams;
-      if (!streams) {
-        // First click: uncheck this stream (show all EXCEPT this one)
-        const next = new Set(allStreamIds);
-        next.delete(streamId);
-        return { ...prev, streams: next };
-      }
-      const next = new Set(streams);
-      if (next.has(streamId)) {
-        next.delete(streamId);
-        // Empty set = nothing shown (user unticked everything)
-        return { ...prev, streams: next };
-      } else {
-        next.add(streamId);
-        // All re-checked → reset to null (all shown)
-        return { ...prev, streams: next.size >= allStreamIds.length ? null : next };
-      }
-    });
-  };
-
-  const handleGenerationToggle = (gen: number, allGens: number[]) => {
-    setFilters((prev) => {
-      const gens = prev.generations;
-      if (!gens) {
-        const next = new Set(allGens);
-        next.delete(gen);
-        return { ...prev, generations: next };
-      }
-      const next = new Set(gens);
-      if (next.has(gen)) {
-        next.delete(gen);
-        return { ...prev, generations: next };
-      } else {
-        next.add(gen);
-        return { ...prev, generations: next.size >= allGens.length ? null : next };
-      }
-    });
-  };
-
   const handleAttributeToggle = (nodeType: string, field: string, value: string, allValues: string[]) => {
     setFilters((prev) => {
       const attrs = [...prev.attributes];
@@ -1012,6 +971,58 @@ function AppInner() {
 
   const handleShowAllFilters = () => {
     setFilters(createEmptyFilterState());
+  };
+
+  const handleClassifierToggle = (classifierId: string, valueId: string, allValueIds: string[]) => {
+    setFilters((prev) => {
+      const cfs = [...prev.classifiers];
+      const idx = cfs.findIndex((c) => c.classifierId === classifierId);
+      if (idx < 0) {
+        const next = new Set(allValueIds);
+        next.delete(valueId);
+        cfs.push({ classifierId, values: next });
+      } else {
+        const current = cfs[idx].values;
+        if (!current) {
+          const next = new Set(allValueIds);
+          next.delete(valueId);
+          cfs[idx] = { classifierId, values: next };
+        } else {
+          const next = new Set(current);
+          if (next.has(valueId)) {
+            next.delete(valueId);
+            cfs[idx] = { classifierId, values: next };
+          } else {
+            next.add(valueId);
+            if (next.size >= allValueIds.length) {
+              cfs.splice(idx, 1);
+            } else {
+              cfs[idx] = { classifierId, values: next };
+            }
+          }
+        }
+      }
+      return { ...prev, classifiers: cfs };
+    });
+  };
+
+  const handleTagToggle = (tag: string, allTags: string[]) => {
+    setFilters((prev) => {
+      const tags = prev.tags;
+      if (!tags) {
+        const next = new Set(allTags);
+        next.delete(tag);
+        return { ...prev, tags: next };
+      }
+      const next = new Set(tags);
+      if (next.has(tag)) {
+        next.delete(tag);
+      } else {
+        next.add(tag);
+        if (next.size >= allTags.length) return { ...prev, tags: null };
+      }
+      return { ...prev, tags: next };
+    });
   };
 
   const searchResults = searchQuery.trim().length > 0 && graphData
@@ -1231,12 +1242,11 @@ function AppInner() {
         {sidebarOpen && (
           <Sidebar
             nodes={graphData.nodes}
-            streams={graphData.metadata.streams}
+            classifiers={graphData.metadata.classifiers ?? []}
             nodeTypeConfigs={nodeTypeConfigs}
-            template={template}
             filters={filters}
-            onStreamToggle={handleStreamToggle}
-            onGenerationToggle={handleGenerationToggle}
+            onClassifierToggle={handleClassifierToggle}
+            onTagToggle={handleTagToggle}
             onAttributeToggle={handleAttributeToggle}
             onDateRangeChange={handleDateRangeChange}
             onShowAll={handleShowAllFilters}
@@ -1398,8 +1408,7 @@ function AppInner() {
                 node={selectedNode}
                 edges={selectedEdges}
                 nodes={graphData.nodes}
-                streams={graphData.metadata.streams}
-                generations={graphData.metadata.generations}
+                classifiers={graphData.metadata.classifiers ?? []}
                 nodeTypeConfigs={nodeTypeConfigs}
                 template={template}
                 onNodeUpdate={handleNodeUpdate}
@@ -1462,12 +1471,10 @@ function AppInner() {
       {showAddNode && (
         <AddNodeModal
           nodeTypeConfigs={nodeTypeConfigs}
-          streams={graphData.metadata.streams}
-          generations={graphData.metadata.generations}
+          classifiers={graphData.metadata.classifiers ?? []}
           onAdd={handleAddNode}
           onCancel={() => setShowAddNode(null)}
           initialNodeType={showAddNode}
-          template={template}
         />
       )}
       {showAddEdgeModal && edgeSource && edgeTarget && (

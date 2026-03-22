@@ -10,11 +10,11 @@ export function buildMappingSystemPrompt(taxonomy: TaxonomyTemplate): string {
     return `  - ${nt.id} (${nt.label}, shape: ${nt.shape})\n${fields}`;
   }).join("\n");
 
-  const streams = taxonomy.streams.map((s) =>
+  const streams = (taxonomy.streams ?? []).map((s) =>
     `  - ${s.id}: ${s.name}${s.description ? ` — ${s.description}` : ""}`
   ).join("\n");
 
-  const horizons = taxonomy.generations.map((g) =>
+  const horizons = (taxonomy.generations ?? []).map((g) =>
     `  - horizon ${g.number}: ${g.label ?? ""} (${g.period ?? ""})`
   ).join("\n");
 

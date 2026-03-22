@@ -96,7 +96,9 @@ rm -rf macos/Resources/web
 cp -r web/dist/ macos/Resources/web/
 mkdir -p macos/Resources/bin
 cp mcp-server/.build/release/ConceptMCP macos/Resources/bin/
-echo "Web assets and MCP binary copied."
+mkdir -p macos/Resources/templates
+cp templates/*.cmt macos/Resources/templates/
+echo "Web assets, MCP binary, and templates copied."
 
 # --- Step 5: Regenerate Xcode project ---
 echo ""

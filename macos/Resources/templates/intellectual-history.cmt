@@ -1,22 +1,32 @@
 {
   "title": "Intellectual History",
   "description": "Map thinkers and their concepts across disciplines and generations, following the Collins approach to sociology of philosophies.",
-  "format_instructions": "When generating .cm files from this template: use markdown with fenced code blocks for nodes. Every property line MUST use 'key: value' format with a colon separator. Required node keys: id, name, generation, stream. Include all fields defined in the node type. Edges use 'from: [id] to: [id] type: [edge_type]' format.",
-  "stream_label": "Disciplines",
-  "generation_label": "Generations",
-  "streams": [
-    { "id": "philosophy", "name": "Philosophy", "color": "#4A90D9", "description": "Epistemology, metaphysics, ethics, logic" },
-    { "id": "sociology", "name": "Sociology", "color": "#50C878", "description": "Social structures, institutions, stratification" },
-    { "id": "psychology", "name": "Psychology", "color": "#9B59B6", "description": "Cognition, behavior, development" },
-    { "id": "economics", "name": "Economics", "color": "#E67E22", "description": "Markets, institutions, political economy" },
-    { "id": "political_science", "name": "Political Science", "color": "#E74C3C", "description": "Power, governance, political theory" }
-  ],
-  "generations": [
-    { "number": 1, "period": "pre-1900", "label": "Founders" },
-    { "number": 2, "period": "1900–1940", "label": "Classical" },
-    { "number": 3, "period": "1940–1970", "label": "Mid-Century" },
-    { "number": 4, "period": "1970–2000", "label": "Modern" },
-    { "number": 5, "period": "2000–present", "label": "Contemporary" }
+  "format_instructions": "When generating .cm files from this template: use markdown with fenced code blocks for nodes. Every property line MUST use 'key: value' format with a colon separator. Required node keys: id, name. Classifier values use the classifier id as the key. Tags use comma-separated format. Edges use 'from: [id] to: [id] type: [edge_type]' format.",
+  "classifiers": [
+    {
+      "id": "discipline",
+      "label": "Disciplines",
+      "layout": "x",
+      "values": [
+        { "id": "philosophy", "label": "Philosophy", "color": "#4A90D9", "description": "Epistemology, metaphysics, ethics, logic" },
+        { "id": "sociology", "label": "Sociology", "color": "#50C878", "description": "Social structures, institutions, stratification" },
+        { "id": "psychology", "label": "Psychology", "color": "#9B59B6", "description": "Cognition, behavior, development" },
+        { "id": "economics", "label": "Economics", "color": "#E67E22", "description": "Markets, institutions, political economy" },
+        { "id": "political_science", "label": "Political Science", "color": "#E74C3C", "description": "Power, governance, political theory" }
+      ]
+    },
+    {
+      "id": "generation",
+      "label": "Generations",
+      "layout": "y",
+      "values": [
+        { "id": "1", "label": "Founders", "description": "pre-1900" },
+        { "id": "2", "label": "Classical", "description": "1900-1940" },
+        { "id": "3", "label": "Mid-Century", "description": "1940-1970" },
+        { "id": "4", "label": "Modern", "description": "1970-2000" },
+        { "id": "5", "label": "Contemporary", "description": "2000-present" }
+      ]
+    }
   ],
   "node_types": [
     {
@@ -31,8 +41,7 @@
         { "key": "date_from", "label": "Born", "type": "text" },
         { "key": "date_to", "label": "Died", "type": "text" },
         { "key": "institutional_base", "label": "Institutional Base", "type": "text" },
-        { "key": "structural_roles", "label": "Structural Roles", "type": "text" },
-        { "key": "tags", "label": "Tags", "type": "text" }
+        { "key": "structural_roles", "label": "Structural Roles", "type": "text" }
       ]
     },
     {
@@ -53,7 +62,7 @@
   ],
   "edge_types": [
     { "id": "chain", "label": "Chain", "color": "#888888", "directed": true, "style": "solid" },
-    { "id": "teacher_pupil", "label": "Teacher–Pupil", "color": "#4A90D9", "directed": true, "style": "solid" },
+    { "id": "teacher_pupil", "label": "Teacher-Pupil", "color": "#4A90D9", "directed": true, "style": "solid" },
     { "id": "rivalry", "label": "Rivalry", "color": "#D94A4A", "directed": false, "style": "dashed" },
     { "id": "alliance", "label": "Alliance", "color": "#999999", "directed": false, "style": "dotted" },
     { "id": "originates", "label": "Originates", "color": "#50C878", "directed": true, "style": "solid" },

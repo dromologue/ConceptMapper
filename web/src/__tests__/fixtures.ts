@@ -1,6 +1,6 @@
-import type { GraphIR, GraphNode, GraphEdge, NodeTypeConfig } from "../types/graph-ir";
+import type { GraphIR, GraphNode, GraphEdge, NodeTypeConfig, Classifier } from "../types/graph-ir";
 import type { LLMConfig, AppConfig, ChatMessage } from "../types/llm";
-import { DEFAULT_NODE_CONFIG, DEFAULT_PERSON_CONFIG, DEFAULT_CONCEPT_CONFIG } from "../migration";
+import { DEFAULT_NODE_CONFIG, DEFAULT_PERSON_CONFIG, DEFAULT_CONCEPT_CONFIG, streamsToClassifier, generationsToClassifier } from "../migration";
 
 export const defaultNodeTypeConfigs: NodeTypeConfig[] = [DEFAULT_NODE_CONFIG];
 export const legacyNodeTypeConfigs: NodeTypeConfig[] = [DEFAULT_PERSON_CONFIG, DEFAULT_CONCEPT_CONFIG];
@@ -15,6 +15,11 @@ export const sampleGenerations = [
   { number: 2, period: "~1930–1960", label: "Systematisers", attention_space_count: 4 },
   { number: 3, period: "~1960–1985", label: "Flowering", attention_space_count: 5 },
   { number: 5, period: "~2000–present", label: "Practitioners", attention_space_count: 4 },
+];
+
+export const sampleClassifiers: Classifier[] = [
+  streamsToClassifier(sampleStreams),
+  generationsToClassifier(sampleGenerations),
 ];
 
 export const argyris: GraphNode = {

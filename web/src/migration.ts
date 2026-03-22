@@ -2,6 +2,7 @@ import type {
   GraphIR, GraphNode,
   TaxonomyTemplate, ConceptMapData, DataNode,
   NodeTypeConfig, FieldConfig,
+  Classifier, Stream, Generation,
 } from "./types/graph-ir";
 
 /** Raw node shape from the WASM parser (Rust outputs `fields`, not `properties`) */
@@ -23,7 +24,6 @@ export const DEFAULT_PERSON_CONFIG: NodeTypeConfig = {
     { key: "importance", label: "Importance", type: "select", options: ["dominant", "major", "secondary", "minor"] },
     { key: "date_from", label: "From", type: "text" },
     { key: "date_to", label: "To", type: "text" },
-    { key: "tags", label: "Tags", type: "text" },
     { key: "structural_roles", label: "Roles", type: "text" },
   ],
 };
@@ -54,6 +54,59 @@ export const DEFAULT_NODE_CONFIG: NodeTypeConfig = {
 };
 
 export const DEFAULT_NODE_TYPES: NodeTypeConfig[] = [DEFAULT_NODE_CONFIG];
+
+/** Convert legacy Stream[] to a Classifier with layout "x" */
+export function streamsToClassifier(streams: Stream[], label?: string): Classifier {
+  return {
+    id: label?.toLowerCase().replace(/\s+/g, "_") ?? "stream",
+    label: label ?? "Streams",
+    layout: "x",
+    values: streams.map((s) => ({
+      id: s.id,
+      label: s.name,
+      color: s.color,
+      description: s.description,
+    })),
+  };
+}
+
+/** Convert legacy Generation[] to a Classifier with layout "y" */
+export function generationsToClassifier(generations: Generation[], label?: string): Classifier {
+  return {
+    id: label?.toLowerCase().replace(/\s+/g, "_") ?? "generation",
+    label: label ?? "Generations",
+    layout: "y",
+    values: generations.map((g) => ({
+      id: String(g.number),
+      label: g.label ?? `${g.number}`,
+      description: g.period,
+    })),
+  };
+}
+
+/** Build classifiers from a template, using classifiers if present or converting legacy streams/gens */
+export function getTemplateClassifiers(template: TaxonomyTemplate): Classifier[] {
+  if (template.classifiers && template.classifiers.length > 0) return template.classifiers;
+  const result: Classifier[] = [];
+  if (template.streams && template.streams.length > 0) {
+    result.push(streamsToClassifier(template.streams, template.stream_label));
+  }
+  if (template.generations && template.generations.length > 0) {
+    result.push(generationsToClassifier(template.generations, template.generation_label));
+  }
+  return result;
+}
+
+/** Populate node.classifiers from legacy stream/generation fields */
+function populateNodeClassifiers(node: GraphNode, classifiers: Classifier[]): void {
+  if (node.classifiers && Object.keys(node.classifiers).length > 0) return;
+  const cls: Record<string, string> = {};
+  for (const c of classifiers) {
+    if (c.layout === "x" && node.stream) cls[c.id] = node.stream;
+    if (c.layout === "y" && node.generation != null) cls[c.id] = String(node.generation);
+  }
+  if (Object.keys(cls).length > 0) node.classifiers = cls;
+}
 
 /**
  * Migrate a parsed GraphIR (from the WASM markdown parser) into template + data.
@@ -97,6 +150,8 @@ export function migrateFromParser(parsed: GraphIR): { template: TaxonomyTemplate
     node_types: nodeTypes.length > 0 ? nodeTypes : DEFAULT_NODE_TYPES,
   };
 
+  const classifiers = getTemplateClassifiers(template);
+
   const nodes: DataNode[] = rawNodes.map((n) => ({
     id: n.id,
     node_type: n.node_type,
@@ -107,9 +162,17 @@ export function migrateFromParser(parsed: GraphIR): { template: TaxonomyTemplate
     notes: n.notes,
   }));
 
+  // Populate classifiers on nodes from legacy stream/generation fields
+  for (const node of nodes) {
+    const gn = node as unknown as GraphNode;
+    populateNodeClassifiers(gn, classifiers);
+    node.classifiers = gn.classifiers;
+  }
+
   const data: ConceptMapData = {
     version: "2.0",
     template: "",
+    classifiers,
     nodes,
     edges: parsed.edges,
     external_shocks: parsed.metadata.external_shocks,
@@ -130,6 +193,8 @@ export function graphIRFromData(template: TaxonomyTemplate, data: ConceptMapData
       name: dn.name,
       generation: dn.generation,
       stream: dn.stream,
+      tags: dn.tags,
+      classifiers: dn.classifiers,
       properties: { ...dn.properties },
       notes: dn.notes,
     };
@@ -137,12 +202,16 @@ export function graphIRFromData(template: TaxonomyTemplate, data: ConceptMapData
     return node;
   });
 
+  const classifiers = getTemplateClassifiers(template);
+  for (const node of nodes) populateNodeClassifiers(node, classifiers);
+
   return {
     version: data.version,
     metadata: {
       title: template.title,
-      streams: template.streams,
-      generations: template.generations,
+      classifiers,
+      streams: template.streams ?? [],
+      generations: template.generations ?? [],
       external_shocks: data.external_shocks,
       structural_observations: data.structural_observations,
       template,
@@ -162,6 +231,8 @@ export function dataFromGraphIR(graphIR: GraphIR, templateRef: string = ""): Con
     name: n.name,
     generation: n.generation,
     stream: n.stream,
+    tags: n.tags,
+    classifiers: n.classifiers,
     properties: n.properties ?? {},
     notes: n.notes,
   }));
@@ -170,6 +241,7 @@ export function dataFromGraphIR(graphIR: GraphIR, templateRef: string = ""): Con
     version: "2.0",
     template: templateRef,
     title: graphIR.metadata.title,
+    classifiers: graphIR.metadata.classifiers,
     streams: graphIR.metadata.streams,
     generations: graphIR.metadata.generations,
     node_types: graphIR.metadata.template?.node_types,
