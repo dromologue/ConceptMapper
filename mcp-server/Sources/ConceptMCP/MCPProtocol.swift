@@ -123,7 +123,9 @@ class MCPServer {
 
             do {
                 let request = try JSONDecoder().decode(JSONRPCRequest.self, from: data)
-                let response = handleRequest(request)
+                guard let response = handleRequest(request) else {
+                    continue  // Notification — no response expected
+                }
                 let responseData = try encoder.encode(response)
                 if let responseStr = String(data: responseData, encoding: .utf8) {
                     print(responseStr)
@@ -142,23 +144,24 @@ class MCPServer {
         }
     }
 
-    private func handleRequest(_ request: JSONRPCRequest) -> JSONRPCResponse {
+    private func handleRequest(_ request: JSONRPCRequest) -> JSONRPCResponse? {
         switch request.method {
         case "initialize":
-            let result: [String: AnyCodable] = [
-                "protocolVersion": AnyCodable("2024-11-05"),
-                "capabilities": AnyCodable([
+            let result: [String: Any] = [
+                "protocolVersion": "2024-11-05",
+                "capabilities": [
                     "tools": ["listChanged": false] as [String: Any]
-                ] as [String: Any]),
-                "serverInfo": AnyCodable([
+                ] as [String: Any],
+                "serverInfo": [
                     "name": "conceptllm-mcp",
                     "version": "1.0.0"
-                ] as [String: Any])
+                ] as [String: Any]
             ]
             return JSONRPCResponse(id: request.id, result: AnyCodable(result), error: nil)
 
         case "notifications/initialized":
-            return JSONRPCResponse(id: request.id, result: AnyCodable("ok"), error: nil)
+            // Notifications have no id and expect no response
+            return nil
 
         case "tools/list":
             let toolDicts = tools.map { tool -> [String: Any] in
