@@ -1570,3 +1570,117 @@ The Rust parser avoids `unwrap()` on Option values, using safe destructuring pat
 
 **Acceptance Criteria:**
 - [x] AC-079-01: `parse_single_edge()` uses `if let (Some, Some, Some)` instead of `.unwrap()`
+
+---
+
+## REQ-080: Generic Classifiers
+
+Replace hardcoded streams and generations with generic classifiers. Each template defines its own classification dimensions.
+
+**Expected Behavior:**
+- Templates define `classifiers: Classifier[]` instead of `streams`/`generations`
+- Each classifier has `id`, `label`, `layout` (x-axis, y-axis, or filter-only), and `values` with optional colors
+- First classifier drives node color; any classifier can drive axis layout
+- Old templates with streams/generations are auto-converted on load via `getTemplateClassifiers()`
+- GraphCanvas uses classifier layout hints for D3 force positioning
+
+**Acceptance Criteria:**
+- [x] AC-080-01: `Classifier` and `ClassifierValue` types defined in `graph-ir.ts`
+- [x] AC-080-02: `TaxonomyTemplate` has optional `classifiers` field alongside legacy `streams`/`generations`
+- [x] AC-080-03: `GraphNode` has `classifiers?: Record<string, string>` field
+- [x] AC-080-04: `getTemplateClassifiers()` converts legacy streams/gens to classifier format
+- [x] AC-080-05: `populateNodeClassifiers()` fills node classifiers from legacy `stream`/`generation` fields
+- [x] AC-080-06: GraphCanvas `getNodeColor()` derives color from first classifier
+- [x] AC-080-07: GraphCanvas force layout uses classifier `layout: "x"` / `"y"` hints
+- [x] AC-080-08: Sidebar renders classifier filter sections dynamically from template
+- [x] AC-080-09: `ClassifierFilter` type in FilterState with `isNodeFilterVisible()` support
+- [x] AC-080-10: AddNodeModal renders classifier dropdowns dynamically
+- [x] AC-080-11: DetailPanel renders classifier selects for editing
+
+---
+
+## REQ-081: First-Class Tags
+
+Every node can have multiple tags. Tags are filterable in the sidebar with OR semantics.
+
+**Expected Behavior:**
+- `GraphNode` has `tags?: string[]`
+- Sidebar discovers all unique tags from loaded nodes and renders a Tags filter section
+- Tag filter uses OR semantics: node is visible if it has at least one matching tag
+- DetailPanel shows a tag editor with pill-style display and add/remove
+- AddNodeModal includes a comma-separated tag input
+
+**Acceptance Criteria:**
+- [x] AC-081-01: `GraphNode` and `DataNode` have `tags?: string[]` field
+- [x] AC-081-02: `FilterState` has `tags: Set<string> | null` (null = all shown)
+- [x] AC-081-03: `isNodeFilterVisible()` checks tag filter with OR semantics
+- [x] AC-081-04: Sidebar collects unique tags from nodes and renders toggle filter
+- [x] AC-081-05: DetailPanel tag editor supports add (Enter/comma) and remove (x button)
+- [x] AC-081-06: AddNodeModal includes tag input field
+- [x] AC-081-07: Markdown export writes `tags: tag1, tag2, tag3` for nodes with tags
+
+---
+
+## REQ-082: Time Field Type
+
+Node attributes can be date/time values, rendered as date pickers in the UI.
+
+**Acceptance Criteria:**
+- [x] AC-082-01: `FieldType` includes `"time"` alongside `"text"`, `"select"`, `"textarea"`
+- [x] AC-082-02: DetailPanel renders `<input type="date">` for `"time"` fields
+- [x] AC-082-03: TaxonomyWizard offers "Date" in the field type dropdown
+
+---
+
+## REQ-083: Content-Only .cm Export
+
+The `.cm` markdown file contains only content (nodes, edges, observations). Taxonomy structure (classifiers, node types, edge types) lives exclusively in the `.cmt` template file.
+
+**Expected Behavior:**
+- `exportToMarkdown()` does not write Generations or Streams tables
+- Node blocks use classifier IDs as KV keys (e.g. `category: idea`) instead of `stream:`/`generation:`
+- Tags are written as `tags: tag1, tag2, tag3`
+
+**Acceptance Criteria:**
+- [x] AC-083-01: Exported `.cm` contains no `## Generations` or `## Streams` sections
+- [x] AC-083-02: Node blocks write classifier values using classifier ID as key
+- [x] AC-083-03: Node blocks write tags as comma-separated values
+- [x] AC-083-04: Node blocks write properties as KV pairs
+
+---
+
+## REQ-084: TaxonomyWizard Classifier Support
+
+The taxonomy wizard uses a unified classifiers step instead of separate streams/generations steps.
+
+**Expected Behavior:**
+- Wizard steps: title → node_types → classifiers → edges → review → create
+- Classifiers step allows adding/removing classifiers, each with label, layout hint, and values
+- First classifier's values show color pickers
+- Field type dropdown offers Text, Select, Date (textarea removed)
+- `TaxonomyWizardResult` outputs `classifiers: Classifier[]`
+- Legacy initialData with streams/generations auto-converted to classifiers
+
+**Acceptance Criteria:**
+- [x] AC-084-01: Wizard step sequence is title → node_types → classifiers → edges → review → create
+- [x] AC-084-02: Classifiers step renders dynamic classifier cards with values
+- [x] AC-084-03: First classifier values show color pickers
+- [x] AC-084-04: `TaxonomyWizardResult` has `classifiers` field (no streams/generations)
+- [x] AC-084-05: Legacy initialData with streams/generations is converted to classifiers
+- [x] AC-084-06: Field type dropdown includes "Date" option, excludes "Textarea"
+
+---
+
+## REQ-085: MCP Server Notification Handling
+
+The MCP server correctly handles JSON-RPC notifications (messages with no `id`).
+
+**Expected Behavior:**
+- `notifications/initialized` receives no response (it's a notification, not a request)
+- Only requests (with `id`) receive responses
+- `initialize` response has properly structured `result` object
+
+**Acceptance Criteria:**
+- [x] AC-085-01: `handleRequest` returns `nil` for `notifications/initialized`
+- [x] AC-085-02: Run loop skips response for notifications
+- [x] AC-085-03: `initialize` result is a valid JSON-RPC object (not a string)

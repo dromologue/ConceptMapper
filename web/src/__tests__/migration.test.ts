@@ -190,3 +190,44 @@ describe("generic node model", () => {
     expect(conceptConfig!.fields.length).toBeGreaterThan(0);
   });
 });
+
+describe("classifier conversion", () => {
+  it("migrateFromParser populates classifiers on nodes", () => {
+    const { data } = migrateFromParser(minimalParsed);
+    const thinker = data.nodes.find((n) => n.id === "t1");
+    expect(thinker?.classifiers).toBeDefined();
+    // stream "main" → x-axis classifier value
+    expect(Object.values(thinker!.classifiers!)).toContain("main");
+  });
+
+  it("migrateFromParser produces classifiers on data", () => {
+    const { data } = migrateFromParser(minimalParsed);
+    expect(data.classifiers).toBeDefined();
+    expect(data.classifiers!.length).toBeGreaterThan(0);
+  });
+
+  it("graphIRFromData populates classifiers in metadata", () => {
+    const { template, data } = migrateFromParser(minimalParsed);
+    const ir = graphIRFromData(template, data);
+    expect(ir.metadata.classifiers).toBeDefined();
+    expect(ir.metadata.classifiers!.length).toBeGreaterThan(0);
+  });
+
+  it("graphIRFromData populates classifiers on nodes from legacy stream/generation", () => {
+    const { template, data } = migrateFromParser(minimalParsed);
+    const ir = graphIRFromData(template, data);
+    const thinker = ir.nodes.find((n) => n.id === "t1");
+    expect(thinker?.classifiers).toBeDefined();
+  });
+
+  it("dataFromGraphIR preserves tags and classifiers", () => {
+    const { template, data } = migrateFromParser(minimalParsed);
+    const ir = graphIRFromData(template, data);
+    // Add tags to a node
+    ir.nodes[0].tags = ["test-tag", "research"];
+    const extracted = dataFromGraphIR(ir);
+    expect(extracted.nodes[0].tags).toEqual(["test-tag", "research"]);
+    expect(extracted.nodes[0].classifiers).toBeDefined();
+    expect(extracted.classifiers).toBeDefined();
+  });
+});

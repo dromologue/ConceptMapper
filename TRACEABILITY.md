@@ -155,6 +155,12 @@
 | REQ-077 | AC-077-01..05 (LLM client) | `src/__tests__/llm-client.test.ts` | 7 tests: OllamaLLMClient, createLLMClient factory | passing |
 | REQ-078 | AC-078-01..06 (undo/redo) | `src/__tests__/stores/useGraphStore.test.ts` | `undo restores previous state`, `redo restores undone state`, `history capped at 50` | passing |
 | REQ-079 | AC-079-01 (Rust safety) | `tests/edge_parser_tests.rs` | all edge parser tests | passing |
+| REQ-080 | AC-080-01..11 (generic classifiers) | `src/__tests__/sidebar.test.tsx`, `src/__tests__/migration.test.ts`, `src/__tests__/filters.test.ts` | classifier sections, conversion, filter logic | passing |
+| REQ-081 | AC-081-01..07 (first-class tags) | `src/__tests__/sidebar.test.tsx`, `src/__tests__/filters.test.ts` | tag discovery, OR filter semantics | passing |
+| REQ-082 | AC-082-01..03 (time field type) | `src/__tests__/taxonomy-wizard.test.tsx` | field type dropdown includes Date | passing |
+| REQ-083 | AC-083-01..04 (content-only .cm) | — | manual verification (no Streams/Generations tables in export) | passing |
+| REQ-084 | AC-084-01..06 (wizard classifiers) | `src/__tests__/taxonomy-wizard.test.tsx` | 19 tests: classifiers step, legacy conversion, date field | passing |
+| REQ-085 | AC-085-01..03 (MCP notifications) | — | manual verification (Claude Desktop connects without error) | passing |
 
 ## Additional Passing Tests (not yet mapped to spec requirements)
 

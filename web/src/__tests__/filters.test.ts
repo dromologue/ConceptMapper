@@ -255,4 +255,73 @@ describe("isNodeFilterVisible", () => {
     // Node before range
     expect(isNodeFilterVisible(makeNode({ properties: { date_from: "2025-06", date_to: "2025-12" } }), state)).toBe(false);
   });
+
+  // --- Classifier filtering ---
+
+  it("shows node when its classifier value matches the filter", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      classifiers: [{ classifierId: "discipline", values: new Set(["philosophy"]) }],
+    };
+    expect(isNodeFilterVisible(makeNode({ classifiers: { discipline: "philosophy" } }), state)).toBe(true);
+  });
+
+  it("hides node when its classifier value does NOT match the filter", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      classifiers: [{ classifierId: "discipline", values: new Set(["philosophy"]) }],
+    };
+    expect(isNodeFilterVisible(makeNode({ classifiers: { discipline: "sociology" } }), state)).toBe(false);
+  });
+
+  it("hides node with no classifier value when classifier filter is active", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      classifiers: [{ classifierId: "discipline", values: new Set(["philosophy"]) }],
+    };
+    expect(isNodeFilterVisible(makeNode({ classifiers: undefined }), state)).toBe(false);
+  });
+
+  it("ignores classifier filter with null values (inactive)", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      classifiers: [{ classifierId: "discipline", values: null }],
+    };
+    expect(isNodeFilterVisible(makeNode(), state)).toBe(true);
+  });
+
+  // --- Tag filtering ---
+
+  it("shows node when it has a matching tag", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      tags: new Set(["research"]),
+    };
+    expect(isNodeFilterVisible(makeNode({ tags: ["research", "ai"] }), state)).toBe(true);
+  });
+
+  it("hides node when none of its tags match the filter", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      tags: new Set(["research"]),
+    };
+    expect(isNodeFilterVisible(makeNode({ tags: ["design", "ux"] }), state)).toBe(false);
+  });
+
+  it("hides node with no tags when tag filter is active", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      tags: new Set(["research"]),
+    };
+    expect(isNodeFilterVisible(makeNode({ tags: undefined }), state)).toBe(false);
+  });
+
+  it("shows all nodes when tag filter is null", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      tags: null,
+    };
+    expect(isNodeFilterVisible(makeNode({ tags: ["anything"] }), state)).toBe(true);
+    expect(isNodeFilterVisible(makeNode({ tags: undefined }), state)).toBe(true);
+  });
 });
