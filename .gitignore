@@ -8,7 +8,9 @@
 /macos/build
 /mcp-server/.build
 .env
+.env.local
 .DS_Store
+.claude/settings.local.json
 concept\ library.md
 *.cme
 /collins_network_taxonomy.cm

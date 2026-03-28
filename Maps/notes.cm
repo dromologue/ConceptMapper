@@ -1,30 +1,13 @@
 # Untitled Map
 
-<!-- Exported from concept-mapper, 2026-03-22. -->
-
-## Generations
-
-| Gen | Period | Label | Attention Space Count |
-|-----|--------|-------|-----------------------|
-| 1 |  | Now |  |
-| 2 |  | Soon |  |
-| 3 |  | Later |  |
-
-## Streams
-
-| Stream ID | Name | Colour | Description |
-|-----------|------|--------|-------------|
-| general | General | #4A90D9 |  |
-| idea | Idea | #50C878 |  |
-| reference | Reference | #9B59B6 |  |
-| question | Question | #E67E22 |  |
+<!-- Exported from concept-mapper, 2026-03-23. -->
 
 ## Note Nodes
 
 ```
 id:               note_1
 name:             Note 1
-generation:       1
-stream:           general
+stream: general
+generation: 1
 is_action: yes
 ```

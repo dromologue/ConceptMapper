@@ -41,4 +41,4 @@
     { "id": "relates", "label": "Relates to", "directed": false, "style": "solid" },
     { "id": "follows", "label": "Follows from", "directed": true, "style": "solid" }
   ]
-}
+}1

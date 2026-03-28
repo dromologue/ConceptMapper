@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "concept-mapper": {
+      "type": "stdio",
+      "command": "./macos/Resources/bin/ConceptMCP",
+      "args": [],
+      "env": {}
+    },
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-filesystem", "./Maps", "./templates", "./examples"],
+      "env": {}
+    }
+  }
+}

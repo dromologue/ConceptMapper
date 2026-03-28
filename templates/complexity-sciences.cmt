@@ -1,0 +1,71 @@
+{
+  "title": "Complexity Sciences",
+  "description": "Map the evolution of complexity science fields and their key contributors across decades, following the Castellani & Gerrits cartography of the complexity sciences.",
+  "format_instructions": "When generating .cm files from this template: use markdown with fenced code blocks for nodes. Every property line MUST use 'key: value' format with a colon separator. Required node keys: id, name. Classifier values use the classifier id as the key. Tags use comma-separated format. Edges use 'from: [id] to: [id] type: [edge_type]' format.",
+  "classifiers": [
+    {
+      "id": "decade",
+      "label": "Decade",
+      "layout": "y",
+      "values": [
+        { "id": "1940s", "label": "1940s–1950s", "description": "Origins: cybernetics, general systems theory, early computing" },
+        { "id": "1960s", "label": "1960s", "description": "Expansion: cognitive science, catastrophe theory, systems dynamics" },
+        { "id": "1970s", "label": "1970s", "description": "Diversification: self-organization, chaos, dissipative structures" },
+        { "id": "1980s", "label": "1980s", "description": "Consolidation: CAS, Santa Fe Institute, fractals, cellular automata" },
+        { "id": "1990s", "label": "1990s", "description": "Network turn: small worlds, agent-based models, emergence" },
+        { "id": "2000s", "label": "2000s", "description": "Scale-free networks, computational social science, big data" },
+        { "id": "2010s", "label": "2010s", "description": "Applied complexity, deep learning, urban science, digital twins" },
+        { "id": "2020s", "label": "2020s", "description": "Pandemic modelling, climate complexity, AI-complexity convergence" }
+      ]
+    },
+    {
+      "id": "domain",
+      "label": "Domain",
+      "layout": "x",
+      "values": [
+        { "id": "math_physical", "label": "Mathematical & Physical", "color": "#4A90D9", "description": "Mathematical complexity, physics of complex systems, dynamical systems" },
+        { "id": "systems_cybernetics", "label": "Systems & Cybernetics", "color": "#50C878", "description": "General systems theory, cybernetics, system dynamics" },
+        { "id": "core_complexity", "label": "Core Complexity", "color": "#C4B035", "description": "Complex systems, self-organization, complex adaptive systems" },
+        { "id": "emergence_dynamics", "label": "Emergence & Dynamics", "color": "#E8A0BF", "description": "Emergence, systems dynamics, agent-based modelling" },
+        { "id": "networks_computation", "label": "Networks & Computation", "color": "#9B7DB8", "description": "Network science, computational complexity, spatial complexity" },
+        { "id": "social_economic", "label": "Social & Economic", "color": "#E67E22", "description": "Social network theory, economic and financial complexity, big data" },
+        { "id": "ai_cognitive", "label": "AI & Cognitive Science", "color": "#D4A843", "description": "Artificial intelligence, cognitive science, machine learning" }
+      ]
+    }
+  ],
+  "node_types": [
+    {
+      "id": "field",
+      "label": "Field",
+      "shape": "circle",
+      "icon": "F",
+      "size_field": "prominence",
+      "size_map": { "dominant": 22, "major": 16, "minor": 10 },
+      "fields": [
+        { "key": "prominence", "label": "Prominence", "type": "select", "options": ["dominant", "major", "minor"], "required": true },
+        { "key": "field_type", "label": "Field Type", "type": "select", "options": ["foundational", "bridging", "applied", "emerging"] },
+        { "key": "period_active", "label": "Period Active", "type": "text" },
+        { "key": "key_concepts", "label": "Key Concepts", "type": "text" }
+      ]
+    },
+    {
+      "id": "researcher",
+      "label": "Researcher",
+      "shape": "pill",
+      "icon": "R",
+      "size_field": "importance",
+      "size_map": { "dominant": 14, "major": 10, "secondary": 7, "minor": 5 },
+      "fields": [
+        { "key": "importance", "label": "Importance", "type": "select", "options": ["dominant", "major", "secondary", "minor"], "required": true },
+        { "key": "dates", "label": "Dates", "type": "text" },
+        { "key": "institutional_base", "label": "Institutional Base", "type": "text" },
+        { "key": "key_contribution", "label": "Key Contribution", "type": "text" }
+      ]
+    }
+  ],
+  "edge_types": [
+    { "id": "intellectual_lineage", "label": "Intellectual Lineage", "color": "#888888", "directed": true, "style": "solid" },
+    { "id": "contribution", "label": "Contribution", "color": "#50C878", "directed": true, "style": "dotted" },
+    { "id": "cross_pollination", "label": "Cross-Pollination", "color": "#9B7DB8", "directed": false, "style": "dashed" }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo test:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo run:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(npm install:*)",
+      "Bash(npx vitest:*)",
+      "Bash(wasm-pack build:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(open:*)",
+      "Bash(cp:*)",
+      "Bash(rm:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(wc:*)",
+      "Bash(python3:*)",
+      "Bash(swift:*)",
+      "Bash(git status:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git push:*)",
+      "Bash(gh:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "type": "command",
+        "command": "if echo \"$TOOL_INPUT\" | grep -q '\\.rs\"'; then cd /Users/dromologue/code/concept-mapper && cargo check 2>&1 | tail -5; fi"
+      }
+    ]
+  },
+  "env": {
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "60"
+  }
+}
