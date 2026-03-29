@@ -1,7 +1,6 @@
-export const EDGE_LABELS: Record<string, string> = {
-  teacher_pupil: "Teacher \u2192 Pupil", chain: "Chain", rivalry: "Rivalry",
-  alliance: "Alliance", synthesis: "Synthesis", institutional: "Institutional",
-  originates: "Originates", develops: "Develops", contests: "Contests",
-  applies: "Applies", extends: "Extends", opposes: "Opposes",
-  subsumes: "Subsumes", enables: "Enables", reframes: "Reframes",
-};
+import { DEFAULT_EDGE_TYPES } from "./edge-registry";
+
+/** Map from edge type ID to human-readable label. Derived from the edge registry. */
+export const EDGE_LABELS: Record<string, string> = Object.fromEntries(
+  DEFAULT_EDGE_TYPES.map((e) => [e.id, e.label])
+);

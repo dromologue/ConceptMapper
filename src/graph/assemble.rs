@@ -1,22 +1,22 @@
 use std::collections::{BTreeMap, HashMap};
 
 use crate::graph::ir::*;
-use crate::parser::errors::{ParseError, ParseWarning};
+use crate::parser::errors::{ParseError, ParseResult, ParseWarning};
 use crate::parser::lexer::{lex, ClassifiedLine, LineType};
-use crate::parser::sections::split_sections;
+use crate::parser::sections::{split_sections, SectionKind};
 use crate::parser::node_parser::{self, GenericNode};
 use crate::parser::edge_parser;
 use crate::parser::table_parser;
 use crate::parser::metadata_parser;
 
-/// Result of parsing a full document.
-pub struct ParseResult {
+/// Output of parsing a full document.
+pub struct ParseOutput {
     pub graph: GraphIR,
     pub warnings: Vec<ParseWarning>,
 }
 
 /// Parse a taxonomy markdown document into a Graph IR.
-pub fn parse_document(input: &str, source_file: Option<&str>) -> Result<ParseResult, Vec<ParseError>> {
+pub fn parse_document(input: &str, source_file: Option<&str>) -> ParseResult<ParseOutput> {
     let lines = lex(input);
     let sections = split_sections(lines);
 
@@ -45,22 +45,26 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> Result<ParseRes
     for section in &sections {
         let path_str = section.path.join(" > ").to_lowercase();
 
-        // Dispatch based on section path
-        if path_str.contains("generation") && !path_str.contains("node") {
-            generations = parse_generations(&section.lines);
-        } else if path_str.contains("stream") && !path_str.contains("node") {
-            streams = parse_streams(&section.lines);
-        } else if path_str.contains("edge") {
-            parse_edge_blocks(&section.lines, &mut edges, &mut errors);
-        } else if path_str.contains("external") && path_str.contains("shock") {
-            parse_shock_blocks(&section.lines, &mut external_shocks);
-        } else if path_str.contains("structural") && path_str.contains("observation") {
-            structural_observations = metadata_parser::parse_observations(&section.lines);
-        } else if path_str.contains("node") {
-            // Any "## [TypeName] Nodes" section
-            if let Some(node_type) = extract_node_type_from_path(&path_str) {
+        match SectionKind::from_path(&path_str) {
+            SectionKind::Generations => {
+                generations = parse_generations(&section.lines);
+            }
+            SectionKind::Streams => {
+                streams = parse_streams(&section.lines);
+            }
+            SectionKind::Edges => {
+                parse_edge_blocks(&section.lines, &mut edges, &mut errors);
+            }
+            SectionKind::ExternalShocks => {
+                parse_shock_blocks(&section.lines, &mut external_shocks);
+            }
+            SectionKind::StructuralObservations => {
+                structural_observations = metadata_parser::parse_observations(&section.lines);
+            }
+            SectionKind::Nodes(node_type) => {
                 parse_generic_blocks(&section.lines, &node_type, &mut generic_nodes, &mut errors);
             }
+            SectionKind::Unknown => {}
         }
     }
 
@@ -86,17 +90,17 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> Result<ParseRes
         return Err(errors);
     }
 
-    // Convert generic nodes to IR nodes
-    let ir_nodes: Vec<Node> = generic_nodes.iter().map(|g| {
+    // Convert generic nodes to IR nodes (move semantics to avoid cloning)
+    let ir_nodes: Vec<Node> = generic_nodes.into_iter().map(|g| {
         Node {
-            id: g.id.clone(),
-            node_type: g.node_type.clone(),
-            name: g.name.clone(),
+            id: g.id,
+            node_type: g.node_type,
+            name: g.name,
             generation: g.generation,
-            stream: g.stream.clone(),
-            fields: if g.fields.is_empty() { None } else { Some(g.fields.iter().map(|(k, v)| (k.clone(), v.clone())).collect::<BTreeMap<_, _>>()) },
+            stream: g.stream,
+            fields: if g.fields.is_empty() { None } else { Some(g.fields.into_iter().collect::<BTreeMap<_, _>>()) },
             content: None,
-            notes: g.notes.clone(),
+            notes: g.notes,
         }
     }).collect();
 
@@ -116,16 +120,18 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> Result<ParseRes
                 message: format!("edge references unknown node '{}'", e.to),
             });
         }
+    }
 
+    for e in edges {
         let (directed, visual) = edge_visual(&e.edge_type);
 
         ir_edges.push(Edge {
-            from: e.from.clone(),
-            to: e.to.clone(),
-            edge_type: e.edge_type.clone(),
+            from: e.from,
+            to: e.to,
+            edge_type: e.edge_type,
             directed,
             weight: e.weight,
-            note: e.note.clone(),
+            note: e.note,
             visual,
         });
     }
@@ -150,11 +156,12 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> Result<ParseRes
         edges: ir_edges,
     };
 
-    Ok(ParseResult { graph, warnings })
+    Ok(ParseOutput { graph, warnings })
 }
 
-/// Default edge visual based on edge type string.
-/// The frontend can override these from the .cmt template.
+/// Default fallback edge visual based on edge type string.
+/// These are baseline defaults only — the frontend overrides them with
+/// edge_types defined in the .cmt taxonomy template when one is loaded.
 fn edge_visual(edge_type: &str) -> (bool, EdgeVisual) {
     match edge_type {
         "rivalry" | "opposes" => (false, EdgeVisual {
@@ -176,18 +183,21 @@ fn edge_visual(edge_type: &str) -> (bool, EdgeVisual) {
     }
 }
 
+/// Look up a cell value by column name (case-insensitive substring match).
+fn table_get(row: &table_parser::TableRow, key: &str) -> Option<String> {
+    row.cells.iter()
+        .find(|(k, _)| k.to_lowercase().contains(&key.to_lowercase()))
+        .map(|(_, v)| v.clone())
+}
+
 fn parse_generations(lines: &[ClassifiedLine]) -> Vec<Generation> {
     let rows = table_parser::parse_table(lines);
     rows.iter().map(|row| {
-        let get = |key: &str| row.cells.iter()
-            .find(|(k, _)| k.to_lowercase().contains(&key.to_lowercase()))
-            .map(|(_, v)| v.clone());
-
         Generation {
-            number: get("Gen").and_then(|v| v.trim().parse().ok()).unwrap_or(0),
-            period: get("Period"),
-            label: get("Label"),
-            attention_space_count: get("Attention").and_then(|v| v.trim().parse().ok()),
+            number: table_get(row, "Gen").and_then(|v| v.trim().parse().ok()).unwrap_or(0),
+            period: table_get(row, "Period"),
+            label: table_get(row, "Label"),
+            attention_space_count: table_get(row, "Attention").and_then(|v| v.trim().parse().ok()),
         }
     }).collect()
 }
@@ -209,15 +219,11 @@ fn normalize_color(raw: &str) -> String {
 fn parse_streams(lines: &[ClassifiedLine]) -> Vec<Stream> {
     let rows = table_parser::parse_table(lines);
     rows.iter().map(|row| {
-        let get = |key: &str| row.cells.iter()
-            .find(|(k, _)| k.to_lowercase().contains(&key.to_lowercase()))
-            .map(|(_, v)| v.clone());
-
         Stream {
-            id: get("Stream ID").unwrap_or_default().trim().trim_matches('`').to_string(),
-            name: get("Name").unwrap_or_default().trim().to_string(),
-            color: get("Colour").or_else(|| get("Color")).map(|c| normalize_color(&c)),
-            description: get("Description"),
+            id: table_get(row, "Stream ID").unwrap_or_default().trim().trim_matches('`').to_string(),
+            name: table_get(row, "Name").unwrap_or_default().trim().to_string(),
+            color: table_get(row, "Colour").or_else(|| table_get(row, "Color")).map(|c| normalize_color(&c)),
+            description: table_get(row, "Description"),
         }
     }).collect()
 }
@@ -236,20 +242,6 @@ fn parse_generic_blocks(
     }
 }
 
-/// Extract node type name from a section path like "... > institution nodes".
-/// Returns the word before "node" as the type name, lowercased.
-fn extract_node_type_from_path(path_str: &str) -> Option<String> {
-    let parts: Vec<&str> = path_str.split_whitespace().collect();
-    for (i, part) in parts.iter().enumerate() {
-        if part.starts_with("node") && i > 0 {
-            let candidate = parts[i - 1].trim_matches(|c: char| !c.is_alphanumeric());
-            if !candidate.is_empty() {
-                return Some(candidate.to_lowercase());
-            }
-        }
-    }
-    None
-}
 
 fn parse_edge_blocks(
     lines: &[ClassifiedLine],

@@ -10,6 +10,16 @@ private let logger = Logger(subsystem: "com.dromologue.ConceptLLM", category: "B
 class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
     weak var webView: WKWebView?
 
+    /// Produce a safe JS string literal (double-quoted, properly escaped) using JSON serialization.
+    /// Returns a quoted string safe for interpolation into evaluateJavaScript calls.
+    private func safeJSString(_ str: String) -> String {
+        guard let data = try? JSONSerialization.data(withJSONObject: str, options: .fragmentsAllowed),
+              let json = String(data: data, encoding: .utf8) else {
+            return "\"\""
+        }
+        return json
+    }
+
     // MARK: - JS → Swift (message handlers)
 
     nonisolated func userContentController(
@@ -64,8 +74,9 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
                     .replacingOccurrences(of: "[^a-z0-9]+", with: "_", options: .regularExpression)
                     .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
                 FileHandler.saveNewFile(content: content, defaultName: "\(filename).cm") { [weak self] savedPath in
-                    self?.webView?.evaluateJavaScript(
-                        "window.taxonomySaved?.('\(savedPath)');"
+                    guard let self = self else { return }
+                    self.webView?.evaluateJavaScript(
+                        "window.taxonomySaved?.(\(self.safeJSString(savedPath)));"
                     ) { _, _ in }
                 }
             }
@@ -73,19 +84,21 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
             // Copy bundled templates on first call
             FileHandler.copyBundledTemplates()
             FileHandler.listTemplates { [weak self] results in
+                guard let self = self else { return }
                 if let jsonData = try? JSONSerialization.data(withJSONObject: results),
                    let jsonString = String(data: jsonData, encoding: .utf8) {
-                    self?.webView?.evaluateJavaScript(
-                        "window.templatesLoaded?.('\(jsonString.replacingOccurrences(of: "'", with: "\\'"))');"
+                    self.webView?.evaluateJavaScript(
+                        "window.templatesLoaded?.(\(self.safeJSString(jsonString)));"
                     ) { _, _ in }
                 }
             }
         case "listMaps":
             FileHandler.listMaps { [weak self] results in
+                guard let self = self else { return }
                 if let jsonData = try? JSONSerialization.data(withJSONObject: results),
                    let jsonString = String(data: jsonData, encoding: .utf8) {
-                    self?.webView?.evaluateJavaScript(
-                        "window.mapsLoaded?.('\(jsonString.replacingOccurrences(of: "'", with: "\\'"))');"
+                    self.webView?.evaluateJavaScript(
+                        "window.mapsLoaded?.(\(self.safeJSString(jsonString)));"
                     ) { _, _ in }
                 }
             }
@@ -132,10 +145,9 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
                let path = json["path"] {
                 FileHandler.loadTemplateFile(path: path) { [weak self] content in
-                    let escaped = content.replacingOccurrences(of: "'", with: "\\'")
-                        .replacingOccurrences(of: "\n", with: "\\n")
-                    self?.webView?.evaluateJavaScript(
-                        "window.templateLoaded?.('\(escaped)');"
+                    guard let self = self else { return }
+                    self.webView?.evaluateJavaScript(
+                        "window.templateLoaded?.(\(self.safeJSString(content)));"
                     ) { _, _ in }
                 }
             }
@@ -154,11 +166,9 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
         // MARK: LLM Config
         case "loadConfig":
             FileHandler.loadConfig { [weak self] content in
-                let escaped = content.replacingOccurrences(of: "\\", with: "\\\\")
-                    .replacingOccurrences(of: "'", with: "\\'")
-                    .replacingOccurrences(of: "\n", with: "\\n")
-                self?.webView?.evaluateJavaScript(
-                    "window.configLoaded?.('\(escaped)');"
+                guard let self = self else { return }
+                self.webView?.evaluateJavaScript(
+                    "window.configLoaded?.(\(self.safeJSString(content)));"
                 ) { _, _ in }
             }
         case "saveConfig":
@@ -178,20 +188,18 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
                 let systemPrompt = json["systemPrompt"] as? String
                 LLMService.sendMessage(configJSON: configStr, messagesJSON: messagesStr, systemPrompt: systemPrompt) { [weak self] result in
                     Task { @MainActor in
+                        guard let self = self else { return }
+                        let ridJS = self.safeJSString(requestId)
                         switch result {
                         case .success(let content):
-                            let escaped = content.replacingOccurrences(of: "\\", with: "\\\\")
-                                .replacingOccurrences(of: "'", with: "\\'")
-                                .replacingOccurrences(of: "\n", with: "\\n")
-                                .replacingOccurrences(of: "\r", with: "")
-                            self?.webView?.evaluateJavaScript(
-                                "window.llmResponse?.({requestId: '\(requestId)', content: '\(escaped)'});"
+                            let contentJS = self.safeJSString(content)
+                            self.webView?.evaluateJavaScript(
+                                "window.llmResponse?.({requestId: \(ridJS), content: \(contentJS)});"
                             ) { _, _ in }
                         case .failure(let error):
-                            let msg = error.localizedDescription
-                                .replacingOccurrences(of: "'", with: "\\'")
-                            self?.webView?.evaluateJavaScript(
-                                "window.llmError?.({requestId: '\(requestId)', error: '\(msg)'});"
+                            let msgJS = self.safeJSString(error.localizedDescription)
+                            self.webView?.evaluateJavaScript(
+                                "window.llmError?.({requestId: \(ridJS), error: \(msgJS)});"
                             ) { _, _ in }
                         }
                     }
@@ -206,21 +214,24 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
                 let testMessages = "[{\"role\": \"user\", \"content\": \"Say hello in exactly one word.\"}]"
                 LLMService.sendMessage(configJSON: configStr, messagesJSON: testMessages, systemPrompt: nil) { [weak self] result in
                     Task { @MainActor in
+                        guard let self = self else { return }
                         switch result {
                         case .success:
-                            self?.webView?.evaluateJavaScript(
+                            self.webView?.evaluateJavaScript(
                                 "window.llmTestResult?.({success: true});"
                             ) { _, _ in }
                         case .failure(let error):
-                            let msg = error.localizedDescription
-                                .replacingOccurrences(of: "'", with: "\\'")
-                            self?.webView?.evaluateJavaScript(
-                                "window.llmTestResult?.({success: false, error: '\(msg)'});"
+                            let msgJS = self.safeJSString(error.localizedDescription)
+                            self.webView?.evaluateJavaScript(
+                                "window.llmTestResult?.({success: false, error: \(msgJS)});"
                             ) { _, _ in }
                         }
                     }
                 }
             }
+
+        case "llmCancel":
+            LLMService.cancel()
 
         case "openURL":
             if let url = URL(string: body) {
@@ -238,9 +249,8 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
     func loadFileContent(_ content: String, filename: String, filePath: String? = nil) {
         guard let data = content.data(using: .utf8) else { return }
         let base64 = data.base64EncodedString()
-        let pathArg = filePath.map { "'\($0)'" } ?? "undefined"
-        // logger removed — file open is working
-        let js = "window.loadFileContentBase64('\(base64)', '\(filename)', \(pathArg));"
+        let pathArg = filePath.map { safeJSString($0) } ?? "undefined"
+        let js = "window.loadFileContentBase64('\(base64)', \(safeJSString(filename)), \(pathArg));"
         webView?.evaluateJavaScript(js) { _, error in
             if let error = error {
                 print("Bridge error: \(error)")

@@ -161,6 +161,17 @@
 | REQ-083 | AC-083-01..04 (content-only .cm) | — | manual verification (no Streams/Generations tables in export) | passing |
 | REQ-084 | AC-084-01..06 (wizard classifiers) | `src/__tests__/taxonomy-wizard.test.tsx` | 19 tests: classifiers step, legacy conversion, date field | passing |
 | REQ-085 | AC-085-01..03 (MCP notifications) | — | manual verification (Claude Desktop connects without error) | passing |
+| REQ-086 | AC-086-01..03 (MCP path security) | `Tests/ConceptMCPTests/PathValidationTests.swift` | 6 tests: traversal rejected, absolute outside rejected, extension handling | passing |
+| REQ-087 | AC-087-01..04 (parser type safety) | `src/parser/errors.rs`, `src/parser/sections.rs` | `ParseResult<T>` alias, `SectionKind` enum | passing |
+| REQ-088 | AC-088-01..09 (MCP parser tests) | `Tests/ConceptMCPTests/CMParserTests.swift` | 9 tests: parse nodes/edges/title, round-trip, write | passing |
+| REQ-089 | AC-089-01..03 (edge type registry) | `web/src/utils/edge-registry.ts` | centralized DEFAULT_EDGE_TYPES, getDefaultEdgeVisual | passing |
+| REQ-090 | AC-090-01..03 (WASM error boundary) | `web/src/parser.ts` | descriptive error on WASM load failure | passing |
+| REQ-091 | AC-091-01..02 (LLM timeout) | `web/src/llm/client.ts` | AbortController with 5-min timeout for Ollama | passing |
+| REQ-092 | AC-092-01..03 (WebView escaping) | `macos/ConceptLLM/WebViewBridge.swift` | JSON serialization via safeJSString, no manual escaping | passing |
+| REQ-093 | AC-093-01..02 (LLM cancellation) | `macos/ConceptLLM/LLMService.swift` | task storage, cancel() method, llmCancel handler | passing |
+| REQ-094 | AC-094-01..03 (error logging) | `macos/ConceptLLM/LogService.swift` | file logging with 7-day rotation | passing |
+| REQ-095 | AC-095-01..04 (CI/CD pipeline) | `.github/workflows/ci.yml` | Rust+WASM+Web+Swift jobs, clippy, fmt, coverage | passing |
+| REQ-096 | AC-096-01..02 (App.tsx decomposition) | `web/src/hooks/useFileLoader.ts` | file loading logic extracted to hook | passing |
 
 ## Additional Passing Tests (not yet mapped to spec requirements)
 

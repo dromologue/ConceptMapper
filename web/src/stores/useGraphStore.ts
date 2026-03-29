@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { GraphIR, GraphNode, GraphEdge } from '../types/graph-ir';
 import type { FilterState } from '../utils/filters';
 import { createEmptyFilterState } from '../utils/filters';
+import { getDefaultEdgeVisual } from '../utils/edge-registry';
 import { useUIStore } from './useUIStore';
 
 export type InteractionMode = "normal" | "add-edge-source" | "add-edge-target";
@@ -75,13 +76,8 @@ interface GraphState {
 }
 
 function getEdgeVisual(edgeType: string) {
-  if (edgeType === "rivalry" || edgeType === "opposes") {
-    return { style: "dashed", color: "#D94A4A", show_arrow: false };
-  }
-  if (edgeType === "alliance" || edgeType === "institutional") {
-    return { style: "dotted", color: "#999999", show_arrow: false };
-  }
-  return { style: "solid", show_arrow: true };
+  const vis = getDefaultEdgeVisual(edgeType);
+  return { style: vis.style, color: vis.color, show_arrow: vis.show_arrow };
 }
 
 export const useGraphStore = create<GraphState>((set, get) => ({

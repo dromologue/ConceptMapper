@@ -2,11 +2,16 @@ import Foundation
 
 // MARK: - File Paths
 
-struct MCPConfig {
-    let mapsDir: String
-    let templatesDir: String
+public struct MCPConfig {
+    public let mapsDir: String
+    public let templatesDir: String
 
-    static func defaultConfig() -> MCPConfig {
+    public init(mapsDir: String, templatesDir: String) {
+        self.mapsDir = mapsDir
+        self.templatesDir = templatesDir
+    }
+
+    public static func defaultConfig() -> MCPConfig {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let base = appSupport.appendingPathComponent("ConceptLLM")
         return MCPConfig(
@@ -15,21 +20,32 @@ struct MCPConfig {
         )
     }
 
-    func resolvePath(_ input: String, ext: String, dir: String) -> String {
+    /// Resolve a user-provided path to a file within an allowed directory.
+    /// Throws if the resolved path escapes the allowed directory (path traversal protection).
+    public func resolvePath(_ input: String, ext: String, dir: String) throws -> String {
+        let raw: String
         if input.hasPrefix("/") || input.hasPrefix("~") {
-            return (input as NSString).expandingTildeInPath
+            raw = (input as NSString).expandingTildeInPath
+        } else {
+            let withExt = input.hasSuffix(ext) ? input : input + ext
+            raw = (dir as NSString).appendingPathComponent(withExt)
         }
-        let withExt = input.hasSuffix(ext) ? input : input + ext
-        return (dir as NSString).appendingPathComponent(withExt)
+        let resolved = URL(fileURLWithPath: raw).standardizedFileURL.path
+        let allowedDir = URL(fileURLWithPath: dir).standardizedFileURL.path
+        guard resolved.hasPrefix(allowedDir + "/") || resolved == allowedDir else {
+            throw NSError(domain: "MCP", code: 403,
+                userInfo: [NSLocalizedDescriptionKey: "Path '\(input)' resolves outside allowed directory"])
+        }
+        return resolved
     }
 
-    func resolveMapPath(_ input: String) -> String { resolvePath(input, ext: ".cm", dir: mapsDir) }
-    func resolveTemplatePath(_ input: String) -> String { resolvePath(input, ext: ".cmt", dir: templatesDir) }
+    public func resolveMapPath(_ input: String) throws -> String { try resolvePath(input, ext: ".cm", dir: mapsDir) }
+    public func resolveTemplatePath(_ input: String) throws -> String { try resolvePath(input, ext: ".cmt", dir: templatesDir) }
 }
 
 // MARK: - Handler
 
-func handleTool(_ name: String, _ args: [String: AnyCodable]?, config: MCPConfig) throws -> String {
+public func handleTool(_ name: String, _ args: [String: AnyCodable]?, config: MCPConfig) throws -> String {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
 
@@ -39,49 +55,49 @@ func handleTool(_ name: String, _ args: [String: AnyCodable]?, config: MCPConfig
     case "list_templates":
         return try listTemplates(config: config, encoder: encoder)
     case "open_map":
-        let path = config.resolveMapPath(args?["path"]?.stringValue ?? "")
+        let path = try config.resolveMapPath(args?["path"]?.stringValue ?? "")
         return try openMap(path: path, encoder: encoder)
     case "open_template":
-        let path = config.resolveTemplatePath(args?["path"]?.stringValue ?? "")
+        let path = try config.resolveTemplatePath(args?["path"]?.stringValue ?? "")
         return try openTemplate(path: path)
     case "search_nodes":
-        let path = config.resolveMapPath(args?["path"]?.stringValue ?? "")
+        let path = try config.resolveMapPath(args?["path"]?.stringValue ?? "")
         let query = args?["query"]?.stringValue ?? ""
         let nodeType = args?["node_type"]?.stringValue
         return try searchNodes(path: path, query: query, nodeType: nodeType, encoder: encoder)
     case "get_node":
-        let path = config.resolveMapPath(args?["path"]?.stringValue ?? "")
+        let path = try config.resolveMapPath(args?["path"]?.stringValue ?? "")
         let nodeId = args?["node_id"]?.stringValue ?? ""
         return try getNode(path: path, nodeId: nodeId, encoder: encoder)
     case "get_connections":
-        let path = config.resolveMapPath(args?["path"]?.stringValue ?? "")
+        let path = try config.resolveMapPath(args?["path"]?.stringValue ?? "")
         let nodeId = args?["node_id"]?.stringValue ?? ""
         return try getConnections(path: path, nodeId: nodeId, encoder: encoder)
     case "add_node":
-        let path = config.resolveMapPath(args?["path"]?.stringValue ?? "")
+        let path = try config.resolveMapPath(args?["path"]?.stringValue ?? "")
         return try addNode(path: path, args: args, encoder: encoder)
     case "update_node":
-        let path = config.resolveMapPath(args?["path"]?.stringValue ?? "")
+        let path = try config.resolveMapPath(args?["path"]?.stringValue ?? "")
         return try updateNode(path: path, args: args, encoder: encoder)
     case "delete_node":
-        let path = config.resolveMapPath(args?["path"]?.stringValue ?? "")
+        let path = try config.resolveMapPath(args?["path"]?.stringValue ?? "")
         let nodeId = args?["node_id"]?.stringValue ?? ""
         return try deleteNode(path: path, nodeId: nodeId)
     case "add_edge":
-        let path = config.resolveMapPath(args?["path"]?.stringValue ?? "")
+        let path = try config.resolveMapPath(args?["path"]?.stringValue ?? "")
         return try addEdge(path: path, args: args)
     case "update_edge":
-        let path = config.resolveMapPath(args?["path"]?.stringValue ?? "")
+        let path = try config.resolveMapPath(args?["path"]?.stringValue ?? "")
         return try updateEdge(path: path, args: args)
     case "delete_edge":
-        let path = config.resolveMapPath(args?["path"]?.stringValue ?? "")
+        let path = try config.resolveMapPath(args?["path"]?.stringValue ?? "")
         let from = args?["from"]?.stringValue ?? ""
         let to = args?["to"]?.stringValue ?? ""
         return try deleteEdgeFn(path: path, from: from, to: to)
     case "create_map":
         return try createMap(args: args, config: config)
     case "get_map_stats":
-        let path = config.resolveMapPath(args?["path"]?.stringValue ?? "")
+        let path = try config.resolveMapPath(args?["path"]?.stringValue ?? "")
         return try getMapStats(path: path, encoder: encoder)
     default:
         throw NSError(domain: "MCP", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unknown tool: \(name)"])
@@ -310,7 +326,7 @@ private func createMap(args: [String: AnyCodable]?, config: MCPConfig) throws ->
     let filename = args?["filename"]?.stringValue ?? title.lowercased().replacingOccurrences(of: "[^a-z0-9]+", with: "-", options: .regularExpression)
 
     // Load template
-    let templatePath = config.resolveTemplatePath(templateName)
+    let templatePath = try config.resolveTemplatePath(templateName)
     var streams: [CMStream] = []
     var generations: [CMGeneration] = []
 

@@ -78,7 +78,7 @@ fn classify_line(line: &str, in_fence: &mut bool) -> LineType {
     if trimmed.starts_with('#') {
         let level = trimmed.chars().take_while(|c| *c == '#').count();
         let text = trimmed[level..].trim().to_string();
-        if level >= 1 && level <= 6 && !text.is_empty() {
+        if (1..=6).contains(&level) && !text.is_empty() {
             return LineType::Header { level, text };
         }
     }

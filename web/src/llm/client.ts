@@ -82,23 +82,31 @@ export class OllamaLLMClient implements LLMClient {
       }
     }
 
-    const res = await fetch(`${endpoint}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: config.model,
-        messages,
-        stream: false,
-        options: { temperature: config.temperature ?? 0.3 },
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300_000); // 5 min timeout for Ollama
 
-    if (!res.ok) {
-      throw new Error(`Ollama error: HTTP ${res.status}`);
+    try {
+      const res = await fetch(`${endpoint}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: config.model,
+          messages,
+          stream: false,
+          options: { temperature: config.temperature ?? 0.3 },
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Ollama error: HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      return data.message?.content ?? "";
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    const data = await res.json();
-    return data.message?.content ?? "";
   }
 }
 

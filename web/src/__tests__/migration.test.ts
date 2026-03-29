@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { migrateFromParser, graphIRFromData, dataFromGraphIR } from "../migration";
-import { getNodeColor } from "../graph/GraphCanvas";
+import { getNodeColor } from "../graph/node-color";
 import type { GraphIR, SimNode, Classifier, TaxonomyTemplate } from "../types/graph-ir";
 import { classifierWithoutColors, classifierWithColors, multiClassifiers } from "./fixtures";
 
@@ -360,12 +360,7 @@ describe("migrateFromParser with active template", () => {
 // SPEC: REQ-074 (Column Redraw), REQ-076 (Layout Force Deduplication)
 describe("column layout computation", () => {
   it("computeRegionColumns produces equal-width columns spanning full width", async () => {
-    // Import dynamically to access the module-level function
-    const { computeRegionColumns } = await import("../graph/GraphCanvas") as unknown as {
-      computeRegionColumns: (cls: Classifier, width: number, counts?: Map<string, number>) => { positions: Map<string, number>; widths: Map<string, number> };
-    };
-    // computeRegionColumns is not exported, so test indirectly via graphIRFromData + getNodeColor
-    // Instead, test the color function with column-style classifiers
+    // computeRegionColumns is not exported, so test indirectly via getNodeColor with column-style classifiers
     const node = { id: "n1", node_type: "field", name: "Test", x: 0, y: 0, classifiers: { domain: "math_physical" }, properties: {} } as SimNode;
     const color = getNodeColor(node, [classifierWithColors]);
     expect(color).toBe("#4A90D9");

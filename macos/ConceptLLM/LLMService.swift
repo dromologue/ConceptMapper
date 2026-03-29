@@ -6,6 +6,17 @@ private let logger = Logger(subsystem: "com.dromologue.ConceptLLM", category: "L
 /// Handles HTTP calls to LLM providers. Keys never leave Swift.
 enum LLMService {
 
+    /// The currently in-flight LLM request task, if any.
+    private(set) static var currentTask: URLSessionDataTask?
+
+    /// Cancel any in-flight LLM request.
+    static func cancel() {
+        currentTask?.cancel()
+        currentTask = nil
+        logger.info("LLM request cancelled")
+        LogService.log("LLM request cancelled by user", level: .info)
+    }
+
     // MARK: - Public API
 
     /// Send a chat message to the configured LLM provider.
@@ -38,15 +49,23 @@ enum LLMService {
         let baseUrl = config["baseUrl"] as? String
         let temperature = config["temperature"] as? Double ?? 0.3
 
+        // Wrap completion to log errors
+        let loggingCompletion: (Result<String, Error>) -> Void = { result in
+            if case .failure(let error) = result {
+                LogService.log("LLM error (\(provider)/\(model)): \(error.localizedDescription)", level: .error)
+            }
+            completion(result)
+        }
+
         switch provider {
         case "anthropic":
-            sendAnthropic(apiKey: apiKey, model: model, messages: messages, systemPrompt: systemPrompt, temperature: temperature, completion: completion)
+            sendAnthropic(apiKey: apiKey, model: model, messages: messages, systemPrompt: systemPrompt, temperature: temperature, completion: loggingCompletion)
         case "openai":
-            sendOpenAI(apiKey: apiKey, model: model, baseUrl: baseUrl, messages: messages, systemPrompt: systemPrompt, temperature: temperature, completion: completion)
+            sendOpenAI(apiKey: apiKey, model: model, baseUrl: baseUrl, messages: messages, systemPrompt: systemPrompt, temperature: temperature, completion: loggingCompletion)
         case "ollama":
-            sendOllama(model: model, baseUrl: baseUrl, messages: messages, systemPrompt: systemPrompt, temperature: temperature, completion: completion)
+            sendOllama(model: model, baseUrl: baseUrl, messages: messages, systemPrompt: systemPrompt, temperature: temperature, completion: loggingCompletion)
         default:
-            completion(.failure(LLMError.invalidConfig("Unknown provider: \(provider)")))
+            loggingCompletion(.failure(LLMError.invalidConfig("Unknown provider: \(provider)")))
         }
     }
 
@@ -105,7 +124,8 @@ enum LLMService {
         }
         request.httpBody = httpBody
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            currentTask = nil
             if let error = error {
                 completion(.failure(LLMError.network(error.localizedDescription)))
                 return
@@ -120,7 +140,6 @@ enum LLMService {
             let statusCode = httpResponse?.statusCode ?? 0
 
             guard statusCode == 200 else {
-                let respBody = String(data: data, encoding: .utf8) ?? "unknown error"
                 // Try to extract the human-readable error message from Anthropic JSON
                 var friendlyMsg = "HTTP \(statusCode)"
                 if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -147,7 +166,9 @@ enum LLMService {
             }
 
             completion(.success(text))
-        }.resume()
+        }
+        currentTask = task
+        task.resume()
     }
 
     // MARK: - OpenAI-compatible
@@ -203,7 +224,8 @@ enum LLMService {
         }
         request.httpBody = httpBody
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            currentTask = nil
             if let error = error {
                 completion(.failure(LLMError.network(error.localizedDescription)))
                 return
@@ -238,7 +260,9 @@ enum LLMService {
             }
 
             completion(.success(content))
-        }.resume()
+        }
+        currentTask = task
+        task.resume()
     }
 
     // MARK: - Ollama
@@ -284,7 +308,8 @@ enum LLMService {
         }
         request.httpBody = httpBody
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            currentTask = nil
             if let error = error {
                 completion(.failure(LLMError.network("Cannot reach Ollama at \(endpoint): \(error.localizedDescription)")))
                 return
@@ -311,7 +336,9 @@ enum LLMService {
             }
 
             completion(.success(content))
-        }.resume()
+        }
+        currentTask = task
+        task.resume()
     }
 
     // MARK: - Errors

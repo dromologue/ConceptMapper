@@ -23,7 +23,7 @@ import { jsPDF } from "jspdf";
 import { HelpPanel } from "./ui/HelpPanel";
 import { EdgePopover } from "./ui/EdgePopover";
 import { IconSearch } from "./ui/Icons";
-import { initParser, parseMarkdown } from "./parser";
+import { parseMarkdown } from "./parser";
 import { ThemeProvider, useTheme } from "./theme/ThemeContext";
 import { LLMProvider, useLLM } from "./llm/LLMContext";
 import { registerLLMCallbacks } from "./llm/provider";
@@ -32,6 +32,7 @@ import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData, getTemplateClas
 import { createEmptyFilterState } from "./utils/filters";
 import type { FilterState } from "./utils/filters";
 import { normalizeFencedKV } from "./utils/normalize";
+import { useFileLoader } from "./hooks/useFileLoader";
 import "./App.css";
 
 export type ViewMode = string; // "full" or a node type id
@@ -65,7 +66,6 @@ function AppInner() {
   }, []);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [viewMode, setViewMode] = useState("full");
-  const [error, setError] = useState<string | null>(null);
   const [revealedNodes, setRevealedNodes] = useState<Set<string>>(new Set());
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
   const [showAddNode, setShowAddNode] = useState<string | null>(null); // node type id or null
@@ -128,7 +128,15 @@ function AppInner() {
   const [loadedNativeTemplates, setLoadedNativeTemplates] = useState<Map<string, TaxonomyWizardInitial>>(new Map());
   const [nativeMaps, setNativeMaps] = useState<{ name: string; path: string }[]>([]);
 
-  const [parserReady, setParserReady] = useState(false);
+  // File loading: WASM parser init + file content loading
+  const resetUI = useCallback(() => {
+    setSelectedNode(null);
+    setRevealedNodes(new Set());
+    setFilters(createEmptyFilterState());
+  }, []);
+  const { parserReady, error, setError, loadFileContent } = useFileLoader(
+    template, setGraphData, setTemplate, resetUI, setSourceFilePath
+  );
 
   // Active node type configs — from template or defaults
   const nodeTypeConfigs: NodeTypeConfig[] = template?.node_types ?? DEFAULT_NODE_TYPES;
@@ -160,110 +168,6 @@ function AppInner() {
     setPathResult(null);
     setHighlightedPath(null);
   }, []);
-
-  // Initialize WASM parser on startup
-  useEffect(() => {
-    initParser()
-      .then(() => setParserReady(true))
-      .catch((err) => setError(`Failed to load parser: ${err.message}`));
-  }, []);
-
-  // Load file content — called from Swift bridge or internal file input
-  const loadFileContent = useCallback(
-    (content: string, filename: string, filePath?: string) => {
-      try {
-        // Try markdown parser first (primary format for .cm files)
-        if (!content.trimStart().startsWith("{")) {
-          // Normalize key-value lines inside fenced blocks: "key    value" → "key: value"
-          const normalized = normalizeFencedKV(content);
-          const result = parseMarkdown(normalized);
-          const data = result.graph;
-          if (result.warnings.length > 0) {
-            console.warn("Parse warnings:", result.warnings.map((w) => `line ${w.line}: ${w.message}`));
-          }
-          if (data.nodes.length > 0) {
-            // Extract template reference from .cm header: <!-- template: filename.cmt -->
-            const tmplMatch = content.match(/<!--\s*template:\s*(.+?)\s*-->/i);
-            const tmplFile = tmplMatch?.[1]?.trim();
-
-            // Try to load the .cmt template file directly
-            const finishLoad = (effectiveTemplate: TaxonomyTemplate | null | undefined) => {
-              const { template: migratedTemplate, data: migratedData } = migrateFromParser(data, effectiveTemplate);
-              const ir = graphIRFromData(migratedTemplate, migratedData);
-              if (tmplFile) ir.metadata.source_template = tmplFile.endsWith(".cmt") ? tmplFile : `${tmplFile}.cmt`;
-              setGraphData(ir);
-              setTemplate(migratedTemplate);
-              setSelectedNode(null);
-              setRevealedNodes(new Set());
-              setFilters(createEmptyFilterState());
-              setError(null);
-              setSourceFilePath(filePath ?? null);
-            };
-
-            if (tmplFile) {
-              const cmtName = tmplFile.endsWith(".cmt") ? tmplFile : `${tmplFile}.cmt`;
-              let loadedTmpl: TaxonomyTemplate | null = null;
-              try {
-                const xhr = new XMLHttpRequest();
-                xhr.open("GET", `templates/${cmtName}`, false);
-                xhr.send();
-                document.title = `XHR: status=${xhr.status} len=${xhr.responseText?.length ?? 0}`;
-                if (xhr.status === 200 || (xhr.status === 0 && xhr.responseText)) {
-                  loadedTmpl = JSON.parse(xhr.responseText) as TaxonomyTemplate;
-                }
-              } catch (err) {
-                document.title = `XHR ERROR: ${err}`;
-              }
-              finishLoad(loadedTmpl ?? template);
-            } else {
-              document.title = "NO TEMPLATE REF";
-              finishLoad(template);
-            }
-            return;
-          }
-        }
-
-        // JSON fallback (legacy v2 JSON .cm files)
-        if (content.trimStart().startsWith("{")) {
-          try {
-            const parsed = JSON.parse(content);
-            if (parsed.version && parsed.nodes) {
-              const cmData = parsed as ConceptMapData;
-              const tmpl: TaxonomyTemplate = {
-                title: cmData.title ?? template?.title ?? "Untitled",
-                classifiers: cmData.classifiers ?? template?.classifiers,
-                streams: cmData.streams ?? template?.streams ?? [],
-                generations: cmData.generations ?? template?.generations ?? [],
-                node_types: cmData.node_types ?? template?.node_types ?? DEFAULT_NODE_TYPES,
-                edge_types: cmData.edge_types ?? template?.edge_types,
-                stream_label: (parsed as Record<string, unknown>).stream_label as string | undefined ?? template?.stream_label,
-                generation_label: (parsed as Record<string, unknown>).generation_label as string | undefined ?? template?.generation_label,
-              };
-              const ir = graphIRFromData(tmpl, cmData);
-              setGraphData(ir);
-              setTemplate(ir.metadata.template ?? tmpl);
-              setSelectedNode(null);
-              setRevealedNodes(new Set());
-              setFilters(createEmptyFilterState());
-              setError(null);
-              setSourceFilePath(filePath ?? null);
-              return;
-            }
-          } catch {
-            // Not valid JSON either
-          }
-        }
-
-        setError(
-          `No nodes found in "${filename}". ` +
-          "Expected a markdown concept map with fenced code blocks defining nodes."
-        );
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-      }
-    },
-    [template, setGraphData]
-  );
 
   // Register LLM response/error callbacks
   useEffect(() => {
@@ -409,7 +313,7 @@ function AppInner() {
       delete win.templateLoaded;
       delete win.mapsLoaded;
     };
-  }, [loadFileContent, graphData, nodeTypeConfigs, templateFilePath]);
+  }, [loadFileContent, graphData, nodeTypeConfigs, templateFilePath, setGraphData]);
 
   const handleViewModeChange = useCallback((mode: string) => {
     setViewMode(mode);
@@ -1123,6 +1027,7 @@ function AppInner() {
     const updatedNodes = graphData.nodes.map((n) => {
       const val = n.properties?.[field];
       if (val && typeof val === "string") {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { [field]: _, ...restProps } = (n.properties ?? {}) as Record<string, string | string[] | number | undefined>;
         return { ...n, classifiers: { ...(n.classifiers ?? {}), [field]: val }, properties: restProps };
       }

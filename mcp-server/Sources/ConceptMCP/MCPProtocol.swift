@@ -23,32 +23,47 @@ struct JSONRPCError: Encodable {
 
 // MARK: - MCP Types
 
-struct MCPToolDefinition: Encodable {
-    let name: String
-    let description: String
-    let inputSchema: InputSchema
+public struct MCPToolDefinition: Encodable {
+    public let name: String
+    public let description: String
+    public let inputSchema: InputSchema
+
+    public init(name: String, description: String, inputSchema: InputSchema) {
+        self.name = name
+        self.description = description
+        self.inputSchema = inputSchema
+    }
 }
 
-struct InputSchema: Encodable {
-    let type: String = "object"
-    let properties: [String: PropertySchema]
-    let required: [String]?
+public struct InputSchema: Encodable {
+    public let type: String = "object"
+    public let properties: [String: PropertySchema]
+    public let required: [String]?
+
+    public init(properties: [String: PropertySchema], required: [String]?) {
+        self.properties = properties
+        self.required = required
+    }
 }
 
-struct PropertySchema: Encodable {
-    let type: String
-    let description: String
-    let items: ItemSchema?
+public struct PropertySchema: Encodable {
+    public let type: String
+    public let description: String
+    public let items: ItemSchema?
 
-    init(type: String, description: String, items: ItemSchema? = nil) {
+    public init(type: String, description: String, items: ItemSchema? = nil) {
         self.type = type
         self.description = description
         self.items = items
     }
 }
 
-struct ItemSchema: Encodable {
-    let type: String
+public struct ItemSchema: Encodable {
+    public let type: String
+
+    public init(type: String) {
+        self.type = type
+    }
 }
 
 struct MCPToolResult: Encodable {
@@ -63,12 +78,12 @@ struct MCPContent: Encodable {
 
 // MARK: - AnyCodable (simple wrapper for JSON values)
 
-struct AnyCodable: Codable {
-    let value: Any
+public struct AnyCodable: Codable {
+    public let value: Any
 
-    init(_ value: Any) { self.value = value }
+    public init(_ value: Any) { self.value = value }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if container.decodeNil() { value = NSNull(); return }
         if let v = try? container.decode(Bool.self) { value = v; return }
@@ -80,7 +95,7 @@ struct AnyCodable: Codable {
         throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode value")
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch value {
         case is NSNull: try container.encodeNil()
@@ -96,24 +111,24 @@ struct AnyCodable: Codable {
         }
     }
 
-    var stringValue: String? { value as? String }
-    var intValue: Int? { value as? Int }
-    var doubleValue: Double? { value as? Double }
-    var dictValue: [String: AnyCodable]? { value as? [String: AnyCodable] }
+    public var stringValue: String? { value as? String }
+    public var intValue: Int? { value as? Int }
+    public var doubleValue: Double? { value as? Double }
+    public var dictValue: [String: AnyCodable]? { value as? [String: AnyCodable] }
 }
 
 // MARK: - MCP Server
 
-class MCPServer {
+public class MCPServer {
     let tools: [MCPToolDefinition]
     let handler: (String, [String: AnyCodable]?) throws -> String
 
-    init(tools: [MCPToolDefinition], handler: @escaping (String, [String: AnyCodable]?) throws -> String) {
+    public init(tools: [MCPToolDefinition], handler: @escaping (String, [String: AnyCodable]?) throws -> String) {
         self.tools = tools
         self.handler = handler
     }
 
-    func run() {
+    public func run() {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
 

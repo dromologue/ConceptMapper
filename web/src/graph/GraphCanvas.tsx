@@ -8,6 +8,7 @@ import { isNodeFilterVisible } from "../utils/filters";
 import { getNodeTypeConfig, getConfigNodeRadius } from "../migration";
 import { computeCollapseState } from "./collapse-utils";
 import { EDGE_LABELS } from "../utils/edge-labels";
+import { getNodeColor } from "./node-color";
 import { communityColor } from "../ui/AnalysisPanel";
 
 // --- Organic rendering helpers ---
@@ -80,8 +81,8 @@ function computeRegionCentroids(
   regionCls.values.forEach((v, i) => {
     const col = i % cols;
     const row = Math.floor(i / cols);
-    const x = width * (0.15 + (0.7 * col) / Math.max(cols - 1, 1));
-    const y = height * (0.1 + (0.8 * row) / Math.max(rows - 1, 1));
+    const x = width * (X_LAYOUT_START + (X_LAYOUT_RANGE * col) / Math.max(cols - 1, 1));
+    const y = height * (Y_LAYOUT_START + (Y_LAYOUT_RANGE * row) / Math.max(rows - 1, 1));
     result.set(v.id, { x, y });
   });
   return result;
@@ -91,7 +92,7 @@ function computeRegionCentroids(
 function computeRegionColumns(
   regionCls: Classifier,
   width: number,
-  _nodeCounts?: Map<string, number>,
+  _nodeCounts?: Map<string, number>, // eslint-disable-line @typescript-eslint/no-unused-vars
 ): { positions: Map<string, number>; widths: Map<string, number> } {
   const n = regionCls.values.length;
   if (n === 0) return { positions: new Map(), widths: new Map() };
@@ -104,6 +105,148 @@ function computeRegionColumns(
   });
   return { positions, widths };
 }
+
+// --- Configuration constants ---
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+// D3 force simulation
+const CHARGE_STRENGTH_NORMAL = -400;
+const CHARGE_STRENGTH_EXPLODED = -1500;
+const CHARGE_DISTANCE_MAX_NORMAL = 800;
+const CHARGE_DISTANCE_MAX_EXPLODED = 3000;
+const COLLISION_PADDING_NORMAL = 12;
+const COLLISION_PADDING_EXPLODED = 40;
+const LINK_DISTANCE_BASE = 120;
+const LINK_FORCE_STRENGTH = 0.2;
+const ALPHA_DECAY = 0.015;
+const ALPHA_RESTART = 0.8;
+const ALPHA_RESTART_MILD = 0.3;
+const ALPHA_DRAG_TARGET = 0.3;
+
+// Layout axis force strengths
+const X_AXIS_CLASSIFIER_STRENGTH = 0.3;
+const X_AXIS_CENTER_STRENGTH = 0.05;
+const Y_AXIS_CLASSIFIER_STRENGTH = 0.5;
+const Y_AXIS_CENTER_STRENGTH = 0.05;
+const REGION_COLUMN_STRENGTH = 0.4;
+const REGION_CENTROID_STRENGTH_WITH_AXIS = 0.15;
+const REGION_CENTROID_STRENGTH_DEFAULT = 0.3;
+
+// Layout positioning offsets (fraction of canvas dimension)
+const X_LAYOUT_START = 0.15;
+const X_LAYOUT_RANGE = 0.7;
+const Y_LAYOUT_START = 0.1;
+const Y_LAYOUT_RANGE = 0.8;
+const INITIAL_SPREAD_FACTOR = 0.6;
+const NEW_NODE_SPAWN_SPREAD = 200;
+
+// Fit-to-view and zoom
+const FIT_TO_VIEW_PADDING = 80;
+const FIT_TO_VIEW_MAX_SCALE = 1.2;
+const MARQUEE_ZOOM_SCALE = 0.9;
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 5;
+const ZOOM_IN_FACTOR = 1.5;
+const ZOOM_OUT_FACTOR = 0.67;
+const CENTER_ON_NODE_SCALE = 1.5;
+
+// Animation durations (ms)
+const FIT_TO_VIEW_DURATION = 400;
+const TRANSITION_DURATION = 500;
+const ZOOM_BUTTON_DURATION = 300;
+const COLLAPSE_FIT_DELAY = 600;
+const RESIZE_FIT_DELAY = 500;
+
+// Canvas defaults
+const DEFAULT_CANVAS_WIDTH = 800;
+const DEFAULT_CANVAS_HEIGHT = 600;
+
+// Visual: hit detection
+const NODE_HIT_PADDING = 4;
+const EDGE_HIT_THRESHOLD = 8;
+const MARQUEE_MIN_SIZE = 10;
+const DRAG_THRESHOLD = 3;
+
+// Visual: legacy node radii
+const LEGACY_CONCEPT_RADIUS = 8;
+const LEGACY_DEFAULT_RADIUS = 10;
+
+// Visual: tooltip offsets
+const TOOLTIP_OFFSET_X = 12;
+const TOOLTIP_OFFSET_Y = -8;
+
+// Visual: arrowheads
+const ARROWHEAD_SIZE = 8;
+const ARROWHEAD_ANGLE = 0.4;
+const ARROWHEAD_CLEARANCE = 4;
+
+// Visual: notes indicator
+const NOTES_DOT_RADIUS = 3;
+const NOTES_DOT_OFFSET = 2;
+
+// Visual: edge labels
+const EDGE_LABEL_FONT_SIZE = 9;
+const EDGE_LABEL_Y_OFFSET = 3;
+
+// Visual: node labels
+const NODE_LABEL_MIN_FONT = 8;
+const NODE_LABEL_MAX_FONT = 16;
+const NODE_LABEL_BASE_FONT = 11;
+
+// Visual: zoom thresholds for label visibility
+const ZOOM_THRESHOLD_LABELS = 0.4;
+const ZOOM_THRESHOLD_NOTES = 0.5;
+const ZOOM_THRESHOLD_TAGS = 0.7;
+const ZOOM_THRESHOLD_EDGE_LABELS_FILTERED = 0.8;
+const ZOOM_THRESHOLD_EDGE_LABELS_HIGHLIGHT = 0.6;
+
+// Visual: region backgrounds
+const REGION_CIRCLE_PADDING = 60;
+const REGION_CIRCLE_BG_ALPHA = 0.15;
+const REGION_LABEL_ALPHA = 0.4;
+const REGION_LABEL_FONT_SIZE = 14;
+const REGION_LABEL_GAP = 4;
+const COLUMN_BG_ALPHA = 0.1;
+const COLUMN_LABEL_ALPHA = 0.5;
+const COLUMN_LABEL_MAX_FONT = 14;
+const COLUMN_LABEL_MIN_FONT = 9;
+const COLUMN_LABEL_TOP_OFFSET = 10;
+
+// Visual: selection stroke
+const SELECTION_STROKE_WIDTH = 2;
+
+// Visual: collapse indicator
+const COLLAPSE_INDICATOR_MIN_R = 5;
+const COLLAPSE_INDICATOR_BASE_R = 3;
+const COLLAPSE_INDICATOR_OFFSET = 2;
+const COLLAPSE_INDICATOR_HIT_SCALE = 2.5;
+const COLLAPSE_INDICATOR_CLICK_SCALE = 3.5;
+const COLLAPSE_INDICATOR_FONT_SCALE = 1.4;
+
+// Visual: organic edge taper
+const ORGANIC_EDGE_CURVE_FACTOR = 0.08;
+const ORGANIC_EDGE_CURVE_MAX = 20;
+const ORGANIC_EDGE_SRC_WIDTH = 0.8;
+const ORGANIC_EDGE_TGT_WIDTH = 0.3;
+
+// Visual: marquee rectangle
+const MARQUEE_LINE_WIDTH = 1.5;
+
+// Visual: column label width ratio
+const COLUMN_LABEL_WIDTH_RATIO = 0.9;
+const COLUMN_LABEL_SIZE_FACTOR = 1.5;
+
+// Visual: node shape scale factors
+const RECT_WIDTH_SCALE = 2.5;
+const RECT_HEIGHT_SCALE = 1.6;
+const RECT_CORNER_RADIUS = 4;
+const DIAMOND_SCALE = 1.4;
+const HEXAGON_SCALE = 1.1;
+const TRIANGLE_SCALE = 1.3;
+const PILL_WIDTH_SCALE = 2.4;
+const PILL_HEIGHT_SCALE = 1.2;
+const REVEALED_NODE_SCALE = 0.7;
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 interface Props {
   data: GraphIR;
@@ -139,18 +282,8 @@ function getNodeRadius(node: SimNode, _viewMode: ViewMode, nodeTypeConfigs: Node
     return getConfigNodeRadius(config, node.properties);
   }
   // Legacy fallback
-  if (node.node_type === "concept") return 8;
-  return 10;
-}
-
-export function getNodeColor(node: SimNode, classifiers: Classifier[], overrides?: Record<string, string>): string {
-  // Use the first classifier whose values carry color definitions
-  const colorCls = classifiers.find((c) => c.values.some((v) => v.color)) ?? classifiers[0];
-  if (!colorCls) return "#666";
-  const valueId = node.classifiers?.[colorCls.id];
-  if (!valueId) return "#666";
-  if (overrides && overrides[String(valueId)]) return overrides[String(valueId)];
-  return colorCls.values.find((v) => v.id === String(valueId))?.color ?? "#666";
+  if (node.node_type === "concept") return LEGACY_CONCEPT_RADIUS;
+  return LEGACY_DEFAULT_RADIUS;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -189,7 +322,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const tooltipRef = useRef<HTMLDivElement>(null);
   const marqueeRef = useRef<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
   const isMarqueeRef = useRef(false);
-  const canvasSizeRef = useRef({ width: 800, height: 600 });
+  const canvasSizeRef = useRef({ width: DEFAULT_CANVAS_WIDTH, height: DEFAULT_CANVAS_HEIGHT });
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const simInitializedRef = useRef(false);
   const classifiersRef = useRef<Classifier[]>([]);
@@ -248,7 +381,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const isExploded = explodedRef.current;
       const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
       applyLayoutForces(simulation, width * factor, height * factor, newCls, isExploded);
-      simulation.alpha(0.8).restart();
+      simulation.alpha(ALPHA_RESTART).restart();
     }
   }, [data]);
 
@@ -281,32 +414,32 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     if (xCls) {
       const sorted = [...xCls.values].sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
       const xPos = new Map<string, number>();
-      sorted.forEach((v, i) => { xPos.set(v.id, vw * (0.15 + (0.7 * i) / Math.max(sorted.length - 1, 1))); });
+      sorted.forEach((v, i) => { xPos.set(v.id, vw * (X_LAYOUT_START + (X_LAYOUT_RANGE * i) / Math.max(sorted.length - 1, 1))); });
       simulation.force("x", d3.forceX<SimNode>((d) => {
         const val = d.classifiers?.[xCls.id];
         return val ? xPos.get(String(val)) ?? vw / 2 : vw / 2;
-      }).strength(0.3));
+      }).strength(X_AXIS_CLASSIFIER_STRENGTH));
     } else {
-      simulation.force("x", d3.forceX<SimNode>(vw / 2).strength(0.05));
+      simulation.force("x", d3.forceX<SimNode>(vw / 2).strength(X_AXIS_CENTER_STRENGTH));
     }
 
     // Y-axis force
     if (yCls) {
       const sorted = [...yCls.values].sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
       const yPos = new Map<string, number>();
-      sorted.forEach((v, i) => { yPos.set(v.id, vh * (0.1 + (0.8 * i) / Math.max(sorted.length - 1, 1))); });
+      sorted.forEach((v, i) => { yPos.set(v.id, vh * (Y_LAYOUT_START + (Y_LAYOUT_RANGE * i) / Math.max(sorted.length - 1, 1))); });
       simulation.force("y", d3.forceY<SimNode>((d) => {
         const val = d.classifiers?.[yCls.id];
         return val ? yPos.get(String(val)) ?? vh / 2 : vh / 2;
-      }).strength(0.5));
+      }).strength(Y_AXIS_CLASSIFIER_STRENGTH));
     } else {
-      simulation.force("y", d3.forceY<SimNode>(vh / 2).strength(0.05));
+      simulation.force("y", d3.forceY<SimNode>(vh / 2).strength(Y_AXIS_CENTER_STRENGTH));
     }
 
     // Charge and collision — stronger when exploded
-    const chargeStrength = isExploded ? -1500 : -400;
-    const collideExtra = isExploded ? 40 : 12;
-    simulation.force("charge", d3.forceManyBody().strength(chargeStrength).distanceMax(isExploded ? 3000 : 800));
+    const chargeStrength = isExploded ? CHARGE_STRENGTH_EXPLODED : CHARGE_STRENGTH_NORMAL;
+    const collideExtra = isExploded ? COLLISION_PADDING_EXPLODED : COLLISION_PADDING_NORMAL;
+    simulation.force("charge", d3.forceManyBody().strength(chargeStrength).distanceMax(isExploded ? CHARGE_DISTANCE_MAX_EXPLODED : CHARGE_DISTANCE_MAX_NORMAL));
     simulation.force("collide", d3.forceCollide<SimNode>((d) => getNodeRadius(d, "full", nodeTypeConfigsRef.current) + collideExtra));
 
     // Region forces
@@ -323,11 +456,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         simulation.force("regionX", d3.forceX<SimNode>((d) => {
           const val = d.classifiers?.[regionCls.id];
           return val ? positions.get(String(val)) ?? vw / 2 : vw / 2;
-        }).strength(0.4));
+        }).strength(REGION_COLUMN_STRENGTH));
         simulation.force("regionY", null);
       } else {
         const centroids = computeRegionCentroids(regionCls, vw, vh);
-        const rStr = hasAxis ? 0.15 : 0.3;
+        const rStr = hasAxis ? REGION_CENTROID_STRENGTH_WITH_AXIS : REGION_CENTROID_STRENGTH_DEFAULT;
         simulation.force("regionX", d3.forceX<SimNode>((d) => {
           const val = d.classifiers?.[regionCls.id];
           return val ? centroids.get(String(val))?.x ?? vw / 2 : vw / 2;
@@ -357,12 +490,12 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const vw = width * factor;
     const vh = height * factor;
     applyLayoutForces(simulation, vw, vh, cls, isExploded);
-    simulation.alpha(0.8).restart();
+    simulation.alpha(ALPHA_RESTART).restart();
     if (!isExploded) {
       // When collapsing back, fit to view after settling
-      setTimeout(() => fitToView(), 600);
+      setTimeout(() => fitToView(), COLLAPSE_FIT_DELAY);
     }
-  }, [exploded]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [exploded]);
 
   function fitToView() {
     const ns = nodesRef.current;
@@ -375,11 +508,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       if (n.y < minY) minY = n.y;
       if (n.y > maxY) maxY = n.y;
     }
-    const padding = 80;
+    const padding = FIT_TO_VIEW_PADDING;
     const gw = maxX - minX + padding * 2;
     const gh = maxY - minY + padding * 2;
     const { width: cw, height: ch } = canvasSizeRef.current;
-    const scale = Math.min(cw / gw, ch / gh, 1.2);
+    const scale = Math.min(cw / gw, ch / gh, FIT_TO_VIEW_MAX_SCALE);
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
     const t = d3.zoomIdentity
@@ -389,7 +522,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     if (zoomBehaviorRef.current) {
       d3.select(canvas)
         .transition()
-        .duration(400)
+        .duration(FIT_TO_VIEW_DURATION)
         .call(zoomBehaviorRef.current.transform, t);
     }
   }
@@ -417,8 +550,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const isExploded = explodedRef.current;
       const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
       applyLayoutForces(simulation, width * factor, height * factor, cls, isExploded);
-      simulation.alpha(0.3).restart();
-      setTimeout(() => fitToView(), 500);
+      simulation.alpha(ALPHA_RESTART_MILD).restart();
+      setTimeout(() => fitToView(), RESIZE_FIT_DELAY);
     } else {
       redraw();
     }
@@ -442,7 +575,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     resizeCanvas();
     const { width, height } = canvasSizeRef.current;
 
-    const spread = Math.min(width, height) * 0.6;
+    const spread = Math.min(width, height) * INITIAL_SPREAD_FACTOR;
     const nodes: SimNode[] = data.nodes.map((n) => ({
       ...n, x: width / 2 + (Math.random() - 0.5) * spread, y: height / 2 + (Math.random() - 0.5) * spread,
     }));
@@ -458,10 +591,10 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     classifiersRef.current = classifiers;
 
     const simulation = d3.forceSimulation<SimNode>(nodes)
-      .force("link", d3.forceLink<SimNode, SimLink>(links).id((d) => d.id).distance((d) => 120 / Math.max(0.5, (d as SimLink).edge.weight ?? 1)).strength(0.2));
+      .force("link", d3.forceLink<SimNode, SimLink>(links).id((d) => d.id).distance((d) => LINK_DISTANCE_BASE / Math.max(0.5, (d as SimLink).edge.weight ?? 1)).strength(LINK_FORCE_STRENGTH));
 
     applyLayoutForces(simulation, width, height, classifiers, false);
-    simulation.alphaDecay(0.015);
+    simulation.alphaDecay(ALPHA_DECAY);
 
     simRef.current = simulation;
     simInitializedRef.current = true;
@@ -477,7 +610,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
     // Zoom behavior
     const zoomBehavior = d3.zoom<HTMLCanvasElement, unknown>()
-      .scaleExtent([0.1, 5])
+      .scaleExtent([MIN_ZOOM, MAX_ZOOM])
       .filter(() => {
         if (dragNodeRef.current) return false;
         if (isMarqueeRef.current) return false;
@@ -522,7 +655,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         dragNodeRef.current = node;
         node.fx = node.x;
         node.fy = node.y;
-        simulation.alphaTarget(0.3).restart();
+        simulation.alphaTarget(ALPHA_DRAG_TARGET).restart();
         event.stopPropagation();
         canvas.setPointerCapture(event.pointerId);
       }
@@ -542,7 +675,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       if (dragNodeRef.current) {
         const dx = event.offsetX - pointerDownPos.x;
         const dy = event.offsetY - pointerDownPos.y;
-        if (Math.abs(dx) + Math.abs(dy) > 3) isDraggingRef.current = true;
+        if (Math.abs(dx) + Math.abs(dy) > DRAG_THRESHOLD) isDraggingRef.current = true;
 
         const t = transformRef.current;
         dragNodeRef.current.fx = (event.offsetX - t.x) / t.k;
@@ -567,10 +700,10 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         const configs = nodeTypeConfigsRef.current;
         for (const node of nodesRef.current) {
           const r = getNodeRadius(node, viewModeRef.current, configs);
-          const indicatorR = Math.max(5, 3 / t.k);
-          const ix = node.x + r + indicatorR + 2;
+          const indicatorR = Math.max(COLLAPSE_INDICATOR_MIN_R, COLLAPSE_INDICATOR_BASE_R / t.k);
+          const ix = node.x + r + indicatorR + COLLAPSE_INDICATOR_OFFSET;
           const iy = node.y - r;
-          if (Math.sqrt((mx - ix) ** 2 + (my - iy) ** 2) <= indicatorR * 2.5) {
+          if (Math.sqrt((mx - ix) ** 2 + (my - iy) ** 2) <= indicatorR * COLLAPSE_INDICATOR_HIT_SCALE) {
             hoverIndicator = true;
             break;
           }
@@ -597,8 +730,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           const noteText = edgeHit.edge.note ? `\n${edgeHit.edge.note}` : "";
           tooltip.textContent = `${label}${noteText}`;
           tooltip.style.display = "block";
-          tooltip.style.left = `${event.offsetX + 12}px`;
-          tooltip.style.top = `${event.offsetY - 8}px`;
+          tooltip.style.left = `${event.offsetX + TOOLTIP_OFFSET_X}px`;
+          tooltip.style.top = `${event.offsetY + TOOLTIP_OFFSET_Y}px`;
         } else {
           tooltip.style.display = "none";
         }
@@ -626,11 +759,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
         const mw = Math.abs(m.endX - m.startX);
         const mh = Math.abs(m.endY - m.startY);
-        if (mw > 10 && mh > 10) {
+        if (mw > MARQUEE_MIN_SIZE && mh > MARQUEE_MIN_SIZE) {
           const mx = Math.min(m.startX, m.endX);
           const my = Math.min(m.startY, m.endY);
           const size = canvasSizeRef.current;
-          const scale = Math.min(size.width / mw, size.height / mh) * 0.9;
+          const scale = Math.min(size.width / mw, size.height / mh) * MARQUEE_ZOOM_SCALE;
           const cx = mx + mw / 2;
           const cy = my + mh / 2;
           const newTransform = d3.zoomIdentity
@@ -641,7 +774,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           if (zoomBehaviorRef.current) {
             d3.select(canvas)
               .transition()
-              .duration(500)
+              .duration(TRANSITION_DURATION)
               .call(zoomBehaviorRef.current.transform, newTransform);
           }
         } else {
@@ -670,11 +803,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
             const my = (event.offsetY - t.y) / t.k;
             const configs = nodeTypeConfigsRef.current;
             const r = getNodeRadius(clickedNode as SimNode, viewModeRef.current, configs);
-            const indicatorR = Math.max(5, 3 / t.k);
-            const ix = clickedNode.x + r + indicatorR + 2;
+            const indicatorR = Math.max(COLLAPSE_INDICATOR_MIN_R, COLLAPSE_INDICATOR_BASE_R / t.k);
+            const ix = clickedNode.x + r + indicatorR + COLLAPSE_INDICATOR_OFFSET;
             const iy = clickedNode.y - r;
             const dist = Math.sqrt((mx - ix) ** 2 + (my - iy) ** 2);
-            if (dist <= indicatorR * 3.5) {
+            if (dist <= indicatorR * COLLAPSE_INDICATOR_CLICK_SCALE) {
               onToggleCollapseRef.current(clickedNode.id);
               hitIndicator = true;
             }
@@ -705,11 +838,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           for (const node of nodesRef.current) {
             if (!hasChildrenRef.current.has(node.id)) continue;
             const r = getNodeRadius(node, viewModeRef.current, configs);
-            const indicatorR = Math.max(5, 3 / t.k);
-            const ix = node.x + r + indicatorR + 2;
+            const indicatorR = Math.max(COLLAPSE_INDICATOR_MIN_R, COLLAPSE_INDICATOR_BASE_R / t.k);
+            const ix = node.x + r + indicatorR + COLLAPSE_INDICATOR_OFFSET;
             const iy = node.y - r;
             const dist = Math.sqrt((mx - ix) ** 2 + (my - iy) ** 2);
-            if (dist <= indicatorR * 3.5) {
+            if (dist <= indicatorR * COLLAPSE_INDICATOR_CLICK_SCALE) {
               onToggleCollapseRef.current(node.id);
               hitIndicator = true;
               break;
@@ -761,8 +894,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       .filter((n) => !existingNodeIds.has(n.id))
       .map((n) => ({
         ...n,
-        x: width / 2 + (Math.random() - 0.5) * 200,
-        y: height / 2 + (Math.random() - 0.5) * 200,
+        x: width / 2 + (Math.random() - 0.5) * NEW_NODE_SPAWN_SPREAD,
+        y: height / 2 + (Math.random() - 0.5) * NEW_NODE_SPAWN_SPREAD,
       }));
 
     const updatedNodes = nodesRef.current.filter((n) => newNodeIds.has(n.id)).concat(addedNodes);
@@ -779,7 +912,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     if (linkForce) linkForce.links(newLinks);
 
     if (addedNodes.length > 0 || updatedNodes.length !== existingNodeIds.size) {
-      simulation.alpha(0.3).restart();
+      simulation.alpha(ALPHA_RESTART_MILD).restart();
     } else {
       redraw();
     }
@@ -802,7 +935,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const r = getNodeRadius(node, mode, configs);
       const dx = x - node.x;
       const dy = y - node.y;
-      if (dx * dx + dy * dy < (r + 4) * (r + 4)) return node;
+      if (dx * dx + dy * dy < (r + NODE_HIT_PADDING) * (r + NODE_HIT_PADDING)) return node;
     }
     return null;
   }
@@ -811,7 +944,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const t = transformRef.current;
     const x = (canvasX - t.x) / t.k;
     const y = (canvasY - t.y) / t.k;
-    const threshold = 8 / t.k;
+    const threshold = EDGE_HIT_THRESHOLD / t.k;
 
     for (const l of linksRef.current) {
       const source = l.source as SimNode;
@@ -904,15 +1037,15 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           const drawLeft = Math.max(colX - thisColW / 2, viewLeft);
           const drawRight = Math.min(colX + thisColW / 2, viewRight);
           if (drawRight > drawLeft) {
-            ctx.globalAlpha = 0.1;
+            ctx.globalAlpha = COLUMN_BG_ALPHA;
             ctx.fillStyle = color;
             ctx.fillRect(drawLeft, viewTop, drawRight - drawLeft, viewBottom - viewTop);
           }
 
           // Column label at top — scale font to fit column width, truncate if needed
-          const maxLabelW = thisColW * 0.9;
-          const fontSize = Math.min(14, Math.max(9, maxLabelW / rv.label.length * 1.5));
-          ctx.globalAlpha = 0.5;
+          const maxLabelW = thisColW * COLUMN_LABEL_WIDTH_RATIO;
+          const fontSize = Math.min(COLUMN_LABEL_MAX_FONT, Math.max(COLUMN_LABEL_MIN_FONT, maxLabelW / rv.label.length * COLUMN_LABEL_SIZE_FACTOR));
+          ctx.globalAlpha = COLUMN_LABEL_ALPHA;
           ctx.fillStyle = color;
           ctx.font = `bold ${fontSize}px -apple-system, sans-serif`;
           ctx.textAlign = "center";
@@ -921,7 +1054,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           const label = measured.width > maxLabelW
             ? rv.label.slice(0, Math.floor(rv.label.length * maxLabelW / measured.width) - 1) + "…"
             : rv.label;
-          ctx.fillText(label, colX, viewTop + 10);
+          ctx.fillText(label, colX, viewTop + COLUMN_LABEL_TOP_OFFSET);
           ctx.globalAlpha = 1;
         } else {
           // Circle layout: bounding circle around members (needs at least one member)
@@ -936,10 +1069,10 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
             const dx = m.x - cx, dy = m.y - cy;
             maxDist = Math.max(maxDist, Math.sqrt(dx * dx + dy * dy));
           }
-          const padding = 60;
+          const padding = REGION_CIRCLE_PADDING;
           const radius = maxDist + padding;
 
-          ctx.globalAlpha = 0.15;
+          ctx.globalAlpha = REGION_CIRCLE_BG_ALPHA;
           ctx.fillStyle = color;
           if (isOrganic) {
             drawOrganicCircle(ctx, cx, cy, radius, hashCode(rv.id));
@@ -951,12 +1084,12 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           }
 
           // Region label
-          ctx.globalAlpha = 0.4;
+          ctx.globalAlpha = REGION_LABEL_ALPHA;
           ctx.fillStyle = color;
-          ctx.font = "bold 14px -apple-system, sans-serif";
+          ctx.font = `bold ${REGION_LABEL_FONT_SIZE}px -apple-system, sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "bottom";
-          ctx.fillText(rv.label, cx, cy - radius - 4);
+          ctx.fillText(rv.label, cx, cy - radius - REGION_LABEL_GAP);
           ctx.globalAlpha = 1;
         }
       }
@@ -1037,15 +1170,15 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
         // Perpendicular offset for curve (small, proportional to distance)
         const edgeSeed = hashCode(source.id + target.id);
-        const curveOffset = seededRandom(edgeSeed, 0) * Math.min(dist * 0.08, 20);
+        const curveOffset = seededRandom(edgeSeed, 0) * Math.min(dist * ORGANIC_EDGE_CURVE_FACTOR, ORGANIC_EDGE_CURVE_MAX);
         const mx = (source.x + target.x) / 2 - (dy / dist) * curveOffset;
         const my = (source.y + target.y) / 2 + (dx / dist) * curveOffset;
 
         // Draw tapered edge using a filled path (thick at source, thin at target)
         const nx = -dy / dist;
         const ny = dx / dist;
-        const srcW = edgeLw * 0.8;
-        const tgtW = edgeLw * 0.3;
+        const srcW = edgeLw * ORGANIC_EDGE_SRC_WIDTH;
+        const tgtW = edgeLw * ORGANIC_EDGE_TGT_WIDTH;
 
         ctx.beginPath();
         ctx.moveTo(source.x + nx * srcW, source.y + ny * srcW);
@@ -1072,13 +1205,13 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       // Arrowhead
       if (visual.show_arrow) {
         const angle = Math.atan2(target.y - source.y, target.x - source.x);
-        const r = getNodeRadius(target, mode, configs) + 4;
+        const r = getNodeRadius(target, mode, configs) + ARROWHEAD_CLEARANCE;
         const tipX = target.x - Math.cos(angle) * r;
         const tipY = target.y - Math.sin(angle) * r;
         ctx.beginPath();
         ctx.moveTo(tipX, tipY);
-        ctx.lineTo(tipX - 8 * Math.cos(angle - 0.4), tipY - 8 * Math.sin(angle - 0.4));
-        ctx.lineTo(tipX - 8 * Math.cos(angle + 0.4), tipY - 8 * Math.sin(angle + 0.4));
+        ctx.lineTo(tipX - ARROWHEAD_SIZE * Math.cos(angle - ARROWHEAD_ANGLE), tipY - ARROWHEAD_SIZE * Math.sin(angle - ARROWHEAD_ANGLE));
+        ctx.lineTo(tipX - ARROWHEAD_SIZE * Math.cos(angle + ARROWHEAD_ANGLE), tipY - ARROWHEAD_SIZE * Math.sin(angle + ARROWHEAD_ANGLE));
         ctx.closePath();
         ctx.fillStyle = isEdgeHovered ? th.canvasEdgeHover : (th.edgeColorOverrides[l.edge.edge_type] ?? visual.color ?? th.canvasEdgeDefault);
         const arrowAlpha = isEdgeHovered ? 0.9 : (isHighlighted ? 0.8 : 0.15);
@@ -1088,8 +1221,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       }
 
       // Edge label
-      const showInFilteredView = (mode === "people" || mode === "concepts") && !isAdding && t.k > 0.8;
-      const showForHighlighted = isHighlighted && t.k > 0.6;
+      const showInFilteredView = (mode === "people" || mode === "concepts") && !isAdding && t.k > ZOOM_THRESHOLD_EDGE_LABELS_FILTERED;
+      const showForHighlighted = isHighlighted && t.k > ZOOM_THRESHOLD_EDGE_LABELS_HIGHLIGHT;
 
       const edgeLabelHidden = hiddenLabelTypesRef.current?.has(`edge:${l.edge.edge_type}`);
       if (!edgeLabelHidden && !edgeDimmedByCommunity && (showInFilteredView || showForHighlighted)) {
@@ -1104,10 +1237,10 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         if (angle < -Math.PI / 2) angle += Math.PI;
         ctx.rotate(angle);
 
-        ctx.font = "9px -apple-system, sans-serif";
+        ctx.font = `${EDGE_LABEL_FONT_SIZE}px -apple-system, sans-serif`;
         ctx.textAlign = "center";
         ctx.fillStyle = isHighlighted ? th.canvasLabelHighlight : th.canvasLabelDim;
-        ctx.fillText(label, 0, 3);
+        ctx.fillText(label, 0, EDGE_LABEL_Y_OFFSET);
         ctx.restore();
       }
     });
@@ -1148,7 +1281,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         ctx.globalAlpha = alpha;
       }
 
-      const effectiveR = isRevealed ? r * 0.7 : r;
+      const effectiveR = isRevealed ? r * REVEALED_NODE_SCALE : r;
       const shape = getNodeShape(node, configs);
 
       // Draw shape path
@@ -1158,17 +1291,17 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       if (isOrganic) {
         // Organic: hand-drawn shapes with jitter
         if (shape === "rectangle" || shape === "pill") {
-          const w = effectiveR * (shape === "pill" ? 2.4 : 2.5);
-          const h = effectiveR * (shape === "pill" ? 1.2 : 1.6);
+          const w = effectiveR * (shape === "pill" ? PILL_WIDTH_SCALE : RECT_WIDTH_SCALE);
+          const h = effectiveR * (shape === "pill" ? PILL_HEIGHT_SCALE : RECT_HEIGHT_SCALE);
           drawOrganicRect(ctx, node.x, node.y, w, h, nodeSeed);
         } else if (shape === "diamond") {
-          const s = effectiveR * 1.4;
+          const s = effectiveR * DIAMOND_SCALE;
           drawOrganicPolygon(ctx, node.x, node.y, [
             [node.x, node.y - s], [node.x + s, node.y],
             [node.x, node.y + s], [node.x - s, node.y],
           ], nodeSeed, s * 0.035);
         } else if (shape === "hexagon") {
-          const s = effectiveR * 1.1;
+          const s = effectiveR * HEXAGON_SCALE;
           const pts: Array<[number, number]> = [];
           for (let i = 0; i < 6; i++) {
             const angle = (Math.PI / 3) * i - Math.PI / 6;
@@ -1176,7 +1309,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           }
           drawOrganicPolygon(ctx, node.x, node.y, pts, nodeSeed, s * 0.035);
         } else if (shape === "triangle") {
-          const s = effectiveR * 1.3;
+          const s = effectiveR * TRIANGLE_SCALE;
           drawOrganicPolygon(ctx, node.x, node.y, [
             [node.x, node.y - s],
             [node.x + s * 0.87, node.y + s * 0.5],
@@ -1189,18 +1322,18 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         // Formal: precise geometry
         ctx.beginPath();
         if (shape === "rectangle") {
-          const w = effectiveR * 2.5;
-          const h = effectiveR * 1.6;
-          ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, 4);
+          const w = effectiveR * RECT_WIDTH_SCALE;
+          const h = effectiveR * RECT_HEIGHT_SCALE;
+          ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, RECT_CORNER_RADIUS);
         } else if (shape === "diamond") {
-          const s = effectiveR * 1.4;
+          const s = effectiveR * DIAMOND_SCALE;
           ctx.moveTo(node.x, node.y - s);
           ctx.lineTo(node.x + s, node.y);
           ctx.lineTo(node.x, node.y + s);
           ctx.lineTo(node.x - s, node.y);
           ctx.closePath();
         } else if (shape === "hexagon") {
-          const s = effectiveR * 1.1;
+          const s = effectiveR * HEXAGON_SCALE;
           for (let i = 0; i < 6; i++) {
             const angle = (Math.PI / 3) * i - Math.PI / 6;
             const px = node.x + s * Math.cos(angle);
@@ -1209,14 +1342,14 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           }
           ctx.closePath();
         } else if (shape === "triangle") {
-          const s = effectiveR * 1.3;
+          const s = effectiveR * TRIANGLE_SCALE;
           ctx.moveTo(node.x, node.y - s);
           ctx.lineTo(node.x + s * 0.87, node.y + s * 0.5);
           ctx.lineTo(node.x - s * 0.87, node.y + s * 0.5);
           ctx.closePath();
         } else if (shape === "pill") {
-          const w = effectiveR * 2.4;
-          const h = effectiveR * 1.2;
+          const w = effectiveR * PILL_WIDTH_SCALE;
+          const h = effectiveR * PILL_HEIGHT_SCALE;
           ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, h / 2);
         } else {
           ctx.arc(node.x, node.y, effectiveR, 0, Math.PI * 2);
@@ -1226,15 +1359,15 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       ctx.fill();
       if (isSelected || isHovered || isEdgeSource) {
         ctx.strokeStyle = isEdgeSource ? th.canvasEdgeSourceStroke : th.canvasSelectionStroke;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = SELECTION_STROKE_WIDTH;
         ctx.stroke();
       }
 
       // Notes indicator
-      if (node.notes && t.k > 0.5) {
+      if (node.notes && t.k > ZOOM_THRESHOLD_NOTES) {
         ctx.fillStyle = th.canvasNotesIndicator;
         ctx.beginPath();
-        ctx.arc(node.x + effectiveR + 2, node.y - effectiveR - 2, 3, 0, Math.PI * 2);
+        ctx.arc(node.x + effectiveR + NOTES_DOT_OFFSET, node.y - effectiveR - NOTES_DOT_OFFSET, NOTES_DOT_RADIUS, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -1242,25 +1375,21 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const sizeFieldValue = node.properties?.[configs.find((c) => c.id === node.node_type)?.size_field ?? ""];
       const isDominant = sizeFieldValue === "dominant";
       const nodeLabelHidden = hiddenLabelTypesRef.current?.has(`node:${node.node_type}`);
-      if (!nodeLabelHidden && (t.k > 0.4 || isDominant)) {
-        const fontSize = Math.max(8, Math.min(16, 11 * Math.sqrt(t.k)));
+      if (!nodeLabelHidden && (t.k > ZOOM_THRESHOLD_LABELS || isDominant)) {
+        const fontSize = Math.max(NODE_LABEL_MIN_FONT, Math.min(NODE_LABEL_MAX_FONT, NODE_LABEL_BASE_FONT * Math.sqrt(t.k)));
         ctx.font = `${fontSize}px -apple-system, sans-serif`;
         ctx.textAlign = "center";
         const baseY = node.y + effectiveR + fontSize + 2;
 
         const tagsValue = node.tags;
-        const showTags = mode === "people" && !isAdding && tagsValue && t.k > 0.7;
+        const showTags = mode === "people" && !isAdding && tagsValue && t.k > ZOOM_THRESHOLD_TAGS;
         const tagsStr = showTags && tagsValue ? tagsValue.join(", ") : "";
         const tagsText = showTags ? tagsStr : "";
         const tagsFS = fontSize - 2;
 
-        const nameW = ctx.measureText(node.name).width;
-        let bgW = nameW + 6;
-        let bgH = fontSize + 2;
         if (showTags) {
           ctx.font = `${tagsFS}px -apple-system, sans-serif`;
-          bgW = Math.max(bgW, ctx.measureText(tagsText).width + 6);
-          bgH += tagsFS + 2;
+          ctx.measureText(tagsText);
           ctx.font = `${fontSize}px -apple-system, sans-serif`;
         }
 
@@ -1276,10 +1405,10 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       }
 
       // Draw +/- collapse indicator for nodes with directed children
-      if (hasChildren.has(node.id) && t.k > 0.4) {
+      if (hasChildren.has(node.id) && t.k > ZOOM_THRESHOLD_LABELS) {
         const isCollapsed = collapsed.has(node.id);
-        const indicatorR = Math.max(5, 3 / t.k);
-        const ix = node.x + effectiveR + indicatorR + 2;
+        const indicatorR = Math.max(COLLAPSE_INDICATOR_MIN_R, COLLAPSE_INDICATOR_BASE_R / t.k);
+        const ix = node.x + effectiveR + indicatorR + COLLAPSE_INDICATOR_OFFSET;
         const iy = node.y - effectiveR;
         ctx.beginPath();
         ctx.arc(ix, iy, indicatorR, 0, Math.PI * 2);
@@ -1288,7 +1417,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         ctx.strokeStyle = th.textMuted;
         ctx.lineWidth = 1 / t.k;
         ctx.stroke();
-        ctx.font = `bold ${indicatorR * 1.4}px -apple-system, sans-serif`;
+        ctx.font = `bold ${indicatorR * COLLAPSE_INDICATOR_FONT_SCALE}px -apple-system, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = th.textPrimary;
@@ -1303,7 +1432,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const m = marqueeRef.current;
       ctx.setLineDash([6, 4]);
       ctx.strokeStyle = th.accent;
-      ctx.lineWidth = 1.5 / t.k;
+      ctx.lineWidth = MARQUEE_LINE_WIDTH / t.k;
       ctx.strokeRect(
         Math.min(m.startX, m.endX),
         Math.min(m.startY, m.endY),
@@ -1330,16 +1459,16 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const t = transformRef.current;
       const cx = canvas.width / (2 * (window.devicePixelRatio || 1));
       const cy = canvas.height / (2 * (window.devicePixelRatio || 1));
-      const newK = Math.max(0.1, Math.min(5, t.k * factor));
+      const newK = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, t.k * factor));
       const newT = d3.zoomIdentity
         .translate(cx - (cx - t.x) * (newK / t.k), cy - (cy - t.y) * (newK / t.k))
         .scale(newK);
-      d3.select(canvas).transition().duration(300)
+      d3.select(canvas).transition().duration(ZOOM_BUTTON_DURATION)
         .call(zoomBehaviorRef.current!.transform, newT);
     };
     onRegisterZoom({
-      zoomIn: () => zoomBy(1.5),
-      zoomOut: () => zoomBy(0.67),
+      zoomIn: () => zoomBy(ZOOM_IN_FACTOR),
+      zoomOut: () => zoomBy(ZOOM_OUT_FACTOR),
     });
   }, [onRegisterZoom]);
 
@@ -1353,15 +1482,15 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     if (!zoomAction) return;
     const canvas = canvasRef.current;
     if (!canvas || !zoomBehaviorRef.current) return;
-    const factor = zoomAction.action === 'in' ? 1.5 : 0.67;
+    const factor = zoomAction.action === 'in' ? ZOOM_IN_FACTOR : ZOOM_OUT_FACTOR;
     const t = transformRef.current;
     const cx = canvas.width / (2 * (window.devicePixelRatio || 1));
     const cy = canvas.height / (2 * (window.devicePixelRatio || 1));
-    const newK = Math.max(0.1, Math.min(5, t.k * factor));
+    const newK = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, t.k * factor));
     const newT = d3.zoomIdentity
       .translate(cx - (cx - t.x) * (newK / t.k), cy - (cy - t.y) * (newK / t.k))
       .scale(newK);
-    d3.select(canvas).transition().duration(300)
+    d3.select(canvas).transition().duration(ZOOM_BUTTON_DURATION)
       .call(zoomBehaviorRef.current!.transform, newT);
   }, [zoomAction]);
 
@@ -1375,11 +1504,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const { width: cw, height: ch } = canvasSizeRef.current;
     const t = d3.zoomIdentity
       .translate(cw / 2, ch / 2)
-      .scale(1.5)
+      .scale(CENTER_ON_NODE_SCALE)
       .translate(-node.x, -node.y);
     d3.select(canvas)
       .transition()
-      .duration(500)
+      .duration(TRANSITION_DURATION)
       .call(zoomBehaviorRef.current.transform, t);
   }, [centerOnNode]);
 

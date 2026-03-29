@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Tool Definitions
 
-let mcpTools: [MCPToolDefinition] = [
+public let mcpTools: [MCPToolDefinition] = [
     // Navigation
     MCPToolDefinition(
         name: "list_maps",

@@ -392,3 +392,84 @@ All layout force calculations (initial setup, data change, resize, explode) use 
 **AC-076-01**: `applyLayoutForces` sets x, y, charge, collide, and region forces for given virtual dimensions.
 **AC-076-02**: No duplicated force-setup code across initial simulation, data-change effect, resize handler, or explode effect.
 **AC-076-03**: Layout conflict resolution clears competing layouts when a new layout is assigned (region vs region-column share a slot; only one x, one y).
+
+---
+
+## Architecture Improvements (2026-03-29)
+
+### REQ-086: MCP Path Security
+The MCP server validates all resolved file paths stay within allowed directories (maps/templates).
+
+**AC-086-01**: `resolvePath` canonicalizes paths and rejects traversal attempts (e.g., `../../../etc/passwd`).
+**AC-086-02**: Absolute paths outside allowed directories are rejected with a 403 error.
+**AC-086-03**: Extension is appended when missing, not duplicated when present.
+
+### REQ-087: Parser Type Safety
+The Rust parser uses type-safe abstractions for error handling and section routing.
+
+**AC-087-01**: `ParseResult<T>` type alias replaces verbose `Result<T, Vec<ParseError>>` signatures.
+**AC-087-02**: `ParseOutput` struct replaces the ambiguous `ParseResult` struct name.
+**AC-087-03**: `SectionKind` enum with `from_path()` replaces fragile string-contains matching.
+**AC-087-04**: Node IR conversion uses move semantics (`into_iter`) instead of cloning.
+
+### REQ-088: MCP Parser Tests
+The MCP Swift parser has unit tests for parsing, writing, and round-trip fidelity.
+
+**AC-088-01**: Parse nodes from fenced blocks (id, name, type, generation, stream, notes).
+**AC-088-02**: Parse edges with inline format.
+**AC-088-03**: Parse title from H1 header.
+**AC-088-04**: Round-trip: parse -> write -> re-parse preserves nodes, edges, and title.
+**AC-088-05**: Write produces valid markdown with correct structure.
+
+### REQ-089: Edge Type Registry
+A centralized edge type registry replaces hardcoded edge visuals scattered across multiple files.
+
+**AC-089-01**: `DEFAULT_EDGE_TYPES` array defines id, label, directed, style, color, showArrow for all built-in types.
+**AC-089-02**: `getDefaultEdgeVisual()` returns fallback visuals when no .cmt template overrides.
+**AC-089-03**: `EDGE_LABELS` map derives from the registry rather than duplicating data.
+
+### REQ-090: WASM Error Boundary
+Parser initialization failures produce descriptive user-facing error messages.
+
+**AC-090-01**: `initParser()` wraps WASM loading in try/catch with descriptive error message.
+**AC-090-02**: Error includes original error message for debugging.
+
+### REQ-091: LLM Request Timeout
+Ollama HTTP requests have a configurable timeout to prevent hanging.
+
+**AC-091-01**: `OllamaLLMClient.sendMessage` uses AbortController with 5-minute timeout.
+**AC-091-02**: Timeout aborts the fetch and throws an error.
+
+### REQ-092: WebView String Escaping
+All Swift-to-JS string interpolation uses JSON serialization for safety.
+
+**AC-092-01**: `safeJSString()` uses `JSONSerialization` to produce properly escaped JS string literals.
+**AC-092-02**: All `evaluateJavaScript` calls use `safeJSString` instead of manual `replacingOccurrences`.
+**AC-092-03**: Strings containing quotes, newlines, backslashes, and Unicode are correctly escaped.
+
+### REQ-093: LLM Request Cancellation
+In-flight LLM requests can be cancelled by the user.
+
+**AC-093-01**: `LLMService.currentTask` stores the active URLSessionDataTask.
+**AC-093-02**: `LLMService.cancel()` cancels the task and clears the reference.
+
+### REQ-094: Error Logging
+LLM and file operation errors are logged to a user-accessible log file.
+
+**AC-094-01**: `LogService` writes timestamped entries to `~/Library/Application Support/ConceptLLM/Logs/`.
+**AC-094-02**: Log files are named by date (YYYY-MM-DD.log).
+**AC-094-03**: Files older than 7 days are automatically removed.
+
+### REQ-095: CI/CD Pipeline
+CI validates all four components: Rust, WASM, Web, and Swift.
+
+**AC-095-01**: Rust job runs `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test --all`.
+**AC-095-02**: WASM job builds `cargo build --target wasm32-unknown-unknown --features wasm`.
+**AC-095-03**: Web job runs `npm run lint`, `npm test --coverage`, `npm run build`.
+**AC-095-04**: Swift job builds and tests the MCP server on macOS.
+
+### REQ-096: App.tsx Decomposition
+File loading logic is extracted from the monolithic App.tsx into a reusable hook.
+
+**AC-096-01**: `useFileLoader` hook encapsulates WASM parser initialization and file content loading.
+**AC-096-02**: Hook returns `parserReady`, `error`, `setError`, and `loadFileContent`.

@@ -31,3 +31,6 @@ impl fmt::Display for ParseWarning {
         write!(f, "warning[line {}]: {}", self.line, self.message)
     }
 }
+
+/// Convenience alias for parser results that collect multiple errors.
+pub type ParseResult<T> = Result<T, Vec<ParseError>>;

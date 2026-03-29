@@ -124,8 +124,31 @@ enum FileHandler {
         }
     }
 
+    /// Validate that a path resolves within one of the allowed directories.
+    private static func isPathAllowed(_ path: String) -> Bool {
+        let resolved = URL(fileURLWithPath: path).standardizedFileURL.path
+        var allowedDirs = [
+            getTemplatesFolder().standardizedFileURL.path,
+            getMapsFolder().standardizedFileURL.path,
+        ]
+        if let bundlePath = Bundle.main.resourceURL?.standardizedFileURL.path {
+            allowedDirs.append(bundlePath)
+        }
+        return allowedDirs.contains { dir in
+            resolved.hasPrefix(dir + "/") || resolved == dir
+        }
+    }
+
     /// Read a .cmt template file and return its content.
+    /// Validates the path is within allowed directories.
     static func loadTemplateFile(path: String, completion: @escaping @MainActor (String) -> Void) {
+        guard isPathAllowed(path) else {
+            let alert = NSAlert()
+            alert.messageText = "Access denied"
+            alert.informativeText = "The file path is outside allowed directories."
+            alert.runModal()
+            return
+        }
         let url = URL(fileURLWithPath: path)
         do {
             let content = try String(contentsOf: url, encoding: .utf8)

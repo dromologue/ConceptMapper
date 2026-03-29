@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Data Types
 
-struct CMNode: Codable {
+public struct CMNode: Codable {
     var id: String
     var nodeType: String
     var name: String
@@ -12,7 +12,7 @@ struct CMNode: Codable {
     var notes: String?
 }
 
-struct CMEdge: Codable {
+public struct CMEdge: Codable {
     var from: String
     var to: String
     var edgeType: String
@@ -21,20 +21,20 @@ struct CMEdge: Codable {
     var note: String?
 }
 
-struct CMStream: Codable {
+public struct CMStream: Codable {
     var id: String
     var name: String
     var color: String?
     var description: String?
 }
 
-struct CMGeneration: Codable {
+public struct CMGeneration: Codable {
     var number: Int
     var period: String?
     var label: String?
 }
 
-struct ConceptMap: Codable {
+public struct ConceptMap: Codable {
     var title: String?
     var generations: [CMGeneration]
     var streams: [CMStream]
@@ -46,7 +46,7 @@ struct ConceptMap: Codable {
 
 // MARK: - Parser
 
-func parseCMFile(_ content: String) -> ConceptMap {
+public func parseCMFile(_ content: String) -> ConceptMap {
     var title: String?
     var generations: [CMGeneration] = []
     var streams: [CMStream] = []
@@ -238,7 +238,7 @@ private func parseEdgeBlock(_ lines: [String]) -> [CMEdge] {
 
 // MARK: - Writer
 
-func writeCMFile(_ map: ConceptMap) -> String {
+public func writeCMFile(_ map: ConceptMap) -> String {
     var lines: [String] = []
 
     // Title

@@ -12,7 +12,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all -- -D warnings
       - run: cargo test --all
+
+  rust-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: cargo build --target wasm32-unknown-unknown --features wasm
 
   web:
     runs-on: ubuntu-latest
@@ -28,5 +41,15 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run lint
-      - run: npm test
+      - run: npm test -- --coverage
       - run: npm run build
+
+  swift:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build MCP server
+        run: cd mcp-server && swift build
+      - name: Test MCP server
+        run: cd mcp-server && swift test
+        continue-on-error: true

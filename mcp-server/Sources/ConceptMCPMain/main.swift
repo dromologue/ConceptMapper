@@ -1,4 +1,5 @@
 import Foundation
+import ConceptMCP
 
 // ConceptLLM MCP Server
 // Communicates via JSON-RPC over stdio
