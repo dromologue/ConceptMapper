@@ -21,7 +21,7 @@ function slugify(name: string): string {
 interface WizardClassifier {
   id: string;
   label: string;
-  layout: "x" | "y" | "none";
+  layout: "x" | "y" | "region" | "region-column" | "none";
   values: { id: string; label: string; color: string; description: string }[];
 }
 
@@ -574,10 +574,12 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
                     onChange={(e) => updateClassifier(ci, { label: e.target.value })}
                     onClick={(e) => e.stopPropagation()}
                     placeholder="Classifier name" style={{ flex: 1, fontWeight: 600 }} />
-                  <select value={cls.layout} onChange={(e) => updateClassifier(ci, { layout: e.target.value as "x" | "y" | "none" })}
-                    style={{ width: 100, fontSize: 12 }}>
+                  <select value={cls.layout} onChange={(e) => updateClassifier(ci, { layout: e.target.value as "x" | "y" | "region" | "region-column" | "none" })}
+                    style={{ width: 120, fontSize: 12 }}>
                     <option value="x">X-axis</option>
                     <option value="y">Y-axis</option>
+                    <option value="region">Region (circle)</option>
+                    <option value="region-column">Region (column)</option>
                     <option value="none">Filter only</option>
                   </select>
                   <button type="button" className="wizard-remove-btn"
@@ -671,7 +673,7 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
                 <div key={i} className="wizard-review-item">
                   <span style={{ fontWeight: 600 }}>{cls.label}</span>
                   <span style={{ color: "var(--text-dim)", marginLeft: 6, fontSize: 11 }}>
-                    ({cls.layout === "x" ? "x-axis" : cls.layout === "y" ? "y-axis" : "filter only"})
+                    ({cls.layout === "x" ? "x-axis" : cls.layout === "y" ? "y-axis" : cls.layout === "region" ? "region (circle)" : cls.layout === "region-column" ? "region (column)" : "filter only"})
                   </span>
                   <span style={{ marginLeft: 8, fontSize: 11 }}>{cls.values.length} value{cls.values.length !== 1 ? "s" : ""}</span>
                 </div>

@@ -131,6 +131,31 @@ export const sampleGraphData: GraphIR = {
   edges: sampleEdges,
 };
 
+// Multi-classifier fixture: first has no colors (decade), second has colors (domain)
+export const classifierWithoutColors: Classifier = {
+  id: "decade",
+  label: "Decade",
+  layout: "y",
+  values: [
+    { id: "1940s", label: "1940s" },
+    { id: "1960s", label: "1960s" },
+    { id: "1980s", label: "1980s" },
+  ],
+};
+
+export const classifierWithColors: Classifier = {
+  id: "domain",
+  label: "Domain",
+  layout: "region",
+  values: [
+    { id: "math_physical", label: "Mathematical & Physical", color: "#4A90D9" },
+    { id: "systems_cybernetics", label: "Systems & Cybernetics", color: "#50C878" },
+    { id: "core_complexity", label: "Core Complexity", color: "#C4B035" },
+  ],
+};
+
+export const multiClassifiers: Classifier[] = [classifierWithoutColors, classifierWithColors];
+
 // LLM test fixtures
 export const sampleLLMConfig: LLMConfig = {
   provider: "anthropic",

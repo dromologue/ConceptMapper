@@ -25,6 +25,8 @@ const defaultProps = {
   nodeTypeConfigs: legacyNodeTypeConfigs,
   filters: createEmptyFilterState(),
   onClassifierToggle: vi.fn(),
+  onClassifierLayoutChange: vi.fn(),
+  onPromoteAttributeToClassifier: vi.fn(),
   onTagToggle: vi.fn(),
   onAttributeToggle: vi.fn(),
   onDateRangeChange: vi.fn(),
@@ -251,5 +253,117 @@ describe("Sidebar", () => {
     // Date inputs use type="date" with min/max attributes
     const dateInputs = document.querySelectorAll('input[type="date"]');
     expect(dateInputs.length).toBe(2);
+  });
+});
+
+// SPEC: REQ-073 (Classifier & Attribute Layout Dropdowns)
+describe("layout dropdowns", () => {
+  it("renders layout dropdown in classifier section (AC-073-01)", () => {
+    render(<Sidebar {...defaultProps} />);
+    // The classifier section "Streams" should have a layout select
+    const selects = document.querySelectorAll(".sidebar-layout-select");
+    expect(selects.length).toBeGreaterThan(0);
+  });
+
+  it("classifier layout dropdown reflects current layout value (AC-073-01)", () => {
+    render(<Sidebar {...defaultProps} classifiers={[
+      { id: "stream", label: "Streams", layout: "x", values: [{ id: "s1", label: "Psychology", color: "#ff0000" }] },
+    ]} />);
+    const select = document.querySelector(".sidebar-layout-select") as HTMLSelectElement;
+    expect(select).not.toBeNull();
+    expect(select.value).toBe("x");
+  });
+
+  it("calls onClassifierLayoutChange when dropdown changes (AC-073-03)", async () => {
+    const user = userEvent.setup();
+    const onClassifierLayoutChange = vi.fn();
+    render(<Sidebar {...defaultProps} onClassifierLayoutChange={onClassifierLayoutChange} />);
+    const select = document.querySelector(".sidebar-layout-select") as HTMLSelectElement;
+    await user.selectOptions(select, "region");
+    expect(onClassifierLayoutChange).toHaveBeenCalledWith("stream", "region");
+  });
+
+  it("renders layout dropdown in attribute section (AC-073-02)", () => {
+    render(<Sidebar {...defaultProps} />);
+    // "Importance" is an attribute section from person nodes
+    // There should be multiple selects: one per classifier + one per attribute section
+    const selects = document.querySelectorAll(".sidebar-layout-select");
+    // At least 2: one for the "Streams" classifier, one for "Importance" attribute
+    expect(selects.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("calls onPromoteAttributeToClassifier for attribute without existing classifier (AC-073-04)", async () => {
+    const user = userEvent.setup();
+    const onPromoteAttributeToClassifier = vi.fn();
+    render(<Sidebar {...defaultProps} onPromoteAttributeToClassifier={onPromoteAttributeToClassifier} />);
+    // Find the attribute layout select (second select, after the classifier one)
+    const selects = document.querySelectorAll(".sidebar-layout-select");
+    // The attribute select should be the second or later one
+    const attrSelect = selects[selects.length - 1] as HTMLSelectElement;
+    await user.selectOptions(attrSelect, "y");
+    expect(onPromoteAttributeToClassifier).toHaveBeenCalled();
+    // Should have been called with field name, label, values array, and layout
+    expect(onPromoteAttributeToClassifier.mock.calls[0][3]).toBe("y");
+  });
+});
+
+// SPEC: REQ-071 (Sidebar color dots)
+describe("sidebar color dots", () => {
+  it("shows color dots for any classifier with colors (AC-071-04)", async () => {
+    const user = userEvent.setup();
+    const classifiersWithMixed = [
+      { id: "decade", label: "Decade", layout: "y" as const, values: [{ id: "1940s", label: "1940s" }] },
+      { id: "domain", label: "Domain", layout: "region" as const, values: [{ id: "s1", label: "Math", color: "#4A90D9" }] },
+    ];
+    render(<Sidebar {...defaultProps} classifiers={classifiersWithMixed} />);
+    // Expand the domain section (which has colors)
+    await user.click(screen.getByText("Domain"));
+    const dots = document.querySelectorAll(".sidebar-stream-dot");
+    expect(dots.length).toBeGreaterThan(0);
+    expect((dots[0] as HTMLElement).style.backgroundColor).toBeTruthy();
+  });
+
+  it("no color dots for classifier without colors", async () => {
+    const user = userEvent.setup();
+    const classifiersNoColors = [
+      { id: "decade", label: "Decade", layout: "y" as const, values: [{ id: "1940s", label: "1940s" }] },
+    ];
+    render(<Sidebar {...defaultProps} classifiers={classifiersNoColors} />);
+    await user.click(screen.getByText("Decade"));
+    const dots = document.querySelectorAll(".sidebar-stream-dot");
+    expect(dots.length).toBe(0);
+  });
+});
+
+// SPEC: REQ-075 (Explode View)
+describe("explode view", () => {
+  it("renders Explode button when onExplode is provided (AC-075-01)", () => {
+    render(<Sidebar {...defaultProps} onExplode={vi.fn()} />);
+    expect(screen.getByText("Explode")).toBeInTheDocument();
+  });
+
+  it("does not render Explode button when onExplode is not provided", () => {
+    render(<Sidebar {...defaultProps} />);
+    expect(screen.queryByText("Explode")).not.toBeInTheDocument();
+  });
+
+  it("shows Collapse label when exploded is true (AC-075-01)", () => {
+    render(<Sidebar {...defaultProps} onExplode={vi.fn()} exploded={true} />);
+    expect(screen.getByText("Collapse")).toBeInTheDocument();
+    expect(screen.queryByText("Explode")).not.toBeInTheDocument();
+  });
+
+  it("calls onExplode when button is clicked", async () => {
+    const user = userEvent.setup();
+    const onExplode = vi.fn();
+    render(<Sidebar {...defaultProps} onExplode={onExplode} />);
+    await user.click(screen.getByText("Explode"));
+    expect(onExplode).toHaveBeenCalled();
+  });
+
+  it("button has active class when exploded (AC-075-01)", () => {
+    render(<Sidebar {...defaultProps} onExplode={vi.fn()} exploded={true} />);
+    const btn = screen.getByText("Collapse").closest("button");
+    expect(btn?.className).toContain("active");
   });
 });

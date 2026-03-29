@@ -41,7 +41,7 @@ export interface ClassifierValue {
 export interface Classifier {
   id: string;            // e.g. "discipline", "phase"
   label: string;         // e.g. "Disciplines", "Phases"
-  layout?: "x" | "y";   // which axis this classifier drives; omit = filter-only
+  layout?: "x" | "y" | "region" | "region-column";   // "region" = circle clusters; "region-column" = fixed-width columns; omit = filter-only
   values: ClassifierValue[];
 }
 
@@ -100,6 +100,7 @@ export interface GraphIR {
 export interface Metadata {
   title?: string;
   source_file?: string;
+  source_template?: string;     // .cmt filename, preserved across save/load
   parsed_at?: string;
   classifiers?: Classifier[];
   external_shocks: ExternalShock[];

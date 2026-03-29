@@ -42,6 +42,8 @@ interface Props {
   template?: TaxonomyTemplate | null;
   filters: FilterState;
   onClassifierToggle: (classifierId: string, valueId: string, allValueIds: string[]) => void;
+  onClassifierLayoutChange: (classifierId: string, layout: string) => void;
+  onPromoteAttributeToClassifier: (field: string, label: string, values: string[], layout: string) => void;
   onTagToggle: (tag: string, allTags: string[]) => void;
   onAttributeToggle: (nodeType: string, field: string, value: string, allValues: string[]) => void;
   onDateRangeChange: (nodeType: string, fromField: string, toField: string | undefined, bound: "from" | "to", value: string) => void;
@@ -52,6 +54,8 @@ interface Props {
   onAddEdge: () => void;
   interactionMode: string;
   onCancelAddEdge: () => void;
+  onExplode?: () => void;
+  exploded?: boolean;
 }
 
 /** Extract a 4-digit year from a string like "1923", "b. 1947", "~1930" */
@@ -63,10 +67,11 @@ function extractYear(val: unknown): number | null {
 
 export function Sidebar({
   nodes, classifiers, nodeTypeConfigs, filters,
-  onClassifierToggle, onTagToggle, onAttributeToggle, onDateRangeChange, onShowAll,
+  onClassifierToggle, onClassifierLayoutChange, onPromoteAttributeToClassifier, onTagToggle, onAttributeToggle, onDateRangeChange, onShowAll,
   onSelectNode, selectedNodeId,
   onAddNode, onAddEdge,
   interactionMode, onCancelAddEdge,
+  onExplode, exploded,
 }: Props) {
   const [filter, setFilter] = useState("");
   const [classifierSectionsOpen, setClassifierSectionsOpen] = useState<Record<string, boolean>>({});
@@ -261,15 +266,36 @@ export function Sidebar({
         >
           {isEdgeMode ? "Cancel Edge" : "+ Edge"}
         </button>
+        {onExplode && (
+          <button
+            className={`sidebar-action-btn ${exploded ? "active" : ""}`}
+            onClick={onExplode}
+            title={exploded ? "Collapse graph back to fit viewport" : "Spread graph so no labels overlap"}
+          >
+            {exploded ? "Collapse" : "Explode"}
+          </button>
+        )}
       </div>
 
       {/* Classifier sections */}
-      {classifiers.map((cls, clsIdx) => {
+      {classifiers.map((cls) => {
         const isOpen = classifierSectionsOpen[cls.id] ?? false;
         return (
           <div key={cls.id} className="sidebar-section">
             <div className="sidebar-section-header" onClick={() => setClassifierSectionsOpen((prev) => ({ ...prev, [cls.id]: !isOpen }))}>
               <span>{cls.label}</span>
+              <select
+                className="sidebar-layout-select"
+                value={cls.layout ?? "none"}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => onClassifierLayoutChange(cls.id, e.target.value)}
+              >
+                <option value="none">none</option>
+                <option value="x">x-axis</option>
+                <option value="y">y-axis</option>
+                <option value="region">region</option>
+                <option value="region-column">columns</option>
+              </select>
               <span className={`sidebar-chevron ${isOpen ? "open" : ""}`}>
                 <IconChevronDown size={12} />
               </span>
@@ -286,7 +312,7 @@ export function Sidebar({
                       onClick={() => onClassifierToggle(cls.id, v.id, cls.values.map((val) => val.id))}
                     >
                       <span className="sidebar-filter-check" data-checked={active ? "true" : "false"}>
-                        {clsIdx === 0 && v.color && (
+                        {v.color && (
                           <span className="sidebar-stream-dot" style={{ backgroundColor: v.color }} />
                         )}
                       </span>
@@ -339,6 +365,27 @@ export function Sidebar({
           <div key={sectionKey} className="sidebar-section">
             <div className="sidebar-section-header" onClick={() => toggleAttrSection(sectionKey)}>
               <span>{section.label}</span>
+              {section.values.length <= 20 && (
+                <select
+                  className="sidebar-layout-select"
+                  value={classifiers.find((c) => c.id === section.field)?.layout ?? "none"}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => {
+                    const existing = classifiers.find((c) => c.id === section.field);
+                    if (existing) {
+                      onClassifierLayoutChange(section.field, e.target.value);
+                    } else {
+                      onPromoteAttributeToClassifier(section.field, section.label, section.values, e.target.value);
+                    }
+                  }}
+                >
+                  <option value="none">none</option>
+                  <option value="x">x-axis</option>
+                  <option value="y">y-axis</option>
+                  <option value="region">region</option>
+                  <option value="region-column">columns</option>
+                </select>
+              )}
               <span className={`sidebar-chevron ${isOpen ? "open" : ""}`}>
                 <IconChevronDown size={12} />
               </span>
@@ -448,7 +495,7 @@ export function Sidebar({
                       <span className="sidebar-type-group-count">{typeNodes.length}</span>
                     </div>
                     {typeNodes.map((n) => {
-                      const colorCls = classifiers[0];
+                      const colorCls = classifiers.find((c) => c.values.some((v) => v.color)) ?? classifiers[0];
                       const nodeColor = colorCls ? colorCls.values.find((v) => v.id === n.classifiers?.[colorCls.id])?.color ?? "#666" : "#666";
                       return (
                       <div

@@ -210,6 +210,29 @@ body {
   background: var(--bg-hover, #2a2a4a);
 }
 
+.sidebar-layout-select {
+  -webkit-appearance: none;
+  appearance: none;
+  font-size: 10px;
+  padding: 2px 16px 2px 6px;
+  border: 1px solid var(--text-dim, #555);
+  border-radius: 3px;
+  background: var(--bg-hover, #2a2a4a) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23888'/%3E%3C/svg%3E") no-repeat right 4px center;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+  margin-left: auto;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+.sidebar-layout-select:hover {
+  border-color: var(--accent, #4A90D9);
+  color: var(--text-primary, #ddd);
+}
+.sidebar-layout-select:focus {
+  outline: none;
+  border-color: var(--accent, #4A90D9);
+}
+
 .sidebar-chevron {
   transition: transform 0.15s;
 }

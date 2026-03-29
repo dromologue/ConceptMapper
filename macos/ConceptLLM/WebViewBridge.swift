@@ -90,16 +90,40 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
                 }
             }
         case "loadMap":
-            // JS sends JSON with { path } — load a .cm file from the Maps folder
+            // JS sends JSON with { path } — load .cm file and its referenced .cmt template
             if let data = body.data(using: .utf8),
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
                let path = json["path"] {
                 let url = URL(fileURLWithPath: path)
                 do {
                     let content = try String(contentsOf: url, encoding: .utf8)
-                    loadFileContent(content, filename: url.lastPathComponent, filePath: path)
+                    // Extract template reference: <!-- template: filename.cmt -->
+                    var templateJSON = "null"
+                    if let range = content.range(of: #"<!--\s*template:\s*(.+?)\s*-->"#, options: .regularExpression) {
+                        let comment = String(content[range])
+                        let tmplName = comment
+                            .replacingOccurrences(of: #"<!--\s*template:\s*"#, with: "", options: .regularExpression)
+                            .replacingOccurrences(of: #"\s*-->"#, with: "", options: .regularExpression)
+                            .trimmingCharacters(in: .whitespaces)
+                        let cmtName = tmplName.hasSuffix(".cmt") ? tmplName : "\(tmplName).cmt"
+                        let templateURL = Bundle.main.url(forResource: cmtName.replacingOccurrences(of: ".cmt", with: ""),
+                                                          withExtension: "cmt", subdirectory: "templates")
+                            ?? FileHandler.getTemplatesFolder().appendingPathComponent(cmtName)
+                        if let tmplContent = try? String(contentsOf: templateURL, encoding: .utf8) {
+                            templateJSON = tmplContent
+                        }
+                    }
+                    // Send both template and map content in one JS call (base64-encode both to avoid escaping issues)
+                    guard let mapData = content.data(using: .utf8) else { return }
+                    let base64 = mapData.base64EncodedString()
+                    let tmplBase64 = templateJSON.data(using: .utf8)?.base64EncodedString() ?? ""
+                    let filename = url.lastPathComponent
+                    let js = "window.loadMapWithTemplate?.('\(base64)', '\(filename)', '\(path)', '\(tmplBase64)');"
+                    webView?.evaluateJavaScript(js) { _, error in
+                        if let error = error { print("loadMap error: \(error)") }
+                    }
                 } catch {
-                    // silently ignore
+                    print("loadMap file error: \(error)")
                 }
             }
         case "loadTemplate":

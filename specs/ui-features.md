@@ -341,3 +341,54 @@ Canvas rendering integrates with analysis results for visual feedback.
 **AC-065-04**: Edges between non-community nodes are greyed out (alpha 0.08, thin).
 **AC-065-05**: Bridge edges (one endpoint in community, one outside) are semi-dimmed (alpha 0.25).
 **AC-065-06**: Clicking a community name in the panel focuses the view on that community's members.
+
+## Classifier Colors & Layout
+
+### REQ-071: Classifier-Driven Node Colors
+Node color is derived from the first classifier whose values define colors, not hardcoded to the first classifier index.
+
+**AC-071-01**: `getNodeColor` selects the first classifier with `color` on any value.
+**AC-071-02**: If no classifier has colors, nodes fall back to `#666`.
+**AC-071-03**: Sidebar node list uses the same color classifier logic.
+**AC-071-04**: Sidebar classifier sections show color dots for any classifier with colored values (not only index 0).
+**AC-071-05**: Color overrides (streamColorOverrides) take priority over classifier value colors.
+
+### REQ-072: Template Reference Preserved Across Save
+The `<!-- template: filename.cmt -->` comment in .cm files survives export and auto-save.
+
+**AC-072-01**: `exportToMarkdown` writes `<!-- template: X.cmt -->` when `metadata.source_template` is set.
+**AC-072-02**: `exportToMarkdown` omits the template comment when `source_template` is absent.
+**AC-072-03**: `source_template` is populated from the .cm header during both load paths (loadFileContent, loadMapWithTemplate).
+**AC-072-04**: JSON loading path includes `classifiers` from data in the reconstructed template.
+
+### REQ-073: Classifier & Attribute Layout Dropdowns
+Each classifier and attribute section in the sidebar has a layout dropdown (none/x-axis/y-axis/region/columns).
+
+**AC-073-01**: Classifier sections render a `<select>` with layout options; value reflects current `cls.layout`.
+**AC-073-02**: Attribute sections with ≤20 values render a `<select>` for layout promotion.
+**AC-073-03**: Changing a classifier dropdown calls `onClassifierLayoutChange`.
+**AC-073-04**: Changing an attribute dropdown with no existing classifier calls `onPromoteAttributeToClassifier`.
+
+### REQ-074: Column Redraw on Resize
+Columns and region layouts redraw correctly when the canvas is resized (window resize, sidebar toggle).
+
+**AC-074-01**: `resizeCanvas` recalculates all layout forces using the shared `applyLayoutForces` helper.
+**AC-074-02**: After resize, `fitToView()` is called with a delay so the zoom transform matches the new layout.
+**AC-074-03**: Column backgrounds and labels always render regardless of node filter state.
+
+### REQ-075: Explode View
+An "Explode" button in the sidebar spreads the graph across a virtual canvas larger than the viewport so no labels overlap.
+
+**AC-075-01**: Sidebar shows an "Explode" toggle button; label changes to "Collapse" when active.
+**AC-075-02**: Exploding multiplies virtual canvas dimensions by a factor based on node count.
+**AC-075-03**: Charge repulsion and collision radius increase in exploded mode.
+**AC-075-04**: Columns, regions, and axis layouts scale proportionally across the exploded space.
+**AC-075-05**: Exploded view does NOT auto-fit — the graph overflows the viewport for pan/zoom exploration.
+**AC-075-06**: Collapsing restores normal forces and fits the graph back to the viewport.
+
+### REQ-076: Layout Force Deduplication
+All layout force calculations (initial setup, data change, resize, explode) use a single shared `applyLayoutForces` function.
+
+**AC-076-01**: `applyLayoutForces` sets x, y, charge, collide, and region forces for given virtual dimensions.
+**AC-076-02**: No duplicated force-setup code across initial simulation, data-change effect, resize handler, or explode effect.
+**AC-076-03**: Layout conflict resolution clears competing layouts when a new layout is assigned (region vs region-column share a slot; only one x, one y).

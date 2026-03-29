@@ -112,7 +112,7 @@ function populateNodeClassifiers(node: GraphNode, classifiers: Classifier[]): vo
  * Migrate a parsed GraphIR (from the WASM markdown parser) into template + data.
  * Maps "thinker" → "person" with renamed fields.
  */
-export function migrateFromParser(parsed: GraphIR): { template: TaxonomyTemplate; data: ConceptMapData } {
+export function migrateFromParser(parsed: GraphIR, activeTemplate?: TaxonomyTemplate | null): { template: TaxonomyTemplate; data: ConceptMapData } {
   // The WASM parser outputs nodes with `fields` (Rust convention), cast to RawParsedNode
   const rawNodes = parsed.nodes as unknown as RawParsedNode[];
 
@@ -142,15 +142,71 @@ export function migrateFromParser(parsed: GraphIR): { template: TaxonomyTemplate
     });
   }
 
+  // If an active template is loaded, prefer its node_types, edge_types, and classifiers
+  // (these carry shape, size_map, layout, color info that can't be derived from data)
+  const mergedNodeTypes = activeTemplate?.node_types ?? (nodeTypes.length > 0 ? nodeTypes : DEFAULT_NODE_TYPES);
+  const mergedEdgeTypes = activeTemplate?.edge_types;
+
+  // Palette for auto-detected classifier values
+  const DEFAULT_COLORS = ["#4A90D9", "#50C878", "#FF7F50", "#9B59B6", "#F1C40F", "#E74C3C", "#1ABC9C", "#E67E22"];
+
+  // Auto-detect classifiers from node data if no template provides them.
+  // A field is a classifier candidate if it:
+  //   - appears across multiple node types (cross-cutting, not type-specific)
+  //   - appears on ≥50% of nodes
+  //   - has ≤20 distinct values
+  let detectedClassifiers: Classifier[] | undefined;
+  if (!activeTemplate?.classifiers && rawNodes.length > 0) {
+    const fieldCounts = new Map<string, Map<string, number>>();
+    const fieldNodeTypes = new Map<string, Set<string>>(); // track which node types use each field
+    const reservedKeys = new Set(["id", "name", "notes", "tags", "generation", "stream"]);
+    for (const n of rawNodes) {
+      if (!n.fields) continue;
+      for (const [k, v] of Object.entries(n.fields)) {
+        if (reservedKeys.has(k)) continue;
+        if (!fieldCounts.has(k)) fieldCounts.set(k, new Map());
+        const vals = fieldCounts.get(k)!;
+        vals.set(v, (vals.get(v) ?? 0) + 1);
+        if (!fieldNodeTypes.has(k)) fieldNodeTypes.set(k, new Set());
+        fieldNodeTypes.get(k)!.add(n.node_type);
+      }
+    }
+    const nodeTypeCount = new Set(rawNodes.map((n) => n.node_type)).size;
+    const candidates: Classifier[] = [];
+    for (const [key, vals] of fieldCounts) {
+      const nodeCount = [...vals.values()].reduce((a, b) => a + b, 0);
+      const typeCount = fieldNodeTypes.get(key)?.size ?? 0;
+      // Only promote cross-cutting fields (appear in multiple node types, or all nodes have one type)
+      const isCrossCutting = typeCount > 1 || nodeTypeCount <= 1;
+      if (vals.size <= 20 && nodeCount >= rawNodes.length * 0.5 && isCrossCutting) {
+        const colors = DEFAULT_COLORS;
+        candidates.push({
+          id: key,
+          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " "),
+          values: [...vals.keys()].map((v, i) => ({
+            id: v,
+            label: v.charAt(0).toUpperCase() + v.slice(1).replace(/_/g, " "),
+            color: colors[i % colors.length],
+          })),
+        });
+      }
+    }
+    if (candidates.length > 0) detectedClassifiers = candidates;
+  }
+
+  const effectiveClassifiers = activeTemplate?.classifiers ?? detectedClassifiers;
+
   const template: TaxonomyTemplate = {
-    title: parsed.metadata.title ?? "Untitled",
-    description: parsed.metadata.structural_observations[0] ?? undefined,
+    title: parsed.metadata.title ?? activeTemplate?.title ?? "Untitled",
+    description: parsed.metadata.structural_observations[0] ?? activeTemplate?.description ?? undefined,
+    classifiers: effectiveClassifiers,
     streams: parsed.metadata.streams,
     generations: parsed.metadata.generations,
-    node_types: nodeTypes.length > 0 ? nodeTypes : DEFAULT_NODE_TYPES,
+    node_types: mergedNodeTypes,
+    edge_types: mergedEdgeTypes,
   };
 
-  const classifiers = getTemplateClassifiers(template);
+  const classifiers = effectiveClassifiers ?? getTemplateClassifiers(template);
 
   const nodes: DataNode[] = rawNodes.map((n) => ({
     id: n.id,
@@ -158,13 +214,26 @@ export function migrateFromParser(parsed: GraphIR): { template: TaxonomyTemplate
     name: n.name,
     generation: n.generation,
     stream: n.stream,
+    tags: n.tags,
     properties: { ...(n.fields ?? {}) },
     notes: n.notes,
   }));
 
-  // Populate classifiers on nodes from legacy stream/generation fields
+  // Populate classifiers on nodes from fields or legacy stream/generation
   for (const node of nodes) {
     const gn = node as unknown as GraphNode;
+    // Extract classifier values from node properties (works with both template and auto-detected classifiers)
+    if (effectiveClassifiers) {
+      if (!gn.classifiers) gn.classifiers = {};
+      for (const cls of effectiveClassifiers) {
+        const val = (node.properties as Record<string, string>)[cls.id];
+        if (val) {
+          gn.classifiers[cls.id] = val;
+          // Remove from properties since it's now a classifier
+          delete (node.properties as Record<string, string>)[cls.id];
+        }
+      }
+    }
     populateNodeClassifiers(gn, classifiers);
     node.classifiers = gn.classifiers;
   }

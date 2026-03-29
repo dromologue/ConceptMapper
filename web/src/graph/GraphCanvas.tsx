@@ -67,6 +67,44 @@ function drawOrganicPolygon(ctx: CanvasRenderingContext2D, _cx: number, _cy: num
   ctx.closePath();
 }
 
+/** Compute centroid positions for region layout, arranged in a grid */
+function computeRegionCentroids(
+  regionCls: Classifier,
+  width: number,
+  height: number,
+): Map<string, { x: number; y: number }> {
+  const n = regionCls.values.length;
+  const cols = Math.ceil(Math.sqrt(n));
+  const rows = Math.ceil(n / cols);
+  const result = new Map<string, { x: number; y: number }>();
+  regionCls.values.forEach((v, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = width * (0.15 + (0.7 * col) / Math.max(cols - 1, 1));
+    const y = height * (0.1 + (0.8 * row) / Math.max(rows - 1, 1));
+    result.set(v.id, { x, y });
+  });
+  return result;
+}
+
+/** Compute equal-width column x-positions for region-column layout, filling the full canvas */
+function computeRegionColumns(
+  regionCls: Classifier,
+  width: number,
+  _nodeCounts?: Map<string, number>,
+): { positions: Map<string, number>; widths: Map<string, number> } {
+  const n = regionCls.values.length;
+  if (n === 0) return { positions: new Map(), widths: new Map() };
+  const colW = width / n;
+  const positions = new Map<string, number>();
+  const widths = new Map<string, number>();
+  regionCls.values.forEach((v, i) => {
+    widths.set(v.id, colW);
+    positions.set(v.id, colW * (i + 0.5));
+  });
+  return { positions, widths };
+}
+
 interface Props {
   data: GraphIR;
   onSelectNode: (node: GraphNode | null) => void;
@@ -92,6 +130,7 @@ interface Props {
   communityOverlay?: Map<string, number>;
   highlightedPath?: string[] | null;
   highlightedCommunity?: number | null;
+  exploded?: boolean;
 }
 
 function getNodeRadius(node: SimNode, _viewMode: ViewMode, nodeTypeConfigs: NodeTypeConfig[]): number {
@@ -104,8 +143,9 @@ function getNodeRadius(node: SimNode, _viewMode: ViewMode, nodeTypeConfigs: Node
   return 10;
 }
 
-function getNodeColor(node: SimNode, classifiers: Classifier[], overrides?: Record<string, string>): string {
-  const colorCls = classifiers[0];
+export function getNodeColor(node: SimNode, classifiers: Classifier[], overrides?: Record<string, string>): string {
+  // Use the first classifier whose values carry color definitions
+  const colorCls = classifiers.find((c) => c.values.some((v) => v.color)) ?? classifiers[0];
   if (!colorCls) return "#666";
   const valueId = node.classifiers?.[colorCls.id];
   if (!valueId) return "#666";
@@ -128,7 +168,7 @@ function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): NodeSha
   return "circle";
 }
 
-export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity }: Props) {
+export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity, exploded }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const transformRef = useRef(d3.zoomIdentity);
@@ -153,6 +193,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const simInitializedRef = useRef(false);
   const classifiersRef = useRef<Classifier[]>([]);
+  const regionColumnWidthsRef = useRef<Map<string, number>>(new Map());
+  const regionColumnPositionsRef = useRef<Map<string, number>>(new Map());
+  const explodedRef = useRef(exploded ?? false);
   const themeRef = useRef(theme);
   const lookRef = useRef(look);
   const selectedNodeIdRef = useRef(selectedNodeId);
@@ -177,7 +220,37 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { onSelectNodeRef.current = onSelectNode; }, [onSelectNode]);
   useEffect(() => { onSelectEdgeRef.current = onSelectEdge; }, [onSelectEdge]);
   useEffect(() => { onToggleCollapseRef.current = onToggleCollapse; }, [onToggleCollapse]);
-  useEffect(() => { dataRef.current = data; }, [data]);
+  useEffect(() => {
+    dataRef.current = data;
+    // Re-apply forces when classifiers change (e.g. layout mode switched in sidebar)
+    const newCls = data.metadata.classifiers ?? [];
+    const oldCls = classifiersRef.current;
+    const layoutChanged = newCls.length !== oldCls.length || newCls.some((c, i) => c.layout !== oldCls[i]?.layout || c.id !== oldCls[i]?.id);
+    classifiersRef.current = newCls;
+
+    // Sync node data (classifiers, properties) from updated data into simulation nodes
+    const simNodes = nodesRef.current;
+    const dataNodeMap = new Map(data.nodes.map((n) => [n.id, n]));
+    for (const sn of simNodes) {
+      const dn = dataNodeMap.get(sn.id);
+      if (dn) {
+        sn.classifiers = dn.classifiers;
+        sn.properties = dn.properties;
+        sn.tags = dn.tags;
+        sn.notes = dn.notes;
+      }
+    }
+
+    if (layoutChanged && simRef.current && simInitializedRef.current) {
+      const { width, height } = canvasSizeRef.current;
+      const simulation = simRef.current;
+
+      const isExploded = explodedRef.current;
+      const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
+      applyLayoutForces(simulation, width * factor, height * factor, newCls, isExploded);
+      simulation.alpha(0.8).restart();
+    }
+  }, [data]);
 
   // Sync prop values to refs and trigger canvas redraw. These effects intentionally
   // omit `redraw` from deps — it reads only from refs and is stable.
@@ -198,6 +271,98 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { nodeTypeConfigsRef.current = nodeTypeConfigs; redraw(); }, [nodeTypeConfigs]);
   useEffect(() => { selectedEdgeKeyRef.current = selectedEdgeKey; redraw(); }, [selectedEdgeKey]);
   /* eslint-enable react-hooks/exhaustive-deps */
+
+  /** Apply all layout forces to the simulation using given virtual dimensions */
+  function applyLayoutForces(simulation: d3.Simulation<SimNode, SimLink>, vw: number, vh: number, cls: Classifier[], isExploded: boolean) {
+    const xCls = cls.find((c) => c.layout === "x");
+    const yCls = cls.find((c) => c.layout === "y");
+
+    // X-axis force
+    if (xCls) {
+      const sorted = [...xCls.values].sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+      const xPos = new Map<string, number>();
+      sorted.forEach((v, i) => { xPos.set(v.id, vw * (0.15 + (0.7 * i) / Math.max(sorted.length - 1, 1))); });
+      simulation.force("x", d3.forceX<SimNode>((d) => {
+        const val = d.classifiers?.[xCls.id];
+        return val ? xPos.get(String(val)) ?? vw / 2 : vw / 2;
+      }).strength(0.3));
+    } else {
+      simulation.force("x", d3.forceX<SimNode>(vw / 2).strength(0.05));
+    }
+
+    // Y-axis force
+    if (yCls) {
+      const sorted = [...yCls.values].sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+      const yPos = new Map<string, number>();
+      sorted.forEach((v, i) => { yPos.set(v.id, vh * (0.1 + (0.8 * i) / Math.max(sorted.length - 1, 1))); });
+      simulation.force("y", d3.forceY<SimNode>((d) => {
+        const val = d.classifiers?.[yCls.id];
+        return val ? yPos.get(String(val)) ?? vh / 2 : vh / 2;
+      }).strength(0.5));
+    } else {
+      simulation.force("y", d3.forceY<SimNode>(vh / 2).strength(0.05));
+    }
+
+    // Charge and collision — stronger when exploded
+    const chargeStrength = isExploded ? -1500 : -400;
+    const collideExtra = isExploded ? 40 : 12;
+    simulation.force("charge", d3.forceManyBody().strength(chargeStrength).distanceMax(isExploded ? 3000 : 800));
+    simulation.force("collide", d3.forceCollide<SimNode>((d) => getNodeRadius(d, "full", nodeTypeConfigsRef.current) + collideExtra));
+
+    // Region forces
+    const regionCls = cls.find((c) => c.layout === "region" || c.layout === "region-column");
+    if (regionCls) {
+      const isColumn = regionCls.layout === "region-column";
+      const hasAxis = !!(xCls || yCls);
+      if (isColumn) {
+        const counts = new Map<string, number>();
+        for (const n of nodesRef.current) { const v = n.classifiers?.[regionCls.id]; if (v) counts.set(String(v), (counts.get(String(v)) ?? 0) + 1); }
+        const { positions, widths } = computeRegionColumns(regionCls, vw, counts);
+        regionColumnWidthsRef.current = widths;
+        regionColumnPositionsRef.current = positions;
+        simulation.force("regionX", d3.forceX<SimNode>((d) => {
+          const val = d.classifiers?.[regionCls.id];
+          return val ? positions.get(String(val)) ?? vw / 2 : vw / 2;
+        }).strength(0.4));
+        simulation.force("regionY", null);
+      } else {
+        const centroids = computeRegionCentroids(regionCls, vw, vh);
+        const rStr = hasAxis ? 0.15 : 0.3;
+        simulation.force("regionX", d3.forceX<SimNode>((d) => {
+          const val = d.classifiers?.[regionCls.id];
+          return val ? centroids.get(String(val))?.x ?? vw / 2 : vw / 2;
+        }).strength(rStr));
+        simulation.force("regionY", d3.forceY<SimNode>((d) => {
+          const val = d.classifiers?.[regionCls.id];
+          return val ? centroids.get(String(val))?.y ?? vh / 2 : vh / 2;
+        }).strength(rStr));
+      }
+    } else {
+      simulation.force("regionX", null);
+      simulation.force("regionY", null);
+      regionColumnWidthsRef.current = new Map();
+      regionColumnPositionsRef.current = new Map();
+    }
+  }
+
+  // Explode/collapse: recalculate forces using a larger virtual canvas
+  useEffect(() => {
+    explodedRef.current = exploded ?? false;
+    const simulation = simRef.current;
+    if (!simulation || !simInitializedRef.current) return;
+    const { width, height } = canvasSizeRef.current;
+    const cls = classifiersRef.current;
+    const isExploded = exploded ?? false;
+    const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
+    const vw = width * factor;
+    const vh = height * factor;
+    applyLayoutForces(simulation, vw, vh, cls, isExploded);
+    simulation.alpha(0.8).restart();
+    if (!isExploded) {
+      // When collapsing back, fit to view after settling
+      setTimeout(() => fitToView(), 600);
+    }
+  }, [exploded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function fitToView() {
     const ns = nodesRef.current;
@@ -249,35 +414,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const simulation = simRef.current;
     if (simulation && simInitializedRef.current) {
       const cls = classifiersRef.current;
-      const xCls = cls.find((c) => c.layout === "x");
-      const yCls = cls.find((c) => c.layout === "y");
-
-      const xPos = new Map<string, number>();
-      if (xCls) {
-        xCls.values.forEach((v, i) => {
-          xPos.set(v.id, width * (0.15 + (0.7 * i) / Math.max(xCls.values.length - 1, 1)));
-        });
-      }
-      const yPos = new Map<string, number>();
-      if (yCls) {
-        yCls.values.forEach((v, i) => {
-          yPos.set(v.id, height * (0.1 + (0.8 * i) / Math.max(yCls.values.length - 1, 1)));
-        });
-      }
-
-      simulation.force("x", d3.forceX<SimNode>((d) => {
-        if (!xCls) return width / 2;
-        const val = d.classifiers?.[xCls.id];
-        return val ? xPos.get(String(val)) ?? width / 2 : width / 2;
-      }).strength(0.3));
-
-      simulation.force("y", d3.forceY<SimNode>((d) => {
-        if (!yCls) return height / 2;
-        const val = d.classifiers?.[yCls.id];
-        return val ? yPos.get(String(val)) ?? height / 2 : height / 2;
-      }).strength(0.5));
-
+      const isExploded = explodedRef.current;
+      const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
+      applyLayoutForces(simulation, width * factor, height * factor, cls, isExploded);
       simulation.alpha(0.3).restart();
+      setTimeout(() => fitToView(), 500);
     } else {
       redraw();
     }
@@ -315,39 +456,12 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
     const classifiers = data.metadata.classifiers ?? [];
     classifiersRef.current = classifiers;
-    const xClassifier = classifiers.find((c) => c.layout === "x");
-    const yClassifier = classifiers.find((c) => c.layout === "y");
 
-    const xPositions = new Map<string, number>();
-    if (xClassifier) {
-      xClassifier.values.forEach((v, i) => {
-        xPositions.set(v.id, width * (0.15 + (0.7 * i) / Math.max(xClassifier.values.length - 1, 1)));
-      });
-    }
-
-    const yPositions = new Map<string, number>();
-    if (yClassifier) {
-      yClassifier.values.forEach((v, i) => {
-        yPositions.set(v.id, height * (0.1 + (0.8 * i) / Math.max(yClassifier.values.length - 1, 1)));
-      });
-    }
-
-    const configs = nodeTypeConfigsRef.current;
     const simulation = d3.forceSimulation<SimNode>(nodes)
-      .force("link", d3.forceLink<SimNode, SimLink>(links).id((d) => d.id).distance((d) => 120 / Math.max(0.5, (d as SimLink).edge.weight ?? 1)).strength(0.2))
-      .force("charge", d3.forceManyBody().strength(-400).distanceMax(800))
-      .force("x", d3.forceX<SimNode>((d) => {
-        if (!xClassifier) return width / 2;
-        const val = d.classifiers?.[xClassifier.id];
-        return val ? xPositions.get(String(val)) ?? width / 2 : width / 2;
-      }).strength(0.3))
-      .force("y", d3.forceY<SimNode>((d) => {
-        if (!yClassifier) return height / 2;
-        const val = d.classifiers?.[yClassifier.id];
-        return val ? yPositions.get(String(val)) ?? height / 2 : height / 2;
-      }).strength(0.5))
-      .force("collide", d3.forceCollide<SimNode>((d) => getNodeRadius(d, "full", configs) + 12))
-      .alphaDecay(0.015);
+      .force("link", d3.forceLink<SimNode, SimLink>(links).id((d) => d.id).distance((d) => 120 / Math.max(0.5, (d as SimLink).edge.weight ?? 1)).strength(0.2));
+
+    applyLayoutForces(simulation, width, height, classifiers, false);
+    simulation.alphaDecay(0.015);
 
     simRef.current = simulation;
     simInitializedRef.current = true;
@@ -762,6 +876,92 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       return isNodePrimary(node, mode, configs) || revealed.has(node.id);
     };
 
+    // Draw region backgrounds (behind everything)
+    const regionCls = (currentData.metadata.classifiers ?? []).find((c) => c.layout === "region" || c.layout === "region-column");
+    if (regionCls) {
+      const visibleNodes = nodesRef.current.filter(isVisible);
+      const isOrganic = lookRef.current === "organic";
+      const isColumn = regionCls.layout === "region-column";
+
+      for (const rv of regionCls.values) {
+        const members = visibleNodes.filter((n) => String(n.classifiers?.[regionCls.id]) === rv.id);
+        const color = rv.color ?? "#666";
+
+        if (isColumn) {
+          // Always draw column backgrounds and labels, even when no visible members
+          // Column layout: use cached positions from simulation forces (stable across zoom/pan)
+          const cachedPositions = regionColumnPositionsRef.current;
+          const cachedWidths = regionColumnWidthsRef.current;
+          if (cachedPositions.size === 0) continue;
+          const colX = cachedPositions.get(rv.id) ?? width / 2;
+          const thisColW = cachedWidths.get(rv.id) ?? 100;
+          const viewTop = -t.y / t.k;
+          const viewBottom = (height - t.y) / t.k;
+          const viewLeft = -t.x / t.k;
+          const viewRight = (width - t.x) / t.k;
+
+          // Clip column to visible area
+          const drawLeft = Math.max(colX - thisColW / 2, viewLeft);
+          const drawRight = Math.min(colX + thisColW / 2, viewRight);
+          if (drawRight > drawLeft) {
+            ctx.globalAlpha = 0.1;
+            ctx.fillStyle = color;
+            ctx.fillRect(drawLeft, viewTop, drawRight - drawLeft, viewBottom - viewTop);
+          }
+
+          // Column label at top — scale font to fit column width, truncate if needed
+          const maxLabelW = thisColW * 0.9;
+          const fontSize = Math.min(14, Math.max(9, maxLabelW / rv.label.length * 1.5));
+          ctx.globalAlpha = 0.5;
+          ctx.fillStyle = color;
+          ctx.font = `bold ${fontSize}px -apple-system, sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          const measured = ctx.measureText(rv.label);
+          const label = measured.width > maxLabelW
+            ? rv.label.slice(0, Math.floor(rv.label.length * maxLabelW / measured.width) - 1) + "…"
+            : rv.label;
+          ctx.fillText(label, colX, viewTop + 10);
+          ctx.globalAlpha = 1;
+        } else {
+          // Circle layout: bounding circle around members (needs at least one member)
+          if (members.length === 0) continue;
+          let cx = 0, cy = 0;
+          for (const m of members) { cx += m.x; cy += m.y; }
+          cx /= members.length;
+          cy /= members.length;
+
+          let maxDist = 0;
+          for (const m of members) {
+            const dx = m.x - cx, dy = m.y - cy;
+            maxDist = Math.max(maxDist, Math.sqrt(dx * dx + dy * dy));
+          }
+          const padding = 60;
+          const radius = maxDist + padding;
+
+          ctx.globalAlpha = 0.15;
+          ctx.fillStyle = color;
+          if (isOrganic) {
+            drawOrganicCircle(ctx, cx, cy, radius, hashCode(rv.id));
+            ctx.fill();
+          } else {
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Region label
+          ctx.globalAlpha = 0.4;
+          ctx.fillStyle = color;
+          ctx.font = "bold 14px -apple-system, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(rv.label, cx, cy - radius - 4);
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+
     // Draw edges
     linksRef.current.forEach((l) => {
       const source = l.source as SimNode;
@@ -906,13 +1106,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
         ctx.font = "9px -apple-system, sans-serif";
         ctx.textAlign = "center";
-        const tw = ctx.measureText(label).width;
-        ctx.fillStyle = th.canvasLabelBg;
-        ctx.fillRect(-tw / 2 - 3, -5, tw + 6, 11);
-        ctx.fillStyle = th.edgeColorOverrides[l.edge.edge_type] ?? visual.color ?? th.canvasEdgeDefault;
-        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = isHighlighted ? th.canvasLabelHighlight : th.canvasLabelDim;
         ctx.fillText(label, 0, 3);
-        ctx.globalAlpha = 1;
         ctx.restore();
       }
     });
@@ -1069,8 +1264,6 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           ctx.font = `${fontSize}px -apple-system, sans-serif`;
         }
 
-        ctx.fillStyle = th.canvasLabelBg;
-        ctx.fillRect(node.x - bgW / 2, baseY - fontSize + 1, bgW, bgH);
         const labelColor = isHighlighted ? (isRevealed ? th.canvasLabelDim : th.canvasLabelHighlight) : th.canvasLabelDim;
         ctx.fillStyle = labelColor;
         ctx.fillText(node.name, node.x, baseY);

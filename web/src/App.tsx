@@ -74,6 +74,7 @@ function AppInner() {
   const [edgeTarget, setEdgeTarget] = useState<string | null>(null);
   const [showAddEdgeModal, setShowAddEdgeModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [exploded, setExploded] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchHighlight, setSearchHighlight] = useState(-1);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -181,15 +182,43 @@ function AppInner() {
             console.warn("Parse warnings:", result.warnings.map((w) => `line ${w.line}: ${w.message}`));
           }
           if (data.nodes.length > 0) {
-            const { template: migratedTemplate, data: migratedData } = migrateFromParser(data);
-            const ir = graphIRFromData(migratedTemplate, migratedData);
-            setGraphData(ir);
-            setTemplate(migratedTemplate);
-            setSelectedNode(null);
-            setRevealedNodes(new Set());
-            setFilters(createEmptyFilterState());
-            setError(null);
-            setSourceFilePath(filePath ?? null);
+            // Extract template reference from .cm header: <!-- template: filename.cmt -->
+            const tmplMatch = content.match(/<!--\s*template:\s*(.+?)\s*-->/i);
+            const tmplFile = tmplMatch?.[1]?.trim();
+
+            // Try to load the .cmt template file directly
+            const finishLoad = (effectiveTemplate: TaxonomyTemplate | null | undefined) => {
+              const { template: migratedTemplate, data: migratedData } = migrateFromParser(data, effectiveTemplate);
+              const ir = graphIRFromData(migratedTemplate, migratedData);
+              if (tmplFile) ir.metadata.source_template = tmplFile.endsWith(".cmt") ? tmplFile : `${tmplFile}.cmt`;
+              setGraphData(ir);
+              setTemplate(migratedTemplate);
+              setSelectedNode(null);
+              setRevealedNodes(new Set());
+              setFilters(createEmptyFilterState());
+              setError(null);
+              setSourceFilePath(filePath ?? null);
+            };
+
+            if (tmplFile) {
+              const cmtName = tmplFile.endsWith(".cmt") ? tmplFile : `${tmplFile}.cmt`;
+              let loadedTmpl: TaxonomyTemplate | null = null;
+              try {
+                const xhr = new XMLHttpRequest();
+                xhr.open("GET", `templates/${cmtName}`, false);
+                xhr.send();
+                document.title = `XHR: status=${xhr.status} len=${xhr.responseText?.length ?? 0}`;
+                if (xhr.status === 200 || (xhr.status === 0 && xhr.responseText)) {
+                  loadedTmpl = JSON.parse(xhr.responseText) as TaxonomyTemplate;
+                }
+              } catch (err) {
+                document.title = `XHR ERROR: ${err}`;
+              }
+              finishLoad(loadedTmpl ?? template);
+            } else {
+              document.title = "NO TEMPLATE REF";
+              finishLoad(template);
+            }
             return;
           }
         }
@@ -202,6 +231,7 @@ function AppInner() {
               const cmData = parsed as ConceptMapData;
               const tmpl: TaxonomyTemplate = {
                 title: cmData.title ?? template?.title ?? "Untitled",
+                classifiers: cmData.classifiers ?? template?.classifiers,
                 streams: cmData.streams ?? template?.streams ?? [],
                 generations: cmData.generations ?? template?.generations ?? [],
                 node_types: cmData.node_types ?? template?.node_types ?? DEFAULT_NODE_TYPES,
@@ -252,6 +282,44 @@ function AppInner() {
         loadFileContent(decoded, filename, filePath);
       } catch (err) {
         console.error("[Bridge] decode error:", err);
+      }
+    };
+
+    // Load a map with its template in one call (avoids race conditions)
+    win.loadMapWithTemplate = (mapBase64: string, _filename: string, filePath: string, tmplBase64: string) => {
+      try {
+        const mapBytes = Uint8Array.from(atob(mapBase64), (c) => c.charCodeAt(0));
+        const decoded = new TextDecoder().decode(mapBytes);
+        // Decode template from base64
+        let tmpl: TaxonomyTemplate | null = null;
+        if (tmplBase64) {
+          try {
+            const tmplBytes = Uint8Array.from(atob(tmplBase64), (c) => c.charCodeAt(0));
+            const tmplStr = new TextDecoder().decode(tmplBytes);
+            if (tmplStr !== "null") tmpl = JSON.parse(tmplStr) as TaxonomyTemplate;
+          } catch { /* ignore */ }
+        }
+        // Parse and migrate with the template
+        const normalized = normalizeFencedKV(decoded);
+        const result = parseMarkdown(normalized);
+        const data = result.graph;
+        if (data.nodes.length > 0) {
+          const { template: migratedTemplate, data: migratedData } = migrateFromParser(data, tmpl);
+          const ir = graphIRFromData(migratedTemplate, migratedData);
+          // Preserve template reference from the .cm file header
+          const tmplMatch = decoded.match(/<!--\s*template:\s*(.+?)\s*-->/i);
+          const tmplRef = tmplMatch?.[1]?.trim();
+          if (tmplRef) ir.metadata.source_template = tmplRef.endsWith(".cmt") ? tmplRef : `${tmplRef}.cmt`;
+          setGraphData(ir);
+          setTemplate(migratedTemplate);
+          setSelectedNode(null);
+          setRevealedNodes(new Set());
+          setFilters(createEmptyFilterState());
+          setError(null);
+          setSourceFilePath(filePath ?? null);
+        }
+      } catch (err) {
+        console.error("[Bridge] loadMapWithTemplate error:", err);
       }
     };
 
@@ -331,6 +399,7 @@ function AppInner() {
 
     return () => {
       delete win.loadFileContentBase64;
+      delete win.loadMapWithTemplate;
       delete win.getGraphJSON;
       delete win.getGraphMarkdown;
       delete win.getCanvasImage;
@@ -999,6 +1068,76 @@ function AppInner() {
     });
   };
 
+  const handleClassifierLayoutChange = useCallback((classifierId: string, newLayout: string) => {
+    if (!graphData) return;
+    const layout = newLayout === "none" ? undefined : newLayout as "x" | "y" | "region" | "region-column";
+    // Clear conflicting layouts: only one classifier can own each layout axis
+    // "region" and "region-column" share the same slot
+    const isRegionType = (l?: string) => l === "region" || l === "region-column";
+    const conflicts = (existing?: string) => {
+      if (!layout) return false;
+      if (layout === existing) return true;
+      if (isRegionType(layout) && isRegionType(existing)) return true;
+      return false;
+    };
+    const updatedClassifiers = (graphData.metadata.classifiers ?? []).map((cls) => {
+      if (cls.id === classifierId) return { ...cls, layout };
+      if (conflicts(cls.layout)) return { ...cls, layout: undefined };
+      return cls;
+    });
+    setGraphData({
+      ...graphData,
+      metadata: { ...graphData.metadata, classifiers: updatedClassifiers },
+    });
+    if (template) {
+      setTemplate({
+        ...template,
+        classifiers: updatedClassifiers,
+      });
+    }
+  }, [graphData, template, setGraphData]);
+
+  const handlePromoteAttributeToClassifier = useCallback((field: string, label: string, values: string[], newLayout: string) => {
+    if (!graphData) return;
+    const layout = newLayout === "none" ? undefined : newLayout as "x" | "y" | "region" | "region-column";
+    const DEFAULT_COLORS = ["#4A90D9", "#50C878", "#FF7F50", "#9B59B6", "#F1C40F", "#E74C3C", "#1ABC9C", "#E67E22"];
+    const newClassifier: import("./types/graph-ir").Classifier = {
+      id: field,
+      label,
+      layout,
+      values: values.map((v, i) => ({ id: v, label: v.charAt(0).toUpperCase() + v.slice(1).replace(/_/g, " "), color: DEFAULT_COLORS[i % DEFAULT_COLORS.length] })),
+    };
+    // Clear conflicting layouts from existing classifiers
+    const isRegionType = (l?: string) => l === "region" || l === "region-column";
+    const conflicts = (existing?: string) => {
+      if (!layout) return false;
+      if (layout === existing) return true;
+      if (isRegionType(layout) && isRegionType(existing)) return true;
+      return false;
+    };
+    const clearedClassifiers = (graphData.metadata.classifiers ?? []).map((cls) =>
+      conflicts(cls.layout) ? { ...cls, layout: undefined } : cls
+    );
+    const updatedClassifiers = [...clearedClassifiers, newClassifier];
+    // Move field values from properties to classifiers on each node
+    const updatedNodes = graphData.nodes.map((n) => {
+      const val = n.properties?.[field];
+      if (val && typeof val === "string") {
+        const { [field]: _, ...restProps } = (n.properties ?? {}) as Record<string, string | string[] | number | undefined>;
+        return { ...n, classifiers: { ...(n.classifiers ?? {}), [field]: val }, properties: restProps };
+      }
+      return n;
+    });
+    setGraphData({
+      ...graphData,
+      nodes: updatedNodes,
+      metadata: { ...graphData.metadata, classifiers: updatedClassifiers },
+    });
+    if (template) {
+      setTemplate({ ...template, classifiers: updatedClassifiers });
+    }
+  }, [graphData, template, setGraphData]);
+
   const handleTagToggle = (tag: string, allTags: string[]) => {
     setFilters((prev) => {
       const tags = prev.tags;
@@ -1238,6 +1377,8 @@ function AppInner() {
             nodeTypeConfigs={nodeTypeConfigs}
             filters={filters}
             onClassifierToggle={handleClassifierToggle}
+            onClassifierLayoutChange={handleClassifierLayoutChange}
+            onPromoteAttributeToClassifier={handlePromoteAttributeToClassifier}
             onTagToggle={handleTagToggle}
             onAttributeToggle={handleAttributeToggle}
             onDateRangeChange={handleDateRangeChange}
@@ -1248,6 +1389,8 @@ function AppInner() {
             onAddEdge={handleStartAddEdge}
             interactionMode={interactionMode}
             onCancelAddEdge={handleCancelAddEdge}
+            onExplode={() => setExploded((v) => !v)}
+            exploded={exploded}
           />
         )}
 
@@ -1283,6 +1426,7 @@ function AppInner() {
               communityOverlay={communityOverlay ? analysis?.communities : undefined}
               highlightedPath={highlightedPath}
               highlightedCommunity={highlightedCommunity}
+              exploded={exploded}
             />
             <div className="zoom-controls">
               <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomIn()} title="Zoom in">+</button>
@@ -1543,6 +1687,9 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): str
   const lines: string[] = [];
   const title = data.metadata.title || "Concept Map";
   lines.push(`# ${title}\n`);
+  if (data.metadata.source_template) {
+    lines.push(`<!-- template: ${data.metadata.source_template} -->`);
+  }
   lines.push(`<!-- Exported from concept-mapper, ${new Date().toISOString().split("T")[0]}. -->\n`);
 
   // Structure (classifiers, node types, edge types) lives in the .cmt template.

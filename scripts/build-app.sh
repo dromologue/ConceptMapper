@@ -91,14 +91,23 @@ echo "MCP server built."
 
 # --- Step 4: Copy web assets + MCP binary ---
 echo ""
-echo "=== Step 4: Copy web assets and MCP binary to macOS Resources ==="
+echo "=== Step 4: Copy web assets, templates, maps, and MCP binary to macOS Resources ==="
 rm -rf macos/Resources/web
 cp -r web/dist/ macos/Resources/web/
-mkdir -p macos/Resources/bin
-cp mcp-server/.build/release/ConceptMCP macos/Resources/bin/
+# Copy templates into web dir so fetch() can load them, and into Resources/templates for Swift
+mkdir -p macos/Resources/web/templates
+cp templates/*.cmt macos/Resources/web/templates/
+[ -d examples ] && cp examples/*.cmt macos/Resources/web/templates/ 2>/dev/null || true
 mkdir -p macos/Resources/templates
 cp templates/*.cmt macos/Resources/templates/
-echo "Web assets, MCP binary, and templates copied."
+[ -d examples ] && cp examples/*.cmt macos/Resources/templates/ 2>/dev/null || true
+# Copy maps into web dir
+mkdir -p macos/Resources/web/maps
+[ -d Maps ] && cp Maps/*.cm macos/Resources/web/maps/ 2>/dev/null || true
+# MCP binary
+mkdir -p macos/Resources/bin
+cp mcp-server/.build/release/ConceptMCP macos/Resources/bin/
+echo "Web assets, templates, maps, and MCP binary copied."
 
 # --- Step 5: Regenerate Xcode project ---
 echo ""
