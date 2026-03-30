@@ -7,7 +7,7 @@ private let logger = Logger(subsystem: "com.dromologue.ConceptLLM", category: "L
 enum LLMService {
 
     /// The currently in-flight LLM request task, if any.
-    private(set) static var currentTask: URLSessionDataTask?
+    nonisolated(unsafe) private(set) static var currentTask: URLSessionDataTask?
 
     /// Cancel any in-flight LLM request.
     static func cancel() {

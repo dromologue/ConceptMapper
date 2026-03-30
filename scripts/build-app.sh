@@ -106,7 +106,7 @@ mkdir -p macos/Resources/web/maps
 [ -d Maps ] && cp Maps/*.cm macos/Resources/web/maps/ 2>/dev/null || true
 # MCP binary
 mkdir -p macos/Resources/bin
-cp mcp-server/.build/release/ConceptMCP macos/Resources/bin/
+cp mcp-server/.build/release/ConceptMCPMain macos/Resources/bin/ConceptMCP
 echo "Web assets, templates, maps, and MCP binary copied."
 
 # --- Step 5: Regenerate Xcode project ---
