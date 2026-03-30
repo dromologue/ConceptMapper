@@ -91,4 +91,29 @@ describe("ActivityBar", () => {
     expect(screen.getByTitle("Widget View")).toBeInTheDocument();
     expect(screen.getByText("W")).toBeInTheDocument();
   });
+
+  // SPEC: REQ-075 (Explode View — moved from Sidebar)
+  it("renders explode button when onExplode is provided (AC-075-01)", () => {
+    render(<ActivityBar {...defaultProps} onExplode={vi.fn()} />);
+    expect(screen.getByTitle("Explode graph")).toBeInTheDocument();
+  });
+
+  it("does not render explode button when onExplode is not provided", () => {
+    render(<ActivityBar {...defaultProps} />);
+    expect(screen.queryByTitle("Explode graph")).not.toBeInTheDocument();
+  });
+
+  it("shows active state when exploded (AC-075-01)", () => {
+    render(<ActivityBar {...defaultProps} onExplode={vi.fn()} exploded={true} />);
+    const btn = screen.getByTitle("Collapse graph");
+    expect(btn.className).toContain("active");
+  });
+
+  it("calls onExplode when button is clicked", async () => {
+    const user = userEvent.setup();
+    const onExplode = vi.fn();
+    render(<ActivityBar {...defaultProps} onExplode={onExplode} />);
+    await user.click(screen.getByTitle("Explode graph"));
+    expect(onExplode).toHaveBeenCalled();
+  });
 });

@@ -335,35 +335,4 @@ describe("sidebar color dots", () => {
   });
 });
 
-// SPEC: REQ-075 (Explode View)
-describe("explode view", () => {
-  it("renders Explode button when onExplode is provided (AC-075-01)", () => {
-    render(<Sidebar {...defaultProps} onExplode={vi.fn()} />);
-    expect(screen.getByText("Explode")).toBeInTheDocument();
-  });
-
-  it("does not render Explode button when onExplode is not provided", () => {
-    render(<Sidebar {...defaultProps} />);
-    expect(screen.queryByText("Explode")).not.toBeInTheDocument();
-  });
-
-  it("shows Collapse label when exploded is true (AC-075-01)", () => {
-    render(<Sidebar {...defaultProps} onExplode={vi.fn()} exploded={true} />);
-    expect(screen.getByText("Collapse")).toBeInTheDocument();
-    expect(screen.queryByText("Explode")).not.toBeInTheDocument();
-  });
-
-  it("calls onExplode when button is clicked", async () => {
-    const user = userEvent.setup();
-    const onExplode = vi.fn();
-    render(<Sidebar {...defaultProps} onExplode={onExplode} />);
-    await user.click(screen.getByText("Explode"));
-    expect(onExplode).toHaveBeenCalled();
-  });
-
-  it("button has active class when exploded (AC-075-01)", () => {
-    render(<Sidebar {...defaultProps} onExplode={vi.fn()} exploded={true} />);
-    const btn = screen.getByText("Collapse").closest("button");
-    expect(btn?.className).toContain("active");
-  });
-});
+// SPEC: REQ-075 (Explode View) — button moved to ActivityBar

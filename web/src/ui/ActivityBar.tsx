@@ -1,5 +1,5 @@
 import type { NodeTypeConfig } from "../types/graph-ir";
-import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconMapping, IconChat, IconHelp, IconFitView, IconExport, IconAnalysis } from "./Icons";
+import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconMapping, IconChat, IconHelp, IconFitView, IconExport, IconAnalysis, IconExplode } from "./Icons";
 
 interface Props {
   viewMode: string; // "full" or a node type id
@@ -18,6 +18,8 @@ interface Props {
   onToggleAnalysis?: () => void;
   analysisOpen?: boolean;
   nodeTypeConfigs?: NodeTypeConfig[];
+  onExplode?: () => void;
+  exploded?: boolean;
 }
 
 export function ActivityBar({
@@ -35,6 +37,8 @@ export function ActivityBar({
   onToggleAnalysis,
   analysisOpen,
   nodeTypeConfigs,
+  onExplode,
+  exploded,
 }: Props) {
   return (
     <div className="activity-bar">
@@ -120,6 +124,15 @@ export function ActivityBar({
         >
           <IconTaxonomy size={20} />
         </button>
+        {onExplode && (
+          <button
+            className={`activity-bar-btn ${exploded ? "active" : ""}`}
+            onClick={onExplode}
+            title={exploded ? "Collapse graph" : "Explode graph"}
+          >
+            <IconExplode size={20} />
+          </button>
+        )}
         <button
           className="activity-bar-btn"
           onClick={onOpenSettings}

@@ -377,9 +377,9 @@ Columns and region layouts redraw correctly when the canvas is resized (window r
 **AC-074-03**: Column backgrounds and labels always render regardless of node filter state.
 
 ### REQ-075: Explode View
-An "Explode" button in the sidebar spreads the graph across a virtual canvas larger than the viewport so no labels overlap.
+An "Explode" button in the activity bar (left toolbar) spreads the graph across a virtual canvas larger than the viewport so no labels overlap.
 
-**AC-075-01**: Sidebar shows an "Explode" toggle button; label changes to "Collapse" when active.
+**AC-075-01**: Activity bar shows an "Explode" toggle button (scatter icon); tooltip changes to "Collapse graph" when active.
 **AC-075-02**: Exploding multiplies virtual canvas dimensions by a factor based on node count.
 **AC-075-03**: Charge repulsion and collision radius increase in exploded mode.
 **AC-075-04**: Columns, regions, and axis layouts scale proportionally across the exploded space.

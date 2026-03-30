@@ -108,6 +108,7 @@
 
 | Spec | Criteria | Test File | Test Name | Status |
 |------|----------|-----------|-----------|--------|
+| REQ-075 | AC-075-01 (explode toggle) | `src/__tests__/activity-bar.test.tsx` | 4 tests: renders button, active state, click handler, hidden when no prop | passing |
 | REQ-047 | AC-047-01..08 (edge click editing) | `src/__tests__/edge-popover.test.tsx` | 5 tests | passing |
 | REQ-048 | AC-048-01..07 (wizard flow) | `src/__tests__/taxonomy-wizard.test.tsx` | 19 tests: dimensions, title, node types, streams, generations, edges, review, create, edit mode | passing |
 | REQ-049 | AC-049-01..03 (start screen map text) | — | — | pending (requires integration test) |

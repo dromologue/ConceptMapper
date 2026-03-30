@@ -54,8 +54,6 @@ interface Props {
   onAddEdge: () => void;
   interactionMode: string;
   onCancelAddEdge: () => void;
-  onExplode?: () => void;
-  exploded?: boolean;
 }
 
 /** Extract a 4-digit year from a string like "1923", "b. 1947", "~1930" */
@@ -71,7 +69,6 @@ export function Sidebar({
   onSelectNode, selectedNodeId,
   onAddNode, onAddEdge,
   interactionMode, onCancelAddEdge,
-  onExplode, exploded,
 }: Props) {
   const [filter, setFilter] = useState("");
   const [classifierSectionsOpen, setClassifierSectionsOpen] = useState<Record<string, boolean>>({});
@@ -266,15 +263,6 @@ export function Sidebar({
         >
           {isEdgeMode ? "Cancel Edge" : "+ Edge"}
         </button>
-        {onExplode && (
-          <button
-            className={`sidebar-action-btn ${exploded ? "active" : ""}`}
-            onClick={onExplode}
-            title={exploded ? "Collapse graph back to fit viewport" : "Spread graph so no labels overlap"}
-          >
-            {exploded ? "Collapse" : "Explode"}
-          </button>
-        )}
       </div>
 
       {/* Classifier sections */}

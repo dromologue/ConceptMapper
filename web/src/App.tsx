@@ -1273,6 +1273,8 @@ function AppInner() {
           onToggleAnalysis={() => setAnalysisOpen(!analysisOpen)}
           analysisOpen={analysisOpen}
           nodeTypeConfigs={nodeTypeConfigs}
+          onExplode={() => setExploded((v) => !v)}
+          exploded={exploded}
         />
 
         {sidebarOpen && (
@@ -1294,8 +1296,6 @@ function AppInner() {
             onAddEdge={handleStartAddEdge}
             interactionMode={interactionMode}
             onCancelAddEdge={handleCancelAddEdge}
-            onExplode={() => setExploded((v) => !v)}
-            exploded={exploded}
           />
         )}
 

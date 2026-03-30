@@ -172,3 +172,15 @@ export function IconExport({ size = defaults.size, className }: IconProps) {
     </svg>
   );
 }
+
+export function IconExplode({ size = defaults.size, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <path d="M8 8L3 3M8 8l5-5M8 8l-5 5M8 8l5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="3" cy="3" r="1.2" fill="currentColor" />
+      <circle cx="13" cy="3" r="1.2" fill="currentColor" />
+      <circle cx="3" cy="13" r="1.2" fill="currentColor" />
+      <circle cx="13" cy="13" r="1.2" fill="currentColor" />
+    </svg>
+  );
+}
