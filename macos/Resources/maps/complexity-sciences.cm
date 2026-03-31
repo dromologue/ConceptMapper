@@ -1,0 +1,1454 @@
+# 2021 Map of the Complexity Sciences
+
+<!-- template: complexity-sciences.cmt -->
+<!-- Exported from concept-mapper, 2026-03-30. -->
+
+## Field Nodes
+
+```
+id:               systems_theory
+name:             Systems Theory
+domain: systems_cybernetics
+decade: 1940s
+field_type: foundational
+key_concepts: Open systems, feedback loops, homeostasis, equifinality
+period_active: 1940s–present
+prominence: dominant
+tags: foundational, interdisciplinary
+notes:            Originated with von Bertalanffy's general systems theory; pervasive influence across all complexity streams
+```
+
+```
+id:               cybernetics
+name:             Cybernetics
+domain: systems_cybernetics
+decade: 1940s
+field_type: foundational
+key_concepts: Feedback, control, communication, circular causality
+period_active: 1940s–1970s
+prominence: dominant
+tags: foundational, information
+notes:            Wiener, Ashby, McCulloch — the science of communication and control in animals and machines
+```
+
+```
+id:               artificial_intelligence
+name:             Artificial Intelligence
+domain: ai_cognitive
+decade: 1960s
+field_type: foundational
+key_concepts: Symbol manipulation, search, neural networks, machine learning
+period_active: 1956–present
+prominence: dominant
+tags: computation, cognition
+notes:            Dartmouth conference 1956; alternating winters and springs; now converging with complexity
+```
+
+```
+id:               cognitive_science
+name:             Cognitive Science
+domain: ai_cognitive
+decade: 1960s
+field_type: foundational
+key_concepts: Mental representations, connectionism, embodied cognition, situated cognition
+period_active: 1960s–present
+prominence: major
+tags: cognition, interdisciplinary
+notes:            Bridging AI, psychology, linguistics, philosophy, neuroscience
+```
+
+```
+id:               mathematical_complexity
+name:             Mathematical Complexity
+domain: math_physical
+decade: 1940s
+field_type: foundational
+key_concepts: Computational complexity, algorithmic information, Turing machines, Kolmogorov complexity
+period_active: 1940s–present
+prominence: major
+tags: formal, foundational
+notes:            Formal foundations underpinning all complexity science; Turing, Gödel, Kolmogorov
+```
+
+```
+id:               catastrophe_theory
+name:             Catastrophe Theory
+domain: math_physical
+decade: 1970s
+field_type: bridging
+key_concepts: Bifurcation, topological discontinuity, fold catastrophe
+period_active: 1968–1980s
+prominence: minor
+tags: mathematics, dynamics
+notes:            René Thom; brief intense interest then criticism, but ideas absorbed into dynamical systems
+```
+
+```
+id:               complex_systems
+name:             Complex Systems
+domain: core_complexity
+decade: 1970s
+field_type: foundational
+key_concepts: Nonlinearity, feedback, adaptation, path dependence
+period_active: 1970s–present
+prominence: dominant
+tags: foundational, core
+notes:            Umbrella field encompassing many sub-disciplines; Santa Fe Institute as institutional anchor
+```
+
+```
+id:               self_organization
+name:             Self-Organization
+domain: core_complexity
+decade: 1970s
+field_type: foundational
+key_concepts: Spontaneous order, dissipative structures, pattern formation, autopoiesis
+period_active: 1960s–present
+prominence: major
+tags: core, dynamics
+notes:            Prigogine's dissipative structures; Haken's synergetics; Maturana & Varela's autopoiesis
+```
+
+```
+id:               complex_adaptive_systems
+name:             Complex Adaptive Systems
+domain: core_complexity
+decade: 1980s
+field_type: foundational
+key_concepts: Adaptation, fitness landscapes, co-evolution, schemas, building blocks
+period_active: 1980s–present
+prominence: dominant
+tags: core, santa_fe
+notes:            Holland, Kauffman, Gell-Mann at the Santa Fe Institute; agents adapting to each other
+```
+
+```
+id:               emergence
+name:             Emergence
+domain: emergence_dynamics
+decade: 1980s
+field_type: bridging
+key_concepts: Macro from micro, downward causation, strong vs weak emergence, levels
+period_active: 1980s–present
+prominence: dominant
+tags: core, philosophical
+notes:            Central bridging concept connecting dynamics, computation, and philosophy of complexity
+```
+
+```
+id:               systems_dynamics
+name:             Systems Dynamics
+domain: emergence_dynamics
+decade: 1960s
+field_type: applied
+key_concepts: Stock-flow diagrams, feedback loops, simulation, limits to growth
+period_active: 1960s–present
+prominence: major
+tags: modelling, policy
+notes:            Jay Forrester at MIT; Club of Rome; Donella Meadows; World3 model
+```
+
+```
+id:               chaos_theory
+name:             Chaos Theory
+domain: math_physical
+decade: 1970s
+field_type: foundational
+key_concepts: Sensitive dependence, strange attractors, Lorenz attractor, period doubling
+period_active: 1963–present
+prominence: major
+tags: dynamics, nonlinear
+notes:            Lorenz (1963), May (1976), Feigenbaum universality; popularized by Gleick (1987)
+```
+
+```
+id:               fractal_geometry
+name:             Fractal Geometry
+domain: math_physical
+decade: 1980s
+field_type: foundational
+key_concepts: Self-similarity, fractal dimension, power laws, scale invariance
+period_active: 1975–present
+prominence: major
+tags: mathematics, geometry
+notes:            Mandelbrot's fractal geometry of nature; ubiquitous scaling in complex systems
+```
+
+```
+id:               network_science
+name:             Network Science
+domain: networks_computation
+decade: 1990s
+field_type: foundational
+key_concepts: Small-world networks, scale-free topology, hubs, preferential attachment, community structure
+period_active: 1998–present
+prominence: dominant
+tags: core, computational
+notes:            Watts & Strogatz (1998), Barabási & Albert (1999); transformed understanding of complex structure
+```
+
+```
+id:               computational_complexity
+name:             Computational Complexity
+domain: networks_computation
+decade: 2000s
+field_type: foundational
+key_concepts: P vs NP, cellular automata, computational irreducibility, Wolfram
+period_active: 1970s–present
+prominence: major
+tags: computation, formal
+notes:            Computational perspective on complexity; Wolfram's New Kind of Science (2002)
+```
+
+```
+id:               spatial_complexity
+name:             Spatial Complexity
+domain: networks_computation
+decade: 2010s
+field_type: applied
+key_concepts: GIS, spatial networks, urban scaling, geographic complexity
+period_active: 2000s–present
+prominence: major
+tags: applied, spatial
+notes:            Complexity meets geography; urban science, spatial epidemiology
+```
+
+```
+id:               social_network_theory
+name:             Social Network Theory
+domain: social_economic
+decade: 1970s
+field_type: foundational
+key_concepts: Weak ties, structural holes, social capital, embeddedness
+period_active: 1970s–present
+prominence: major
+tags: social, networks
+notes:            Granovetter, Burt, Lin; sociological foundation for network science
+```
+
+```
+id:               economic_financial_complexity
+name:             Economic & Financial Complexity
+domain: social_economic
+decade: 1990s
+field_type: applied
+key_concepts: Agent-based economics, market microstructure, economic fitness, wealth distribution
+period_active: 1990s–present
+prominence: major
+tags: economics, finance
+notes:            Santa Fe Artificial Stock Market; Brian Arthur's increasing returns; econophysics
+```
+
+```
+id:               big_data
+name:             BIG DATA / Data Science
+domain: social_economic
+decade: 2000s
+field_type: emerging
+key_concepts: Machine learning, computational social science, digital traces, prediction
+period_active: 2005–present
+prominence: major
+tags: data, computational
+notes:            Massive datasets enabling new complexity research; social physics; Pentland, Lazer
+```
+
+```
+id:               physics_complex_systems
+name:             Physics of Complex Systems
+domain: math_physical
+decade: 1980s
+field_type: foundational
+key_concepts: Phase transitions, critical phenomena, spin glasses, statistical mechanics of complexity
+period_active: 1970s–present
+prominence: major
+tags: physics, statistical
+notes:            Anderson's "More is Different"; spin glasses; renormalization group applied to complexity
+```
+
+```
+id:               applied_complexity
+name:             Applied Complexity
+domain: networks_computation
+decade: 2010s
+field_type: applied
+key_concepts: Policy modelling, health systems, organizational complexity, resilience
+period_active: 2000s–present
+prominence: major
+tags: applied, interdisciplinary
+notes:            Complexity science reaching policy, public health, management, military planning
+```
+
+```
+id:               agent_based_modelling
+name:             Agent-Based Modelling
+domain: emergence_dynamics
+decade: 1990s
+field_type: bridging
+key_concepts: Bottom-up simulation, heterogeneous agents, emergence from rules, computational experiments
+period_active: 1990s–present
+prominence: major
+tags: modelling, simulation
+notes:            Epstein & Axtell's Sugarscape; Schelling segregation model; computational laboratory for emergence
+```
+
+## Researcher Nodes
+
+```
+id:               wiener
+name:             Norbert Wiener
+domain: systems_cybernetics
+decade: 1940s
+importance: dominant
+dates: 1894–1964
+institutional_base: MIT
+key_contribution: Founded cybernetics; feedback and control theory
+tags: cybernetics, founder
+notes:            Cybernetics (1948) — unified framework for communication and control
+```
+
+```
+id:               vonbertalanffy
+name:             Ludwig von Bertalanffy
+domain: systems_cybernetics
+decade: 1940s
+importance: dominant
+dates: 1901–1972
+institutional_base: Vienna, Alberta
+key_contribution: General systems theory
+tags: systems, founder
+notes:            Open systems, equifinality, isomorphisms across disciplines
+```
+
+```
+id:               ashby
+name:             W. Ross Ashby
+domain: systems_cybernetics
+decade: 1940s
+importance: major
+dates: 1903–1972
+institutional_base: Barnwood House, Illinois
+key_contribution: Requisite variety, homeostat, design for a brain
+tags: cybernetics, regulation
+notes:            Law of requisite variety — foundational for control and regulation
+```
+
+```
+id:               mcculloch
+name:             Warren McCulloch
+domain: ai_cognitive
+decade: 1940s
+importance: major
+dates: 1898–1969
+institutional_base: MIT
+key_contribution: McCulloch-Pitts neuron model
+tags: neural_networks, cybernetics
+notes:            With Pitts: first mathematical model of neural networks (1943)
+```
+
+```
+id:               shannon
+name:             Claude Shannon
+domain: math_physical
+decade: 1940s
+importance: dominant
+dates: 1916–2001
+institutional_base: Bell Labs, MIT
+key_contribution: Information theory
+tags: information, foundational
+notes:            Mathematical theory of communication (1948) — bits, entropy, channel capacity
+```
+
+```
+id:               turing
+name:             Alan Turing
+domain: ai_cognitive
+decade: 1940s
+importance: dominant
+dates: 1912–1954
+institutional_base: Cambridge, Manchester
+key_contribution: Computability, morphogenesis
+tags: computation, foundational
+notes:            Turing machine, Turing test, chemical basis of morphogenesis (1952)
+```
+
+```
+id:               mead
+name:             Margaret Mead
+domain: systems_cybernetics
+decade: 1940s
+importance: major
+dates: 1901–1978
+institutional_base: AMNH, Columbia
+key_contribution: Cybernetics-anthropology bridge
+tags: anthropology, cybernetics
+notes:            Macy Conferences participant; brought cybernetic thinking to social science
+```
+
+```
+id:               simon
+name:             Herbert Simon
+domain: ai_cognitive
+decade: 1960s
+importance: dominant
+dates: 1916–2001
+institutional_base: Carnegie Mellon
+key_contribution: Bounded rationality, sciences of the artificial, near-decomposability
+tags: ai, organization, complexity
+notes:            Architecture of complexity (1962); bridged AI, economics, cognitive science, organization theory
+```
+
+```
+id:               forrester
+name:             Jay Forrester
+domain: emergence_dynamics
+decade: 1960s
+importance: major
+dates: 1918–2016
+institutional_base: MIT
+key_contribution: System dynamics
+tags: systems_dynamics, modelling
+notes:            Industrial Dynamics (1961), Urban Dynamics (1969), World Dynamics (1971)
+```
+
+```
+id:               meadows
+name:             Donella Meadows
+domain: emergence_dynamics
+decade: 1970s
+importance: major
+dates: 1941–2001
+institutional_base: Dartmouth, MIT
+key_contribution: Limits to Growth, leverage points
+tags: systems_dynamics, sustainability
+notes:            Lead author of Limits to Growth (1972); "Leverage Points" (1999) — places to intervene in a system
+```
+
+```
+id:               lorenz
+name:             Edward Lorenz
+domain: math_physical
+decade: 1960s
+importance: dominant
+dates: 1917–2008
+institutional_base: MIT
+key_contribution: Deterministic chaos, Lorenz attractor
+tags: chaos, meteorology
+notes:            Discovered sensitive dependence on initial conditions (1963); the butterfly effect
+```
+
+```
+id:               prigogine
+name:             Ilya Prigogine
+domain: core_complexity
+decade: 1970s
+importance: dominant
+dates: 1917–2003
+institutional_base: Brussels, Austin
+key_contribution: Dissipative structures, far-from-equilibrium thermodynamics
+tags: self_organization, thermodynamics, nobel
+notes:            Nobel Prize 1977; order through fluctuations; arrow of time
+```
+
+```
+id:               mandelbrot
+name:             Benoit Mandelbrot
+domain: math_physical
+decade: 1970s
+importance: dominant
+dates: 1924–2010
+institutional_base: IBM, Yale
+key_contribution: Fractal geometry
+tags: fractals, geometry
+notes:            The Fractal Geometry of Nature (1982); self-similarity, roughness as mathematics
+```
+
+```
+id:               thom
+name:             René Thom
+domain: math_physical
+decade: 1970s
+importance: major
+dates: 1923–2002
+institutional_base: IHÉS
+key_contribution: Catastrophe theory
+tags: topology, dynamics
+notes:            Structural Stability and Morphogenesis (1972); topological classification of discontinuities
+```
+
+```
+id:               maturana
+name:             Humberto Maturana
+domain: systems_cybernetics
+decade: 1970s
+importance: major
+dates: 1928–2021
+institutional_base: University of Chile
+key_contribution: Autopoiesis
+tags: autopoiesis, biology
+notes:            With Varela: autopoiesis — self-producing systems; biology of cognition
+```
+
+```
+id:               haken
+name:             Hermann Haken
+domain: core_complexity
+decade: 1970s
+importance: major
+dates: 1927–2024
+institutional_base: Stuttgart
+key_contribution: Synergetics
+tags: self_organization, physics
+notes:            Synergetics: order parameters and slaving principle in self-organizing systems
+```
+
+```
+id:               holland
+name:             John Holland
+domain: core_complexity
+decade: 1980s
+importance: dominant
+dates: 1929–2015
+institutional_base: Michigan, SFI
+key_contribution: Genetic algorithms, complex adaptive systems theory
+tags: cas, evolution, santa_fe
+notes:            Hidden Order (1995); father of genetic algorithms; CAS framework at Santa Fe
+```
+
+```
+id:               kauffman
+name:             Stuart Kauffman
+domain: core_complexity
+decade: 1980s
+importance: dominant
+dates: b. 1939
+institutional_base: SFI, Pennsylvania
+key_contribution: Self-organization in evolution, fitness landscapes, edge of chaos
+tags: cas, evolution, santa_fe
+notes:            Origins of Order (1993); NK landscapes; order for free; adjacent possible
+```
+
+```
+id:               gellmann
+name:             Murray Gell-Mann
+domain: core_complexity
+decade: 1980s
+importance: major
+dates: 1929–2019
+institutional_base: Caltech, SFI
+key_contribution: Co-founded Santa Fe Institute; quark/complexity bridge
+tags: santa_fe, physics, complexity
+notes:            Nobel physicist who co-founded SFI; The Quark and the Jaguar (1994)
+```
+
+```
+id:               langton
+name:             Christopher Langton
+domain: core_complexity
+decade: 1980s
+importance: major
+dates: b. 1948
+institutional_base: SFI, Los Alamos
+key_contribution: Artificial life, edge of chaos
+tags: alife, computation
+notes:            Coined "artificial life"; Langton's ant; edge of chaos as computational sweet spot
+```
+
+```
+id:               wolfram
+name:             Stephen Wolfram
+domain: networks_computation
+decade: 1980s
+importance: major
+dates: b. 1959
+institutional_base: Independent (Wolfram Research)
+key_contribution: Cellular automata classification, computational irreducibility
+tags: computation, cellular_automata
+notes:            A New Kind of Science (2002); Rule 110 universality; computational equivalence
+```
+
+```
+id:               anderson
+name:             Philip W. Anderson
+domain: math_physical
+decade: 1970s
+importance: dominant
+dates: 1923–2020
+institutional_base: Princeton, Bell Labs
+key_contribution: More is Different; spin glasses; emergent phenomena
+tags: physics, emergence, nobel
+notes:            "More is Different" (1972) — foundational argument for emergence in physics; Nobel 1977
+```
+
+```
+id:               arthur
+name:             W. Brian Arthur
+domain: social_economic
+decade: 1980s
+importance: dominant
+dates: b. 1945
+institutional_base: SFI, Stanford
+key_contribution: Increasing returns, complexity economics, El Farol problem
+tags: economics, santa_fe
+notes:            Brought complexity to economics; path dependence; technology and the economy
+```
+
+```
+id:               axelrod
+name:             Robert Axelrod
+domain: social_economic
+decade: 1980s
+importance: major
+dates: b. 1943
+institutional_base: Michigan
+key_contribution: Evolution of cooperation, iterated prisoner's dilemma tournaments
+tags: cooperation, game_theory
+notes:            The Evolution of Cooperation (1984); tit-for-tat; agent-based political science
+```
+
+```
+id:               granovetter
+name:             Mark Granovetter
+domain: social_economic
+decade: 1970s
+importance: major
+dates: b. 1943
+institutional_base: Stanford
+key_contribution: Strength of weak ties, embeddedness
+tags: social_networks, sociology
+notes:            "Strength of Weak Ties" (1973) — foundational paper for social network theory
+```
+
+```
+id:               watts
+name:             Duncan Watts
+domain: networks_computation
+decade: 1990s
+importance: dominant
+dates: b. 1971
+institutional_base: Columbia, Microsoft Research
+key_contribution: Small-world networks
+tags: networks, sociology
+notes:            Watts & Strogatz (1998) small-world model; Six Degrees (2003)
+```
+
+```
+id:               barabasi
+name:             Albert-László Barabási
+domain: networks_computation
+decade: 2000s
+importance: dominant
+dates: b. 1967
+institutional_base: Northeastern, CEU
+key_contribution: Scale-free networks, preferential attachment
+tags: networks, physics
+notes:            Barabási & Albert (1999); Linked (2002); network science as a discipline
+```
+
+```
+id:               strogatz
+name:             Steven Strogatz
+domain: networks_computation
+decade: 1990s
+importance: major
+dates: b. 1959
+institutional_base: Cornell
+key_contribution: Small-world networks, coupled oscillators, sync
+tags: networks, dynamics
+notes:            Watts-Strogatz model (1998); Sync (2003); nonlinear dynamics and chaos
+```
+
+```
+id:               epstein
+name:             Joshua Epstein
+domain: emergence_dynamics
+decade: 1990s
+importance: major
+dates: b. 1951
+institutional_base: Brookings, Johns Hopkins, NYU
+key_contribution: Agent-based modelling, generative social science
+tags: abm, emergence
+notes:            Growing Artificial Societies (1996) with Axtell; "If you didn't grow it, you didn't explain it"
+```
+
+```
+id:               schelling
+name:             Thomas Schelling
+domain: social_economic
+decade: 1970s
+importance: major
+dates: 1921–2016
+institutional_base: Harvard, Maryland
+key_contribution: Segregation model, micromotives and macrobehavior
+tags: abm, social, emergence, nobel
+notes:            Schelling segregation model (1971) — micro preferences produce macro patterns; Nobel 2005
+```
+
+```
+id:               may
+name:             Robert May
+domain: math_physical
+decade: 1970s
+importance: major
+dates: 1936–2020
+institutional_base: Princeton, Oxford
+key_contribution: Chaos in population dynamics, stability and complexity
+tags: chaos, ecology
+notes:            Period-doubling in logistic map (1976); complexity-stability debate in ecology
+```
+
+```
+id:               bak
+name:             Per Bak
+domain: math_physical
+decade: 1980s
+importance: major
+dates: 1948–2002
+institutional_base: Brookhaven
+key_contribution: Self-organized criticality
+tags: physics, criticality
+notes:            Self-Organized Criticality (1996); sandpile model; power laws as fingerprint of criticality
+```
+
+```
+id:               mitchell
+name:             Melanie Mitchell
+domain: core_complexity
+decade: 2000s
+importance: major
+dates: b. 1962
+institutional_base: SFI, Portland State
+key_contribution: Complexity synthesis, genetic algorithms, analogy
+tags: complexity, communication
+notes:            Complexity: A Guided Tour (2009); bridging complexity research and public understanding
+```
+
+```
+id:               page
+name:             Scott Page
+domain: core_complexity
+decade: 2000s
+importance: major
+dates: b. 1961
+institutional_base: Michigan, SFI
+key_contribution: Diversity, model thinking, complex adaptive social systems
+tags: diversity, social_complexity
+notes:            The Difference (2007); diversity trumps ability; model-based reasoning for complexity
+```
+
+```
+id:               newman
+name:             Mark Newman
+domain: networks_computation
+decade: 2000s
+importance: major
+dates: b. 1968
+institutional_base: Michigan, SFI
+key_contribution: Network structure, community detection, power laws
+tags: networks, physics
+notes:            Networks: An Introduction (2010); modularity; rigorous network analysis methods
+```
+
+```
+id:               west
+name:             Geoffrey West
+domain: math_physical
+decade: 2000s
+importance: major
+dates: b. 1940
+institutional_base: SFI, Los Alamos
+key_contribution: Scaling laws in biology and cities
+tags: scaling, biology, urban
+notes:            Quarter-power scaling in biology; Scale (2017); metabolic theory extends to cities and companies
+```
+
+```
+id:               castellani
+name:             Brian Castellani
+domain: networks_computation
+decade: 2010s
+importance: major
+dates: b. 1969
+institutional_base: Durham
+key_contribution: Complexity cartography, case-based complexity, sociology of complexity
+tags: meta, cartography
+notes:            Author of this map; Sociology and Complexity Science (2009); mapping the field itself
+```
+
+```
+id:               hilborn
+name:             Robert Hilborn
+domain: math_physical
+decade: 1990s
+importance: secondary
+dates: b. 1943
+institutional_base: Amherst, Dallas
+key_contribution: Chaos and nonlinear dynamics pedagogy
+tags: chaos, education
+notes:            Chaos and Nonlinear Dynamics (1994) — widely used textbook
+```
+
+```
+id:               lovelock
+name:             James Lovelock
+domain: systems_cybernetics
+decade: 1970s
+importance: major
+dates: 1919–2022
+institutional_base: Independent
+key_contribution: Gaia hypothesis
+tags: earth_system, cybernetics
+notes:            Gaia (1979) — Earth as self-regulating system; with Lynn Margulis
+```
+
+```
+id:               margulis
+name:             Lynn Margulis
+domain: core_complexity
+decade: 1970s
+importance: major
+dates: 1938–2011
+institutional_base: Boston, Massachusetts
+key_contribution: Endosymbiosis, Gaia hypothesis co-development
+tags: biology, evolution
+notes:            Endosymbiotic theory of eukaryote origin; symbiogenesis as evolutionary driver
+```
+
+```
+id:               parsons
+name:             Talcott Parsons
+domain: social_economic
+decade: 1960s
+importance: major
+dates: 1902–1979
+institutional_base: Harvard
+key_contribution: Social systems theory, structural functionalism
+tags: sociology, systems
+notes:            The Social System (1951); AGIL scheme; bridging systems theory and sociology
+```
+
+```
+id:               luhmann
+name:             Niklas Luhmann
+domain: systems_cybernetics
+decade: 1980s
+importance: major
+dates: 1927–1998
+institutional_base: Bielefeld
+key_contribution: Social systems as autopoietic, communication-based systems
+tags: autopoiesis, sociology
+notes:            Applied autopoiesis to social systems; radical constructivism; functional differentiation
+```
+
+```
+id:               morin
+name:             Edgar Morin
+domain: core_complexity
+decade: 1970s
+importance: major
+dates: b. 1921
+institutional_base: CNRS, Paris
+key_contribution: Complex thought, transdisciplinarity
+tags: philosophy, complexity
+notes:            La Méthode (6 vols, 1977–2004); complexity as a way of thinking, not just a science
+```
+
+```
+id:               chomsky
+name:             Noam Chomsky
+domain: ai_cognitive
+decade: 1960s
+importance: dominant
+dates: b. 1928
+institutional_base: MIT
+key_contribution: Generative grammar, cognitive revolution, Chomsky hierarchy
+tags: linguistics, cognition
+notes:            Syntactic Structures (1957); triggered cognitive revolution; formal language hierarchy
+```
+
+```
+id:               minsky
+name:             Marvin Minsky
+domain: ai_cognitive
+decade: 1960s
+importance: dominant
+dates: 1927–2016
+institutional_base: MIT
+key_contribution: AI foundations, frames, society of mind
+tags: ai, cognition
+notes:            Co-founded MIT AI Lab; frames (1975); The Society of Mind (1986); perceptron critique
+```
+
+```
+id:               churchland
+name:             Patricia Churchland
+domain: ai_cognitive
+decade: 1980s
+importance: major
+dates: b. 1943
+institutional_base: UCSD
+key_contribution: Neurophilosophy, eliminative materialism
+tags: philosophy, neuroscience
+notes:            Neurophilosophy (1986); bridging philosophy of mind and neuroscience
+```
+
+## Concept Nodes
+
+```
+id:               feedback_loops
+name:             Feedback Loops
+domain: systems_cybernetics
+decade: 1940s
+concept_type: mechanism
+date_introduced: 1948
+originator: Norbert Wiener
+significance: foundational
+tags: cybernetics, systems
+notes:            Positive and negative feedback as universal mechanism of regulation and amplification
+```
+
+```
+id:               self_organized_criticality
+name:             Self-Organized Criticality
+domain: math_physical
+decade: 1980s
+concept_type: phenomenon
+date_introduced: 1987
+originator: Per Bak
+significance: major
+tags: criticality, power_laws
+notes:            Systems naturally evolve to critical states; sandpile model; power law distributions
+```
+
+```
+id:               fitness_landscapes
+name:             Fitness Landscapes
+domain: core_complexity
+decade: 1980s
+concept_type: framework
+date_introduced: 1993
+originator: Stuart Kauffman
+significance: foundational
+tags: cas, evolution
+notes:            NK model; rugged landscapes; adaptive walks; trade-off between evolvability and optimization
+```
+
+```
+id:               edge_of_chaos
+name:             Edge of Chaos
+domain: core_complexity
+decade: 1980s
+concept_type: principle
+date_introduced: 1990
+originator: Christopher Langton
+significance: major
+tags: cas, computation
+notes:            Computation and adaptation are maximized at the phase transition between order and chaos
+```
+
+```
+id:               dissipative_structures
+name:             Dissipative Structures
+domain: core_complexity
+decade: 1970s
+concept_type: framework
+date_introduced: 1977
+originator: Ilya Prigogine
+significance: foundational
+tags: self_organization, thermodynamics
+notes:            Far-from-equilibrium systems spontaneously form ordered structures; Nobel Prize concept
+```
+
+```
+id:               autopoiesis
+name:             Autopoiesis
+domain: systems_cybernetics
+decade: 1970s
+concept_type: framework
+date_introduced: 1972
+originator: Humberto Maturana
+significance: major
+tags: biology, self_organization
+notes:            Self-producing systems that maintain their own organization; applies to cells, minds, social systems
+```
+
+```
+id:               scale_free_networks
+name:             Scale-Free Networks
+domain: networks_computation
+decade: 2000s
+concept_type: framework
+date_introduced: 1999
+originator: Albert-László Barabási
+significance: foundational
+tags: networks, power_laws
+notes:            Preferential attachment produces hubs; explains internet, protein networks, social graphs
+```
+
+```
+id:               small_world
+name:             Small-World Networks
+domain: networks_computation
+decade: 1990s
+concept_type: phenomenon
+date_introduced: 1998
+originator: Duncan Watts
+significance: foundational
+tags: networks, social
+notes:            High clustering + short path lengths; six degrees of separation explained mathematically
+```
+
+```
+id:               bounded_rationality
+name:             Bounded Rationality
+domain: ai_cognitive
+decade: 1960s
+concept_type: principle
+date_introduced: 1955
+originator: Herbert Simon
+significance: foundational
+tags: cognition, decision
+notes:            Agents satisfice rather than optimize; computational and informational limits on rationality
+```
+
+```
+id:               sensitive_dependence
+name:             Sensitive Dependence
+domain: math_physical
+decade: 1960s
+concept_type: principle
+date_introduced: 1963
+originator: Edward Lorenz
+significance: foundational
+tags: chaos, dynamics
+notes:            The butterfly effect; tiny differences in initial conditions produce vastly different outcomes
+```
+
+```
+id:               increasing_returns
+name:             Increasing Returns
+domain: social_economic
+decade: 1980s
+concept_type: mechanism
+date_introduced: 1989
+originator: W. Brian Arthur
+significance: major
+tags: economics, path_dependence
+notes:            Positive feedback in adoption creates lock-in; QWERTY, VHS, technology standards
+```
+
+```
+id:               leverage_points
+name:             Leverage Points
+domain: emergence_dynamics
+decade: 1990s
+concept_type: framework
+date_introduced: 1999
+originator: Donella Meadows
+significance: major
+tags: systems_dynamics, intervention
+notes:            Twelve places to intervene in a system, from parameters to paradigms; most powerful are hardest
+```
+
+```
+id:               weak_ties
+name:             Strength of Weak Ties
+domain: social_economic
+decade: 1970s
+concept_type: principle
+date_introduced: 1973
+originator: Mark Granovetter
+significance: foundational
+tags: social_networks, sociology
+notes:            Acquaintances (weak ties) bridge clusters and spread novel information better than close friends
+```
+
+```
+id:               fractal_scaling
+name:             Fractal Scaling
+domain: math_physical
+decade: 1970s
+concept_type: principle
+date_introduced: 1975
+originator: Benoit Mandelbrot
+significance: foundational
+tags: fractals, geometry
+notes:            Self-similarity across scales; coastlines, blood vessels, market volatility share fractal geometry
+```
+
+```
+id:               more_is_different
+name:             More Is Different
+domain: math_physical
+decade: 1970s
+concept_type: principle
+date_introduced: 1972
+originator: Philip W. Anderson
+significance: foundational
+tags: emergence, physics
+notes:            Symmetry breaking at each level of complexity creates qualitatively new phenomena; reductionism is insufficient
+```
+
+## Edges
+
+### Field-to-Field
+
+```
+from: cybernetics      to: systems_theory       type: intellectual_lineage
+  note: Co-emerged at Macy Conferences; shared feedback concepts
+
+from: cybernetics      to: artificial_intelligence type: intellectual_lineage
+  note: McCulloch-Pitts neurons; cybernetic models of mind preceded AI
+
+from: cybernetics      to: cognitive_science    type: intellectual_lineage
+  note: Information-processing paradigm grew from cybernetic roots
+
+from: systems_theory   to: systems_dynamics     type: intellectual_lineage
+  note: Forrester operationalized systems thinking as simulation
+
+from: systems_theory   to: self_organization    type: intellectual_lineage
+  note: Open systems concept led to understanding spontaneous order
+
+from: systems_theory   to: complex_systems      type: intellectual_lineage
+  note: General systems theory provided conceptual vocabulary for complexity
+
+from: self_organization to: complex_adaptive_systems type: intellectual_lineage
+  note: Self-organization + adaptation = CAS framework
+
+from: complex_adaptive_systems to: emergence            type: intellectual_lineage
+  note: CAS models showed how macro patterns emerge from micro rules
+
+from: chaos_theory     to: complex_systems      type: intellectual_lineage
+  note: Chaos revealed deterministic complexity; sensitivity, attractors
+
+from: fractal_geometry to: complex_systems      type: intellectual_lineage
+  note: Fractals provided geometry for complex patterns; scaling laws
+
+from: complex_systems  to: network_science      type: intellectual_lineage
+  note: Complex systems thinking applied to network topology
+
+from: social_network_theory to: network_science      type: intellectual_lineage
+  note: Sociological network concepts formalized by physicists and mathematicians
+
+from: network_science  to: big_data             type: intellectual_lineage
+  note: Network methods scaled up with digital data availability
+
+from: complex_adaptive_systems to: agent_based_modelling type: intellectual_lineage
+  note: CAS theory operationalized through agent-based simulation
+
+from: complex_adaptive_systems to: economic_financial_complexity type: intellectual_lineage
+  note: SFI economics program applied CAS to markets and institutions
+
+from: emergence        to: agent_based_modelling type: intellectual_lineage
+  note: ABM as computational laboratory for studying emergence
+
+from: network_science  to: computational_complexity type: cross_pollination
+  note: Shared mathematical and computational foundations
+
+from: network_science  to: spatial_complexity   type: intellectual_lineage
+  note: Network methods applied to geographic and urban systems
+
+from: network_science  to: applied_complexity   type: intellectual_lineage
+  note: Network tools enabling practical complexity applications
+
+from: artificial_intelligence to: cognitive_science    type: cross_pollination
+  note: Computational models of mind central to both fields
+
+from: physics_complex_systems to: network_science      type: intellectual_lineage
+  note: Statistical physics methods applied to network analysis
+
+from: mathematical_complexity to: computational_complexity type: intellectual_lineage
+  note: Formal complexity theory underpins computational perspectives
+
+from: cybernetics      to: cognitive_science    type: cross_pollination
+  note: Cybernetic models of mind → cognitive science
+
+from: chaos_theory     to: fractal_geometry     type: cross_pollination
+  note: Strange attractors have fractal structure; mutual enrichment
+
+from: self_organization to: emergence            type: cross_pollination
+  note: Self-organization as mechanism, emergence as phenomenon
+
+from: agent_based_modelling to: economic_financial_complexity type: cross_pollination
+  note: ABM methods widely adopted in computational economics
+
+from: big_data         to: applied_complexity   type: cross_pollination
+  note: Data-driven complexity science; digital epidemiology
+
+```
+
+### Researcher-to-Field
+
+```
+from: wiener           to: cybernetics          type: contribution
+  note: Founded the field with Cybernetics (1948)
+
+from: vonbertalanffy   to: systems_theory       type: contribution
+  note: Founded general systems theory
+
+from: ashby            to: cybernetics          type: contribution
+  note: Requisite variety, homeostat
+
+from: shannon          to: mathematical_complexity type: contribution
+  note: Information theory — foundational mathematics of complexity
+
+from: turing           to: artificial_intelligence type: contribution
+  note: Computability, Turing test, morphogenesis
+
+from: mcculloch        to: artificial_intelligence type: contribution
+  note: McCulloch-Pitts neuron — first neural network model
+
+from: simon            to: artificial_intelligence type: contribution
+  note: Logic Theorist, GPS; bounded rationality; sciences of the artificial
+
+from: simon            to: complex_systems      type: contribution
+  note: Architecture of complexity (1962); near-decomposability
+
+from: lorenz           to: chaos_theory         type: contribution
+  note: Discovered deterministic chaos in weather models
+
+from: mandelbrot       to: fractal_geometry     type: contribution
+  note: Created fractal geometry; self-similarity across scales
+
+from: prigogine        to: self_organization    type: contribution
+  note: Dissipative structures; Nobel Prize 1977
+
+from: haken            to: self_organization    type: contribution
+  note: Synergetics; order parameters
+
+from: maturana         to: self_organization    type: contribution
+  note: Autopoiesis — self-producing systems
+
+from: holland          to: complex_adaptive_systems type: contribution
+  note: CAS theory; genetic algorithms; Hidden Order
+
+from: kauffman         to: complex_adaptive_systems type: contribution
+  note: NK landscapes; order for free; edge of chaos
+
+from: gellmann         to: complex_adaptive_systems type: contribution
+  note: Co-founded SFI; bridged physics and complexity
+
+from: langton          to: complex_adaptive_systems type: contribution
+  note: Artificial life; edge of chaos
+
+from: forrester        to: systems_dynamics     type: contribution
+  note: Founded system dynamics at MIT
+
+from: meadows          to: systems_dynamics     type: contribution
+  note: Limits to Growth; leverage points
+
+from: watts            to: network_science      type: contribution
+  note: Small-world networks (1998)
+
+from: barabasi         to: network_science      type: contribution
+  note: Scale-free networks; preferential attachment
+
+from: strogatz         to: network_science      type: contribution
+  note: Small-world model with Watts; coupled oscillators
+
+from: newman           to: network_science      type: contribution
+  note: Community detection; rigorous network methods
+
+from: arthur           to: economic_financial_complexity type: contribution
+  note: Complexity economics; increasing returns; El Farol
+
+from: axelrod          to: economic_financial_complexity type: contribution
+  note: Evolution of cooperation; agent-based political science
+
+from: granovetter      to: social_network_theory type: contribution
+  note: Strength of weak ties (1973)
+
+from: schelling        to: emergence            type: contribution
+  note: Segregation model — micro motives, macro behavior
+
+from: epstein          to: agent_based_modelling type: contribution
+  note: Generative social science; Sugarscape
+
+from: anderson         to: physics_complex_systems type: contribution
+  note: More is Different (1972); emergence in condensed matter
+
+from: bak              to: physics_complex_systems type: contribution
+  note: Self-organized criticality; sandpile model
+
+from: may              to: chaos_theory         type: contribution
+  note: Period-doubling in logistic map; ecology and chaos
+
+from: west             to: physics_complex_systems type: contribution
+  note: Scaling laws in biology and cities
+
+from: wolfram          to: computational_complexity type: contribution
+  note: Cellular automata classification; computational irreducibility
+
+from: thom             to: catastrophe_theory   type: contribution
+  note: Founded catastrophe theory; topological discontinuities
+
+from: chomsky          to: cognitive_science    type: contribution
+  note: Generative grammar; cognitive revolution; formal languages
+
+from: minsky           to: artificial_intelligence type: contribution
+  note: Co-founded MIT AI Lab; frames; Society of Mind
+
+from: lovelock         to: systems_theory       type: contribution
+  note: Gaia hypothesis — Earth as self-regulating system
+
+from: margulis         to: self_organization    type: contribution
+  note: Endosymbiosis; symbiogenesis as self-organizing evolution
+
+from: luhmann          to: systems_theory       type: contribution
+  note: Social systems as autopoietic communication systems
+
+from: morin            to: complex_systems      type: contribution
+  note: Complex thought; transdisciplinary method
+
+from: mitchell         to: complex_systems      type: contribution
+  note: Complexity synthesis; public understanding of complexity
+
+from: page             to: complex_adaptive_systems type: contribution
+  note: Diversity; model thinking; complex adaptive social systems
+
+from: castellani       to: applied_complexity   type: contribution
+  note: Complexity cartography; mapping the field itself
+
+```
+
+### Researcher-to-Concept
+
+```
+from: wiener           to: feedback_loops       type: conceptualises
+  note: Defined feedback as core mechanism in Cybernetics (1948)
+
+from: bak              to: self_organized_criticality type: conceptualises
+  note: Introduced SOC via the sandpile model (1987)
+
+from: kauffman         to: fitness_landscapes   type: conceptualises
+  note: NK fitness landscapes; Origins of Order (1993)
+
+from: langton          to: edge_of_chaos        type: conceptualises
+  note: Computation peaks at the phase transition (1990)
+
+from: prigogine        to: dissipative_structures type: conceptualises
+  note: Nobel Prize for dissipative structures theory (1977)
+
+from: maturana         to: autopoiesis          type: conceptualises
+  note: Coined autopoiesis with Varela (1972)
+
+from: barabasi         to: scale_free_networks  type: conceptualises
+  note: Preferential attachment model (1999)
+
+from: watts            to: small_world          type: conceptualises
+  note: Small-world model with Strogatz (1998)
+
+from: simon            to: bounded_rationality  type: conceptualises
+  note: Bounded rationality; satisficing (1955)
+
+from: lorenz           to: sensitive_dependence type: conceptualises
+  note: Discovered the butterfly effect (1963)
+
+from: arthur           to: increasing_returns   type: conceptualises
+  note: Increasing returns and path dependence (1989)
+
+from: meadows          to: leverage_points      type: conceptualises
+  note: Twelve leverage points for intervening in systems (1999)
+
+from: granovetter      to: weak_ties            type: conceptualises
+  note: Strength of Weak Ties (1973)
+
+from: mandelbrot       to: fractal_scaling      type: conceptualises
+  note: Fractal geometry of nature (1975-1982)
+
+from: anderson         to: more_is_different    type: conceptualises
+  note: "More Is Different" — emergence in physics (1972)
+
+```
+
+### Concept-to-Field
+
+```
+from: feedback_loops   to: cybernetics          type: applies
+  note: Feedback loops are the central mechanism of cybernetics
+
+from: feedback_loops   to: systems_theory       type: applies
+  note: Feedback is foundational to systems thinking
+
+from: self_organized_criticality to: physics_complex_systems type: applies
+  note: SOC explains ubiquitous power laws in natural systems
+
+from: fitness_landscapes to: complex_adaptive_systems type: applies
+  note: Fitness landscapes are central to CAS theory
+
+from: edge_of_chaos    to: complex_adaptive_systems type: applies
+  note: CAS operate most effectively at the edge of chaos
+
+from: dissipative_structures to: self_organization    type: applies
+  note: Dissipative structures are the thermodynamic basis of self-organization
+
+from: autopoiesis      to: systems_theory       type: applies
+  note: Autopoiesis extends systems theory to self-producing systems
+
+from: autopoiesis      to: self_organization    type: applies
+  note: Autopoiesis is a form of biological self-organization
+
+from: scale_free_networks to: network_science      type: applies
+  note: Scale-free topology is a core finding of network science
+
+from: small_world      to: network_science      type: applies
+  note: Small-world property is foundational to network science
+
+from: bounded_rationality to: artificial_intelligence type: applies
+  note: Bounded rationality shaped AI's understanding of decision-making
+
+from: bounded_rationality to: complex_adaptive_systems type: applies
+  note: CAS agents use bounded rationality, not optimization
+
+from: sensitive_dependence to: chaos_theory         type: applies
+  note: Sensitive dependence is the defining property of chaos
+
+from: increasing_returns to: economic_financial_complexity type: applies
+  note: Increasing returns overthrew diminishing-returns orthodoxy in economics
+
+from: leverage_points  to: systems_dynamics     type: applies
+  note: Leverage points framework is central to systems dynamics practice
+
+from: weak_ties        to: social_network_theory type: applies
+  note: Weak ties theory is foundational to social network analysis
+
+from: fractal_scaling  to: fractal_geometry     type: applies
+  note: Fractal scaling is the central principle of fractal geometry
+
+from: more_is_different to: emergence            type: applies
+  note: More Is Different is the physics argument for emergence
+
+from: more_is_different to: physics_complex_systems type: applies
+  note: Foundational argument for complexity in condensed matter physics
+
+```
+
+## External Shocks
+
+```
+date: 1984
+description: Santa Fe Institute founded — institutional anchor for complexity science, creating a permanent home for interdisciplinary complexity research
+
+date: 1987
+description: Gleick publishes "Chaos" — massive public interest in chaos theory and complexity; cultural moment
+
+date: 1998-1999
+description: Watts-Strogatz and Barabási-Albert papers — network science crystallizes as a field within 18 months
+
+date: 2008
+description: Global financial crisis — mainstream exposure for complexity economics; models of systemic risk and contagion gain urgency
+
+date: 2020
+description: COVID-19 pandemic — complexity science and network epidemiology become central to public health response worldwide
+
+```
+
+## Structural Observations
+
+- The map shows a clear temporal flow from left (1940s) to right (2020s), with fields budding off parent fields as they mature
+- Cybernetics and Systems Theory are the twin roots from which nearly all other streams descend
+- The 1980s represent a phase transition: the Santa Fe Institute crystallized dispersed threads into "complexity science" as a self-conscious enterprise
+- Network Science (late 1990s) represents the most recent major branching event, rapidly becoming dominant
+- There is a persistent tension between mathematical/physical approaches (top of map) and social/applied approaches (bottom)
+- The fields are not cleanly separable — nearly every major researcher bridges two or more domains
+- Applied Complexity (2010s–2020s) represents the current frontier: complexity methods reaching policy, health, and organizational practice
+- The map itself is a complexity artifact — self-referential, with Castellani mapping the field he participates in

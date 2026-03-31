@@ -29,6 +29,9 @@ targets:
       - path: Resources/templates
         type: folder
         buildPhase: resources
+      - path: Resources/maps
+        type: folder
+        buildPhase: resources
       - path: Resources/bin
         type: folder
         buildPhase: resources

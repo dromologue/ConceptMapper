@@ -298,7 +298,7 @@ Swift CLI tool implementing Model Context Protocol over stdio, allowing AI assis
 **AC-070-03**: 15 tools exposed: list_maps, list_templates, open_map, open_template, search_nodes, get_node, get_connections, add_node, update_node, delete_node, add_edge, update_edge, delete_edge, create_map, get_map_stats.
 **AC-070-04**: Server reads/writes .cm files (markdown format) directly on disk.
 **AC-070-05**: Server reads .cmt template files (JSON format) directly.
-**AC-070-06**: Default directories: ~/Library/Application Support/ConceptLLM/Maps/ and ~/templates/.
+**AC-070-06**: Default directories: ~/Documents/ConceptMapper/Maps/ and ~/Documents/ConceptMapper/Templates/.
 **AC-070-07**: Custom directories configurable via --maps-dir and --templates-dir flags.
 **AC-070-08**: add_node, update_node, delete_node, add_edge, update_edge, delete_edge all save changes immediately.
 **AC-070-09**: search_nodes matches against node name, ID, type, property values, and notes.
@@ -456,7 +456,7 @@ In-flight LLM requests can be cancelled by the user.
 ### REQ-094: Error Logging
 LLM and file operation errors are logged to a user-accessible log file.
 
-**AC-094-01**: `LogService` writes timestamped entries to `~/Library/Application Support/ConceptLLM/Logs/`.
+**AC-094-01**: `LogService` writes timestamped entries to `~/Documents/ConceptMapper/Logs/`.
 **AC-094-02**: Log files are named by date (YYYY-MM-DD.log).
 **AC-094-03**: Files older than 7 days are automatically removed.
 

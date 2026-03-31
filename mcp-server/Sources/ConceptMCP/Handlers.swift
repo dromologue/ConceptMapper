@@ -12,11 +12,11 @@ public struct MCPConfig {
     }
 
     public static func defaultConfig() -> MCPConfig {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let base = appSupport.appendingPathComponent("ConceptLLM")
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let base = home.appendingPathComponent("Documents/ConceptMapper")
         return MCPConfig(
             mapsDir: base.appendingPathComponent("Maps").path,
-            templatesDir: base.appendingPathComponent("templates").path
+            templatesDir: base.appendingPathComponent("Templates").path
         )
     }
 

@@ -26,8 +26,8 @@ while let arg = args.first {
         Usage: ConceptMCP [options]
 
         Options:
-          --maps-dir <path>       Custom maps directory (default: ~/Library/Application Support/ConceptLLM/Maps)
-          --templates-dir <path>  Custom templates directory (default: ~/Library/Application Support/ConceptLLM/templates)
+          --maps-dir <path>       Custom maps directory (default: ~/Documents/ConceptMapper/Maps)
+          --templates-dir <path>  Custom templates directory (default: ~/Documents/ConceptMapper/Templates)
           --help, -h              Show this help
 
         The server communicates via JSON-RPC over stdio (stdin/stdout).

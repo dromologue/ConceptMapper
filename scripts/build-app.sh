@@ -104,6 +104,10 @@ cp templates/*.cmt macos/Resources/templates/
 # Copy maps into web dir
 mkdir -p macos/Resources/web/maps
 [ -d Maps ] && cp Maps/*.cm macos/Resources/web/maps/ 2>/dev/null || true
+# Copy example maps into Resources/maps for bundling
+mkdir -p macos/Resources/maps
+[ -d Maps ] && cp Maps/*.cm macos/Resources/maps/ 2>/dev/null || true
+[ -d examples ] && cp examples/*.cm macos/Resources/maps/ 2>/dev/null || true
 # MCP binary
 mkdir -p macos/Resources/bin
 cp mcp-server/.build/release/ConceptMCPMain macos/Resources/bin/ConceptMCP

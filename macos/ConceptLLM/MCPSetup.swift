@@ -45,25 +45,25 @@ struct MCPSetup {
         return nil
     }
 
-    /// Path to the app's maps directory.
+    /// Path to the app's maps directory: ~/Documents/ConceptMapper/Maps/
     static var mapsDir: String {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        return appSupport.appendingPathComponent("ConceptLLM/Maps").path
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        return home.appendingPathComponent("Documents/ConceptMapper/Maps").path
     }
 
-    /// Path to the app's templates directory.
+    /// Path to the app's templates directory: ~/Documents/ConceptMapper/Templates/
     static var templatesDir: String {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        return appSupport.appendingPathComponent("ConceptLLM/templates").path
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        return home.appendingPathComponent("Documents/ConceptMapper/Templates").path
     }
 
-    /// Ensure app directories exist on first run.
+    /// Ensure app directories exist on first run and copy bundled examples.
     static func ensureDirectories() {
         let fm = FileManager.default
         try? fm.createDirectory(atPath: mapsDir, withIntermediateDirectories: true)
         try? fm.createDirectory(atPath: templatesDir, withIntermediateDirectories: true)
 
-        // Copy bundled templates to user templates dir if empty
+        // Copy bundled templates to user Templates dir if empty
         let userTemplates = try? fm.contentsOfDirectory(atPath: templatesDir).filter { $0.hasSuffix(".cmt") }
         if (userTemplates ?? []).isEmpty {
             if let bundledTemplatesDir = Bundle.main.path(forResource: "templates", ofType: nil) {
@@ -71,6 +71,20 @@ struct MCPSetup {
                     for file in files where file.hasSuffix(".cmt") {
                         let src = (bundledTemplatesDir as NSString).appendingPathComponent(file)
                         let dst = (templatesDir as NSString).appendingPathComponent(file)
+                        try? fm.copyItem(atPath: src, toPath: dst)
+                    }
+                }
+            }
+        }
+
+        // Copy bundled example maps to user Maps dir if empty
+        let userMaps = try? fm.contentsOfDirectory(atPath: mapsDir).filter { $0.hasSuffix(".cm") }
+        if (userMaps ?? []).isEmpty {
+            if let bundledMapsDir = Bundle.main.path(forResource: "maps", ofType: nil) {
+                if let files = try? fm.contentsOfDirectory(atPath: bundledMapsDir) {
+                    for file in files where file.hasSuffix(".cm") {
+                        let src = (bundledMapsDir as NSString).appendingPathComponent(file)
+                        let dst = (mapsDir as NSString).appendingPathComponent(file)
                         try? fm.copyItem(atPath: src, toPath: dst)
                     }
                 }

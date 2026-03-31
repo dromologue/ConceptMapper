@@ -5,15 +5,23 @@ import UniformTypeIdentifiers
 @MainActor
 enum FileHandler {
 
-    // MARK: - Config (.cme)
+    // MARK: - Base Directory
 
-    /// Returns the path to the config file: ~/Library/Application Support/ConceptLLM/config.cme
-    static func getConfigPath() -> URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let folder = appSupport.appendingPathComponent("ConceptLLM")
+    /// Returns the base directory: ~/Documents/ConceptMapper/
+    static func getBaseFolder() -> URL {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let folder = home.appendingPathComponent("Documents/ConceptMapper")
         if !FileManager.default.fileExists(atPath: folder.path) {
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
+        return folder
+    }
+
+    // MARK: - Config (.cme)
+
+    /// Returns the path to the config file: ~/Documents/ConceptMapper/config.cme
+    static func getConfigPath() -> URL {
+        let folder = getBaseFolder()
         return folder.appendingPathComponent("config.cme")
     }
 
@@ -47,10 +55,9 @@ enum FileHandler {
 
     // MARK: - Maps
 
-    /// Returns (and creates if needed) the Maps folder for saved .cm files.
+    /// Returns (and creates if needed) the Maps folder: ~/Documents/ConceptMapper/Maps/
     static func getMapsFolder() -> URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let folder = appSupport.appendingPathComponent("ConceptLLM/Maps")
+        let folder = getBaseFolder().appendingPathComponent("Maps")
         if !FileManager.default.fileExists(atPath: folder.path) {
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
@@ -79,10 +86,9 @@ enum FileHandler {
 
     // MARK: - Templates
 
-    /// Returns (and creates if needed) the templates folder.
+    /// Returns (and creates if needed) the Templates folder: ~/Documents/ConceptMapper/Templates/
     static func getTemplatesFolder() -> URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let folder = appSupport.appendingPathComponent("ConceptLLM/templates")
+        let folder = getBaseFolder().appendingPathComponent("Templates")
         if !FileManager.default.fileExists(atPath: folder.path) {
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
@@ -98,6 +104,26 @@ enum FileHandler {
         do {
             let files = try FileManager.default.contentsOfDirectory(at: bundledDir, includingPropertiesForKeys: nil)
                 .filter { $0.pathExtension == "cmt" }
+            for file in files {
+                let dest = folder.appendingPathComponent(file.lastPathComponent)
+                if !FileManager.default.fileExists(atPath: dest.path) {
+                    try FileManager.default.copyItem(at: file, to: dest)
+                }
+            }
+        } catch {
+            // silently ignore — not critical
+        }
+    }
+
+    /// Copy bundled .cm example maps from app Resources into the Maps folder if not already present.
+    static func copyBundledMaps() {
+        let folder = getMapsFolder()
+        guard let resourceURL = Bundle.main.resourceURL else { return }
+        let bundledDir = resourceURL.appendingPathComponent("maps")
+        guard FileManager.default.fileExists(atPath: bundledDir.path) else { return }
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: bundledDir, includingPropertiesForKeys: nil)
+                .filter { $0.pathExtension == "cm" }
             for file in files {
                 let dest = folder.appendingPathComponent(file.lastPathComponent)
                 if !FileManager.default.fileExists(atPath: dest.path) {
