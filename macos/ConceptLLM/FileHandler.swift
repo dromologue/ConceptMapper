@@ -275,4 +275,34 @@ enum FileHandler {
             }
         }
     }
+
+    /// Save base64-encoded export data to the Downloads folder.
+    /// Returns the saved file path, or nil on failure.
+    @discardableResult
+    static func saveExportToDownloads(base64Data: String, filename: String) -> String? {
+        guard let data = Data(base64Encoded: base64Data) else { return nil }
+        let downloadsURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
+        let fileURL = downloadsURL.appendingPathComponent(filename)
+
+        // Avoid overwriting: append number if file exists
+        var targetURL = fileURL
+        var counter = 1
+        while FileManager.default.fileExists(atPath: targetURL.path) {
+            let name = fileURL.deletingPathExtension().lastPathComponent
+            let ext = fileURL.pathExtension
+            targetURL = downloadsURL.appendingPathComponent("\(name)-\(counter).\(ext)")
+            counter += 1
+        }
+
+        do {
+            try data.write(to: targetURL)
+            return targetURL.path
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = "Failed to export"
+            alert.informativeText = error.localizedDescription
+            alert.runModal()
+            return nil
+        }
+    }
 }

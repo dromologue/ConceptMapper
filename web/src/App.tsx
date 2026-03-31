@@ -483,16 +483,26 @@ function AppInner() {
     const title = graphData?.metadata.title ?? "concept-map";
     const filename = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
+    const sendToSwift = (handler: string, payload: string) => {
+      const webkit = (window as unknown as Record<string, unknown>).webkit as
+        | { messageHandlers?: Record<string, { postMessage: (msg: unknown) => void }> }
+        | undefined;
+      webkit?.messageHandlers?.[handler]?.postMessage(payload);
+    };
+    const isNativeApp = !!(window as unknown as Record<string, unknown>).webkit;
+
     if (options.format === "png") {
-      offscreen.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
+      const dataURL = offscreen.toDataURL("image/png");
+      const base64 = dataURL.split(",")[1];
+      if (isNativeApp) {
+        sendToSwift("saveToDownloads", JSON.stringify({ data: base64, filename: `${filename}.png` }));
+      } else {
+        // Browser fallback
         const a = document.createElement("a");
-        a.href = url;
+        a.href = dataURL;
         a.download = `${filename}.png`;
         a.click();
-        URL.revokeObjectURL(url);
-      }, "image/png");
+      }
     } else {
       // PDF using jsPDF
       const imgData = offscreen.toDataURL("image/png");
@@ -501,7 +511,12 @@ function AppInner() {
       const pdfH = offscreen.height * pxToMm;
       const pdf = new jsPDF({ orientation: pdfW > pdfH ? "landscape" : "portrait", unit: "mm", format: [pdfW, pdfH] });
       pdf.addImage(imgData, "PNG", 0, 0, pdfW, pdfH);
-      pdf.save(`${filename}.pdf`);
+      if (isNativeApp) {
+        const pdfBase64 = pdf.output("datauristring").split(",")[1];
+        sendToSwift("saveToDownloads", JSON.stringify({ data: pdfBase64, filename: `${filename}.pdf` }));
+      } else {
+        pdf.save(`${filename}.pdf`);
+      }
     }
   }, [theme, graphData]);
 

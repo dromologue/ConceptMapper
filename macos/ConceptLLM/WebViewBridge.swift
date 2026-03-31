@@ -56,6 +56,18 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
             requestGraphMarkdown { md in
                 FileHandler.saveFile(content: md, type: "md", title: "Export Markdown")
             }
+        case "saveToDownloads":
+            // JS sends JSON with { data (base64), filename }
+            if let msgData = body.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: msgData) as? [String: String],
+               let base64 = json["data"],
+               let filename = json["filename"] {
+                if let savedPath = FileHandler.saveExportToDownloads(base64Data: base64, filename: filename) {
+                    self.webView?.evaluateJavaScript(
+                        "window.exportSaved?.(\(self.safeJSString(savedPath)));"
+                    ) { _, _ in }
+                }
+            }
         case "saveToPath":
             // Auto-save: JS sends JSON with { path, content }
             if let data = body.data(using: .utf8),
