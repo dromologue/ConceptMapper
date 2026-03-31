@@ -45,16 +45,16 @@ struct MCPSetup {
         return nil
     }
 
-    /// Path to the app's maps directory: ~/Documents/ConceptMapper/Maps/
+    /// Path to the app's maps directory (sandbox container).
     static var mapsDir: String {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        return home.appendingPathComponent("Documents/ConceptMapper/Maps").path
+        let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return base.appendingPathComponent("ConceptMapper/Maps").path
     }
 
-    /// Path to the app's templates directory: ~/Documents/ConceptMapper/Templates/
+    /// Path to the app's templates directory (sandbox container).
     static var templatesDir: String {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        return home.appendingPathComponent("Documents/ConceptMapper/Templates").path
+        let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return base.appendingPathComponent("ConceptMapper/Templates").path
     }
 
     /// Ensure app directories exist on first run and copy bundled examples.
@@ -97,7 +97,7 @@ struct MCPSetup {
         LLMClient.allCases.filter { $0.isInstalled }
     }
 
-    /// Check if MCP is configured for a given client.
+    /// Check if MCP is configured for a given client (best-effort, may fail in sandbox).
     static func isConfigured(for client: LLMClient) -> Bool {
         guard let data = FileManager.default.contents(atPath: client.configPath),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -107,75 +107,30 @@ struct MCPSetup {
         return servers["conceptllm"] != nil
     }
 
-    /// Configure MCP for a specific client. Returns status message.
-    @discardableResult
-    static func configure(for client: LLMClient) -> String {
+    /// Generate MCP setup instructions for a client (sandboxed apps can't write to other apps' configs).
+    static func setupInstructions(for client: LLMClient) -> String {
         guard let mcpPath = bundledMCPPath else {
-            return "Error: ConceptMCP binary not found in app bundle"
+            return "Error: ConceptMCP binary not found in app bundle."
         }
 
-        // Make the binary executable
-        try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: mcpPath)
-
-        let configPath = client.configPath
-        let configDir = (configPath as NSString).deletingLastPathComponent
-        try? FileManager.default.createDirectory(atPath: configDir, withIntermediateDirectories: true)
-
-        var config: [String: Any] = [:]
-        if let data = FileManager.default.contents(atPath: configPath),
-           let existing = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            config = existing
+        let json = """
+        "conceptllm": {
+          "command": "\(mcpPath)",
+          "args": ["--maps-dir", "\(mapsDir)", "--templates-dir", "\(templatesDir)"]
         }
+        """
 
-        var servers = (config["mcpServers"] as? [String: Any]) ?? [:]
-        servers["conceptllm"] = [
-            "command": mcpPath,
-            "args": ["--maps-dir", mapsDir, "--templates-dir", templatesDir]
-        ] as [String: Any]
-        config["mcpServers"] = servers
+        return """
+        To connect ConceptLLM with \(client.rawValue):
 
-        do {
-            let data = try JSONSerialization.data(withJSONObject: config, options: [.prettyPrinted, .sortedKeys])
-            try data.write(to: URL(fileURLWithPath: configPath))
-            logger.info("MCP configured for \(client.rawValue) at \(configPath)")
-            return "MCP server configured for \(client.rawValue). Restart the app to activate.\n\nConfig: \(configPath)"
-        } catch {
-            logger.error("Failed to write config: \(error.localizedDescription)")
-            return "Error: \(error.localizedDescription)"
-        }
-    }
+        1. Open \(client.rawValue)'s MCP config file:
+           \(client.configPath)
 
-    /// Configure MCP for a custom config path (manual setup).
-    @discardableResult
-    static func configure(customPath: String) -> String {
-        guard let mcpPath = bundledMCPPath else {
-            return "Error: ConceptMCP binary not found in app bundle"
-        }
+        2. Add this to the "mcpServers" section:
 
-        try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: mcpPath)
+        \(json)
 
-        let configDir = (customPath as NSString).deletingLastPathComponent
-        try? FileManager.default.createDirectory(atPath: configDir, withIntermediateDirectories: true)
-
-        var config: [String: Any] = [:]
-        if let data = FileManager.default.contents(atPath: customPath),
-           let existing = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            config = existing
-        }
-
-        var servers = (config["mcpServers"] as? [String: Any]) ?? [:]
-        servers["conceptllm"] = [
-            "command": mcpPath,
-            "args": ["--maps-dir", mapsDir, "--templates-dir", templatesDir]
-        ] as [String: Any]
-        config["mcpServers"] = servers
-
-        do {
-            let data = try JSONSerialization.data(withJSONObject: config, options: [.prettyPrinted, .sortedKeys])
-            try data.write(to: URL(fileURLWithPath: customPath))
-            return "MCP server configured.\n\nConfig: \(customPath)\nBinary: \(mcpPath)"
-        } catch {
-            return "Error: \(error.localizedDescription)"
-        }
+        3. Restart \(client.rawValue) to activate.
+        """
     }
 }

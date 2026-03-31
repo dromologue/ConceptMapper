@@ -1,7 +1,7 @@
 # 2021 Map of the Complexity Sciences
 
 <!-- template: complexity-sciences.cmt -->
-<!-- Exported from concept-mapper, 2026-03-30. -->
+<!-- Exported from concept-mapper, 2026-03-29. -->
 
 ## Field Nodes
 
@@ -298,8 +298,8 @@ id:               wiener
 name:             Norbert Wiener
 domain: systems_cybernetics
 decade: 1940s
-importance: dominant
 dates: 1894–1964
+importance: dominant
 institutional_base: MIT
 key_contribution: Founded cybernetics; feedback and control theory
 tags: cybernetics, founder
@@ -311,8 +311,8 @@ id:               vonbertalanffy
 name:             Ludwig von Bertalanffy
 domain: systems_cybernetics
 decade: 1940s
-importance: dominant
 dates: 1901–1972
+importance: dominant
 institutional_base: Vienna, Alberta
 key_contribution: General systems theory
 tags: systems, founder
@@ -324,8 +324,8 @@ id:               ashby
 name:             W. Ross Ashby
 domain: systems_cybernetics
 decade: 1940s
-importance: major
 dates: 1903–1972
+importance: major
 institutional_base: Barnwood House, Illinois
 key_contribution: Requisite variety, homeostat, design for a brain
 tags: cybernetics, regulation
@@ -337,8 +337,8 @@ id:               mcculloch
 name:             Warren McCulloch
 domain: ai_cognitive
 decade: 1940s
-importance: major
 dates: 1898–1969
+importance: major
 institutional_base: MIT
 key_contribution: McCulloch-Pitts neuron model
 tags: neural_networks, cybernetics
@@ -350,8 +350,8 @@ id:               shannon
 name:             Claude Shannon
 domain: math_physical
 decade: 1940s
-importance: dominant
 dates: 1916–2001
+importance: dominant
 institutional_base: Bell Labs, MIT
 key_contribution: Information theory
 tags: information, foundational
@@ -363,8 +363,8 @@ id:               turing
 name:             Alan Turing
 domain: ai_cognitive
 decade: 1940s
-importance: dominant
 dates: 1912–1954
+importance: dominant
 institutional_base: Cambridge, Manchester
 key_contribution: Computability, morphogenesis
 tags: computation, foundational
@@ -376,8 +376,8 @@ id:               mead
 name:             Margaret Mead
 domain: systems_cybernetics
 decade: 1940s
-importance: major
 dates: 1901–1978
+importance: major
 institutional_base: AMNH, Columbia
 key_contribution: Cybernetics-anthropology bridge
 tags: anthropology, cybernetics
@@ -389,8 +389,8 @@ id:               simon
 name:             Herbert Simon
 domain: ai_cognitive
 decade: 1960s
-importance: dominant
 dates: 1916–2001
+importance: dominant
 institutional_base: Carnegie Mellon
 key_contribution: Bounded rationality, sciences of the artificial, near-decomposability
 tags: ai, organization, complexity
@@ -402,8 +402,8 @@ id:               forrester
 name:             Jay Forrester
 domain: emergence_dynamics
 decade: 1960s
-importance: major
 dates: 1918–2016
+importance: major
 institutional_base: MIT
 key_contribution: System dynamics
 tags: systems_dynamics, modelling
@@ -415,8 +415,8 @@ id:               meadows
 name:             Donella Meadows
 domain: emergence_dynamics
 decade: 1970s
-importance: major
 dates: 1941–2001
+importance: major
 institutional_base: Dartmouth, MIT
 key_contribution: Limits to Growth, leverage points
 tags: systems_dynamics, sustainability
@@ -428,8 +428,8 @@ id:               lorenz
 name:             Edward Lorenz
 domain: math_physical
 decade: 1960s
-importance: dominant
 dates: 1917–2008
+importance: dominant
 institutional_base: MIT
 key_contribution: Deterministic chaos, Lorenz attractor
 tags: chaos, meteorology
@@ -441,8 +441,8 @@ id:               prigogine
 name:             Ilya Prigogine
 domain: core_complexity
 decade: 1970s
-importance: dominant
 dates: 1917–2003
+importance: dominant
 institutional_base: Brussels, Austin
 key_contribution: Dissipative structures, far-from-equilibrium thermodynamics
 tags: self_organization, thermodynamics, nobel
@@ -454,8 +454,8 @@ id:               mandelbrot
 name:             Benoit Mandelbrot
 domain: math_physical
 decade: 1970s
-importance: dominant
 dates: 1924–2010
+importance: dominant
 institutional_base: IBM, Yale
 key_contribution: Fractal geometry
 tags: fractals, geometry
@@ -467,8 +467,8 @@ id:               thom
 name:             René Thom
 domain: math_physical
 decade: 1970s
-importance: major
 dates: 1923–2002
+importance: major
 institutional_base: IHÉS
 key_contribution: Catastrophe theory
 tags: topology, dynamics
@@ -480,8 +480,8 @@ id:               maturana
 name:             Humberto Maturana
 domain: systems_cybernetics
 decade: 1970s
-importance: major
 dates: 1928–2021
+importance: major
 institutional_base: University of Chile
 key_contribution: Autopoiesis
 tags: autopoiesis, biology
@@ -493,8 +493,8 @@ id:               haken
 name:             Hermann Haken
 domain: core_complexity
 decade: 1970s
-importance: major
 dates: 1927–2024
+importance: major
 institutional_base: Stuttgart
 key_contribution: Synergetics
 tags: self_organization, physics
@@ -506,8 +506,8 @@ id:               holland
 name:             John Holland
 domain: core_complexity
 decade: 1980s
-importance: dominant
 dates: 1929–2015
+importance: dominant
 institutional_base: Michigan, SFI
 key_contribution: Genetic algorithms, complex adaptive systems theory
 tags: cas, evolution, santa_fe
@@ -519,8 +519,8 @@ id:               kauffman
 name:             Stuart Kauffman
 domain: core_complexity
 decade: 1980s
-importance: dominant
 dates: b. 1939
+importance: dominant
 institutional_base: SFI, Pennsylvania
 key_contribution: Self-organization in evolution, fitness landscapes, edge of chaos
 tags: cas, evolution, santa_fe
@@ -532,8 +532,8 @@ id:               gellmann
 name:             Murray Gell-Mann
 domain: core_complexity
 decade: 1980s
-importance: major
 dates: 1929–2019
+importance: major
 institutional_base: Caltech, SFI
 key_contribution: Co-founded Santa Fe Institute; quark/complexity bridge
 tags: santa_fe, physics, complexity
@@ -545,8 +545,8 @@ id:               langton
 name:             Christopher Langton
 domain: core_complexity
 decade: 1980s
-importance: major
 dates: b. 1948
+importance: major
 institutional_base: SFI, Los Alamos
 key_contribution: Artificial life, edge of chaos
 tags: alife, computation
@@ -558,8 +558,8 @@ id:               wolfram
 name:             Stephen Wolfram
 domain: networks_computation
 decade: 1980s
-importance: major
 dates: b. 1959
+importance: major
 institutional_base: Independent (Wolfram Research)
 key_contribution: Cellular automata classification, computational irreducibility
 tags: computation, cellular_automata
@@ -571,8 +571,8 @@ id:               anderson
 name:             Philip W. Anderson
 domain: math_physical
 decade: 1970s
-importance: dominant
 dates: 1923–2020
+importance: dominant
 institutional_base: Princeton, Bell Labs
 key_contribution: More is Different; spin glasses; emergent phenomena
 tags: physics, emergence, nobel
@@ -584,8 +584,8 @@ id:               arthur
 name:             W. Brian Arthur
 domain: social_economic
 decade: 1980s
-importance: dominant
 dates: b. 1945
+importance: dominant
 institutional_base: SFI, Stanford
 key_contribution: Increasing returns, complexity economics, El Farol problem
 tags: economics, santa_fe
@@ -597,8 +597,8 @@ id:               axelrod
 name:             Robert Axelrod
 domain: social_economic
 decade: 1980s
-importance: major
 dates: b. 1943
+importance: major
 institutional_base: Michigan
 key_contribution: Evolution of cooperation, iterated prisoner's dilemma tournaments
 tags: cooperation, game_theory
@@ -610,8 +610,8 @@ id:               granovetter
 name:             Mark Granovetter
 domain: social_economic
 decade: 1970s
-importance: major
 dates: b. 1943
+importance: major
 institutional_base: Stanford
 key_contribution: Strength of weak ties, embeddedness
 tags: social_networks, sociology
@@ -623,8 +623,8 @@ id:               watts
 name:             Duncan Watts
 domain: networks_computation
 decade: 1990s
-importance: dominant
 dates: b. 1971
+importance: dominant
 institutional_base: Columbia, Microsoft Research
 key_contribution: Small-world networks
 tags: networks, sociology
@@ -636,8 +636,8 @@ id:               barabasi
 name:             Albert-László Barabási
 domain: networks_computation
 decade: 2000s
-importance: dominant
 dates: b. 1967
+importance: dominant
 institutional_base: Northeastern, CEU
 key_contribution: Scale-free networks, preferential attachment
 tags: networks, physics
@@ -649,8 +649,8 @@ id:               strogatz
 name:             Steven Strogatz
 domain: networks_computation
 decade: 1990s
-importance: major
 dates: b. 1959
+importance: major
 institutional_base: Cornell
 key_contribution: Small-world networks, coupled oscillators, sync
 tags: networks, dynamics
@@ -662,8 +662,8 @@ id:               epstein
 name:             Joshua Epstein
 domain: emergence_dynamics
 decade: 1990s
-importance: major
 dates: b. 1951
+importance: major
 institutional_base: Brookings, Johns Hopkins, NYU
 key_contribution: Agent-based modelling, generative social science
 tags: abm, emergence
@@ -675,8 +675,8 @@ id:               schelling
 name:             Thomas Schelling
 domain: social_economic
 decade: 1970s
-importance: major
 dates: 1921–2016
+importance: major
 institutional_base: Harvard, Maryland
 key_contribution: Segregation model, micromotives and macrobehavior
 tags: abm, social, emergence, nobel
@@ -688,8 +688,8 @@ id:               may
 name:             Robert May
 domain: math_physical
 decade: 1970s
-importance: major
 dates: 1936–2020
+importance: major
 institutional_base: Princeton, Oxford
 key_contribution: Chaos in population dynamics, stability and complexity
 tags: chaos, ecology
@@ -701,8 +701,8 @@ id:               bak
 name:             Per Bak
 domain: math_physical
 decade: 1980s
-importance: major
 dates: 1948–2002
+importance: major
 institutional_base: Brookhaven
 key_contribution: Self-organized criticality
 tags: physics, criticality
@@ -714,8 +714,8 @@ id:               mitchell
 name:             Melanie Mitchell
 domain: core_complexity
 decade: 2000s
-importance: major
 dates: b. 1962
+importance: major
 institutional_base: SFI, Portland State
 key_contribution: Complexity synthesis, genetic algorithms, analogy
 tags: complexity, communication
@@ -727,8 +727,8 @@ id:               page
 name:             Scott Page
 domain: core_complexity
 decade: 2000s
-importance: major
 dates: b. 1961
+importance: major
 institutional_base: Michigan, SFI
 key_contribution: Diversity, model thinking, complex adaptive social systems
 tags: diversity, social_complexity
@@ -740,8 +740,8 @@ id:               newman
 name:             Mark Newman
 domain: networks_computation
 decade: 2000s
-importance: major
 dates: b. 1968
+importance: major
 institutional_base: Michigan, SFI
 key_contribution: Network structure, community detection, power laws
 tags: networks, physics
@@ -753,8 +753,8 @@ id:               west
 name:             Geoffrey West
 domain: math_physical
 decade: 2000s
-importance: major
 dates: b. 1940
+importance: major
 institutional_base: SFI, Los Alamos
 key_contribution: Scaling laws in biology and cities
 tags: scaling, biology, urban
@@ -766,8 +766,8 @@ id:               castellani
 name:             Brian Castellani
 domain: networks_computation
 decade: 2010s
-importance: major
 dates: b. 1969
+importance: major
 institutional_base: Durham
 key_contribution: Complexity cartography, case-based complexity, sociology of complexity
 tags: meta, cartography
@@ -779,8 +779,8 @@ id:               hilborn
 name:             Robert Hilborn
 domain: math_physical
 decade: 1990s
-importance: secondary
 dates: b. 1943
+importance: secondary
 institutional_base: Amherst, Dallas
 key_contribution: Chaos and nonlinear dynamics pedagogy
 tags: chaos, education
@@ -792,8 +792,8 @@ id:               lovelock
 name:             James Lovelock
 domain: systems_cybernetics
 decade: 1970s
-importance: major
 dates: 1919–2022
+importance: major
 institutional_base: Independent
 key_contribution: Gaia hypothesis
 tags: earth_system, cybernetics
@@ -805,8 +805,8 @@ id:               margulis
 name:             Lynn Margulis
 domain: core_complexity
 decade: 1970s
-importance: major
 dates: 1938–2011
+importance: major
 institutional_base: Boston, Massachusetts
 key_contribution: Endosymbiosis, Gaia hypothesis co-development
 tags: biology, evolution
@@ -818,8 +818,8 @@ id:               parsons
 name:             Talcott Parsons
 domain: social_economic
 decade: 1960s
-importance: major
 dates: 1902–1979
+importance: major
 institutional_base: Harvard
 key_contribution: Social systems theory, structural functionalism
 tags: sociology, systems
@@ -831,8 +831,8 @@ id:               luhmann
 name:             Niklas Luhmann
 domain: systems_cybernetics
 decade: 1980s
-importance: major
 dates: 1927–1998
+importance: major
 institutional_base: Bielefeld
 key_contribution: Social systems as autopoietic, communication-based systems
 tags: autopoiesis, sociology
@@ -844,8 +844,8 @@ id:               morin
 name:             Edgar Morin
 domain: core_complexity
 decade: 1970s
-importance: major
 dates: b. 1921
+importance: major
 institutional_base: CNRS, Paris
 key_contribution: Complex thought, transdisciplinarity
 tags: philosophy, complexity
@@ -857,8 +857,8 @@ id:               chomsky
 name:             Noam Chomsky
 domain: ai_cognitive
 decade: 1960s
-importance: dominant
 dates: b. 1928
+importance: dominant
 institutional_base: MIT
 key_contribution: Generative grammar, cognitive revolution, Chomsky hierarchy
 tags: linguistics, cognition
@@ -870,8 +870,8 @@ id:               minsky
 name:             Marvin Minsky
 domain: ai_cognitive
 decade: 1960s
-importance: dominant
 dates: 1927–2016
+importance: dominant
 institutional_base: MIT
 key_contribution: AI foundations, frames, society of mind
 tags: ai, cognition
@@ -883,8 +883,8 @@ id:               churchland
 name:             Patricia Churchland
 domain: ai_cognitive
 decade: 1980s
-importance: major
 dates: b. 1943
+importance: major
 institutional_base: UCSD
 key_contribution: Neurophilosophy, eliminative materialism
 tags: philosophy, neuroscience

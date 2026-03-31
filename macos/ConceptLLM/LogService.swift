@@ -1,8 +1,8 @@
 import Foundation
 import os.log
 
-/// File-based error logging for debugging LLM and file operations.
-/// Logs are written to ~/Documents/ConceptMapper/Logs/.
+/// File-based error logging for debugging file operations.
+/// Logs are written to the app's sandbox container.
 enum LogService {
     enum Level: String {
         case info = "INFO"
@@ -13,8 +13,8 @@ enum LogService {
     private static let logger = Logger(subsystem: "com.dromologue.ConceptLLM", category: "LogFile")
 
     private static var logsFolder: URL {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        return home.appendingPathComponent("Documents/ConceptMapper/Logs")
+        let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        return base.appendingPathComponent("ConceptMapper/Logs")
     }
 
     /// Log a message to today's log file.

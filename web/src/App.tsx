@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import type { GraphIR, GraphNode, GraphEdge, NodeTypeConfig, TaxonomyTemplate, ConceptMapData } from "./types/graph-ir";
+import type { GraphIR, GraphNode, GraphEdge, NodeTypeConfig, TaxonomyTemplate } from "./types/graph-ir";
 import { GraphCanvas } from "./graph/GraphCanvas";
 import { DetailPanel } from "./ui/DetailPanel";
 import { NotesPane } from "./ui/NotesPane";
@@ -11,8 +11,6 @@ import { AddEdgeModal } from "./ui/AddEdgeModal";
 import { SettingsModal } from "./ui/SettingsModal";
 import { TaxonomyWizard } from "./ui/TaxonomyWizard";
 import type { TaxonomyWizardResult, TaxonomyWizardInitial } from "./ui/TaxonomyWizard";
-import { MappingModal } from "./ui/MappingModal";
-import { ChatPane } from "./ui/ChatPane";
 import { ExportImageModal } from "./ui/ExportImageModal";
 import { AnalysisPanel } from "./ui/AnalysisPanel";
 import { EdgeNotesPane } from "./ui/EdgeNotesPane";
@@ -25,8 +23,6 @@ import { EdgePopover } from "./ui/EdgePopover";
 import { IconSearch } from "./ui/Icons";
 import { parseMarkdown } from "./parser";
 import { ThemeProvider, useTheme } from "./theme/ThemeContext";
-import { LLMProvider, useLLM } from "./llm/LLMContext";
-import { registerLLMCallbacks } from "./llm/provider";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData, getTemplateClassifiers } from "./migration";
 import { createEmptyFilterState } from "./utils/filters";
@@ -48,7 +44,6 @@ function mergeNodeUpdate(node: GraphNode, updates: Partial<GraphNode>): GraphNod
 
 function AppInner() {
   const { theme, look } = useTheme();
-  const { isLLMConfigured } = useLLM();
   const [graphData, setGraphDataRaw] = useState<GraphIR | null>(null);
   const undoStack = useRef<GraphIR[]>([]);
   const redoStack = useRef<GraphIR[]>([]);
@@ -93,9 +88,6 @@ function AppInner() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [template, setTemplate] = useState<TaxonomyTemplate | null>(null);
   const [templateFilePath] = useState<string | null>(null);
-  const [showMappingModal, setShowMappingModal] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatHeight, setChatHeight] = useState(300);
   const [centerOnNode, setCenterOnNode] = useState<{ id: string; ts: number } | null>(null);
   const fitToViewRef = useRef<(() => void) | null>(null);
   const zoomFnsRef = useRef<{ zoomIn: () => void; zoomOut: () => void } | null>(null);
@@ -167,11 +159,6 @@ function AppInner() {
   const handleClearPath = useCallback(() => {
     setPathResult(null);
     setHighlightedPath(null);
-  }, []);
-
-  // Register LLM response/error callbacks
-  useEffect(() => {
-    return registerLLMCallbacks();
   }, []);
 
   // Expose bridge functions for Swift WKWebView
@@ -832,17 +819,6 @@ function AppInner() {
     );
   }, [graphData, setGraphData]);
 
-  const handleMappingResult = useCallback((cmData: ConceptMapData, tmpl: TaxonomyTemplate) => {
-    if (!cmData.version) cmData.version = "2.0";
-    const ir = graphIRFromData(tmpl, cmData);
-    setGraphData(ir);
-    setTemplate(tmpl);
-    setSelectedNode(null);
-    setRevealedNodes(new Set());
-    setError(null);
-    setShowMappingModal(false);
-  }, [setGraphData]);
-
   const makeResizeHandler = useCallback(
     (setter: React.Dispatch<React.SetStateAction<number>>, currentWidth: number) =>
       (e: React.MouseEvent) => {
@@ -1152,11 +1128,6 @@ function AppInner() {
               <button className="start-action" onClick={handleImportFile}>
                 Open File...
               </button>
-              {isLLMConfigured && (
-                <button className="start-action" onClick={() => setShowMappingModal(true)}>
-                  Map Text
-                </button>
-              )}
             </div>
           </div>
         </div>
@@ -1165,21 +1136,6 @@ function AppInner() {
             onComplete={handleTaxonomyCreate}
             onCancel={() => { setShowTaxonomyWizard(false); setTaxonomyEditData(undefined); }}
             initialData={taxonomyEditData}
-          />
-        )}
-        {showMappingModal && (
-          <MappingModal
-            template={null}
-            savedTemplates={templates.map((t) => ({
-              title: t.title,
-              streams: t.streams,
-              generations: t.generations,
-              node_types: t.node_types ?? DEFAULT_NODE_TYPES,
-            }))}
-            onResult={handleMappingResult}
-            onCancel={() => setShowMappingModal(false)}
-            isNativeApp={isNativeApp}
-            sendToSwift={sendToSwift}
           />
         )}
         <input
@@ -1263,10 +1219,6 @@ function AppInner() {
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           onOpenSettings={() => setShowSettings(true)}
           onEditTaxonomy={handleEditTaxonomy}
-          onOpenMapping={() => setShowMappingModal(true)}
-          onToggleChat={() => { setChatOpen(!chatOpen); if (chatOpen) return; setNotesOpen(false); }}
-          chatOpen={chatOpen}
-          llmAvailable={false /* LLM features hidden — enable in a later release */}
           onOpenHelp={() => setShowHelp(true)}
           onFitToView={() => fitToViewRef.current?.()}
           onExportImage={() => setShowExportImage(true)}
@@ -1397,7 +1349,7 @@ function AppInner() {
               />
             )}
           </div>
-          {selectedNode && notesOpen && !chatOpen && (
+          {selectedNode && notesOpen && (
             <>
               <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />
               <div className="notes-bottom-pane" style={{ height: notesHeight }}>
@@ -1410,7 +1362,7 @@ function AppInner() {
               </div>
             </>
           )}
-          {!selectedNode && selectedEdge && notesOpen && !chatOpen && (
+          {!selectedNode && selectedEdge && notesOpen && (
             <>
               <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />
               <div className="notes-bottom-pane" style={{ height: notesHeight }}>
@@ -1418,19 +1370,6 @@ function AppInner() {
                   edge={selectedEdge}
                   nodes={graphData.nodes}
                   onEdgeUpdate={handleEdgeUpdate}
-                />
-              </div>
-            </>
-          )}
-          {chatOpen && template && (
-            <>
-              <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setChatHeight, chatHeight)} />
-              <div className="chat-bottom-pane" style={{ height: chatHeight }}>
-                <ChatPane
-                  graphData={graphData}
-                  template={template}
-                  isNativeApp={isNativeApp}
-                  sendToSwift={sendToSwift}
                 />
               </div>
             </>
@@ -1540,21 +1479,6 @@ function AppInner() {
           onCancel={() => { setShowTaxonomyWizard(false); setTaxonomyEditData(undefined); }}
           initialData={taxonomyEditData}
           onSaveTemplate={handleSaveTemplate}
-        />
-      )}
-      {showMappingModal && (
-        <MappingModal
-          template={template}
-          savedTemplates={getSavedTemplates().map((t) => ({
-            title: t.title,
-            streams: t.streams,
-            generations: t.generations,
-            node_types: t.node_types ?? DEFAULT_NODE_TYPES,
-          }))}
-          onResult={handleMappingResult}
-          onCancel={() => setShowMappingModal(false)}
-          isNativeApp={isNativeApp}
-          sendToSwift={sendToSwift}
         />
       )}
       {showHelp && (
@@ -1708,9 +1632,7 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <LLMProvider>
-          <AppInner />
-        </LLMProvider>
+        <AppInner />
       </ThemeProvider>
     </ErrorBoundary>
   );

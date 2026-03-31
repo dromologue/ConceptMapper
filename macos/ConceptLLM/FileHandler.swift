@@ -7,50 +7,14 @@ enum FileHandler {
 
     // MARK: - Base Directory
 
-    /// Returns the base directory: ~/Documents/ConceptMapper/
+    /// Returns the app's data directory (sandbox container Documents/ when sandboxed).
     static func getBaseFolder() -> URL {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        let folder = home.appendingPathComponent("Documents/ConceptMapper")
+        let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            .appendingPathComponent("ConceptMapper")
         if !FileManager.default.fileExists(atPath: folder.path) {
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
         return folder
-    }
-
-    // MARK: - Config (.cme)
-
-    /// Returns the path to the config file: ~/Documents/ConceptMapper/config.cme
-    static func getConfigPath() -> URL {
-        let folder = getBaseFolder()
-        return folder.appendingPathComponent("config.cme")
-    }
-
-    /// Load the config.cme JSON file. Returns empty JSON object if not found.
-    static func loadConfig(completion: @escaping @MainActor (String) -> Void) {
-        let url = getConfigPath()
-        if FileManager.default.fileExists(atPath: url.path) {
-            do {
-                let content = try String(contentsOf: url, encoding: .utf8)
-                completion(content)
-            } catch {
-                completion("{}")
-            }
-        } else {
-            completion("{}")
-        }
-    }
-
-    /// Save content to config.cme.
-    static func saveConfig(content: String) {
-        let url = getConfigPath()
-        do {
-            try content.write(to: url, atomically: true, encoding: .utf8)
-        } catch {
-            let alert = NSAlert()
-            alert.messageText = "Failed to save config"
-            alert.informativeText = error.localizedDescription
-            alert.runModal()
-        }
     }
 
     // MARK: - Maps

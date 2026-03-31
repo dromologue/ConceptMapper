@@ -1,5 +1,5 @@
 import type { NodeTypeConfig } from "../types/graph-ir";
-import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconMapping, IconChat, IconHelp, IconFitView, IconExport, IconAnalysis, IconExplode } from "./Icons";
+import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconHelp, IconFitView, IconExport, IconAnalysis, IconExplode } from "./Icons";
 
 interface Props {
   viewMode: string; // "full" or a node type id
@@ -8,10 +8,6 @@ interface Props {
   onToggleSidebar: () => void;
   onOpenSettings: () => void;
   onEditTaxonomy: () => void;
-  onOpenMapping?: () => void;
-  onToggleChat?: () => void;
-  chatOpen?: boolean;
-  llmAvailable?: boolean;
   onOpenHelp?: () => void;
   onFitToView?: () => void;
   onExportImage?: () => void;
@@ -27,10 +23,6 @@ export function ActivityBar({
   sidebarOpen, onToggleSidebar,
   onOpenSettings,
   onEditTaxonomy,
-  onOpenMapping,
-  onToggleChat,
-  chatOpen,
-  llmAvailable,
   onOpenHelp,
   onFitToView,
   onExportImage,
@@ -85,27 +77,6 @@ export function ActivityBar({
             title="Export Image"
           >
             <IconExport size={20} />
-          </button>
-        )}
-        {llmAvailable && onOpenMapping && (
-          <>
-            <div className="activity-bar-separator" />
-            <button
-              className="activity-bar-btn"
-              onClick={onOpenMapping}
-              title="Map Text to Taxonomy"
-            >
-              <IconMapping size={20} />
-            </button>
-          </>
-        )}
-        {llmAvailable && onToggleChat && (
-          <button
-            className={`activity-bar-btn ${chatOpen ? "active" : ""}`}
-            onClick={onToggleChat}
-            title="Chat with LLM"
-          >
-            <IconChat size={20} />
           </button>
         )}
       </div>

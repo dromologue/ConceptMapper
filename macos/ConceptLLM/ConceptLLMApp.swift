@@ -39,22 +39,13 @@ struct ConceptLLMApp: App {
             }
 
             CommandGroup(replacing: .help) {
-                Button(mcpButtonLabel(.claude)) {
-                    mcpSetupAction(.claude)
+                Button("MCP Setup: Claude Desktop") {
+                    let instructions = MCPSetup.setupInstructions(for: .claude)
+                    showAlert("MCP Setup — Claude Desktop", instructions)
                 }
-                Button(mcpButtonLabel(.cursor)) {
-                    mcpSetupAction(.cursor)
-                }
-                Button("Setup MCP — Custom Path...") {
-                    let panel = NSOpenPanel()
-                    panel.title = "Select MCP config file"
-                    panel.allowedContentTypes = [.json]
-                    panel.canCreateDirectories = true
-                    if panel.runModal() == .OK, let url = panel.url {
-                        let result = MCPSetup.configure(customPath: url.path)
-                        NotificationCenter.default.post(name: .mcpConfigured, object: nil)
-                        showAlert("MCP Setup", result)
-                    }
+                Button("MCP Setup: Cursor") {
+                    let instructions = MCPSetup.setupInstructions(for: .cursor)
+                    showAlert("MCP Setup — Cursor", instructions)
                 }
 
                 Divider()
@@ -79,25 +70,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-// MARK: - MCP Menu Helpers
-
-private func mcpButtonLabel(_ client: LLMClient) -> String {
-    let installed = client.isInstalled
-    let configured = installed && MCPSetup.isConfigured(for: client)
-    if configured { return "✓ MCP: \(client.rawValue)" }
-    if installed { return "Setup MCP for \(client.rawValue)" }
-    return "Setup MCP for \(client.rawValue) (not installed)"
-}
-
-private func mcpSetupAction(_ client: LLMClient) {
-    guard client.isInstalled else {
-        showAlert("MCP Setup", "\(client.rawValue) is not installed.\n\nInstall it first, then try again.")
-        return
-    }
-    let result = MCPSetup.configure(for: client)
-    NotificationCenter.default.post(name: .mcpConfigured, object: nil)
-    showAlert("MCP Setup — \(client.rawValue)", result)
-}
+// MARK: - Helpers
 
 private func showAlert(_ title: String, _ message: String) {
     let alert = NSAlert()
@@ -114,5 +87,4 @@ extension Notification.Name {
     static let exportMarkdown = Notification.Name("exportMarkdown")
     static let showHelp = Notification.Name("showHelp")
     static let newTaxonomy = Notification.Name("newTaxonomy")
-    static let mcpConfigured = Notification.Name("mcpConfigured")
 }

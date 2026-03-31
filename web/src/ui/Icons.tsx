@@ -101,26 +101,6 @@ export function IconTaxonomy({ size = defaults.size, className }: IconProps) {
   );
 }
 
-export function IconMapping({ size = defaults.size, className }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
-      <path d="M2 3h5v2H2zM9 3h5v2H9zM5.5 11h5v2h-5z" fill="currentColor" />
-      <path d="M4.5 5v3l3 3M11.5 5v3l-3 3" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
-  );
-}
-
-export function IconChat({ size = defaults.size, className }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
-      <path d="M2 2h12a1 1 0 011 1v8a1 1 0 01-1 1H5l-3 3V3a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="5" cy="7" r="0.8" fill="currentColor" />
-      <circle cx="8" cy="7" r="0.8" fill="currentColor" />
-      <circle cx="11" cy="7" r="0.8" fill="currentColor" />
-    </svg>
-  );
-}
-
 export function IconChevronDown({ size = defaults.size, className }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>

@@ -39,20 +39,3 @@ HTMLCanvasElement.prototype.getContext = (() => {
 
 HTMLCanvasElement.prototype.toDataURL = () => "data:image/png;base64,mock";
 
-// LLM test helpers
-export function mockLLMResponse(content: string) {
-  const win = window as unknown as Record<string, unknown>;
-  // Simulate an LLM response callback
-  return (requestId: string) => {
-    if (typeof win.llmResponse === "function") {
-      (win.llmResponse as (data: { requestId: string; content: string }) => void)({ requestId, content });
-    }
-  };
-}
-
-export function mockLLMConfig(config: Record<string, unknown>) {
-  const win = window as unknown as Record<string, unknown>;
-  if (typeof win.configLoaded === "function") {
-    (win.configLoaded as (json: string) => void)(JSON.stringify(config));
-  }
-}

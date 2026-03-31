@@ -1,5 +1,4 @@
 import type { GraphIR, GraphNode, GraphEdge, NodeTypeConfig, Classifier } from "../types/graph-ir";
-import type { LLMConfig, AppConfig, ChatMessage } from "../types/llm";
 import { DEFAULT_NODE_CONFIG, DEFAULT_PERSON_CONFIG, DEFAULT_CONCEPT_CONFIG, streamsToClassifier, generationsToClassifier } from "../migration";
 
 export const defaultNodeTypeConfigs: NodeTypeConfig[] = [DEFAULT_NODE_CONFIG];
@@ -156,21 +155,3 @@ export const classifierWithColors: Classifier = {
 
 export const multiClassifiers: Classifier[] = [classifierWithoutColors, classifierWithColors];
 
-// LLM test fixtures
-export const sampleLLMConfig: LLMConfig = {
-  provider: "anthropic",
-  apiKey: (typeof globalThis !== "undefined" && (globalThis as Record<string, unknown>).process
-    ? ((globalThis as Record<string, unknown>).process as Record<string, Record<string, string>>).env?.ANTHROPIC_API_KEY
-    : undefined) ?? "test-key",
-  model: "claude-sonnet-4-20250514",
-  temperature: 0.3,
-};
-
-export const sampleAppConfig: AppConfig = {
-  llm: sampleLLMConfig,
-};
-
-export const sampleChatMessages: ChatMessage[] = [
-  { role: "user", content: "What are the key relationships in this network?", timestamp: Date.now() - 2000 },
-  { role: "assistant", content: "The network shows Argyris influencing Senge through the chain relationship.", timestamp: Date.now() - 1000 },
-];
