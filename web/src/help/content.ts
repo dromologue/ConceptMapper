@@ -503,39 +503,142 @@ The app auto-saves to the source .cm file as you make changes (with a 2-second d
     id: "network-analysis",
     title: "Network Analysis Tools",
     tags: ["analysis", "centrality", "community", "path", "metrics", "degree", "betweenness", "influence", "bridge"],
-    content: `The Network Analysis panel (graph icon in the Activity Bar) provides quantitative tools for understanding your concept map's structure.
+    content: `The Network Analysis panel (graph icon in the Activity Bar) provides quantitative tools for understanding your concept map's structure. These metrics come from graph theory and social network analysis — they help reveal patterns that are invisible when you only look at the visual layout.
 
-**Overview Metrics**
+---
 
-- **Density** -- What fraction of all possible connections actually exist. Dense networks (close to 1.0) mean everything connects to everything; sparse networks (close to 0) have selective connections.
-- **Average Degree** -- The typical number of connections per node. Higher means a more interconnected network.
-- **Diameter** -- The longest shortest path between any two nodes. Measures how "wide" the network is — how many steps to get from one extreme to the other.
-- **Modularity** -- How cleanly the network divides into distinct groups. High modularity (above 0.3) means clear communities; low means an integrated, cross-cutting network.
+**NETWORK OVERVIEW METRICS**
 
-**Node Metrics (What makes a node important?)**
+These describe the network as a whole.
 
-- **Connections** (Degree) -- Simply how many edges a node has. The most connected nodes are the most "active" in the network.
-- **Bridge Score** (Betweenness Centrality) -- How often a node sits on the shortest path between other nodes. High bridge scores identify concepts that act as connectors or bottlenecks between different parts of the network. A node with few connections but a high bridge score is structurally critical.
-- **Influence** (Eigenvector Centrality) -- Whether a node is connected to other important nodes. This is recursive prestige — it is not enough to have many connections; they need to be connections to well-connected nodes.
-- **Reach** (Closeness Centrality) -- How quickly a node can reach every other node. Nodes with high reach are at the "centre" of the network in terms of average distance.
+**Density** (0.0 to 1.0)
+The fraction of all possible connections that actually exist. In a network of N nodes, there are N×(N-1)/2 possible undirected edges.
+- *0.0* — No edges at all (disconnected nodes)
+- *0.1–0.3* — Typical for concept maps; selective, meaningful connections
+- *0.5+* — Very dense; almost everything connects to everything
+- *1.0* — Complete graph (every node connected to every other)
 
-**Communities**
+A density of 0.15 means roughly 15% of all possible connections exist. Intellectual networks tend to be sparse — high density often means your taxonomy needs more differentiated relationship types.
 
-The app detects natural groupings in your network using label propagation — nodes that are more densely connected to each other than to the rest of the network form a community. Toggle "Color by community" to see these groupings visually overlaid on the canvas. Click a community to highlight just its members.
+**Average Degree**
+The mean number of connections per node. If your network has 30 nodes and 45 edges, the average degree is about 3.0 (each node has 3 connections on average).
+- *1–2* — Mostly linear chains; tree-like structure
+- *3–5* — Well-connected; typical for rich concept maps
+- *8+* — Very dense hub-and-spoke or mesh patterns
 
-Compare detected communities against your own stream/category assignments — differences often reveal unexpected structural patterns.
+Useful as a quick health check: if average degree is below 2, you may have isolated clusters or missing relationships.
 
-**Path Finder**
+**Diameter**
+The longest shortest path between any two reachable nodes. It measures how "wide" the network is — how many steps to traverse from one extreme to the other.
+- *2–3* — Compact, "small world" network
+- *5–8* — Moderate; common in intellectual history maps
+- *10+* — Very spread out; may indicate missing bridging connections
 
-Select any two nodes to find the shortest path between them. The path is highlighted on the canvas in orange. The result shows:
+A diameter of 6 means some ideas are 6 relationship-hops apart. If you expect them to be more closely linked, the diameter reveals a structural gap.
 
-- **Distance** -- Number of steps (edges) between the two nodes.
-- **Routes** -- How many equally-short paths exist. Multiple routes mean the connection is structurally redundant (robust). A single route means it is fragile.
-- **Weakest Link** -- The single edge on the path whose removal would most increase the distance between the two nodes. This surfaces hidden dependencies.
+**Modularity** (-0.5 to 1.0)
+Measures how cleanly the network divides into distinct groups (communities), compared to a random network with the same degree distribution.
+- *Below 0.0* — Less structured than random
+- *0.0–0.3* — Weak community structure; integrated, cross-cutting network
+- *0.3–0.7* — Clear community structure; distinct intellectual clusters
+- *0.7+* — Very strong separation; almost independent sub-networks
 
-**K-Core (in Node Rankings)**
+High modularity suggests your ideas naturally cluster — compare these detected clusters against your own stream/category assignments. Differences often reveal unexpected structural patterns.
 
-The k-core number of a node indicates which "shell" of the network it belongs to. The innermost core (highest k) contains the most tightly interconnected concepts — the structural bedrock of the network. Peripheral nodes (k=1) are connected to only one part of the network.`,
+---
+
+**NODE METRICS — What Makes a Node Important?**
+
+Different metrics capture different kinds of importance. A node can rank high on one metric and low on another — that contrast is itself informative.
+
+**Connections (Degree Centrality)**
+Simply how many edges a node has, normalized by the maximum possible (N-1).
+- *High degree* — The most "active" or connected idea in the network. These are the concepts everyone references.
+- *Low degree* — Peripheral or specialised ideas with few connections.
+- *Degree tells you popularity, not importance.* A concept can be highly connected but structurally redundant.
+
+*Interpretation:* In an intellectual history map, high-degree thinkers are the most referenced. But are they referenced because they are foundational, or simply well-known? Other metrics help distinguish this.
+
+**Bridge Score (Betweenness Centrality)**
+How often a node sits on the shortest path between all other pairs of nodes. Computed using Brandes' algorithm across all-pairs shortest paths, normalized by (N-1)(N-2).
+- *High bridge score* — This node is a structural connector or bottleneck. Removing it would fragment the network or force longer paths between groups.
+- *Low bridge score* — This node is embedded within a cluster; its removal wouldn't disrupt flow between groups.
+
+*The most revealing metric.* A node with few connections but a high bridge score is the critical link between otherwise separate intellectual communities. In academic networks, these are the "translators" who connect disciplines.
+
+*Example:* A thinker with only 4 connections but the highest bridge score connects two otherwise separate schools of thought. Without them, ideas from one school cannot reach the other.
+
+**Influence (Eigenvector Centrality)**
+Whether a node is connected to other important nodes. This is recursive prestige computed via power iteration — importance flows through the network.
+- *High influence* — Connected to the "right" nodes. These ideas are at the centre of the most important cluster.
+- *Low influence* — Connected to peripheral nodes only.
+- *It is not enough to have many connections; they need to be connections to well-connected nodes.*
+
+*Interpretation:* Eigenvector centrality captures "prestige by association." In an intellectual network, a thinker with high influence is connected to other influential thinkers — they are part of the inner circle, not just well-known.
+
+*Contrast with Degree:* A concept can have many connections (high degree) but to peripheral nodes (low influence), or few connections but to the most central nodes (low degree, high influence).
+
+**Reach (Closeness Centrality)**
+How quickly a node can reach every other node in the network, using Wasserman-Faust normalization to handle disconnected components.
+- *High reach* — This node is at the "centre" of the network in terms of average distance. It can spread information to every corner efficiently.
+- *Low reach* — This node is on the periphery; it takes many hops to reach distant parts of the network.
+
+*Interpretation:* Reach identifies the most "accessible" ideas. In a concept map of organisational learning, a concept with high reach is the one you would start with to explain the entire field — everything else is relatively close.
+
+*Note:* In disconnected networks, reach uses a scaled normalization so that nodes in larger components still score higher than nodes in isolated pairs.
+
+---
+
+**COMPARING NODE METRICS — Reading the Rankings Table**
+
+The rankings table lets you sort by any metric. The most interesting patterns emerge from *contrasts*:
+
+- *High Degree + Low Bridge* — A hub within a single cluster. Well-connected but not structurally critical to the whole network.
+- *Low Degree + High Bridge* — A rare, critical connector. Few connections, but they span community boundaries. These are the most structurally fragile nodes.
+- *High Influence + Low Degree* — Connected to the right people, not to many people. Prestige by association.
+- *High Reach + Low Influence* — Centrally positioned but not connected to the inner circle. A generalist rather than a specialist.
+- *High everything* — A true central node: well-connected, structurally critical, influential, and accessible.
+
+---
+
+**COMMUNITIES**
+
+The app detects natural groupings using label propagation — an iterative algorithm where each node adopts the most common label among its neighbors until the labels stabilise. Nodes that are more densely connected to each other than to the rest of the network form a community.
+
+Toggle **"Color by community"** to see these groupings visually overlaid on the canvas. Click a community badge to highlight just its members and dim everything else.
+
+Community detection is unsupervised — it finds structure you didn't explicitly define. Compare detected communities against your own stream/category assignments:
+- *Communities match streams* — Your taxonomy accurately reflects the network's structure.
+- *Communities cross streams* — Some ideas bridge your categories. Consider whether your categorisation needs refinement or whether these bridges are the interesting finding.
+- *A stream splits into multiple communities* — Your category may be too broad; there are sub-groups within it.
+
+**Modularity score** (shown in Overview) measures how strong these community boundaries are. Above 0.3 indicates meaningful structure.
+
+---
+
+**PATH FINDER**
+
+Select any two nodes to find the shortest path between them. The path is highlighted on the canvas in orange. This is a BFS (breadth-first search) that finds ALL equally short paths, not just one.
+
+- **Distance** — Number of steps (edges) between the two nodes. A distance of 3 means A→B→C→D.
+- **Routes** — How many equally-short paths exist. Multiple routes mean the connection is structurally redundant (robust). A single route means it is fragile — one removed edge could disconnect them.
+- **Weakest Link** — The single edge on the path whose removal would most increase the distance between the two nodes. This surfaces hidden dependencies. The weakest link is the relationship your network most depends on for this particular connection.
+
+*Use case:* "How is this thinker connected to that concept?" The path finder shows the chain of relationships, and the weakest link tells you which single relationship is most critical to that chain.
+
+---
+
+**K-CORE DECOMPOSITION**
+
+The k-core number indicates which "shell" of the network a node belongs to. It is computed by iteratively removing nodes with degree ≤ k and incrementing k.
+
+- *k=1* — The outermost shell. These nodes are connected to only one part of the network and are the first to be "peeled away."
+- *k=2* — Each of these nodes has at least 2 connections to other k≥2 nodes.
+- *Highest k* — The innermost core. These are the most tightly interconnected concepts — the structural bedrock of the network. Every node in the k-core is connected to at least k other k-core nodes.
+
+*Interpretation:* The innermost core reveals the foundational cluster of ideas that everything else builds upon. In an intellectual history, these are the ideas and thinkers that are so interconnected they form a self-reinforcing system. Peripheral nodes (k=1) are recent additions, outliers, or specialised concepts connected to only one thread.
+
+*Practical use:* Filter your rankings by k-core to identify the structural foundation vs. the periphery. If a concept you consider important has a low k-core number, it may be under-connected in your taxonomy.`,
   },
 
   // ── MCP Server ──────────────────────────────────────────────────
@@ -543,24 +646,22 @@ The k-core number of a node indicates which "shell" of the network it belongs to
     id: "mcp-server",
     title: "MCP Server: Using ConceptLLM with AI Assistants",
     tags: ["mcp", "server", "claude", "ai", "llm", "api", "tools", "integration", "model context protocol"],
-    content: `ConceptLLM includes a built-in MCP (Model Context Protocol) server that lets AI assistants like Claude directly read, search, create, and edit your concept maps. No installation or configuration required beyond a single click.
+    content: `ConceptLLM includes a built-in MCP (Model Context Protocol) server that lets AI assistants like Claude directly read, search, create, and edit your concept maps.
 
-**Quick Setup (One Click)**
+**Setup**
 
-1. Open the **Help** menu in ConceptLLM's menu bar (top of screen)
-2. Click **"Setup MCP for Claude Desktop"** (or whichever AI client you use)
-3. A confirmation dialog appears — click OK
-4. **Restart your AI client** (e.g. quit and reopen Claude Desktop)
-5. Done! Your AI assistant now has 15 tools for working with your concept maps
-
-The green **MCP** badge in the status bar confirms the connection is configured.
+1. Open the **Help** menu in ConceptLLM's menu bar
+2. Click **"MCP Setup: Claude Desktop"** (or **"MCP Setup: Cursor"**)
+3. A dialog shows the configuration to add to your AI client's MCP config file
+4. Copy the configuration and paste it into the config file
+5. **Restart your AI client** (e.g. quit and reopen Claude Desktop)
+6. Done! Your AI assistant now has 15 tools for working with your concept maps
 
 **Supported AI Clients**
 
-ConceptLLM auto-detects installed AI clients:
 - **Claude Desktop** — fully supported
 - **Cursor** — fully supported
-- **Other MCP-compatible clients** — use "Setup MCP — Custom Path..." to point to your client's config file
+- **Other MCP-compatible clients** — add the ConceptMCP binary path to your client's MCP configuration manually
 
 **What Can Your AI Do?**
 
