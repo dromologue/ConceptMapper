@@ -243,6 +243,132 @@ describe("TaxonomyWizard", () => {
     expect(values).not.toContain("textarea");
   });
 
+  // --- REQ-097: Classifier validation tolerates empty value rows ---
+
+  it("classifier step allows Next when at least one value has a non-empty label", async () => {
+    const user = userEvent.setup();
+    render(<TaxonomyWizard {...defaultProps} />);
+    await navigateToStep(user, "classifiers");
+
+    const classifierNameInput = screen.getByPlaceholderText("Classifier name");
+    await user.clear(classifierNameInput);
+    await user.type(classifierNameInput, "Domain");
+
+    // Type a label in the first value row
+    const valueLabelInput = screen.getByPlaceholderText("Value label");
+    await user.type(valueLabelInput, "Science");
+
+    // Add an empty value row (should not block)
+    await user.click(screen.getByText("+ Add Value"));
+
+    const nextBtn = screen.getByText("Next");
+    expect(nextBtn.className).not.toContain("disabled");
+  });
+
+  it("classifier step blocks Next when all value rows are empty", async () => {
+    const user = userEvent.setup();
+    render(<TaxonomyWizard {...defaultProps} />);
+    await navigateToStep(user, "classifiers");
+
+    const classifierNameInput = screen.getByPlaceholderText("Classifier name");
+    await user.clear(classifierNameInput);
+    await user.type(classifierNameInput, "Domain");
+
+    // Default value row exists but is empty — should block
+    const nextBtn = screen.getByText("Next");
+    expect(nextBtn.className).toContain("disabled");
+  });
+
+  it("empty value rows are filtered out of the final result", async () => {
+    const user = userEvent.setup();
+    const onComplete = vi.fn();
+    render(<TaxonomyWizard {...defaultProps} onComplete={onComplete} />);
+
+    // Title
+    await user.type(screen.getByPlaceholderText(/Management Theory/), "Filter Test");
+    await user.click(screen.getByText("Next")); // → node_types
+    await user.click(screen.getByText("Next")); // → classifiers
+
+    const classifierNameInput = screen.getByPlaceholderText("Classifier name");
+    await user.clear(classifierNameInput);
+    await user.type(classifierNameInput, "Domain");
+
+    const valueLabelInput = screen.getByPlaceholderText("Value label");
+    await user.type(valueLabelInput, "Science");
+
+    // Add an empty value row
+    await user.click(screen.getByText("+ Add Value"));
+
+    await user.click(screen.getByText("Next")); // → edges
+    await user.click(screen.getByText("Next")); // → review
+    await user.click(screen.getByText("Next")); // → create
+    await user.click(screen.getByText("Create"));
+
+    const result = onComplete.mock.calls[0][0];
+    const classifier = result.classifiers[0];
+    // Only "Science" should be present, empty row filtered
+    expect(classifier.values).toHaveLength(1);
+    expect(classifier.values[0].label).toBe("Science");
+  });
+
+  // --- REQ-098: Select field options comma input ---
+
+  it("select options input accepts commas without snapping back", async () => {
+    const user = userEvent.setup();
+    render(<TaxonomyWizard {...defaultProps} />);
+    await navigateToStep(user, "node_types");
+
+    // Add a field and set its type to select
+    await user.click(screen.getByText("+ Field"));
+    const typeSelect = screen.getByDisplayValue("Text");
+    await user.selectOptions(typeSelect, "select");
+
+    // Type comma-separated options
+    const optionsInput = screen.getByPlaceholderText("option1, option2, ...");
+    await user.type(optionsInput, "Red, Green, Blue");
+
+    // The text should remain as typed (not stripped of commas)
+    expect(optionsInput).toHaveValue("Red, Green, Blue");
+  });
+
+  it("select options are parsed on blur", async () => {
+    const user = userEvent.setup();
+    const onComplete = vi.fn();
+    render(<TaxonomyWizard {...defaultProps} onComplete={onComplete} />);
+
+    // Title
+    await user.type(screen.getByPlaceholderText(/Management Theory/), "Options Test");
+    await user.click(screen.getByText("Next")); // → node_types
+
+    // Add a select field
+    await user.click(screen.getByText("+ Field"));
+    const typeSelect = screen.getByDisplayValue("Text");
+    await user.selectOptions(typeSelect, "select");
+
+    const optionsInput = screen.getByPlaceholderText("option1, option2, ...");
+    await user.type(optionsInput, "A, B, , C");
+    // Blur to commit
+    await user.tab();
+
+    await user.click(screen.getByText("Next")); // → classifiers
+    // Fill classifier
+    const classifierNameInput = screen.getByPlaceholderText("Classifier name");
+    await user.clear(classifierNameInput);
+    await user.type(classifierNameInput, "Cat");
+    const valueLabelInput = screen.getByPlaceholderText("Value label");
+    await user.type(valueLabelInput, "Val");
+    await user.click(screen.getByText("Next")); // → edges
+    await user.click(screen.getByText("Next")); // → review
+    await user.click(screen.getByText("Next")); // → create
+    await user.click(screen.getByText("Create"));
+
+    const result = onComplete.mock.calls[0][0];
+    const field = result.node_types[0].fields?.find((f: { type: string }) => f.type === "select");
+    expect(field).toBeDefined();
+    // Empty strings from trailing commas should be filtered
+    expect(field.options).toEqual(["A", "B", "C"]);
+  });
+
   it("edit mode shows existing node types", async () => {
     const user = userEvent.setup();
     render(

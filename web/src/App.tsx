@@ -1299,6 +1299,7 @@ function AppInner() {
               highlightedPath={highlightedPath}
               highlightedCommunity={highlightedCommunity}
               exploded={exploded}
+              edgeTypeConfigs={template?.edge_types}
             />
             <div className="zoom-controls">
               <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomIn()} title="Zoom in">+</button>

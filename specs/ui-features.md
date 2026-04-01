@@ -473,3 +473,35 @@ File loading logic is extracted from the monolithic App.tsx into a reusable hook
 
 **AC-096-01**: `useFileLoader` hook encapsulates WASM parser initialization and file content loading.
 **AC-096-02**: Hook returns `parserReady`, `error`, `setError`, and `loadFileContent`.
+
+## Taxonomy Wizard Validation & Input
+
+### REQ-097: Classifier Validation Tolerates Empty Value Rows
+Classifier step validation does not block progression due to empty placeholder value rows.
+
+**AC-097-01**: Classifier step allows "Next" when the classifier label is filled and at least one value has a non-empty label.
+**AC-097-02**: Empty value rows (blank label) are silently filtered out when building the final result.
+**AC-097-03**: A classifier with only empty value rows still blocks progression (at least one real value required).
+
+### REQ-098: Select Field Options Comma Input
+Select-type field options accept comma-separated input without the text snapping back on each keystroke.
+
+**AC-098-01**: Typing a comma in the options input does not remove the comma or reset the text.
+**AC-098-02**: Options are parsed into the string array on blur or Enter, not on every keystroke.
+**AC-098-03**: The parsed result filters out empty strings (trailing commas produce no empty options).
+**AC-098-04**: Options display as comma-separated text when the input is focused or blurred.
+
+## Edge Display & Creation
+
+### REQ-099: Edge Labels From Template
+Edge labels on the canvas and in tooltips use the label defined in the `.cmt` template's `edge_types` config, falling back to the hardcoded `EDGE_LABELS` map.
+
+**AC-099-01**: When `edgeTypeConfigs` is provided, edge labels in the graph render the template-defined label.
+**AC-099-02**: When a template edge type has no matching config entry, the label falls back to the hardcoded `EDGE_LABELS` constant.
+**AC-099-03**: Tooltip text for hovered edges also uses the template-defined label.
+
+### REQ-100: Edge Weight Preview in Add Edge Modal
+The Add Edge modal shows a visual preview line that reflects the selected weight/thickness.
+
+**AC-100-01**: An SVG preview line is rendered below the weight slider.
+**AC-100-02**: The preview line's stroke width scales with the weight value.

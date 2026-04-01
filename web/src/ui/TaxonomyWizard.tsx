@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import type { Classifier, NodeTypeConfig, FieldConfig, EdgeTypeConfig, FieldType, Stream, Generation } from "../types/graph-ir";
 
 const DEFAULT_COLORS = ["#4A90D9", "#50C878", "#FF7F50", "#9B59B6", "#F1C40F", "#E74C3C", "#1ABC9C", "#E67E22"];
@@ -106,6 +106,32 @@ type StepId = "title" | "node_types" | "classifiers" | "edges" | "review" | "cre
 
 const STEPS: StepId[] = ["title", "node_types", "classifiers", "edges", "review", "create"];
 
+/** Tiny controlled input that stores raw text locally and only parses to string[] on blur/Enter. */
+function SelectOptionsInput({ value, onChange, ...rest }: {
+  value: string[];
+  onChange: (opts: string[]) => void;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">) {
+  const [text, setText] = useState(value.join(", "));
+  // Sync from parent when options change externally (e.g. reset)
+  const ref = React.useRef(value);
+  if (ref.current !== value && JSON.stringify(ref.current) !== JSON.stringify(value)) {
+    ref.current = value;
+    setText(value.join(", "));
+  }
+  const commit = () => {
+    const parsed = text.split(",").map((s) => s.trim()).filter(Boolean);
+    ref.current = parsed;
+    onChange(parsed);
+  };
+  return (
+    <input type="text" value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
+      {...rest} />
+  );
+}
+
 export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTemplate }: Props) {
   const isEditMode = !!initialData;
 
@@ -204,7 +230,7 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
     switch (currentStep) {
       case "title": return title.trim().length > 0;
       case "node_types": return nodeTypes.length > 0 && nodeTypes.every((t) => t.label.trim().length > 0);
-      case "classifiers": return classifiers.length > 0 && classifiers.every((c) => c.label.trim().length > 0 && c.values.every((v) => v.label.trim().length > 0));
+      case "classifiers": return classifiers.length > 0 && classifiers.every((c) => c.label.trim().length > 0 && c.values.some((v) => v.label.trim().length > 0));
       case "edges": return edgeTypes.length > 0 && edgeTypes.every((e) => e.label.trim().length > 0);
       default: return true;
     }
@@ -245,7 +271,7 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
       id: cls.id || slugify(cls.label),
       label: cls.label.trim(),
       layout: cls.layout === "none" ? undefined : cls.layout,
-      values: cls.values.map((v, i) => ({
+      values: cls.values.filter((v) => v.label.trim().length > 0).map((v, i) => ({
         id: v.id || slugify(v.label),
         label: v.label.trim(),
         color: v.color || (cls === classifiers[0] ? DEFAULT_COLORS[i % DEFAULT_COLORS.length] : undefined),
@@ -494,11 +520,9 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
                           <option value="time">Date</option>
                         </select>
                         {f.type === "select" && (
-                          <input type="text"
-                            value={f.options?.join(", ") ?? ""}
-                            onChange={(e) => updateFieldInType(i, fi, {
-                              options: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-                            })}
+                          <SelectOptionsInput
+                            value={f.options ?? []}
+                            onChange={(opts) => updateFieldInType(i, fi, { options: opts })}
                             placeholder="option1, option2, ..."
                             style={{ flex: 1, fontSize: 11 }}
                             title="Comma-separated options" />

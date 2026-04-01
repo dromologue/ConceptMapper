@@ -63,6 +63,30 @@ describe("AddEdgeModal", () => {
     expect(screen.queryByText("Chain")).not.toBeInTheDocument();
   });
 
+  // --- REQ-100: Edge weight preview ---
+
+  it("renders SVG weight preview line", () => {
+    render(<AddEdgeModal {...defaultProps} />);
+    const svg = document.querySelector("svg");
+    expect(svg).toBeInTheDocument();
+    const line = svg!.querySelector("line");
+    expect(line).toBeInTheDocument();
+  });
+
+  it("weight preview line thickness scales with slider", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    render(<AddEdgeModal {...defaultProps} />);
+    const slider = document.querySelector('input[type="range"]') as HTMLInputElement;
+    // Default weight is 1.0 → strokeWidth = 2
+    const line = document.querySelector("svg line")!;
+    expect(line.getAttribute("stroke-width")).toBe("2");
+
+    // Change weight to 2.0
+    fireEvent.change(slider, { target: { value: "2" } });
+
+    expect(line.getAttribute("stroke-width")).toBe("4");
+  });
+
   it("calls onCancel when Cancel is clicked", async () => {
     const user = userEvent.setup();
     const onCancel = vi.fn();

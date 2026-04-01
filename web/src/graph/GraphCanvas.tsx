@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import * as d3 from "d3";
-import type { GraphIR, GraphNode, GraphEdge, SimNode, SimLink, NodeTypeConfig, Classifier } from "../types/graph-ir";
+import type { GraphIR, GraphNode, GraphEdge, SimNode, SimLink, NodeTypeConfig, EdgeTypeConfig, Classifier } from "../types/graph-ir";
 import type { ViewMode, InteractionMode } from "../App";
 import type { ThemeConfig } from "../theme/themes";
 import type { FilterState } from "../utils/filters";
@@ -274,6 +274,7 @@ interface Props {
   highlightedPath?: string[] | null;
   highlightedCommunity?: number | null;
   exploded?: boolean;
+  edgeTypeConfigs?: EdgeTypeConfig[];
 }
 
 function getNodeRadius(node: SimNode, _viewMode: ViewMode, nodeTypeConfigs: NodeTypeConfig[]): number {
@@ -301,7 +302,7 @@ function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): NodeSha
   return "circle";
 }
 
-export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity, exploded }: Props) {
+export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity, exploded, edgeTypeConfigs }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const transformRef = useRef(d3.zoomIdentity);
@@ -338,6 +339,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const highlightedPathRef = useRef(highlightedPath);
   const highlightedCommunityRef = useRef(highlightedCommunity);
   const nodeTypeConfigsRef = useRef(nodeTypeConfigs);
+  const edgeTypeConfigsRef = useRef(edgeTypeConfigs);
   const collapsedRef = useRef(collapsedNodes ?? new Set<string>());
   const onToggleCollapseRef = useRef(onToggleCollapse);
   const onSelectEdgeRef = useRef(onSelectEdge);
@@ -402,6 +404,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { edgeSourceRef.current = edgeSourceId; redraw(); }, [edgeSourceId]);
   useEffect(() => { filtersRef.current = filters; redraw(); }, [filters]);
   useEffect(() => { nodeTypeConfigsRef.current = nodeTypeConfigs; redraw(); }, [nodeTypeConfigs]);
+  useEffect(() => { edgeTypeConfigsRef.current = edgeTypeConfigs; redraw(); }, [edgeTypeConfigs]);
   useEffect(() => { selectedEdgeKeyRef.current = selectedEdgeKey; redraw(); }, [selectedEdgeKey]);
   /* eslint-enable react-hooks/exhaustive-deps */
 
@@ -726,7 +729,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           needsRedraw = true;
         }
         if (edgeHit) {
-          const label = EDGE_LABELS[edgeHit.edge.edge_type] ?? edgeHit.edge.edge_type;
+          const label = edgeTypeConfigsRef.current?.find((et) => et.id === edgeHit.edge.edge_type)?.label ?? EDGE_LABELS[edgeHit.edge.edge_type] ?? edgeHit.edge.edge_type;
           const noteText = edgeHit.edge.note ? `\n${edgeHit.edge.note}` : "";
           tooltip.textContent = `${label}${noteText}`;
           tooltip.style.display = "block";
@@ -1228,7 +1231,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       if (!edgeLabelHidden && !edgeDimmedByCommunity && (showInFilteredView || showForHighlighted)) {
         const midX = (source.x + target.x) / 2;
         const midY = (source.y + target.y) / 2;
-        const label = EDGE_LABELS[l.edge.edge_type] ?? l.edge.edge_type;
+        const label = edgeTypeConfigsRef.current?.find((et) => et.id === l.edge.edge_type)?.label ?? EDGE_LABELS[l.edge.edge_type] ?? l.edge.edge_type;
 
         ctx.save();
         ctx.translate(midX, midY);

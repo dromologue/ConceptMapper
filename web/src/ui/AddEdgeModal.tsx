@@ -62,6 +62,9 @@ export function AddEdgeModal({ sourceNode, targetNode, onAdd, onCancel, edgeType
             onChange={(e) => setWeight(parseFloat(e.target.value))}
             className="settings-slider"
           />
+          <svg width="100%" height={24} style={{ marginTop: 4 }}>
+            <line x1="10" y1="12" x2="90%" y2="12" stroke="#888" strokeWidth={weight * 2} strokeLinecap="round" />
+          </svg>
         </div>
         <div className="modal-actions">
           <button type="button" className="toolbar-btn" onClick={onCancel}>Cancel</button>
