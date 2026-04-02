@@ -293,8 +293,8 @@ The Fit to View action zooms to fit only the currently visible nodes, not the en
 ### REQ-061G: Edge Source Highlight
 When adding an edge, the source node has a bold double-ring glow to clearly indicate which node is the edge origin.
 
-**AC-061G-01**: The edge source node has a 4px inner stroke and a 10px outer glow ring (30% alpha) using the edge source stroke colour.
-**AC-061G-02**: The glow is visible at all zoom levels without requiring animation.
+**AC-061G-01**: The edge source node has a bold inner stroke and outer glow ring (25% alpha) using the edge source stroke colour.
+**AC-061G-02**: The glow width scales inversely with zoom level (compensated by `1.5/zoomLevel`) so it remains visible at all zoom levels.
 
 ### REQ-062: Image Export (PNG/PDF)
 Export the current canvas view as PNG or PDF with configurable background.

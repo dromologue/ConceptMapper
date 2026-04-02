@@ -1518,14 +1518,15 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       ctx.fill();
       if (isSelected || isHovered || isEdgeSource) {
         if (isEdgeSource) {
-          // Bold double-ring glow for edge source node
+          // Bold double-ring glow for edge source — scaled inversely with zoom so always visible
+          const zoomCompensate = Math.max(1, 1.5 / t.k);
           ctx.strokeStyle = th.canvasEdgeSourceStroke;
-          ctx.lineWidth = 4;
+          ctx.lineWidth = 4 * zoomCompensate;
           ctx.stroke();
           // Outer glow ring
           ctx.save();
-          ctx.globalAlpha = 0.3;
-          ctx.lineWidth = 10;
+          ctx.globalAlpha = 0.25;
+          ctx.lineWidth = 14 * zoomCompensate;
           ctx.stroke();
           ctx.restore();
         } else {
