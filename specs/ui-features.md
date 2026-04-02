@@ -296,6 +296,20 @@ When adding an edge, the source node has a bold double-ring glow to clearly indi
 **AC-061G-01**: The edge source node has a bold inner stroke and outer glow ring (25% alpha) using the edge source stroke colour.
 **AC-061G-02**: The glow width scales inversely with zoom level (compensated by `1.5/zoomLevel`) so it remains visible at all zoom levels.
 
+### REQ-061H: Add-Edge Interaction
+Single-click node selection in add-edge mode for immediate response.
+
+**AC-061H-01**: In add-edge-source or add-edge-target mode, clicking a node selects it immediately on pointer-down without starting a drag.
+**AC-061H-02**: The simulation is not restarted when selecting edge source/target nodes, preserving the current view.
+
+### REQ-061I: Taxonomy Auto-Save
+Editing the taxonomy via the wizard automatically saves both the .cm map file and the .cmt template file.
+
+**AC-061I-01**: When taxonomy is edited (node types, edge types, classifiers), the .cm file is auto-saved via the existing debounced auto-save.
+**AC-061I-02**: The .cmt template file is also saved automatically when the wizard completes in edit mode.
+**AC-061I-03**: The .cmt defines all node and edge type attributes (id, label, shape/color/style, fields, directed).
+**AC-061I-04**: The .cm file references its .cmt via `<!-- template: filename.cmt -->` in the header.
+
 ### REQ-062: Image Export (PNG/PDF)
 Export the current canvas view as PNG or PDF with configurable background.
 

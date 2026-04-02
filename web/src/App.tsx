@@ -689,6 +689,18 @@ function AppInner() {
       };
       setGraphData(updated);
       setTemplate(newTemplate);
+      // Auto-save the .cmt template file when taxonomy is edited
+      if (isNativeApp) {
+        const templateJson = JSON.stringify({
+          title: data.title,
+          description: data.description,
+          format_instructions: "When generating .cm files from this template: use markdown with fenced code blocks for nodes. Every property line MUST use 'key: value' format with a colon separator. Required node keys: id, name. Classifier values use the classifier id as the key. Tags use comma-separated format. Edges use 'from: [id] to: [id] type: [edge_type]' format.",
+          classifiers: data.classifiers,
+          node_types: data.node_types,
+          edge_types: data.edge_types,
+        }, null, 2);
+        sendToSwift("saveTemplate", JSON.stringify({ content: templateJson, title: data.title }));
+      }
     } else {
       // Create mode: new empty graph
       const newGraph: GraphIR = {

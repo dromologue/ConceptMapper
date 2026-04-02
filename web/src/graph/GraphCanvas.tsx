@@ -766,6 +766,13 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       }
 
       if (node) {
+        // In add-edge mode, select immediately without starting a drag
+        if (interactionRef.current !== "normal") {
+          const originalNode = dataRef.current.nodes.find((n) => n.id === node.id) ?? null;
+          onSelectNodeRef.current(originalNode);
+          event.stopPropagation();
+          return;
+        }
         dragNodeRef.current = node;
         node.fx = node.x;
         node.fy = node.y;
