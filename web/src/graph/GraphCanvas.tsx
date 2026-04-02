@@ -157,8 +157,8 @@ const X_AXIS_CLASSIFIER_STRENGTH = 0.3;
 const X_AXIS_CENTER_STRENGTH = 0.05;
 const Y_AXIS_CLASSIFIER_STRENGTH = 0.5;
 const Y_AXIS_CENTER_STRENGTH = 0.05;
-const REGION_COLUMN_STRENGTH = 0.5;
-const REGION_CENTROID_STRENGTH_DEFAULT = 0.8;
+// Region positioning is handled in the tick handler, not via D3 forces
+// (region centroid pull strength is hardcoded in tick handler as 0.15)
 
 // Layout positioning offsets (fraction of canvas dimension)
 const X_LAYOUT_START = 0.15;
@@ -373,6 +373,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const classifiersRef = useRef<Classifier[]>([]);
   const regionColumnWidthsRef = useRef<Map<string, number>>(new Map());
   const regionColumnPositionsRef = useRef<Map<string, number>>(new Map());
+  const regionTargetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const explodedRef = useRef(exploded ?? false);
   const layoutPresetRef = useRef<LayoutPreset>(layoutPreset ?? "force");
   const fontScaleRef = useRef(fontScale);
@@ -542,51 +543,29 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const fontCollideExtra = (fontScaleRef.current - 1) * 20; // extra padding when font is scaled up
     simulation.force("collide", d3.forceCollide<SimNode>((d) => getNodeRadius(d, "full", nodeTypeConfigsRef.current) + collideExtra + Math.max(0, fontCollideExtra)));
 
-    // Region forces — add region positioning alongside existing axis/preset forces.
-    // Region forces use separate "regionX"/"regionY" force names so they don't
-    // overwrite the "x"/"y" forces set by axis classifiers or layout presets.
+    // Region/column positioning — computed here, applied in the tick handler.
+    // NO D3 forces are used for regions; the tick handler directly sets node positions.
     const regionCls = cls.find((c) => c.layout === "region" || c.layout === "region-column");
+    simulation.force("regionX", null);
+    simulation.force("regionY", null);
     if (regionCls) {
-      const isColumn = regionCls.layout === "region-column";
-      if (isColumn) {
+      if (regionCls.layout === "region-column") {
         const counts = new Map<string, number>();
         for (const n of nodesRef.current) { const v = n.classifiers?.[regionCls.id]; if (v) counts.set(String(v), (counts.get(String(v)) ?? 0) + 1); }
         const { positions, widths } = computeRegionColumns(regionCls, vw, counts);
-        regionColumnWidthsRef.current = widths;
         regionColumnPositionsRef.current = positions;
-        simulation.force("regionX", d3.forceX<SimNode>((d) => {
-          const val = d.classifiers?.[regionCls.id];
-          return val ? positions.get(String(val)) ?? vw / 2 : vw / 2;
-        }).strength(REGION_COLUMN_STRENGTH));
-        simulation.force("regionY", null);
+        regionColumnWidthsRef.current = widths;
+        regionTargetsRef.current = new Map();
       } else {
         const centroids = computeRegionCentroids(regionCls, vw, vh);
-        // Determine which axes are free (not claimed by an axis classifier)
-        const xFree = !xCls;
-        const yFree = !yCls;
-        // Region only controls axes that aren't already claimed
-        if (xFree) {
-          simulation.force("regionX", d3.forceX<SimNode>((d) => {
-            const val = d.classifiers?.[regionCls.id];
-            return val ? centroids.get(String(val))?.x ?? vw / 2 : vw / 2;
-          }).strength(REGION_CENTROID_STRENGTH_DEFAULT));
-        } else {
-          simulation.force("regionX", null);
-        }
-        if (yFree) {
-          simulation.force("regionY", d3.forceY<SimNode>((d) => {
-            const val = d.classifiers?.[regionCls.id];
-            return val ? centroids.get(String(val))?.y ?? vh / 2 : vh / 2;
-          }).strength(REGION_CENTROID_STRENGTH_DEFAULT));
-        } else {
-          simulation.force("regionY", null);
-        }
+        regionTargetsRef.current = centroids;
+        regionColumnPositionsRef.current = new Map();
+        regionColumnWidthsRef.current = new Map();
       }
     } else {
-      simulation.force("regionX", null);
-      simulation.force("regionY", null);
-      regionColumnWidthsRef.current = new Map();
       regionColumnPositionsRef.current = new Map();
+      regionColumnWidthsRef.current = new Map();
+      regionTargetsRef.current = new Map();
     }
   }
 
@@ -743,16 +722,31 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     simRef.current = simulation;
     simInitializedRef.current = true;
     simulation.on("tick", () => {
-      // Pin nodes to column center lines when region-column layout is active
-      const colPositions = regionColumnPositionsRef.current;
-      if (colPositions.size > 0) {
-        const rCls = classifiersRef.current.find((c) => c.layout === "region-column");
-        if (rCls) {
-          for (const n of nodesRef.current) {
-            const val = n.classifiers?.[rCls.id];
-            if (val) {
-              const cx = colPositions.get(String(val));
-              if (cx != null) n.x = cx;
+      // Region/column positioning — applied directly, not via forces
+      const rCls = classifiersRef.current.find((c) => c.layout === "region-column" || c.layout === "region");
+      if (rCls?.layout === "region-column") {
+        // Hard-pin nodes to their column center line
+        const colPositions = regionColumnPositionsRef.current;
+        for (const n of nodesRef.current) {
+          const val = n.classifiers?.[rCls.id];
+          if (val) {
+            const cx = colPositions.get(String(val));
+            if (cx != null) { n.x = cx; n.vx = 0; }
+          }
+        }
+      } else if (rCls?.layout === "region") {
+        // Strong pull toward region centroids (not hard pin — let collision spread nodes within)
+        const targets = regionTargetsRef.current;
+        const xFree = !classifiersRef.current.some((c) => c.layout === "x");
+        const yFree = !classifiersRef.current.some((c) => c.layout === "y");
+        const pull = 0.15;
+        for (const n of nodesRef.current) {
+          const val = n.classifiers?.[rCls.id];
+          if (val) {
+            const target = targets.get(String(val));
+            if (target) {
+              if (xFree) { n.x += (target.x - n.x) * pull; n.vx = (n.vx ?? 0) * 0.8; }
+              if (yFree) { n.y += (target.y - n.y) * pull; n.vy = (n.vy ?? 0) * 0.8; }
             }
           }
         }

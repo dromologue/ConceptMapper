@@ -173,6 +173,8 @@ export interface EdgeVisual {
 export interface SimNode extends GraphNode {
   x: number;
   y: number;
+  vx?: number;
+  vy?: number;
   fx?: number | null;
   fy?: number | null;
 }
