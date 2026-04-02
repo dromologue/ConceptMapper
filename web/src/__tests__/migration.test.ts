@@ -394,4 +394,110 @@ describe("layout conflict resolution", () => {
     expect(ir.metadata.classifiers![0].layout).toBe("region");
     expect(ir.metadata.classifiers![1].layout).toBe("y");
   });
+
+  // REQ-107: Classifier value mapping
+  it("maps stream to classifier by value ID regardless of layout", () => {
+    const template: TaxonomyTemplate = {
+      title: "Test",
+      classifiers: [
+        {
+          id: "domain",
+          label: "Domain",
+          layout: "region",
+          values: [
+            { id: "main", label: "Main" },
+            { id: "secondary", label: "Secondary" },
+          ],
+        },
+      ],
+      node_types: [{ id: "node", label: "Node", shape: "circle", icon: "N", fields: [] }],
+    };
+    const parsed: GraphIR = {
+      version: "1.0",
+      metadata: {
+        title: "Test",
+        streams: [{ id: "main", name: "Main" }],
+        generations: [],
+        external_shocks: [],
+        structural_observations: [],
+      },
+      nodes: [
+        { id: "n1", node_type: "node", name: "Node 1", stream: "main" },
+      ],
+      edges: [],
+    };
+    const { data } = migrateFromParser(parsed, template);
+    const ir = graphIRFromData(template, data);
+    expect(ir.nodes[0].classifiers?.["domain"]).toBe("main");
+  });
+
+  it("maps generation to classifier by value ID regardless of layout", () => {
+    const template: TaxonomyTemplate = {
+      title: "Test",
+      classifiers: [
+        {
+          id: "era",
+          label: "Era",
+          layout: "region",
+          values: [
+            { id: "1", label: "First" },
+            { id: "2", label: "Second" },
+          ],
+        },
+      ],
+      node_types: [{ id: "node", label: "Node", shape: "circle", icon: "N", fields: [] }],
+    };
+    const parsed: GraphIR = {
+      version: "1.0",
+      metadata: {
+        title: "Test",
+        streams: [],
+        generations: [{ number: 1 }, { number: 2 }],
+        external_shocks: [],
+        structural_observations: [],
+      },
+      nodes: [
+        { id: "n1", node_type: "node", name: "Node 1", generation: 2 },
+      ],
+      edges: [],
+    };
+    const { data } = migrateFromParser(parsed, template);
+    const ir = graphIRFromData(template, data);
+    expect(ir.nodes[0].classifiers?.["era"]).toBe("2");
+  });
+
+  it("maps stream to classifier even when layout is not x", () => {
+    const template: TaxonomyTemplate = {
+      title: "Test",
+      classifiers: [
+        {
+          id: "condition",
+          label: "Condition",
+          layout: "region-column",
+          values: [
+            { id: "alpha", label: "Alpha" },
+            { id: "beta", label: "Beta" },
+          ],
+        },
+      ],
+      node_types: [{ id: "node", label: "Node", shape: "circle", icon: "N", fields: [] }],
+    };
+    const parsed: GraphIR = {
+      version: "1.0",
+      metadata: {
+        title: "Test",
+        streams: [{ id: "alpha", name: "Alpha" }],
+        generations: [],
+        external_shocks: [],
+        structural_observations: [],
+      },
+      nodes: [
+        { id: "n1", node_type: "node", name: "Node 1", stream: "alpha" },
+      ],
+      edges: [],
+    };
+    const { data } = migrateFromParser(parsed, template);
+    const ir = graphIRFromData(template, data);
+    expect(ir.nodes[0].classifiers?.["condition"]).toBe("alpha");
+  });
 });

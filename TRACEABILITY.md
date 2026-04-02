@@ -178,6 +178,9 @@
 | REQ-102 | AC-102-01..04 (focus mode toggle) | `web/src/ui/Sidebar.tsx`, `web/src/graph/GraphCanvas.tsx` | sidebar checkbox, canvas dimming conditional | passing |
 | REQ-103 | AC-103-01..02 (reset view) | `web/src/ui/Sidebar.tsx`, `web/src/App.tsx` | reset button clears selection/filters, fits view | passing |
 | REQ-104 | AC-104-01..03 (label visibility) | `web/src/graph/GraphCanvas.tsx` | lowered zoom thresholds for labels | passing |
+| REQ-105 | AC-105-01..06 (column layout) | `web/src/graph/GraphCanvas.tsx` | proportional columns, separator lines, tick-based pinning | passing |
+| REQ-106 | AC-106-01..06 (region layout) | `web/src/graph/GraphCanvas.tsx` | grid centroids, hard-constrain, bounding circles | passing |
+| REQ-107 | AC-107-01..04 (classifier mapping) | `src/__tests__/migration.test.ts` | 3 tests: stream→region, generation→region, stream→column | passing |
 
 ## Additional Passing Tests (not yet mapped to spec requirements)
 

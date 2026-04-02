@@ -611,3 +611,31 @@ Node and edge labels remain visible at lower zoom levels to improve readability 
 **AC-104-01**: Node labels are visible at zoom levels down to 0.15 (previously 0.4).
 **AC-104-02**: Edge labels in filtered views are visible at zoom levels down to 0.5 (previously 0.8).
 **AC-104-03**: Tags are visible at zoom levels down to 0.5 (previously 0.7).
+
+### REQ-105: Column Layout (`region-column`)
+Classifier values are displayed as proportionally-sized vertical columns with separator lines.
+
+**AC-105-01**: Column widths are proportional to node count per value, with a minimum of 6% canvas width.
+**AC-105-02**: Faint separator lines are drawn between columns using the theme's `canvasEdgeDim` colour.
+**AC-105-03**: Column labels are drawn at the top center of each column using the theme's `canvasLabelHighlight` colour, scaled to fit the column width.
+**AC-105-04**: Tinted column backgrounds use the classifier value's colour at low opacity (0.08).
+**AC-105-05**: Nodes are hard-pinned to their column center X on every simulation tick (`node.x = centerX`, `node.vx = 0`). D3 forces only control Y-axis spacing.
+**AC-105-06**: D3 forces are NOT used for column X positioning — the tick handler sets positions directly, preventing competing forces from pulling nodes off-center.
+
+### REQ-106: Region Layout (`region`)
+Classifier values are displayed as circular regions distributed on a grid across the canvas.
+
+**AC-106-01**: Region centroids are arranged in a grid (ceil(sqrt(n)) columns × ceil(n/cols) rows) spread across the canvas using 15%–85% of width and height.
+**AC-106-02**: Nodes are hard-constrained within 120px of their region centroid on every tick, with a 5% centering pull toward the centroid and 90% velocity damping.
+**AC-106-03**: Bounding circles are drawn centered at the computed centroid with radius sized to contain all member nodes plus 40px padding. Minimum radius is 100px.
+**AC-106-04**: Circles have a filled background at 0.15 alpha and an outline stroke at 0.3 alpha using the classifier value's colour.
+**AC-106-05**: Region labels are drawn above each circle using the theme's `canvasLabelHighlight` colour.
+**AC-106-06**: Circles are drawn even when no visible members exist at the centroid (using minimum radius), so all regions are always visible.
+
+### REQ-107: Classifier Value Mapping
+Legacy `stream` and `generation` fields are mapped to classifier values by matching value IDs, not by layout type.
+
+**AC-107-01**: `populateNodeClassifiers` maps `node.stream` to any classifier whose values contain a matching ID, regardless of the classifier's layout (x, y, region, region-column, or none).
+**AC-107-02**: `populateNodeClassifiers` maps `node.generation` (as string) to any classifier whose values contain a matching ID, regardless of layout.
+**AC-107-03**: Changing a classifier's layout in the sidebar does not break the value mapping for existing nodes.
+**AC-107-04**: All three maps (organisational-learning, complexity-sciences, tasks-and-notes) have 100% classifier value coverage verified.
