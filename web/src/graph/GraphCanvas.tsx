@@ -282,7 +282,8 @@ const PILL_HEIGHT_SCALE = 1.2;
 const REVEALED_NODE_SCALE = 0.7;
 
 // Layout preset: flow (directed/hierarchical)
-const FLOW_Y_STRENGTH = 0.6;
+const FLOW_Y_STRENGTH = 0.8;
+const FLOW_X_STRENGTH = 0.5;
 
 // Layout preset: radial (centrality-based)
 const RADIAL_POSITION_STRENGTH = 0.4;
@@ -463,14 +464,18 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       radialTargets = computeRadialTargets(nodesRef.current, dataRef.current.edges, vw / 2, vh / 2);
     }
     if (preset === "flow" && (!xCls || !yCls)) {
-      // Build edge-directedness map from edge type configs
-      const directedTypes = new Set<string>();
-      for (const et of (edgeTypeConfigsRef.current ?? [])) {
-        if (et.directed) directedTypes.add(et.id);
-      }
+      // Build edge-directedness map from the edge data itself
       const edgeDirected = new Map<string, boolean>();
+      let hasAnyDirected = false;
       for (const e of dataRef.current.edges) {
-        edgeDirected.set(e.from + "→" + e.to, directedTypes.has(e.edge_type));
+        edgeDirected.set(e.from + "→" + e.to, e.directed);
+        if (e.directed) hasAnyDirected = true;
+      }
+      // If no edges are directed, treat all edges as directed for flow layout
+      if (!hasAnyDirected) {
+        for (const e of dataRef.current.edges) {
+          edgeDirected.set(e.from + "→" + e.to, true);
+        }
       }
       const depths = computeFlowDepths(nodesRef.current, dataRef.current.edges, edgeDirected);
       flowPositions = computeFlowPositions(nodesRef.current, dataRef.current.edges, edgeDirected, depths);
@@ -488,7 +493,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     } else if (radialTargets) {
       simulation.force("x", d3.forceX<SimNode>((d) => radialTargets!.get(d.id)?.x ?? vw / 2).strength(RADIAL_POSITION_STRENGTH));
     } else if (flowPositions) {
-      simulation.force("x", d3.forceX<SimNode>((d) => flowPositions!.get(d.id)?.x ?? vw / 2).strength(RADIAL_POSITION_STRENGTH));
+      simulation.force("x", d3.forceX<SimNode>((d) => flowPositions!.get(d.id)?.x ?? vw / 2).strength(FLOW_X_STRENGTH));
     } else {
       simulation.force("x", d3.forceX<SimNode>(vw / 2).strength(X_AXIS_CENTER_STRENGTH));
     }

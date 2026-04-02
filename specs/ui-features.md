@@ -258,7 +258,7 @@ Three layout presets control the D3 force simulation. Presets configure forces (
 **AC-061C-01**: Layout presets are session-level state (not persisted to .cm files).
 **AC-061C-02**: The Activity Bar has a Layout button that opens a popover with three options: Force, Flow, Radial.
 **AC-061C-03**: Force layout (default): standard force-directed with weak centering. Unchanged from previous behaviour.
-**AC-061C-04**: Flow layout: computes topological depth from directed edges (modified Kahn's algorithm, longest-path semantics). Sources at top, sinks at bottom. Fixed 200px depth gaps, 120px node gaps. Separate connected components arranged in horizontal lanes.
+**AC-061C-04**: Flow layout: computes topological depth from directed edges (modified Kahn's algorithm, longest-path semantics). Sources at top, sinks at bottom. Fixed 200px depth gaps, 120px node gaps. Separate connected components arranged in horizontal lanes. Uses `edge.directed` from parsed data; if no edges are directed, treats all edges as directed for flow purposes. Strong forces (Y: 0.8, X: 0.5) pull nodes firmly to computed positions.
 **AC-061C-05**: Radial layout: computes degree centrality. Highest-degree nodes at center, lowest at periphery. Fixed 150px ring spacing with golden-angle offset. Weaker charge (-350).
 **AC-061C-06**: Both flow and radial use fixed generous spacing in force-space; fitToView zooms the camera to show the full layout after settling.
 **AC-061C-07**: Classifier layouts override presets: if a classifier claims X or Y axis, that axis uses the classifier force, not the preset.
