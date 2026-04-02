@@ -175,6 +175,9 @@
 | REQ-096 | AC-096-01..04 (App.tsx decomposition) | `web/src/hooks/useFileLoader.ts`, `web/src/utils/swiftBridge.ts` | file loader hook + typed Swift bridge module | passing |
 | REQ-061D | AC-061D-05 (notes independence) | `web/src/App.tsx` | notes toggle does not auto-select node or open properties | passing |
 | REQ-101 | AC-101-01..05 (region colour overrides) | `src/__tests__/settings-modal.test.tsx` | 4 tests: section visible, colour pickers, non-layout hidden, no section when empty | passing |
+| REQ-102 | AC-102-01..04 (focus mode toggle) | `web/src/ui/Sidebar.tsx`, `web/src/graph/GraphCanvas.tsx` | sidebar checkbox, canvas dimming conditional | passing |
+| REQ-103 | AC-103-01..02 (reset view) | `web/src/ui/Sidebar.tsx`, `web/src/App.tsx` | reset button clears selection/filters, fits view | passing |
+| REQ-104 | AC-104-01..03 (label visibility) | `web/src/graph/GraphCanvas.tsx` | lowered zoom thresholds for labels | passing |
 
 ## Additional Passing Tests (not yet mapped to spec requirements)
 

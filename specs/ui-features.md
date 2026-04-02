@@ -590,3 +590,24 @@ Classifier-based region and column background colours can be customised per-valu
 **AC-101-03**: Colour overrides are stored in `classifierColorOverrides` on the theme context and persisted to localStorage (`cm-classifier-colors`).
 **AC-101-04**: A reset button (×) clears the override for a value, reverting to the template default.
 **AC-101-05**: The canvas region/column rendering applies overrides with priority: user override → template colour → `#666` fallback.
+
+### REQ-102: Focus Mode Toggle
+A sidebar toggle controls whether selecting a node dims unconnected nodes and edges (focus/neighborhood view).
+
+**AC-102-01**: A "View" section in the sidebar contains a "Focus on selection" checkbox, defaulting to on.
+**AC-102-02**: When focus mode is on (default), selecting a node dims all non-neighbor nodes to 8% opacity and non-neighbor edges to 3%.
+**AC-102-03**: When focus mode is off, selecting a node highlights it without dimming other nodes or edges.
+**AC-102-04**: The toggle affects both node and edge rendering in the canvas.
+
+### REQ-103: Reset View
+A "Reset View" button in the sidebar restores the canvas to its initial state.
+
+**AC-103-01**: A "Reset View" button is visible in the sidebar View section.
+**AC-103-02**: Clicking Reset View clears node/edge selection, resets all filters, hides the properties panel, and fits the canvas to show all nodes.
+
+### REQ-104: Label Visibility at Low Zoom
+Node and edge labels remain visible at lower zoom levels to improve readability when zoomed out.
+
+**AC-104-01**: Node labels are visible at zoom levels down to 0.15 (previously 0.4).
+**AC-104-02**: Edge labels in filtered views are visible at zoom levels down to 0.5 (previously 0.8).
+**AC-104-03**: Tags are visible at zoom levels down to 0.5 (previously 0.7).

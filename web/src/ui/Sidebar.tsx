@@ -54,6 +54,9 @@ interface Props {
   onAddEdge: () => void;
   interactionMode: string;
   onCancelAddEdge: () => void;
+  focusMode?: boolean;
+  onToggleFocusMode?: () => void;
+  onResetView?: () => void;
 }
 
 /** Extract a 4-digit year from a string like "1923", "b. 1947", "~1930" */
@@ -69,6 +72,7 @@ export function Sidebar({
   onSelectNode, selectedNodeId,
   onAddNode, onAddEdge,
   interactionMode, onCancelAddEdge,
+  focusMode = true, onToggleFocusMode, onResetView,
 }: Props) {
   const [filter, setFilter] = useState("");
   const [classifierSectionsOpen, setClassifierSectionsOpen] = useState<Record<string, boolean>>({});
@@ -453,6 +457,29 @@ export function Sidebar({
           </div>
         </div>
       )}
+
+      {/* View options */}
+      <div className="sidebar-section">
+        <div className="sidebar-section-header">
+          <span>View</span>
+        </div>
+        <div className="sidebar-section-body">
+          {onToggleFocusMode && (
+            <div
+              className={`sidebar-filter-item ${focusMode ? "" : "inactive"}`}
+              onClick={onToggleFocusMode}
+            >
+              <span className="sidebar-filter-check" data-checked={focusMode ? "true" : "false"} />
+              <span className="sidebar-filter-label">Focus on selection</span>
+            </div>
+          )}
+          {onResetView && (
+            <div className="sidebar-show-all-btn" onClick={onResetView} style={{ marginTop: 6 }}>
+              Reset View
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Node list — grouped by node type */}
       <div className="sidebar-section sidebar-nodes-section">

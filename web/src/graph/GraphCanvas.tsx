@@ -223,11 +223,11 @@ const NODE_LABEL_MAX_FONT = 16;
 const NODE_LABEL_BASE_FONT = 11;
 
 // Visual: zoom thresholds for label visibility
-const ZOOM_THRESHOLD_LABELS = 0.4;
-const ZOOM_THRESHOLD_NOTES = 0.5;
-const ZOOM_THRESHOLD_TAGS = 0.7;
-const ZOOM_THRESHOLD_EDGE_LABELS_FILTERED = 0.8;
-const ZOOM_THRESHOLD_EDGE_LABELS_HIGHLIGHT = 0.6;
+const ZOOM_THRESHOLD_LABELS = 0.15;
+const ZOOM_THRESHOLD_NOTES = 0.3;
+const ZOOM_THRESHOLD_TAGS = 0.5;
+const ZOOM_THRESHOLD_EDGE_LABELS_FILTERED = 0.5;
+const ZOOM_THRESHOLD_EDGE_LABELS_HIGHLIGHT = 0.4;
 
 // Visual: region backgrounds
 const REGION_CIRCLE_PADDING = 60;
@@ -319,6 +319,7 @@ interface Props {
   layoutPreset?: LayoutPreset;
   fontScale?: number;
   edgeTypeConfigs?: EdgeTypeConfig[];
+  focusMode?: boolean;
 }
 
 function getNodeRadius(node: SimNode, _viewMode: ViewMode, nodeTypeConfigs: NodeTypeConfig[]): number {
@@ -346,7 +347,7 @@ function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): NodeSha
   return "circle";
 }
 
-export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity, exploded, layoutPreset, fontScale = 1, edgeTypeConfigs }: Props) {
+export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity, exploded, layoutPreset, fontScale = 1, edgeTypeConfigs, focusMode = true }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const transformRef = useRef(d3.zoomIdentity);
@@ -378,6 +379,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const fontScaleRef = useRef(fontScale);
   const themeRef = useRef(theme);
   const lookRef = useRef(look);
+  const focusModeRef = useRef(focusMode);
   const selectedNodeIdRef = useRef(selectedNodeId);
   const selectedEdgeKeyRef = useRef(selectedEdgeKey);
   const hiddenLabelTypesRef = useRef(hiddenLabelTypes);
@@ -439,6 +441,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { collapsedRef.current = collapsedNodes ?? new Set(); redraw(); }, [collapsedNodes]);
   useEffect(() => { themeRef.current = theme; redraw(); }, [theme]);
   useEffect(() => { lookRef.current = look; redraw(); }, [look]);
+  useEffect(() => { focusModeRef.current = focusMode; redraw(); }, [focusMode]);
   useEffect(() => { selectedNodeIdRef.current = selectedNodeId; redraw(); }, [selectedNodeId]);
   useEffect(() => { hiddenLabelTypesRef.current = hiddenLabelTypes; redraw(); }, [hiddenLabelTypes]);
   useEffect(() => { communityOverlayRef.current = communityOverlay; redraw(); }, [communityOverlay]);
@@ -1290,11 +1293,17 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         edgeLw = 2.5 * weightScale;
       } else {
         const edgeColor = th.edgeColorOverrides[l.edge.edge_type] ?? visual.color;
-        const hasNodeSelection = selected && connectedToHighlight.size > 0;
-        ctx.strokeStyle = edgeColor ?? (isHighlighted ? th.canvasEdgeDefault : th.canvasEdgeDim);
-        const alpha = isHighlighted ? 0.8 : hasNodeSelection ? 0.03 : isRevealed ? 0.4 : 0.15;
-        ctx.globalAlpha = alpha;
-        edgeLw = (isHighlighted ? 1.5 : 0.8) * weightScale;
+        if (focusModeRef.current) {
+          const hasNodeSelection = selected && connectedToHighlight.size > 0;
+          ctx.strokeStyle = edgeColor ?? (isHighlighted ? th.canvasEdgeDefault : th.canvasEdgeDim);
+          const alpha = isHighlighted ? 0.8 : hasNodeSelection ? 0.03 : isRevealed ? 0.4 : 0.15;
+          ctx.globalAlpha = alpha;
+          edgeLw = (isHighlighted ? 1.5 : 0.8) * weightScale;
+        } else {
+          ctx.strokeStyle = edgeColor ?? th.canvasEdgeDefault;
+          ctx.globalAlpha = isRevealed ? 0.4 : 0.8;
+          edgeLw = 1.5 * weightScale;
+        }
       }
 
       if (lookRef.current === "mindmap") {
@@ -1426,11 +1435,15 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       // Dimming: community highlight takes priority over node selection
       const communityActive = hComm != null && communityMap;
       if (!communityActive) {
-        const hasSelection = selected && connectedToHighlight.size > 0;
-        const alpha = isHighlighted
-          ? (isRevealed ? 0.7 : 1)
-          : (hasSelection ? 0.08 : 0.25);
-        ctx.globalAlpha = alpha;
+        if (focusModeRef.current) {
+          const hasSelection = selected && connectedToHighlight.size > 0;
+          const alpha = isHighlighted
+            ? (isRevealed ? 0.7 : 1)
+            : (hasSelection ? 0.08 : 0.25);
+          ctx.globalAlpha = alpha;
+        } else {
+          ctx.globalAlpha = isRevealed ? 0.7 : 1;
+        }
       }
 
       const effectiveR = isRevealed ? r * REVEALED_NODE_SCALE : r;
@@ -1586,7 +1599,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           ctx.font = `${fontSize}px -apple-system, sans-serif`;
         }
 
-        const labelColor = isHighlighted ? (isRevealed ? th.canvasLabelDim : th.canvasLabelHighlight) : th.canvasLabelDim;
+        const labelColor = (!focusModeRef.current || isHighlighted) ? (isRevealed ? th.canvasLabelDim : th.canvasLabelHighlight) : th.canvasLabelDim;
         ctx.fillStyle = labelColor;
         ctx.fillText(node.name, node.x, baseY);
 

@@ -82,6 +82,7 @@ function AppInner() {
   const [notesOpen, setNotesOpen] = useState(false);
   const [propertiesOpen, setPropertiesOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [focusMode, setFocusMode] = useState(true);
   const [filters, setFilters] = useState<FilterState>(createEmptyFilterState());
   const [showSettings, setShowSettings] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -1193,6 +1194,17 @@ function AppInner() {
             onAddEdge={handleStartAddEdge}
             interactionMode={interactionMode}
             onCancelAddEdge={handleCancelAddEdge}
+            focusMode={focusMode}
+            onToggleFocusMode={() => setFocusMode(!focusMode)}
+            onResetView={() => {
+              setSelectedNode(null);
+              setSelectedEdge(null);
+              setEdgePopoverPos(null);
+              setFilters(createEmptyFilterState());
+              setRevealedNodes(new Set());
+              setPropertiesOpen(false);
+              setTimeout(() => fitToViewRef.current?.(), 50);
+            }}
           />
         )}
 
@@ -1232,6 +1244,7 @@ function AppInner() {
               layoutPreset={layoutPreset}
               fontScale={fontScale}
               edgeTypeConfigs={template?.edge_types}
+              focusMode={focusMode}
             />
             <div className="zoom-controls">
               <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomIn()} title="Zoom in">+</button>
