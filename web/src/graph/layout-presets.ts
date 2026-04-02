@@ -76,6 +76,7 @@ export function computeFlowPositions(
   edges: { from: string; to: string }[],
   edgeDirected: Map<string, boolean>,
   depths: Map<string, number>,
+  fontScale = 1,
 ): Map<string, { x: number; y: number }> {
   // Build parent map (directed parents) for ordering
   const parents = new Map<string, string[]>();
@@ -116,9 +117,13 @@ export function computeFlowPositions(
 
   const positions = new Map<string, { x: number; y: number }>();
 
+  // Scale gaps by fontScale so labels don't overlap at larger sizes
+  const depthGap = FLOW_DEPTH_GAP * fontScale;
+  const nodeGap = FLOW_NODE_GAP * fontScale;
+
   // Track the max width of each component for horizontal stacking
   let compXOffset = 0;
-  const COMP_GAP = 250; // gap between components
+  const compGap = 250 * fontScale;
 
   for (const comp of components) {
     // Group by depth
@@ -133,9 +138,9 @@ export function computeFlowPositions(
     const xPos = new Map<string, number>();
     for (const ids of byDepth.values()) {
       const count = ids.length;
-      const totalWidth = (count - 1) * FLOW_NODE_GAP;
+      const totalWidth = (count - 1) * nodeGap;
       for (let j = 0; j < count; j++) {
-        xPos.set(ids[j], -totalWidth / 2 + j * FLOW_NODE_GAP);
+        xPos.set(ids[j], -totalWidth / 2 + j * nodeGap);
       }
     }
 
@@ -152,9 +157,9 @@ export function computeFlowPositions(
         return avgA - avgB;
       });
       const count = ids.length;
-      const totalWidth = (count - 1) * FLOW_NODE_GAP;
+      const totalWidth = (count - 1) * nodeGap;
       for (let j = 0; j < count; j++) {
-        xPos.set(ids[j], -totalWidth / 2 + j * FLOW_NODE_GAP);
+        xPos.set(ids[j], -totalWidth / 2 + j * nodeGap);
       }
     }
 
@@ -173,11 +178,11 @@ export function computeFlowPositions(
       const d = depths.get(id) ?? 0;
       positions.set(id, {
         x: compCenter + (xPos.get(id) ?? 0),
-        y: d * FLOW_DEPTH_GAP,
+        y: d * depthGap,
       });
     }
 
-    compXOffset += compWidth + COMP_GAP;
+    compXOffset += compWidth + compGap;
   }
 
   return positions;
@@ -193,6 +198,7 @@ export function computeRadialTargets(
   edges: { from: string; to: string }[],
   centerX: number,
   centerY: number,
+  fontScale = 1,
 ): Map<string, { x: number; y: number }> {
   // Compute degree
   const deg = new Map<string, number>();
@@ -214,8 +220,8 @@ export function computeRadialTargets(
 
   const targets = new Map<string, { x: number; y: number }>();
   const GOLDEN_ANGLE = 137.508 * Math.PI / 180;
-  // Fixed ring spacing — generous, fitToView zooms to fit
-  const RING_GAP = 150;
+  // Fixed ring spacing scaled by fontScale — generous, fitToView zooms to fit
+  const RING_GAP = 150 * fontScale;
   const maxRadius = RING_GAP * maxDeg;
 
   for (const [d, ids] of tiers) {

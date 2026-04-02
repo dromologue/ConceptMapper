@@ -478,7 +478,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     let radialTargets: Map<string, { x: number; y: number }> | null = null;
     let flowPositions: Map<string, { x: number; y: number }> | null = null;
     if (preset === "radial" && !xCls && !yCls) {
-      radialTargets = computeRadialTargets(nodesRef.current, dataRef.current.edges, vw / 2, vh / 2);
+      radialTargets = computeRadialTargets(nodesRef.current, dataRef.current.edges, vw / 2, vh / 2, fontScaleRef.current);
     }
     if (preset === "flow" && (!xCls || !yCls)) {
       // Build edge-directedness map from the edge data itself
@@ -495,7 +495,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         }
       }
       const depths = computeFlowDepths(nodesRef.current, dataRef.current.edges, edgeDirected);
-      flowPositions = computeFlowPositions(nodesRef.current, dataRef.current.edges, edgeDirected, depths);
+      flowPositions = computeFlowPositions(nodesRef.current, dataRef.current.edges, edgeDirected, depths, fontScaleRef.current);
     }
 
     // X-axis force

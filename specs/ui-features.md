@@ -283,6 +283,7 @@ The zoom controls area includes font size adjustment buttons that scale node and
 **AC-061E-04**: Font scale is applied to node labels, edge labels, and is a session-level setting (not persisted).
 **AC-061E-05**: Font scale is passed to GraphCanvas and applied via a ref for efficient re-rendering.
 **AC-061E-06**: Changing font scale re-applies collision forces with extra padding proportional to the scale, causing nodes to spread apart so labels don't overlap.
+**AC-061E-07**: Flow and radial layout target positions scale their spacing (depth gaps, node gaps, ring gaps) proportionally to font scale, so preset layouts also adjust.
 
 ### REQ-061F: Fit to View Respects Visibility
 The Fit to View action zooms to fit only the currently visible nodes, not the entire graph.
