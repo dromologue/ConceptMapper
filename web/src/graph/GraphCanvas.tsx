@@ -1240,20 +1240,29 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           ctx.fillText(label, colX, viewTop + COLUMN_LABEL_TOP_OFFSET);
           ctx.globalAlpha = 1;
         } else {
-          // Circle layout: bounding circle around members (needs at least one member)
-          if (members.length === 0) continue;
-          let cx = 0, cy = 0;
-          for (const m of members) { cx += m.x; cy += m.y; }
-          cx /= members.length;
-          cy /= members.length;
-
-          let maxDist = 0;
-          for (const m of members) {
-            const dx = m.x - cx, dy = m.y - cy;
-            maxDist = Math.max(maxDist, Math.sqrt(dx * dx + dy * dy));
+          // Circle layout: draw around members, or at target centroid if no members visible yet
+          const targets = regionTargetsRef.current;
+          const target = targets.get(rv.id);
+          let cx: number, cy: number, radius: number;
+          if (members.length > 0) {
+            cx = 0; cy = 0;
+            for (const m of members) { cx += m.x; cy += m.y; }
+            cx /= members.length;
+            cy /= members.length;
+            let maxDist = 0;
+            for (const m of members) {
+              const dx = m.x - cx, dy = m.y - cy;
+              maxDist = Math.max(maxDist, Math.sqrt(dx * dx + dy * dy));
+            }
+            radius = maxDist + REGION_CIRCLE_PADDING;
+          } else if (target) {
+            // No visible members but we know where the region should be
+            cx = target.x;
+            cy = target.y;
+            radius = REGION_CIRCLE_PADDING;
+          } else {
+            continue;
           }
-          const padding = REGION_CIRCLE_PADDING;
-          const radius = maxDist + padding;
 
           // Filled background
           ctx.globalAlpha = REGION_CIRCLE_BG_ALPHA;
