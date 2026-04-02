@@ -117,22 +117,39 @@ function computeRegionCentroids(
   return result;
 }
 
-/** Compute equal-width column x-positions for region-column layout, filling the full canvas */
+/** Compute proportional column positions based on node counts per value.
+ *  Columns with more nodes get more width. Minimum width ensures small groups are visible. */
 function computeRegionColumns(
   regionCls: Classifier,
   width: number,
-  _nodeCounts?: Map<string, number>, // eslint-disable-line @typescript-eslint/no-unused-vars
-): { positions: Map<string, number>; widths: Map<string, number> } {
+  nodeCounts?: Map<string, number>,
+): { positions: Map<string, number>; widths: Map<string, number>; leftEdges: Map<string, number> } {
   const n = regionCls.values.length;
-  if (n === 0) return { positions: new Map(), widths: new Map() };
-  const colW = width / n;
+  if (n === 0) return { positions: new Map(), widths: new Map(), leftEdges: new Map() };
+
+  const minColFraction = 0.06; // minimum 6% of width for any column
+  const total = nodeCounts ? [...nodeCounts.values()].reduce((a, b) => a + b, 0) : 0;
+
+  // Compute raw proportions, then enforce minimums
+  const rawFractions = regionCls.values.map((v) => {
+    const count = nodeCounts?.get(v.id) ?? 0;
+    return total > 0 ? Math.max(minColFraction, count / total) : 1 / n;
+  });
+  const fractionSum = rawFractions.reduce((a, b) => a + b, 0);
+  const normalized = rawFractions.map((f) => f / fractionSum); // normalize to sum=1
+
   const positions = new Map<string, number>();
   const widths = new Map<string, number>();
+  const leftEdges = new Map<string, number>();
+  let x = 0;
   regionCls.values.forEach((v, i) => {
+    const colW = width * normalized[i];
+    leftEdges.set(v.id, x);
     widths.set(v.id, colW);
-    positions.set(v.id, colW * (i + 0.5));
+    positions.set(v.id, x + colW / 2); // center of column
+    x += colW;
   });
-  return { positions, widths };
+  return { positions, widths, leftEdges };
 }
 
 // --- Configuration constants ---
@@ -373,6 +390,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const classifiersRef = useRef<Classifier[]>([]);
   const regionColumnWidthsRef = useRef<Map<string, number>>(new Map());
   const regionColumnPositionsRef = useRef<Map<string, number>>(new Map());
+  const regionColumnLeftEdgesRef = useRef<Map<string, number>>(new Map());
   const regionTargetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const explodedRef = useRef(exploded ?? false);
   const layoutPresetRef = useRef<LayoutPreset>(layoutPreset ?? "force");
@@ -552,19 +570,22 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       if (regionCls.layout === "region-column") {
         const counts = new Map<string, number>();
         for (const n of nodesRef.current) { const v = n.classifiers?.[regionCls.id]; if (v) counts.set(String(v), (counts.get(String(v)) ?? 0) + 1); }
-        const { positions, widths } = computeRegionColumns(regionCls, vw, counts);
+        const { positions, widths, leftEdges } = computeRegionColumns(regionCls, vw, counts);
         regionColumnPositionsRef.current = positions;
         regionColumnWidthsRef.current = widths;
+        regionColumnLeftEdgesRef.current = leftEdges;
         regionTargetsRef.current = new Map();
       } else {
         const centroids = computeRegionCentroids(regionCls, vw, vh);
         regionTargetsRef.current = centroids;
         regionColumnPositionsRef.current = new Map();
         regionColumnWidthsRef.current = new Map();
+        regionColumnLeftEdgesRef.current = new Map();
       }
     } else {
       regionColumnPositionsRef.current = new Map();
       regionColumnWidthsRef.current = new Map();
+      regionColumnLeftEdgesRef.current = new Map();
       regionTargetsRef.current = new Map();
     }
   }
@@ -1179,32 +1200,36 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         const color = th.classifierColorOverrides?.[rv.id] ?? rv.color ?? "#666";
 
         if (isColumn) {
-          // Always draw column backgrounds and labels, even when no visible members
-          // Column layout: use cached positions from simulation forces (stable across zoom/pan)
           const cachedPositions = regionColumnPositionsRef.current;
           const cachedWidths = regionColumnWidthsRef.current;
+          const cachedLeftEdges = regionColumnLeftEdgesRef.current;
           if (cachedPositions.size === 0) continue;
           const colX = cachedPositions.get(rv.id) ?? width / 2;
+          const colLeft = cachedLeftEdges.get(rv.id) ?? 0;
           const thisColW = cachedWidths.get(rv.id) ?? 100;
           const viewTop = -t.y / t.k;
           const viewBottom = (height - t.y) / t.k;
-          const viewLeft = -t.x / t.k;
-          const viewRight = (width - t.x) / t.k;
 
-          // Clip column to visible area
-          const drawLeft = Math.max(colX - thisColW / 2, viewLeft);
-          const drawRight = Math.min(colX + thisColW / 2, viewRight);
-          if (drawRight > drawLeft) {
-            ctx.globalAlpha = COLUMN_BG_ALPHA;
-            ctx.fillStyle = color;
-            ctx.fillRect(drawLeft, viewTop, drawRight - drawLeft, viewBottom - viewTop);
-          }
+          // Subtle tinted background
+          ctx.globalAlpha = COLUMN_BG_ALPHA;
+          ctx.fillStyle = color;
+          ctx.fillRect(colLeft, viewTop, thisColW, viewBottom - viewTop);
 
-          // Column label at top — scale font to fit column width, truncate if needed
+          // Separator line on right edge of each column (except last)
+          const colRight = colLeft + thisColW;
+          ctx.globalAlpha = 0.25;
+          ctx.strokeStyle = th.canvasEdgeDim;
+          ctx.lineWidth = 1 / t.k; // 1px regardless of zoom
+          ctx.beginPath();
+          ctx.moveTo(colRight, viewTop);
+          ctx.lineTo(colRight, viewBottom);
+          ctx.stroke();
+
+          // Column label at top center
           const maxLabelW = thisColW * COLUMN_LABEL_WIDTH_RATIO;
           const fontSize = Math.min(COLUMN_LABEL_MAX_FONT, Math.max(COLUMN_LABEL_MIN_FONT, maxLabelW / rv.label.length * COLUMN_LABEL_SIZE_FACTOR));
           ctx.globalAlpha = COLUMN_LABEL_ALPHA;
-          ctx.fillStyle = color;
+          ctx.fillStyle = th.canvasLabelHighlight;
           ctx.font = `bold ${fontSize}px -apple-system, sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
@@ -1230,6 +1255,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           const padding = REGION_CIRCLE_PADDING;
           const radius = maxDist + padding;
 
+          // Filled background
           ctx.globalAlpha = REGION_CIRCLE_BG_ALPHA;
           ctx.fillStyle = color;
           if (isOrganic) {
@@ -1240,10 +1266,22 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
           }
+          // Outline stroke for visibility
+          ctx.globalAlpha = 0.3;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5 / t.k;
+          if (isOrganic) {
+            drawOrganicCircle(ctx, cx, cy, radius, hashCode(rv.id));
+            ctx.stroke();
+          } else {
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+          }
 
           // Region label
           ctx.globalAlpha = REGION_LABEL_ALPHA;
-          ctx.fillStyle = color;
+          ctx.fillStyle = th.canvasLabelHighlight;
           ctx.font = `bold ${REGION_LABEL_FONT_SIZE}px -apple-system, sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "bottom";
