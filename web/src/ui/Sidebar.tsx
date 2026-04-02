@@ -30,10 +30,6 @@ function isDateKey(key: string): boolean {
     || k.endsWith("_from") || k.endsWith("_to");
 }
 
-/** Format a snake_case property key as a label */
-function formatKey(key: string): string {
-  return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 interface Props {
   nodes: GraphNode[];
@@ -89,11 +85,10 @@ export function Sidebar({
     return [...tagSet].sort();
   }, [nodes]);
 
-  // Dynamic attribute filter sections — data-driven discovery
-  // Scans all properties from actual data, uses config labels where available
+  // Attribute filter sections — template-driven only.
+  // Only shows attributes defined in the template's NodeTypeConfig.fields.
   const filterSections = useMemo<FilterSection[]>(() => {
     const sections: FilterSection[] = [];
-    // Group nodes by type
     const nodesByType = new Map<string, typeof nodes>();
     for (const n of nodes) {
       const list = nodesByType.get(n.node_type) ?? [];
@@ -103,69 +98,29 @@ export function Sidebar({
 
     for (const config of nodeTypeConfigs) {
       const typeNodes = nodesByType.get(config.id) ?? [];
-      if (typeNodes.length === 0) continue;
 
-      // Collect all property keys from data for this type
-      const allKeys = new Set<string>();
-      for (const n of typeNodes) {
-        if (n.properties) {
-          for (const key of Object.keys(n.properties)) allKeys.add(key);
-        }
-      }
-      // Also include config-defined select fields (even if no data yet)
-      for (const f of config.fields) {
-        if (f.type === "select") allKeys.add(f.key);
-      }
-
-      for (const key of allKeys) {
-        // Skip date-like keys (handled by date filter)
-        if (isDateKey(key)) continue;
+      // Only iterate fields defined in the template
+      for (const field of config.fields) {
+        if (isDateKey(field.key)) continue;
+        if (field.type === "textarea") continue;
 
         const valueSet = new Set<string>();
 
         // Include template options for select fields
-        const configField = config.fields.find((f) => f.key === key);
-        if (configField?.type === "select" && configField.options) {
-          for (const opt of configField.options) valueSet.add(opt);
+        if (field.type === "select" && field.options) {
+          for (const opt of field.options) valueSet.add(opt);
         }
-        // Skip textarea fields
-        if (configField?.type === "textarea") continue;
 
         // Collect actual values from data
         for (const n of typeNodes) {
-          const val = n.properties?.[key];
+          const val = n.properties?.[field.key];
           if (val != null && typeof val === "string" && val !== "") valueSet.add(val);
         }
 
         if (valueSet.size === 0) continue;
         if (valueSet.size > MAX_TEXT_FILTER_VALUES) continue;
 
-        // Use config label if available, otherwise format key
-        const label = configField?.label ?? formatKey(key);
-
-        sections.push({ nodeType: config.id, field: key, label, values: [...valueSet].sort() });
-      }
-    }
-
-    // Also handle nodes with types not in config
-    const configIds = new Set(nodeTypeConfigs.map((c) => c.id));
-    for (const [typeId, typeNodes] of nodesByType) {
-      if (configIds.has(typeId)) continue;
-      const allKeys = new Set<string>();
-      for (const n of typeNodes) {
-        if (n.properties) {
-          for (const key of Object.keys(n.properties)) allKeys.add(key);
-        }
-      }
-      for (const key of allKeys) {
-        if (isDateKey(key)) continue;
-        const valueSet = new Set<string>();
-        for (const n of typeNodes) {
-          const val = n.properties?.[key];
-          if (val != null && typeof val === "string" && val !== "") valueSet.add(val);
-        }
-        if (valueSet.size === 0 || valueSet.size > MAX_TEXT_FILTER_VALUES) continue;
-        sections.push({ nodeType: typeId, field: key, label: formatKey(key), values: [...valueSet].sort() });
+        sections.push({ nodeType: config.id, field: field.key, label: field.label, values: [...valueSet].sort() });
       }
     }
 

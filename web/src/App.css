@@ -543,6 +543,28 @@ body {
   overflow: hidden;
 }
 
+.load-warnings-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #3a2800;
+  border-bottom: 1px solid #665500;
+  color: #ffcc44;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.load-warnings-content {
+  flex: 1;
+}
+.load-warnings-content ul {
+  margin: 4px 0 0 16px;
+  padding: 0;
+}
+.load-warnings-content li {
+  margin: 2px 0;
+}
+
 .canvas-container {
   flex: 1;
   position: relative;

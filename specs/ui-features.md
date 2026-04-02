@@ -639,3 +639,19 @@ Legacy `stream` and `generation` fields are mapped to classifier values by match
 **AC-107-02**: `populateNodeClassifiers` maps `node.generation` (as string) to any classifier whose values contain a matching ID, regardless of layout.
 **AC-107-03**: Changing a classifier's layout in the sidebar does not break the value mapping for existing nodes.
 **AC-107-04**: All three maps (organisational-learning, complexity-sciences, tasks-and-notes) have 100% classifier value coverage verified.
+
+### REQ-108: Template-Driven Attribute Display
+The sidebar and properties panel only show attributes defined in the template's `NodeTypeConfig.fields` array. Properties on nodes that aren't in the template are hidden from the UI.
+
+**AC-108-01**: Sidebar filter sections are built exclusively from template-defined fields, not from data-discovered property keys.
+**AC-108-02**: Properties not defined in the template do not appear as filter sections in the sidebar.
+**AC-108-03**: The DetailPanel only renders fields from the template's `NodeTypeConfig.fields` (already implemented).
+
+### REQ-109: Map/Template Validation on Load
+When a map is loaded, its data is validated against the template. Mismatches are shown as non-blocking warnings.
+
+**AC-109-01**: After loading a map, `validateMapAgainstTemplate` checks for properties on nodes that aren't defined in the template's field definitions.
+**AC-109-02**: Missing required fields on nodes are reported as warnings.
+**AC-109-03**: Warnings are deduplicated by property name (e.g. "5 node(s) have property X not in template" rather than one per node).
+**AC-109-04**: Warnings appear in a dismissible banner above the canvas with amber styling.
+**AC-109-05**: Validation does not block loading — the map is always displayed, warnings are informational.

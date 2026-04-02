@@ -131,7 +131,7 @@ function AppInner() {
     setRevealedNodes(new Set());
     setFilters(createEmptyFilterState());
   }, []);
-  const { parserReady, error, setError, loadFileContent } = useFileLoader(
+  const { parserReady, error, setError, loadFileContent, loadWarnings, setLoadWarnings } = useFileLoader(
     template, setGraphData, setTemplate, resetUI, setSourceFilePath
   );
 
@@ -1209,6 +1209,15 @@ function AppInner() {
         )}
 
         <div className="editor-area">
+          {loadWarnings.length > 0 && (
+            <div className="load-warnings-banner">
+              <div className="load-warnings-content">
+                <strong>Template mismatch:</strong>
+                <ul>{loadWarnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
+              </div>
+              <button className="close-btn" onClick={() => setLoadWarnings([])}>×</button>
+            </div>
+          )}
           <div className="canvas-container">
             <GraphCanvas
               data={graphData}

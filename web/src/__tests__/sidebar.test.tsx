@@ -226,18 +226,20 @@ describe("Sidebar", () => {
     expect(onShowAll).toHaveBeenCalled();
   });
 
-  it("renders text field filters when values have low cardinality", async () => {
+  it("renders only template-defined attribute filters", async () => {
     const user = userEvent.setup();
-    const nodesWithTags = [
+    const nodesWithProps = [
       { id: "n1", name: "Alice", node_type: "person", stream: "s1", generation: 1, properties: { importance: "major", tags: "Harvard" } },
       { id: "n2", name: "Bob", node_type: "person", stream: "s2", generation: 1, properties: { importance: "minor", tags: "MIT" } },
     ];
-    render(<Sidebar {...defaultProps} nodes={nodesWithTags} />);
-    expect(screen.getByText("Tags")).toBeInTheDocument();
-    // Expand Tags section
-    await user.click(screen.getByText("Tags"));
-    expect(screen.getByText("Harvard")).toBeInTheDocument();
-    expect(screen.getByText("MIT")).toBeInTheDocument();
+    render(<Sidebar {...defaultProps} nodes={nodesWithProps} />);
+    // Importance IS in template fields — should appear
+    expect(screen.getByText("Importance")).toBeInTheDocument();
+    await user.click(screen.getByText("Importance"));
+    expect(screen.getByText("major")).toBeInTheDocument();
+    expect(screen.getByText("minor")).toBeInTheDocument();
+    // Tags is NOT in template fields — should not appear
+    expect(screen.queryByText("Tags")).not.toBeInTheDocument();
   });
 
   it("renders date range filter for nodes with date_from/date_to fields", async () => {

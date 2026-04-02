@@ -8,6 +8,67 @@ import { normalizeFencedKV } from "../utils/normalize";
  * Hook that manages WASM parser initialization and .cm/.cmt file loading.
  * Extracts file-loading concerns from App.tsx.
  */
+/** Validate that map data matches the template's field definitions. */
+function validateMapAgainstTemplate(ir: GraphIR, tmpl: TaxonomyTemplate): string[] {
+  const warnings: string[] = [];
+  const nodeTypes = tmpl.node_types ?? [];
+  const configByType = new Map(nodeTypes.map((c) => [c.id, c]));
+
+  for (const node of ir.nodes) {
+    const config = configByType.get(node.node_type);
+    if (!config) continue; // unknown node type — not a validation error here
+
+    const templateKeys = new Set(config.fields.map((f) => f.key));
+    const nodeKeys = Object.keys(node.properties ?? {});
+
+    // Properties on node not in template
+    for (const key of nodeKeys) {
+      if (!templateKeys.has(key)) {
+        warnings.push(`Node "${node.name}" (${node.node_type}): property "${key}" is not defined in template`);
+      }
+    }
+  }
+
+  // Check template fields missing from ALL nodes of that type
+  const nodesByType = new Map<string, typeof ir.nodes>();
+  for (const n of ir.nodes) {
+    const list = nodesByType.get(n.node_type) ?? [];
+    list.push(n);
+    nodesByType.set(n.node_type, list);
+  }
+  for (const config of nodeTypes) {
+    const typeNodes = nodesByType.get(config.id) ?? [];
+    if (typeNodes.length === 0) continue;
+    for (const field of config.fields) {
+      if (!field.required) continue;
+      const missing = typeNodes.filter((n) => {
+        const val = (n.properties ?? {})[field.key];
+        return val == null || val === "";
+      });
+      if (missing.length > 0) {
+        warnings.push(`${missing.length} ${config.id} node(s) missing required field "${field.label}"`);
+      }
+    }
+  }
+
+  // Deduplicate similar warnings (group by property name)
+  const propWarnings = new Map<string, number>();
+  const otherWarnings: string[] = [];
+  for (const w of warnings) {
+    const match = w.match(/property "(.+)" is not defined/);
+    if (match) {
+      propWarnings.set(match[1], (propWarnings.get(match[1]) ?? 0) + 1);
+    } else {
+      otherWarnings.push(w);
+    }
+  }
+  const deduped: string[] = [];
+  for (const [prop, count] of propWarnings) {
+    deduped.push(`${count} node(s) have property "${prop}" which is not defined in template`);
+  }
+  return [...deduped, ...otherWarnings];
+}
+
 export function useFileLoader(
   template: TaxonomyTemplate | null,
   setGraphData: (data: GraphIR | null) => void,
@@ -17,6 +78,7 @@ export function useFileLoader(
 ) {
   const [parserReady, setParserReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadWarnings, setLoadWarnings] = useState<string[]>([]);
 
   // Initialize WASM parser on startup
   useEffect(() => {
@@ -45,6 +107,9 @@ export function useFileLoader(
               const { template: migratedTemplate, data: migratedData } = migrateFromParser(data, effectiveTemplate);
               const ir = graphIRFromData(migratedTemplate, migratedData);
               if (tmplFile) ir.metadata.source_template = tmplFile.endsWith(".cmt") ? tmplFile : `${tmplFile}.cmt`;
+              // Validate map data against template
+              const warnings = validateMapAgainstTemplate(ir, migratedTemplate);
+              setLoadWarnings(warnings);
               setGraphData(ir);
               setTemplate(migratedTemplate);
               resetUI();
@@ -111,5 +176,5 @@ export function useFileLoader(
     [template, setGraphData, setTemplate, resetUI, setSourceFilePath]
   );
 
-  return { parserReady, error, setError, loadFileContent };
+  return { parserReady, error, setError, loadFileContent, loadWarnings, setLoadWarnings };
 }

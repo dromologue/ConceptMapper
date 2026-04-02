@@ -181,6 +181,8 @@
 | REQ-105 | AC-105-01..06 (column layout) | `web/src/graph/GraphCanvas.tsx` | proportional columns, separator lines, tick-based pinning | passing |
 | REQ-106 | AC-106-01..06 (region layout) | `web/src/graph/GraphCanvas.tsx` | grid centroids, hard-constrain, bounding circles | passing |
 | REQ-107 | AC-107-01..04 (classifier mapping) | `src/__tests__/migration.test.ts` | 3 tests: stream→region, generation→region, stream→column | passing |
+| REQ-108 | AC-108-01..03 (template-driven display) | `src/__tests__/sidebar.test.tsx` | sidebar shows only template fields, hides data-only props | passing |
+| REQ-109 | AC-109-01..05 (map/template validation) | `web/src/hooks/useFileLoader.ts` | validateMapAgainstTemplate, warning banner | passing |
 
 ## Additional Passing Tests (not yet mapped to spec requirements)
 
