@@ -440,11 +440,16 @@ function AppInner() {
   );
 
   const handleStartAddEdge = useCallback(() => {
-    setInteractionMode("add-edge-source");
-    setEdgeSource(null);
     setEdgeTarget(null);
-    setSelectedNode(null);
-  }, []);
+    if (selectedNode) {
+      // Use the currently selected node as the source
+      setEdgeSource(selectedNode.id);
+      setInteractionMode("add-edge-target");
+    } else {
+      setEdgeSource(null);
+      setInteractionMode("add-edge-source");
+    }
+  }, [selectedNode]);
 
   const handleCancelAddEdge = useCallback(() => {
     setInteractionMode("normal");

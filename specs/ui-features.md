@@ -301,6 +301,7 @@ Single-click node selection in add-edge mode for immediate response.
 
 **AC-061H-01**: In add-edge-source or add-edge-target mode, clicking a node selects it immediately on pointer-down without starting a drag.
 **AC-061H-02**: The simulation is not restarted when selecting edge source/target nodes, preserving the current view.
+**AC-061H-03**: If a node is already selected when "Add Edge" is clicked, it is used as the source automatically — the user only needs to click the target.
 
 ### REQ-061I: Taxonomy Auto-Save
 Editing the taxonomy via the wizard automatically saves both the .cm map file and the .cmt template file.
