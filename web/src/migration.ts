@@ -97,13 +97,25 @@ export function getTemplateClassifiers(template: TaxonomyTemplate): Classifier[]
   return result;
 }
 
-/** Populate node.classifiers from legacy stream/generation fields */
+/** Populate node.classifiers from legacy stream/generation fields.
+ *  Maps stream → any classifier whose values contain the stream ID,
+ *  and generation → any classifier whose values contain the generation number.
+ *  This works regardless of classifier layout (x, y, region, etc). */
 function populateNodeClassifiers(node: GraphNode, classifiers: Classifier[]): void {
   if (node.classifiers && Object.keys(node.classifiers).length > 0) return;
   const cls: Record<string, string> = {};
   for (const c of classifiers) {
-    if (c.layout === "x" && node.stream) cls[c.id] = node.stream;
-    if (c.layout === "y" && node.generation != null) cls[c.id] = String(node.generation);
+    // Try to match stream to a classifier by value IDs
+    if (node.stream && !cls[c.id]) {
+      const match = c.values.find((v) => v.id === node.stream);
+      if (match) cls[c.id] = node.stream;
+    }
+    // Try to match generation to a classifier by value IDs
+    if (node.generation != null && !cls[c.id]) {
+      const genStr = String(node.generation);
+      const match = c.values.find((v) => v.id === genStr);
+      if (match) cls[c.id] = genStr;
+    }
   }
   if (Object.keys(cls).length > 0) node.classifiers = cls;
 }
