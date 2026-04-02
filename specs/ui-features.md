@@ -290,12 +290,11 @@ The Fit to View action zooms to fit only the currently visible nodes, not the en
 **AC-061F-02**: If no nodes are visible, falls back to fitting all nodes.
 **AC-061F-03**: Revealed nodes (shown when a filtered node is selected) are included in the fit calculation.
 
-### REQ-061G: Edge Source Pulse Animation
-When adding an edge, the source node pulses to clearly indicate which node is the edge origin.
+### REQ-061G: Edge Source Highlight
+When adding an edge, the source node has a bold double-ring glow to clearly indicate which node is the edge origin.
 
-**AC-061G-01**: The edge source node has a pulsing stroke (oscillating width and alpha) using the edge source stroke colour.
-**AC-061G-02**: Pulse is driven by a requestAnimationFrame loop that runs only while an edge source is selected.
-**AC-061G-03**: The animation loop is cleaned up when the edge source is deselected or the edge is completed.
+**AC-061G-01**: The edge source node has a 4px inner stroke and a 10px outer glow ring (30% alpha) using the edge source stroke colour.
+**AC-061G-02**: The glow is visible at all zoom levels without requiring animation.
 
 ### REQ-062: Image Export (PNG/PDF)
 Export the current canvas view as PNG or PDF with configurable background.
