@@ -60,18 +60,32 @@ export function computeFlowDepths(
   return depth;
 }
 
+/** Fixed spacing between depth levels in flow layout (in force-space units) */
+const FLOW_DEPTH_GAP = 200;
+/** Horizontal spacing between nodes at the same depth */
+const FLOW_NODE_GAP = 120;
+
 /**
- * Compute X-lane positions for flow layout by finding connected components
- * in the full graph (directed + undirected) and assigning each component
- * a horizontal lane. Within each component, nodes at the same depth are
- * spread evenly across the lane width.
+ * Compute full X+Y target positions for flow layout.
+ * Uses fixed generous spacing (not constrained to canvas) — fitToView handles zoom.
+ * - Y is driven by topological depth with fixed gaps
+ * - X is driven by connected component lanes, with same-depth nodes ordered by parent position
  */
-export function computeFlowXPositions(
+export function computeFlowPositions(
   nodes: { id: string }[],
   edges: { from: string; to: string }[],
+  edgeDirected: Map<string, boolean>,
   depths: Map<string, number>,
-  vw: number,
-): Map<string, number> {
+): Map<string, { x: number; y: number }> {
+  // Build parent map (directed parents) for ordering
+  const parents = new Map<string, string[]>();
+  for (const n of nodes) parents.set(n.id, []);
+  for (const e of edges) {
+    if (edgeDirected.get(e.from + "→" + e.to)) {
+      parents.get(e.to)?.push(e.from);
+    }
+  }
+
   // Build undirected adjacency for component detection
   const adj = new Map<string, Set<string>>();
   for (const n of nodes) adj.set(n.id, new Set());
@@ -98,22 +112,16 @@ export function computeFlowXPositions(
     }
     components.push(comp);
   }
-
-  // Sort components by size (largest first) for better use of space
   components.sort((a, b) => b.length - a.length);
 
-  const xPos = new Map<string, number>();
-  const numComps = components.length;
-  const margin = 0.08; // 8% margin on each side
-  const usableWidth = vw * (1 - 2 * margin);
+  const positions = new Map<string, { x: number; y: number }>();
 
-  for (let ci = 0; ci < numComps; ci++) {
-    const comp = components[ci];
-    // Lane center for this component
-    const laneCenter = vw * margin + usableWidth * (ci + 0.5) / Math.max(numComps, 1);
-    const laneWidth = usableWidth / Math.max(numComps, 1);
+  // Track the max width of each component for horizontal stacking
+  let compXOffset = 0;
+  const COMP_GAP = 250; // gap between components
 
-    // Group nodes by depth within this component
+  for (const comp of components) {
+    // Group by depth
     const byDepth = new Map<number, string[]>();
     for (const id of comp) {
       const d = depths.get(id) ?? 0;
@@ -121,30 +129,70 @@ export function computeFlowXPositions(
       byDepth.get(d)!.push(id);
     }
 
-    // Spread nodes at same depth across lane width
+    // First pass: assign initial X within component (centered at 0)
+    const xPos = new Map<string, number>();
     for (const ids of byDepth.values()) {
       const count = ids.length;
+      const totalWidth = (count - 1) * FLOW_NODE_GAP;
       for (let j = 0; j < count; j++) {
-        const offset = count === 1 ? 0 : (j / (count - 1) - 0.5) * laneWidth * 0.8;
-        xPos.set(ids[j], laneCenter + offset);
+        xPos.set(ids[j], -totalWidth / 2 + j * FLOW_NODE_GAP);
       }
     }
+
+    // Second pass: reorder same-depth nodes by average parent X position
+    const sortedDepths = [...byDepth.keys()].sort((a, b) => a - b);
+    for (const d of sortedDepths) {
+      const ids = byDepth.get(d)!;
+      if (ids.length <= 1) continue;
+      ids.sort((a, b) => {
+        const pa = parents.get(a) ?? [];
+        const pb = parents.get(b) ?? [];
+        const avgA = pa.length > 0 ? pa.reduce((s, p) => s + (xPos.get(p) ?? 0), 0) / pa.length : 0;
+        const avgB = pb.length > 0 ? pb.reduce((s, p) => s + (xPos.get(p) ?? 0), 0) / pb.length : 0;
+        return avgA - avgB;
+      });
+      const count = ids.length;
+      const totalWidth = (count - 1) * FLOW_NODE_GAP;
+      for (let j = 0; j < count; j++) {
+        xPos.set(ids[j], -totalWidth / 2 + j * FLOW_NODE_GAP);
+      }
+    }
+
+    // Find component width
+    let minX = Infinity, maxX = -Infinity;
+    for (const id of comp) {
+      const x = xPos.get(id) ?? 0;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+    }
+    const compWidth = maxX - minX;
+    const compCenter = compXOffset + compWidth / 2;
+
+    // Assign final positions
+    for (const id of comp) {
+      const d = depths.get(id) ?? 0;
+      positions.set(id, {
+        x: compCenter + (xPos.get(id) ?? 0),
+        y: d * FLOW_DEPTH_GAP,
+      });
+    }
+
+    compXOffset += compWidth + COMP_GAP;
   }
 
-  return xPos;
+  return positions;
 }
 
 /**
  * Compute target positions for radial layout based on degree centrality.
+ * Uses fixed spacing (not constrained to canvas) — fitToView handles zoom.
  * Highest-degree nodes at center, lowest at periphery.
- * Nodes at the same degree are spread evenly around a ring with golden-angle offset.
  */
 export function computeRadialTargets(
   nodes: { id: string }[],
   edges: { from: string; to: string }[],
   centerX: number,
   centerY: number,
-  maxRadius: number,
 ): Map<string, { x: number; y: number }> {
   // Compute degree
   const deg = new Map<string, number>();
@@ -166,12 +214,15 @@ export function computeRadialTargets(
 
   const targets = new Map<string, { x: number; y: number }>();
   const GOLDEN_ANGLE = 137.508 * Math.PI / 180;
+  // Fixed ring spacing — generous, fitToView zooms to fit
+  const RING_GAP = 150;
+  const maxRadius = RING_GAP * maxDeg;
 
   for (const [d, ids] of tiers) {
     // Ring radius: inversely proportional to degree
     const ring = maxRadius * (1 - d / maxDeg);
     const angleStep = (2 * Math.PI) / Math.max(ids.length, 1);
-    const ringOffset = d * GOLDEN_ANGLE; // golden angle offset per tier
+    const ringOffset = d * GOLDEN_ANGLE;
     for (let i = 0; i < ids.length; i++) {
       const angle = ringOffset + i * angleStep;
       targets.set(ids[i], {

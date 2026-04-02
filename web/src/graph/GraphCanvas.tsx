@@ -10,7 +10,7 @@ import { computeCollapseState } from "./collapse-utils";
 import { EDGE_LABELS } from "../utils/edge-labels";
 import { getNodeColor } from "./node-color";
 import { communityColor } from "../ui/AnalysisPanel";
-import { computeFlowDepths, computeFlowXPositions, computeRadialTargets } from "./layout-presets";
+import { computeFlowDepths, computeFlowPositions, computeRadialTargets } from "./layout-presets";
 
 // --- Organic rendering helpers ---
 
@@ -286,7 +286,7 @@ const FLOW_Y_STRENGTH = 0.6;
 
 // Layout preset: radial (centrality-based)
 const RADIAL_POSITION_STRENGTH = 0.4;
-const RADIAL_CHARGE = -200;
+const RADIAL_CHARGE = -350;
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 interface Props {
@@ -458,13 +458,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
     // Pre-compute layout targets for presets when no classifier overrides
     let radialTargets: Map<string, { x: number; y: number }> | null = null;
-    let flowDepths: Map<string, number> | null = null;
-    let flowXPos: Map<string, number> | null = null;
+    let flowPositions: Map<string, { x: number; y: number }> | null = null;
     if (preset === "radial" && !xCls && !yCls) {
-      const maxRadius = Math.min(vw, vh) * 0.4;
-      radialTargets = computeRadialTargets(nodesRef.current, dataRef.current.edges, vw / 2, vh / 2, maxRadius);
+      radialTargets = computeRadialTargets(nodesRef.current, dataRef.current.edges, vw / 2, vh / 2);
     }
-    if (preset === "flow") {
+    if (preset === "flow" && (!xCls || !yCls)) {
       // Build edge-directedness map from edge type configs
       const directedTypes = new Set<string>();
       for (const et of (edgeTypeConfigsRef.current ?? [])) {
@@ -474,10 +472,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       for (const e of dataRef.current.edges) {
         edgeDirected.set(e.from + "→" + e.to, directedTypes.has(e.edge_type));
       }
-      flowDepths = computeFlowDepths(nodesRef.current, dataRef.current.edges, edgeDirected);
-      if (!xCls) {
-        flowXPos = computeFlowXPositions(nodesRef.current, dataRef.current.edges, flowDepths, vw);
-      }
+      const depths = computeFlowDepths(nodesRef.current, dataRef.current.edges, edgeDirected);
+      flowPositions = computeFlowPositions(nodesRef.current, dataRef.current.edges, edgeDirected, depths);
     }
 
     // X-axis force
@@ -491,8 +487,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       }).strength(X_AXIS_CLASSIFIER_STRENGTH));
     } else if (radialTargets) {
       simulation.force("x", d3.forceX<SimNode>((d) => radialTargets!.get(d.id)?.x ?? vw / 2).strength(RADIAL_POSITION_STRENGTH));
-    } else if (flowXPos) {
-      simulation.force("x", d3.forceX<SimNode>((d) => flowXPos!.get(d.id) ?? vw / 2).strength(RADIAL_POSITION_STRENGTH));
+    } else if (flowPositions) {
+      simulation.force("x", d3.forceX<SimNode>((d) => flowPositions!.get(d.id)?.x ?? vw / 2).strength(RADIAL_POSITION_STRENGTH));
     } else {
       simulation.force("x", d3.forceX<SimNode>(vw / 2).strength(X_AXIS_CENTER_STRENGTH));
     }
@@ -506,12 +502,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         const val = d.classifiers?.[yCls.id];
         return val ? yPos.get(String(val)) ?? vh / 2 : vh / 2;
       }).strength(Y_AXIS_CLASSIFIER_STRENGTH));
-    } else if (flowDepths) {
-      const maxDepth = Math.max(1, ...flowDepths.values());
-      simulation.force("y", d3.forceY<SimNode>((d) => {
-        const depth = flowDepths!.get(d.id) ?? 0;
-        return vh * (Y_LAYOUT_START + (Y_LAYOUT_RANGE * depth) / maxDepth);
-      }).strength(FLOW_Y_STRENGTH));
+    } else if (flowPositions) {
+      simulation.force("y", d3.forceY<SimNode>((d) => flowPositions!.get(d.id)?.y ?? vh / 2).strength(FLOW_Y_STRENGTH));
     } else if (radialTargets) {
       simulation.force("y", d3.forceY<SimNode>((d) => radialTargets!.get(d.id)?.y ?? vh / 2).strength(RADIAL_POSITION_STRENGTH));
     } else {
@@ -592,6 +584,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
     applyLayoutForces(simulation, width * factor, height * factor, cls, isExploded, layoutPresetRef.current);
     simulation.alpha(ALPHA_RESTART).restart();
+    // Fit to view after layout settles
+    setTimeout(() => fitToView(), 600);
   }, [layoutPreset]);
 
   function fitToView() {

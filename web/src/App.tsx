@@ -1284,6 +1284,25 @@ function AppInner() {
           layoutPreset={layoutPreset}
           onLayoutPresetChange={setLayoutPreset}
           onResetLayout={handleResetLayout}
+          onToggleProperties={() => {
+            if (selectedNode) {
+              setSelectedNode(null);
+            } else if (graphData.nodes.length > 0) {
+              setSelectedNode(graphData.nodes[0]);
+            }
+          }}
+          propertiesOpen={!!selectedNode}
+          onToggleNotes={() => {
+            if (notesOpen) {
+              setNotesOpen(false);
+            } else {
+              setNotesOpen(true);
+              if (!selectedNode && !selectedEdge && graphData.nodes.length > 0) {
+                setSelectedNode(graphData.nodes[0]);
+              }
+            }
+          }}
+          notesOpen={notesOpen}
         />
 
         {sidebarOpen && (
@@ -1430,6 +1449,16 @@ function AppInner() {
                   nodes={graphData.nodes}
                   onEdgeUpdate={handleEdgeUpdate}
                 />
+              </div>
+            </>
+          )}
+          {!selectedNode && !selectedEdge && notesOpen && (
+            <>
+              <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />
+              <div className="notes-bottom-pane" style={{ height: notesHeight }}>
+                <div style={{ padding: 16, color: "var(--text-dim)", fontSize: 12, fontStyle: "italic" }}>
+                  Select a node or edge to see its notes.
+                </div>
               </div>
             </>
           )}

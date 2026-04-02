@@ -169,4 +169,41 @@ describe("ActivityBar", () => {
     const radialBtn = screen.getByText("Radial").closest("button")!;
     expect(radialBtn.className).toContain("active");
   });
+
+  // SPEC: REQ-061D (Properties and Notes toolbar buttons)
+  it("renders Properties button when onToggleProperties is provided (AC-061D-01)", () => {
+    render(<ActivityBar {...defaultProps} onToggleProperties={vi.fn()} />);
+    expect(screen.getByTitle("Properties")).toBeInTheDocument();
+  });
+
+  it("highlights Properties button when propertiesOpen is true", () => {
+    render(<ActivityBar {...defaultProps} onToggleProperties={vi.fn()} propertiesOpen={true} />);
+    expect(screen.getByTitle("Properties").className).toContain("active");
+  });
+
+  it("calls onToggleProperties when Properties button is clicked", async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+    render(<ActivityBar {...defaultProps} onToggleProperties={onToggle} />);
+    await user.click(screen.getByTitle("Properties"));
+    expect(onToggle).toHaveBeenCalled();
+  });
+
+  it("renders Notes button when onToggleNotes is provided (AC-061D-02)", () => {
+    render(<ActivityBar {...defaultProps} onToggleNotes={vi.fn()} />);
+    expect(screen.getByTitle("Notes")).toBeInTheDocument();
+  });
+
+  it("highlights Notes button when notesOpen is true", () => {
+    render(<ActivityBar {...defaultProps} onToggleNotes={vi.fn()} notesOpen={true} />);
+    expect(screen.getByTitle("Notes").className).toContain("active");
+  });
+
+  it("calls onToggleNotes when Notes button is clicked", async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+    render(<ActivityBar {...defaultProps} onToggleNotes={onToggle} />);
+    await user.click(screen.getByTitle("Notes"));
+    expect(onToggle).toHaveBeenCalled();
+  });
 });

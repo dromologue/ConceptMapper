@@ -258,12 +258,21 @@ Three layout presets control the D3 force simulation. Presets configure forces (
 **AC-061C-01**: Layout presets are session-level state (not persisted to .cm files).
 **AC-061C-02**: The Activity Bar has a Layout button that opens a popover with three options: Force, Flow, Radial.
 **AC-061C-03**: Force layout (default): standard force-directed with weak centering. Unchanged from previous behaviour.
-**AC-061C-04**: Flow layout: computes topological depth from directed edges (modified Kahn's algorithm, longest-path semantics). Sources at top, sinks at bottom. Strong Y force by depth (0.6), weak X centering (0.03).
-**AC-061C-05**: Radial layout: computes degree centrality. Highest-degree nodes at center, lowest at periphery. Radial ring positions with golden-angle offset. Both X and Y forces pull toward computed positions (0.4). Weaker charge (-200).
-**AC-061C-06**: Classifier layouts override presets: if a classifier claims X or Y axis, that axis uses the classifier force, not the preset.
-**AC-061C-07**: "Reset Classifiers" action in the layout popover clears all classifier layout properties and re-applies the current preset.
-**AC-061C-08**: Switching presets triggers a full simulation restart (alpha 0.8).
-**AC-061C-09**: Presets work correctly with exploded mode (scaled virtual canvas).
+**AC-061C-04**: Flow layout: computes topological depth from directed edges (modified Kahn's algorithm, longest-path semantics). Sources at top, sinks at bottom. Fixed 200px depth gaps, 120px node gaps. Separate connected components arranged in horizontal lanes.
+**AC-061C-05**: Radial layout: computes degree centrality. Highest-degree nodes at center, lowest at periphery. Fixed 150px ring spacing with golden-angle offset. Weaker charge (-350).
+**AC-061C-06**: Both flow and radial use fixed generous spacing in force-space; fitToView zooms the camera to show the full layout after settling.
+**AC-061C-07**: Classifier layouts override presets: if a classifier claims X or Y axis, that axis uses the classifier force, not the preset.
+**AC-061C-08**: "Reset Classifiers" action in the layout popover clears all classifier layout properties and re-applies the current preset.
+**AC-061C-09**: Switching presets triggers a full simulation restart (alpha 0.8) followed by fitToView after 600ms.
+**AC-061C-10**: Presets work correctly with exploded mode (scaled virtual canvas).
+
+### REQ-061D: Properties and Notes Toolbar Buttons
+The Activity Bar provides direct access to the Properties panel and Notes pane without requiring a node click.
+
+**AC-061D-01**: A Properties button in the Activity Bar toggles the properties panel. If no node is selected, it selects the first node.
+**AC-061D-02**: A Notes button in the Activity Bar toggles the notes pane. The pane stays open as the user navigates between nodes and edges.
+**AC-061D-03**: When the notes pane is open with no selection, a placeholder message is shown.
+**AC-061D-04**: Node metrics are only accessible via the Network Analysis panel, not the Properties panel.
 
 ### REQ-062: Image Export (PNG/PDF)
 Export the current canvas view as PNG or PDF with configurable background.

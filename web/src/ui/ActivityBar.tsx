@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import type { NodeTypeConfig, LayoutPreset } from "../types/graph-ir";
-import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconHelp, IconFitView, IconExport, IconAnalysis, IconExplode, IconLayout } from "./Icons";
+import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconHelp, IconFitView, IconExport, IconAnalysis, IconExplode, IconLayout, IconProperties, IconNotes } from "./Icons";
 
 interface Props {
   viewMode: string; // "full" or a node type id
@@ -20,6 +20,10 @@ interface Props {
   layoutPreset?: LayoutPreset;
   onLayoutPresetChange?: (preset: LayoutPreset) => void;
   onResetLayout?: () => void;
+  onToggleProperties?: () => void;
+  propertiesOpen?: boolean;
+  onToggleNotes?: () => void;
+  notesOpen?: boolean;
 }
 
 const LAYOUT_OPTIONS: { id: LayoutPreset; label: string; desc: string }[] = [
@@ -44,6 +48,10 @@ export function ActivityBar({
   layoutPreset,
   onLayoutPresetChange,
   onResetLayout,
+  onToggleProperties,
+  propertiesOpen,
+  onToggleNotes,
+  notesOpen,
 }: Props) {
   const [layoutOpen, setLayoutOpen] = useState(false);
   const layoutBtnRef = useRef<HTMLButtonElement>(null);
@@ -90,6 +98,24 @@ export function ActivityBar({
         >
           <IconSidebar size={20} />
         </button>
+        {onToggleProperties && (
+          <button
+            className={`activity-bar-btn ${propertiesOpen ? "active" : ""}`}
+            onClick={onToggleProperties}
+            title="Properties"
+          >
+            <IconProperties size={20} />
+          </button>
+        )}
+        {onToggleNotes && (
+          <button
+            className={`activity-bar-btn ${notesOpen ? "active" : ""}`}
+            onClick={onToggleNotes}
+            title="Notes"
+          >
+            <IconNotes size={20} />
+          </button>
+        )}
         {onFitToView && (
           <button
             className="activity-bar-btn"
