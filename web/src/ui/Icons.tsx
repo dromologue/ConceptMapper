@@ -164,3 +164,16 @@ export function IconExplode({ size = defaults.size, className }: IconProps) {
     </svg>
   );
 }
+
+export function IconLayout({ size = defaults.size, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="8" cy="6" r="1.5" fill="currentColor" />
+      <circle cx="5" cy="11" r="1.2" fill="currentColor" />
+      <circle cx="11" cy="11" r="1.2" fill="currentColor" />
+      <line x1="8" y1="7.5" x2="5" y2="9.8" stroke="currentColor" strokeWidth="1" />
+      <line x1="8" y1="7.5" x2="11" y2="9.8" stroke="currentColor" strokeWidth="1" />
+    </svg>
+  );
+}

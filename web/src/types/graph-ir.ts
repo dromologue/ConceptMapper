@@ -1,3 +1,7 @@
+// --- Layout preset ---
+
+export type LayoutPreset = "force" | "flow" | "radial";
+
 // --- Template / Config types ---
 
 export type FieldType = "text" | "select" | "textarea" | "time";

@@ -127,6 +127,57 @@ body {
   margin: 6px 0;
 }
 
+/* ===== Layout selector popover ===== */
+.layout-selector-wrapper {
+  position: relative;
+}
+.layout-popover {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-left: 4px;
+  background: var(--bg-secondary, #1e1e3a);
+  border: 1px solid var(--bg-hover, #2a2a4a);
+  border-radius: 6px;
+  padding: 4px;
+  min-width: 200px;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+.layout-option {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #ccc);
+  cursor: pointer;
+  border-radius: 4px;
+  text-align: left;
+}
+.layout-option:hover {
+  background: var(--bg-hover, #2a2a4a);
+}
+.layout-option.active {
+  background: var(--accent, #4A90D9);
+  color: #fff;
+}
+.layout-option-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+.layout-option-desc {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 1px;
+}
+.layout-popover-separator {
+  height: 1px;
+  background: var(--bg-hover, #2a2a4a);
+  margin: 4px 0;
+}
+
 /* ===== Sidebar ===== */
 .sidebar {
   width: 250px;
@@ -1043,12 +1094,11 @@ canvas:active {
   font-size: 11px;
   text-transform: uppercase;
   color: var(--text-dim, #666);
-  min-width: 80px;
-  max-width: 80px;
+  min-width: 90px;
+  max-width: 90px;
   flex-shrink: 0;
   overflow: visible;
-  white-space: normal;
-  word-break: break-word;
+  white-space: nowrap;
   line-height: 1.2;
 }
 .editor-field input, .editor-field select {

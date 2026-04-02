@@ -43,7 +43,7 @@ function mergeNodeUpdate(node: GraphNode, updates: Partial<GraphNode>): GraphNod
 }
 
 function AppInner() {
-  const { theme, look } = useTheme();
+  const { theme, look, edgeColorOverrides, setEdgeColorOverrides } = useTheme();
   const [graphData, setGraphDataRaw] = useState<GraphIR | null>(null);
   const undoStack = useRef<GraphIR[]>([]);
   const redoStack = useRef<GraphIR[]>([]);
@@ -70,6 +70,7 @@ function AppInner() {
   const [showAddEdgeModal, setShowAddEdgeModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [exploded, setExploded] = useState(false);
+  const [layoutPreset, setLayoutPreset] = useState<import("./types/graph-ir").LayoutPreset>("force");
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchHighlight, setSearchHighlight] = useState(-1);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -170,6 +171,13 @@ function AppInner() {
         const content = atob(base64);
         const bytes = Uint8Array.from(content, (c) => c.charCodeAt(0));
         const decoded = new TextDecoder().decode(bytes);
+        // Restore edge colors from .cm header
+        const ecMatch = decoded.match(/<!--\s*edge-colors:\s*(\{.+?\})\s*-->/);
+        if (ecMatch) {
+          try { setEdgeColorOverrides(JSON.parse(ecMatch[1])); } catch { /* ignore */ }
+        } else {
+          setEdgeColorOverrides({});
+        }
         loadFileContent(decoded, filename, filePath);
       } catch (err) {
         console.error("[Bridge] decode error:", err);
@@ -201,6 +209,16 @@ function AppInner() {
           const tmplMatch = decoded.match(/<!--\s*template:\s*(.+?)\s*-->/i);
           const tmplRef = tmplMatch?.[1]?.trim();
           if (tmplRef) ir.metadata.source_template = tmplRef.endsWith(".cmt") ? tmplRef : `${tmplRef}.cmt`;
+          // Restore edge color overrides from .cm file header
+          const edgeColorsMatch = decoded.match(/<!--\s*edge-colors:\s*(\{.+?\})\s*-->/);
+          if (edgeColorsMatch) {
+            try {
+              const colors = JSON.parse(edgeColorsMatch[1]) as Record<string, string>;
+              setEdgeColorOverrides(colors);
+            } catch { /* ignore malformed */ }
+          } else {
+            setEdgeColorOverrides({});
+          }
           setGraphData(ir);
           setTemplate(migratedTemplate);
           setSelectedNode(null);
@@ -216,12 +234,12 @@ function AppInner() {
 
     win.getGraphJSON = (): string => {
       if (!graphData) return "";
-      return exportToMarkdown(graphData, nodeTypeConfigs);
+      return exportToMarkdown(graphData, nodeTypeConfigs, edgeColorOverrides);
     };
 
     win.getGraphMarkdown = (): string => {
       if (!graphData) return "";
-      return exportToMarkdown(graphData, nodeTypeConfigs);
+      return exportToMarkdown(graphData, nodeTypeConfigs, edgeColorOverrides);
     };
 
     win.getCanvasImage = (): string => {
@@ -604,21 +622,28 @@ function AppInner() {
     if (!graphData || !sourceFilePath || !isNativeApp) return;
     clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      const md = exportToMarkdown(graphData, nodeTypeConfigs);
+      const md = exportToMarkdown(graphData, nodeTypeConfigs, edgeColorOverrides);
       sendToSwift("saveToPath", JSON.stringify({ path: sourceFilePath, content: md }));
       setSaveIndicator(true);
       setTimeout(() => setSaveIndicator(false), 2000);
     }, 2000);
-  }, [graphData, sourceFilePath, isNativeApp, sendToSwift, nodeTypeConfigs]);
+  }, [graphData, sourceFilePath, isNativeApp, sendToSwift, nodeTypeConfigs, edgeColorOverrides]);
 
-  // Trigger auto-save when graph data changes
+  // Trigger auto-save when graph data or edge colors change
   const graphDataRef = useRef(graphData);
+  const edgeColorsRef = useRef(edgeColorOverrides);
   useEffect(() => {
     if (graphDataRef.current && graphData && graphDataRef.current !== graphData) {
       autoSave();
     }
     graphDataRef.current = graphData;
   }, [graphData, autoSave]);
+  useEffect(() => {
+    if (graphData && edgeColorsRef.current !== edgeColorOverrides) {
+      autoSave();
+    }
+    edgeColorsRef.current = edgeColorOverrides;
+  }, [edgeColorOverrides, graphData, autoSave]);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -792,15 +817,14 @@ function AppInner() {
   }, [isNativeApp, sendToSwift]);
 
   const getSavedTemplates = useCallback((): TaxonomyWizardInitial[] => {
-    const local: TaxonomyWizardInitial[] = (() => {
-      try { return JSON.parse(localStorage.getItem("cm-templates") || "[]"); }
-      catch { return []; }
-    })();
-    // Merge in loaded native templates (deduplicate by title)
-    const titles = new Set(local.map((t) => t.title));
-    const native = Array.from(loadedNativeTemplates.values()).filter((t) => !titles.has(t.title));
-    return [...local, ...native];
-  }, [loadedNativeTemplates]);
+    // In native app, templates come exclusively from the file system
+    if (isNativeApp) {
+      return Array.from(loadedNativeTemplates.values());
+    }
+    // Browser fallback: localStorage only
+    try { return JSON.parse(localStorage.getItem("cm-templates") || "[]"); }
+    catch { return []; }
+  }, [isNativeApp, loadedNativeTemplates]);
 
   const handleImportFile = useCallback(() => {
     if (isNativeApp) {
@@ -990,6 +1014,20 @@ function AppInner() {
         ...template,
         classifiers: updatedClassifiers,
       });
+    }
+  }, [graphData, template, setGraphData]);
+
+  const handleResetLayout = useCallback(() => {
+    if (!graphData) return;
+    const clearedClassifiers = (graphData.metadata.classifiers ?? []).map(
+      (cls) => ({ ...cls, layout: undefined }),
+    );
+    setGraphData({
+      ...graphData,
+      metadata: { ...graphData.metadata, classifiers: clearedClassifiers },
+    });
+    if (template) {
+      setTemplate({ ...template, classifiers: clearedClassifiers });
     }
   }, [graphData, template, setGraphData]);
 
@@ -1243,6 +1281,9 @@ function AppInner() {
           nodeTypeConfigs={nodeTypeConfigs}
           onExplode={() => setExploded((v) => !v)}
           exploded={exploded}
+          layoutPreset={layoutPreset}
+          onLayoutPresetChange={setLayoutPreset}
+          onResetLayout={handleResetLayout}
         />
 
         {sidebarOpen && (
@@ -1300,6 +1341,7 @@ function AppInner() {
               highlightedPath={highlightedPath}
               highlightedCommunity={highlightedCommunity}
               exploded={exploded}
+              layoutPreset={layoutPreset}
               edgeTypeConfigs={template?.edge_types}
             />
             <div className="zoom-controls">
@@ -1529,12 +1571,16 @@ function getEdgeVisual(edgeType: string) {
   return { style: "solid", show_arrow: true };
 }
 
-function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[]): string {
+function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[], edgeColorOverrides?: Record<string, string>): string {
   const lines: string[] = [];
   const title = data.metadata.title || "Concept Map";
   lines.push(`# ${title}\n`);
   if (data.metadata.source_template) {
     lines.push(`<!-- template: ${data.metadata.source_template} -->`);
+  }
+  // Persist edge color overrides as an HTML comment so they survive round-trips
+  if (edgeColorOverrides && Object.keys(edgeColorOverrides).length > 0) {
+    lines.push(`<!-- edge-colors: ${JSON.stringify(edgeColorOverrides)} -->`);
   }
   lines.push(`<!-- Exported from concept-mapper, ${new Date().toISOString().split("T")[0]}. -->\n`);
 

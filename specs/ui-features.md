@@ -242,6 +242,29 @@ A look-and-feel setting independent of color theme controls rendering style. Can
 **AC-061-10**: Auto-fit only runs on initial layout, not after user zoom/pan interaction.
 **AC-061-11**: Unknown or legacy look values in localStorage (e.g. "organic") fall back to "formal".
 
+### REQ-061B: Edge Color Overrides Persisted in Map Files
+Edge type colors can be changed via the Settings modal and are saved in the .cm file so they survive round-trips and are per-map rather than global.
+
+**AC-061B-01**: The Settings modal provides a color picker for each edge type present in the current map.
+**AC-061B-02**: Edge color overrides are stored as an HTML comment in the .cm file header: `<!-- edge-colors: {...} -->`.
+**AC-061B-03**: When a .cm file is loaded, edge color overrides are parsed from the header and applied.
+**AC-061B-04**: Changing edge colors in Settings triggers auto-save to the .cm file.
+**AC-061B-05**: Color priority at render time: map override → template default → theme default.
+**AC-061B-06**: Loading a different map resets edge color overrides to that map's stored colors (or clears them if none).
+
+### REQ-061C: Layout Presets
+Three layout presets control the D3 force simulation. Presets configure forces (not absolute positions) so nodes settle naturally. Classifier-based layouts (x/y/region/column) override presets on the axes they claim.
+
+**AC-061C-01**: Layout presets are session-level state (not persisted to .cm files).
+**AC-061C-02**: The Activity Bar has a Layout button that opens a popover with three options: Force, Flow, Radial.
+**AC-061C-03**: Force layout (default): standard force-directed with weak centering. Unchanged from previous behaviour.
+**AC-061C-04**: Flow layout: computes topological depth from directed edges (modified Kahn's algorithm, longest-path semantics). Sources at top, sinks at bottom. Strong Y force by depth (0.6), weak X centering (0.03).
+**AC-061C-05**: Radial layout: computes degree centrality. Highest-degree nodes at center, lowest at periphery. Radial ring positions with golden-angle offset. Both X and Y forces pull toward computed positions (0.4). Weaker charge (-200).
+**AC-061C-06**: Classifier layouts override presets: if a classifier claims X or Y axis, that axis uses the classifier force, not the preset.
+**AC-061C-07**: "Reset Classifiers" action in the layout popover clears all classifier layout properties and re-applies the current preset.
+**AC-061C-08**: Switching presets triggers a full simulation restart (alpha 0.8).
+**AC-061C-09**: Presets work correctly with exploded mode (scaled virtual canvas).
+
 ### REQ-062: Image Export (PNG/PDF)
 Export the current canvas view as PNG or PDF with configurable background.
 

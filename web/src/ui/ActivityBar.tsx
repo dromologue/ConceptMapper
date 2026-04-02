@@ -1,5 +1,6 @@
-import type { NodeTypeConfig } from "../types/graph-ir";
-import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconHelp, IconFitView, IconExport, IconAnalysis, IconExplode } from "./Icons";
+import { useState, useRef, useEffect } from "react";
+import type { NodeTypeConfig, LayoutPreset } from "../types/graph-ir";
+import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconHelp, IconFitView, IconExport, IconAnalysis, IconExplode, IconLayout } from "./Icons";
 
 interface Props {
   viewMode: string; // "full" or a node type id
@@ -16,7 +17,16 @@ interface Props {
   nodeTypeConfigs?: NodeTypeConfig[];
   onExplode?: () => void;
   exploded?: boolean;
+  layoutPreset?: LayoutPreset;
+  onLayoutPresetChange?: (preset: LayoutPreset) => void;
+  onResetLayout?: () => void;
 }
+
+const LAYOUT_OPTIONS: { id: LayoutPreset; label: string; desc: string }[] = [
+  { id: "force", label: "Force", desc: "Default force-directed layout" },
+  { id: "flow", label: "Flow", desc: "Hierarchy by directed edges" },
+  { id: "radial", label: "Radial", desc: "Central nodes radiate outward" },
+];
 
 export function ActivityBar({
   viewMode, onViewModeChange,
@@ -31,7 +41,26 @@ export function ActivityBar({
   nodeTypeConfigs,
   onExplode,
   exploded,
+  layoutPreset,
+  onLayoutPresetChange,
+  onResetLayout,
 }: Props) {
+  const [layoutOpen, setLayoutOpen] = useState(false);
+  const layoutBtnRef = useRef<HTMLButtonElement>(null);
+  const layoutPopRef = useRef<HTMLDivElement>(null);
+
+  // Close popover on outside click
+  useEffect(() => {
+    if (!layoutOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (layoutBtnRef.current?.contains(e.target as Node)) return;
+      if (layoutPopRef.current?.contains(e.target as Node)) return;
+      setLayoutOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [layoutOpen]);
+
   return (
     <div className="activity-bar">
       <div className="activity-bar-top">
@@ -78,6 +107,45 @@ export function ActivityBar({
           >
             <IconExport size={20} />
           </button>
+        )}
+        {/* Layout preset selector */}
+        {onLayoutPresetChange && (
+          <div className="layout-selector-wrapper">
+            <button
+              ref={layoutBtnRef}
+              className={`activity-bar-btn ${layoutPreset !== "force" ? "active" : ""}`}
+              onClick={() => setLayoutOpen((v) => !v)}
+              title="Layout"
+            >
+              <IconLayout size={20} />
+            </button>
+            {layoutOpen && (
+              <div ref={layoutPopRef} className="layout-popover">
+                {LAYOUT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    className={`layout-option ${layoutPreset === opt.id ? "active" : ""}`}
+                    onClick={() => { onLayoutPresetChange(opt.id); setLayoutOpen(false); }}
+                  >
+                    <span className="layout-option-label">{opt.label}</span>
+                    <span className="layout-option-desc">{opt.desc}</span>
+                  </button>
+                ))}
+                {onResetLayout && (
+                  <>
+                    <div className="layout-popover-separator" />
+                    <button
+                      className="layout-option"
+                      onClick={() => { onResetLayout(); setLayoutOpen(false); }}
+                    >
+                      <span className="layout-option-label">Reset Classifiers</span>
+                      <span className="layout-option-desc">Clear axis/region layouts</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
       <div className="activity-bar-bottom">

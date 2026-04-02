@@ -59,19 +59,30 @@ enum FileHandler {
         return folder
     }
 
-    /// Copy bundled .cmt templates from app Resources into the templates folder if not already present.
+    /// Sync bundled .cmt templates to the user templates folder.
+    /// Copies missing files and removes files not in the bundle.
     static func copyBundledTemplates() {
         let folder = getTemplatesFolder()
         guard let resourceURL = Bundle.main.resourceURL else { return }
         let bundledDir = resourceURL.appendingPathComponent("templates")
         guard FileManager.default.fileExists(atPath: bundledDir.path) else { return }
         do {
-            let files = try FileManager.default.contentsOfDirectory(at: bundledDir, includingPropertiesForKeys: nil)
+            let bundledFiles = try FileManager.default.contentsOfDirectory(at: bundledDir, includingPropertiesForKeys: nil)
                 .filter { $0.pathExtension == "cmt" }
-            for file in files {
+            let bundledNames = Set(bundledFiles.map { $0.lastPathComponent })
+            // Copy missing bundled files
+            for file in bundledFiles {
                 let dest = folder.appendingPathComponent(file.lastPathComponent)
                 if !FileManager.default.fileExists(atPath: dest.path) {
                     try FileManager.default.copyItem(at: file, to: dest)
+                }
+            }
+            // Remove files not in the bundle
+            let userFiles = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
+                .filter { $0.pathExtension == "cmt" }
+            for file in userFiles {
+                if !bundledNames.contains(file.lastPathComponent) {
+                    try FileManager.default.removeItem(at: file)
                 }
             }
         } catch {
@@ -79,19 +90,30 @@ enum FileHandler {
         }
     }
 
-    /// Copy bundled .cm example maps from app Resources into the Maps folder if not already present.
+    /// Sync bundled .cm example maps to the user maps folder.
+    /// Copies missing files and removes files not in the bundle.
     static func copyBundledMaps() {
         let folder = getMapsFolder()
         guard let resourceURL = Bundle.main.resourceURL else { return }
         let bundledDir = resourceURL.appendingPathComponent("maps")
         guard FileManager.default.fileExists(atPath: bundledDir.path) else { return }
         do {
-            let files = try FileManager.default.contentsOfDirectory(at: bundledDir, includingPropertiesForKeys: nil)
+            let bundledFiles = try FileManager.default.contentsOfDirectory(at: bundledDir, includingPropertiesForKeys: nil)
                 .filter { $0.pathExtension == "cm" }
-            for file in files {
+            let bundledNames = Set(bundledFiles.map { $0.lastPathComponent })
+            // Copy missing bundled files
+            for file in bundledFiles {
                 let dest = folder.appendingPathComponent(file.lastPathComponent)
                 if !FileManager.default.fileExists(atPath: dest.path) {
                     try FileManager.default.copyItem(at: file, to: dest)
+                }
+            }
+            // Remove files not in the bundle
+            let userFiles = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
+                .filter { $0.pathExtension == "cm" }
+            for file in userFiles {
+                if !bundledNames.contains(file.lastPathComponent) {
+                    try FileManager.default.removeItem(at: file)
                 }
             }
         } catch {

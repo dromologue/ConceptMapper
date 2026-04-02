@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import * as d3 from "d3";
-import type { GraphIR, GraphNode, GraphEdge, SimNode, SimLink, NodeTypeConfig, EdgeTypeConfig, Classifier } from "../types/graph-ir";
+import type { GraphIR, GraphNode, GraphEdge, SimNode, SimLink, NodeTypeConfig, EdgeTypeConfig, Classifier, LayoutPreset } from "../types/graph-ir";
 import type { ViewMode, InteractionMode } from "../App";
 import type { ThemeConfig } from "../theme/themes";
 import type { FilterState } from "../utils/filters";
@@ -10,6 +10,7 @@ import { computeCollapseState } from "./collapse-utils";
 import { EDGE_LABELS } from "../utils/edge-labels";
 import { getNodeColor } from "./node-color";
 import { communityColor } from "../ui/AnalysisPanel";
+import { computeFlowDepths, computeRadialTargets } from "./layout-presets";
 
 // --- Organic rendering helpers ---
 
@@ -279,6 +280,14 @@ const TRIANGLE_SCALE = 1.3;
 const PILL_WIDTH_SCALE = 2.4;
 const PILL_HEIGHT_SCALE = 1.2;
 const REVEALED_NODE_SCALE = 0.7;
+
+// Layout preset: flow (directed/hierarchical)
+const FLOW_Y_STRENGTH = 0.6;
+const FLOW_X_CENTER_STRENGTH = 0.03;
+
+// Layout preset: radial (centrality-based)
+const RADIAL_POSITION_STRENGTH = 0.4;
+const RADIAL_CHARGE = -200;
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 interface Props {
@@ -307,6 +316,7 @@ interface Props {
   highlightedPath?: string[] | null;
   highlightedCommunity?: number | null;
   exploded?: boolean;
+  layoutPreset?: LayoutPreset;
   edgeTypeConfigs?: EdgeTypeConfig[];
 }
 
@@ -335,7 +345,7 @@ function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): NodeSha
   return "circle";
 }
 
-export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity, exploded, edgeTypeConfigs }: Props) {
+export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity, exploded, layoutPreset, edgeTypeConfigs }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const transformRef = useRef(d3.zoomIdentity);
@@ -363,6 +373,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const regionColumnWidthsRef = useRef<Map<string, number>>(new Map());
   const regionColumnPositionsRef = useRef<Map<string, number>>(new Map());
   const explodedRef = useRef(exploded ?? false);
+  const layoutPresetRef = useRef<LayoutPreset>(layoutPreset ?? "force");
   const themeRef = useRef(theme);
   const lookRef = useRef(look);
   const selectedNodeIdRef = useRef(selectedNodeId);
@@ -415,7 +426,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
       const isExploded = explodedRef.current;
       const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
-      applyLayoutForces(simulation, width * factor, height * factor, newCls, isExploded);
+      applyLayoutForces(simulation, width * factor, height * factor, newCls, isExploded, layoutPresetRef.current);
       simulation.alpha(ALPHA_RESTART).restart();
     }
   }, [data]);
@@ -442,9 +453,29 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   /* eslint-enable react-hooks/exhaustive-deps */
 
   /** Apply all layout forces to the simulation using given virtual dimensions */
-  function applyLayoutForces(simulation: d3.Simulation<SimNode, SimLink>, vw: number, vh: number, cls: Classifier[], isExploded: boolean) {
+  function applyLayoutForces(simulation: d3.Simulation<SimNode, SimLink>, vw: number, vh: number, cls: Classifier[], isExploded: boolean, preset: LayoutPreset = "force") {
     const xCls = cls.find((c) => c.layout === "x");
     const yCls = cls.find((c) => c.layout === "y");
+
+    // Pre-compute layout targets for presets when no classifier overrides
+    let radialTargets: Map<string, { x: number; y: number }> | null = null;
+    let flowDepths: Map<string, number> | null = null;
+    if (preset === "radial" && !xCls && !yCls) {
+      const maxRadius = Math.min(vw, vh) * 0.4;
+      radialTargets = computeRadialTargets(nodesRef.current, dataRef.current.edges, vw / 2, vh / 2, maxRadius);
+    }
+    if (preset === "flow" && !yCls) {
+      // Build edge-directedness map from edge type configs
+      const directedTypes = new Set<string>();
+      for (const et of (edgeTypeConfigsRef.current ?? [])) {
+        if (et.directed) directedTypes.add(et.id);
+      }
+      const edgeDirected = new Map<string, boolean>();
+      for (const e of dataRef.current.edges) {
+        edgeDirected.set(e.from + "→" + e.to, directedTypes.has(e.edge_type));
+      }
+      flowDepths = computeFlowDepths(nodesRef.current, dataRef.current.edges, edgeDirected);
+    }
 
     // X-axis force
     if (xCls) {
@@ -455,6 +486,10 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         const val = d.classifiers?.[xCls.id];
         return val ? xPos.get(String(val)) ?? vw / 2 : vw / 2;
       }).strength(X_AXIS_CLASSIFIER_STRENGTH));
+    } else if (radialTargets) {
+      simulation.force("x", d3.forceX<SimNode>((d) => radialTargets!.get(d.id)?.x ?? vw / 2).strength(RADIAL_POSITION_STRENGTH));
+    } else if (preset === "flow") {
+      simulation.force("x", d3.forceX<SimNode>(vw / 2).strength(FLOW_X_CENTER_STRENGTH));
     } else {
       simulation.force("x", d3.forceX<SimNode>(vw / 2).strength(X_AXIS_CENTER_STRENGTH));
     }
@@ -468,12 +503,22 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         const val = d.classifiers?.[yCls.id];
         return val ? yPos.get(String(val)) ?? vh / 2 : vh / 2;
       }).strength(Y_AXIS_CLASSIFIER_STRENGTH));
+    } else if (flowDepths) {
+      const maxDepth = Math.max(1, ...flowDepths.values());
+      simulation.force("y", d3.forceY<SimNode>((d) => {
+        const depth = flowDepths!.get(d.id) ?? 0;
+        return vh * (Y_LAYOUT_START + (Y_LAYOUT_RANGE * depth) / maxDepth);
+      }).strength(FLOW_Y_STRENGTH));
+    } else if (radialTargets) {
+      simulation.force("y", d3.forceY<SimNode>((d) => radialTargets!.get(d.id)?.y ?? vh / 2).strength(RADIAL_POSITION_STRENGTH));
     } else {
       simulation.force("y", d3.forceY<SimNode>(vh / 2).strength(Y_AXIS_CENTER_STRENGTH));
     }
 
-    // Charge and collision — stronger when exploded
-    const chargeStrength = isExploded ? CHARGE_STRENGTH_EXPLODED : CHARGE_STRENGTH_NORMAL;
+    // Charge and collision — stronger when exploded, weaker for radial
+    const chargeStrength = isExploded ? CHARGE_STRENGTH_EXPLODED
+      : (preset === "radial" && !xCls && !yCls) ? RADIAL_CHARGE
+      : CHARGE_STRENGTH_NORMAL;
     const collideExtra = isExploded ? COLLISION_PADDING_EXPLODED : COLLISION_PADDING_NORMAL;
     simulation.force("charge", d3.forceManyBody().strength(chargeStrength).distanceMax(isExploded ? CHARGE_DISTANCE_MAX_EXPLODED : CHARGE_DISTANCE_MAX_NORMAL));
     simulation.force("collide", d3.forceCollide<SimNode>((d) => getNodeRadius(d, "full", nodeTypeConfigsRef.current) + collideExtra));
@@ -525,13 +570,26 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
     const vw = width * factor;
     const vh = height * factor;
-    applyLayoutForces(simulation, vw, vh, cls, isExploded);
+    applyLayoutForces(simulation, vw, vh, cls, isExploded, layoutPresetRef.current);
     simulation.alpha(ALPHA_RESTART).restart();
     if (!isExploded) {
       // When collapsing back, fit to view after settling
       setTimeout(() => fitToView(), COLLAPSE_FIT_DELAY);
     }
   }, [exploded]);
+
+  // Re-apply forces when layout preset changes
+  useEffect(() => {
+    layoutPresetRef.current = layoutPreset ?? "force";
+    const simulation = simRef.current;
+    if (!simulation || !simInitializedRef.current) return;
+    const { width, height } = canvasSizeRef.current;
+    const cls = classifiersRef.current;
+    const isExploded = explodedRef.current;
+    const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
+    applyLayoutForces(simulation, width * factor, height * factor, cls, isExploded, layoutPresetRef.current);
+    simulation.alpha(ALPHA_RESTART).restart();
+  }, [layoutPreset]);
 
   function fitToView() {
     const ns = nodesRef.current;
@@ -585,7 +643,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const cls = classifiersRef.current;
       const isExploded = explodedRef.current;
       const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
-      applyLayoutForces(simulation, width * factor, height * factor, cls, isExploded);
+      applyLayoutForces(simulation, width * factor, height * factor, cls, isExploded, layoutPresetRef.current);
       simulation.alpha(ALPHA_RESTART_MILD).restart();
       setTimeout(() => fitToView(), RESIZE_FIT_DELAY);
     } else {
@@ -629,7 +687,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const simulation = d3.forceSimulation<SimNode>(nodes)
       .force("link", d3.forceLink<SimNode, SimLink>(links).id((d) => d.id).distance((d) => LINK_DISTANCE_BASE / Math.max(0.5, (d as SimLink).edge.weight ?? 1)).strength(LINK_FORCE_STRENGTH));
 
-    applyLayoutForces(simulation, width, height, classifiers, false);
+    applyLayoutForces(simulation, width, height, classifiers, false, layoutPresetRef.current);
     simulation.alphaDecay(ALPHA_DECAY);
 
     simRef.current = simulation;

@@ -116,4 +116,57 @@ describe("ActivityBar", () => {
     await user.click(screen.getByTitle("Explode graph"));
     expect(onExplode).toHaveBeenCalled();
   });
+
+  // SPEC: REQ-061C (Layout Presets)
+  it("renders layout button when onLayoutPresetChange is provided (AC-061C-02)", () => {
+    render(<ActivityBar {...defaultProps} layoutPreset="force" onLayoutPresetChange={vi.fn()} />);
+    expect(screen.getByTitle("Layout")).toBeInTheDocument();
+  });
+
+  it("does not render layout button when onLayoutPresetChange is not provided", () => {
+    render(<ActivityBar {...defaultProps} />);
+    expect(screen.queryByTitle("Layout")).not.toBeInTheDocument();
+  });
+
+  it("shows layout popover with three options when clicked (AC-061C-02)", async () => {
+    const user = userEvent.setup();
+    render(<ActivityBar {...defaultProps} layoutPreset="force" onLayoutPresetChange={vi.fn()} />);
+    await user.click(screen.getByTitle("Layout"));
+    expect(screen.getByText("Force")).toBeInTheDocument();
+    expect(screen.getByText("Flow")).toBeInTheDocument();
+    expect(screen.getByText("Radial")).toBeInTheDocument();
+  });
+
+  it("calls onLayoutPresetChange when a preset is selected", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<ActivityBar {...defaultProps} layoutPreset="force" onLayoutPresetChange={onChange} />);
+    await user.click(screen.getByTitle("Layout"));
+    await user.click(screen.getByText("Flow"));
+    expect(onChange).toHaveBeenCalledWith("flow");
+  });
+
+  it("shows Reset Classifiers button when onResetLayout is provided (AC-061C-07)", async () => {
+    const user = userEvent.setup();
+    render(<ActivityBar {...defaultProps} layoutPreset="force" onLayoutPresetChange={vi.fn()} onResetLayout={vi.fn()} />);
+    await user.click(screen.getByTitle("Layout"));
+    expect(screen.getByText("Reset Classifiers")).toBeInTheDocument();
+  });
+
+  it("calls onResetLayout when Reset Classifiers is clicked", async () => {
+    const user = userEvent.setup();
+    const onReset = vi.fn();
+    render(<ActivityBar {...defaultProps} layoutPreset="force" onLayoutPresetChange={vi.fn()} onResetLayout={onReset} />);
+    await user.click(screen.getByTitle("Layout"));
+    await user.click(screen.getByText("Reset Classifiers"));
+    expect(onReset).toHaveBeenCalled();
+  });
+
+  it("highlights active layout preset", async () => {
+    const user = userEvent.setup();
+    render(<ActivityBar {...defaultProps} layoutPreset="radial" onLayoutPresetChange={vi.fn()} />);
+    await user.click(screen.getByTitle("Layout"));
+    const radialBtn = screen.getByText("Radial").closest("button")!;
+    expect(radialBtn.className).toContain("active");
+  });
 });
