@@ -317,6 +317,7 @@ interface Props {
   highlightedCommunity?: number | null;
   exploded?: boolean;
   layoutPreset?: LayoutPreset;
+  fontScale?: number;
   edgeTypeConfigs?: EdgeTypeConfig[];
 }
 
@@ -345,7 +346,7 @@ function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): NodeSha
   return "circle";
 }
 
-export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity, exploded, layoutPreset, edgeTypeConfigs }: Props) {
+export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity, exploded, layoutPreset, fontScale = 1, edgeTypeConfigs }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const transformRef = useRef(d3.zoomIdentity);
@@ -374,6 +375,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const regionColumnPositionsRef = useRef<Map<string, number>>(new Map());
   const explodedRef = useRef(exploded ?? false);
   const layoutPresetRef = useRef<LayoutPreset>(layoutPreset ?? "force");
+  const fontScaleRef = useRef(fontScale);
   const themeRef = useRef(theme);
   const lookRef = useRef(look);
   const selectedNodeIdRef = useRef(selectedNodeId);
@@ -449,6 +451,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { filtersRef.current = filters; redraw(); }, [filters]);
   useEffect(() => { nodeTypeConfigsRef.current = nodeTypeConfigs; redraw(); }, [nodeTypeConfigs]);
   useEffect(() => { edgeTypeConfigsRef.current = edgeTypeConfigs; redraw(); }, [edgeTypeConfigs]);
+  useEffect(() => { fontScaleRef.current = fontScale; redraw(); }, [fontScale]);
   useEffect(() => { selectedEdgeKeyRef.current = selectedEdgeKey; redraw(); }, [selectedEdgeKey]);
   /* eslint-enable react-hooks/exhaustive-deps */
 
@@ -1351,7 +1354,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         if (angle < -Math.PI / 2) angle += Math.PI;
         ctx.rotate(angle);
 
-        ctx.font = `${EDGE_LABEL_FONT_SIZE}px -apple-system, sans-serif`;
+        ctx.font = `${EDGE_LABEL_FONT_SIZE * fontScaleRef.current}px -apple-system, sans-serif`;
         ctx.textAlign = "center";
         ctx.fillStyle = isHighlighted ? th.canvasLabelHighlight : th.canvasLabelDim;
         ctx.fillText(label, 0, EDGE_LABEL_Y_OFFSET);
@@ -1517,7 +1520,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const isDominant = sizeFieldValue === "dominant";
       const nodeLabelHidden = hiddenLabelTypesRef.current?.has(`node:${node.node_type}`);
       if (!nodeLabelHidden && (t.k > ZOOM_THRESHOLD_LABELS || isDominant)) {
-        const fontSize = Math.max(NODE_LABEL_MIN_FONT, Math.min(NODE_LABEL_MAX_FONT, NODE_LABEL_BASE_FONT * Math.sqrt(t.k)));
+        const fontSize = Math.max(NODE_LABEL_MIN_FONT, Math.min(NODE_LABEL_MAX_FONT * fontScaleRef.current, NODE_LABEL_BASE_FONT * Math.sqrt(t.k) * fontScaleRef.current));
         ctx.font = `${fontSize}px -apple-system, sans-serif`;
         ctx.textAlign = "center";
         const baseY = node.y + effectiveR + fontSize + 2;

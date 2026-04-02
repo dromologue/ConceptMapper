@@ -71,6 +71,7 @@ function AppInner() {
   const [searchQuery, setSearchQuery] = useState("");
   const [exploded, setExploded] = useState(false);
   const [layoutPreset, setLayoutPreset] = useState<import("./types/graph-ir").LayoutPreset>("force");
+  const [fontScale, setFontScale] = useState(1);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchHighlight, setSearchHighlight] = useState(-1);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -1361,12 +1362,17 @@ function AppInner() {
               highlightedCommunity={highlightedCommunity}
               exploded={exploded}
               layoutPreset={layoutPreset}
+              fontScale={fontScale}
               edgeTypeConfigs={template?.edge_types}
             />
             <div className="zoom-controls">
               <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomIn()} title="Zoom in">+</button>
               <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomOut()} title="Zoom out">-</button>
               <button className="zoom-btn zoom-btn-fit" onClick={() => fitToViewRef.current?.()} title="Fit to view">Fit</button>
+              <div className="zoom-separator" />
+              <button className="zoom-btn" onClick={() => setFontScale((s) => Math.min(3, s + 0.2))} title="Increase font size">A+</button>
+              <button className="zoom-btn" onClick={() => setFontScale((s) => Math.max(0.4, s - 0.2))} title="Decrease font size">A-</button>
+              {fontScale !== 1 && <button className="zoom-btn zoom-btn-fit" onClick={() => setFontScale(1)} title="Reset font size">A0</button>}
               <button
                 className={`zoom-btn zoom-btn-fit ${hiddenLabelTypes.size > 0 ? "zoom-btn-off" : ""}`}
                 onClick={() => setLabelMenuOpen(!labelMenuOpen)}

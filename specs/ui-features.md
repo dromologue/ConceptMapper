@@ -274,6 +274,15 @@ The Activity Bar provides direct access to the Properties panel and Notes pane w
 **AC-061D-03**: When the notes pane is open with no selection, a placeholder message is shown.
 **AC-061D-04**: Node metrics are only accessible via the Network Analysis panel, not the Properties panel.
 
+### REQ-061E: Font Size Controls
+The zoom controls area includes font size adjustment buttons that scale node and edge labels independently of zoom level.
+
+**AC-061E-01**: A+ and A- buttons in the zoom controls increase/decrease font scale by 0.2 per click.
+**AC-061E-02**: Font scale ranges from 0.4x to 3x.
+**AC-061E-03**: An A0 reset button appears when font scale is not 1x.
+**AC-061E-04**: Font scale is applied to node labels, edge labels, and is a session-level setting (not persisted).
+**AC-061E-05**: Font scale is passed to GraphCanvas and applied via a ref for efficient re-rendering.
+
 ### REQ-062: Image Export (PNG/PDF)
 Export the current canvas view as PNG or PDF with configurable background.
 
