@@ -607,7 +607,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const revealed = revealedRef.current;
     const currentFilters = filtersRef.current;
     const collapsed = collapsedRef.current;
-    const hiddenByCollapse = computeCollapseState(dataRef.current, collapsed);
+    const { hiddenByCollapse } = computeCollapseState(dataRef.current.edges, collapsed);
     const visible = ns.filter((n) => {
       if (hiddenByCollapse.has(n.id)) return false;
       if (!isNodeFilterVisible(n, currentFilters)) return false;
