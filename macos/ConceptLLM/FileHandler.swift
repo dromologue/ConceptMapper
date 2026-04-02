@@ -90,37 +90,6 @@ enum FileHandler {
         }
     }
 
-    /// Sync bundled .cm example maps to the user maps folder.
-    /// Copies missing files and removes files not in the bundle.
-    static func copyBundledMaps() {
-        let folder = getMapsFolder()
-        guard let resourceURL = Bundle.main.resourceURL else { return }
-        let bundledDir = resourceURL.appendingPathComponent("maps")
-        guard FileManager.default.fileExists(atPath: bundledDir.path) else { return }
-        do {
-            let bundledFiles = try FileManager.default.contentsOfDirectory(at: bundledDir, includingPropertiesForKeys: nil)
-                .filter { $0.pathExtension == "cm" }
-            let bundledNames = Set(bundledFiles.map { $0.lastPathComponent })
-            // Copy missing bundled files
-            for file in bundledFiles {
-                let dest = folder.appendingPathComponent(file.lastPathComponent)
-                if !FileManager.default.fileExists(atPath: dest.path) {
-                    try FileManager.default.copyItem(at: file, to: dest)
-                }
-            }
-            // Remove files not in the bundle
-            let userFiles = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
-                .filter { $0.pathExtension == "cm" }
-            for file in userFiles {
-                if !bundledNames.contains(file.lastPathComponent) {
-                    try FileManager.default.removeItem(at: file)
-                }
-            }
-        } catch {
-            // silently ignore — not critical
-        }
-    }
-
     /// Enumerate .cmt template files in the templates folder.
     static func listTemplates(completion: @escaping @MainActor ([Any]) -> Void) {
         let folder = getTemplatesFolder()

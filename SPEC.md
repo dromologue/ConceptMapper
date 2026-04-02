@@ -235,8 +235,7 @@ The Graph IR serializes to JSON matching the schema contract.
 - [ ] AC-007-05: `edges` is an array of edge objects with `visual` sub-object
 - [ ] AC-007-06: Round-trip test: serialize → deserialize → re-serialize produces identical JSON
 - [ ] AC-007-07: Null/None optional fields are omitted from JSON (not serialized as `null`)
-- [ ] AC-007-08: Node `content` object serialized when present, omitted when absent
-- [ ] AC-007-09: Edge `weight` field serialized as float
+- [ ] AC-007-08: Edge `weight` field serialized as float
 
 **Edge Cases:**
 - Empty graph (no nodes, no edges): produces valid JSON with empty arrays
@@ -543,30 +542,10 @@ A separate extraction tool converts arbitrary prose content (including but not l
 
 ## REQ-016: Rich Node Content in Graph IR
 
-The Graph IR supports structured rich content beyond basic metadata fields, enabling meaningful exploration in the detail panel.
-
-**Preconditions:**
-- Taxonomy source may include extended content fields (populated by extraction pipeline or manual authoring)
-
-**Trigger:**
-- Node includes content fields in taxonomy source
-
-**Expected Behavior:**
-- Node `content` object carries optional rich fields
-- Frontend renders rich content when available
-
-**Acceptance Criteria:**
-- [ ] AC-016-01: Node IR includes optional `content` object with fields: `summary`, `key_works`, `critiques`, `connections_prose`
-- [ ] AC-016-02: `content.summary` is a string (first paragraph or abstract of the thinker/concept)
-- [ ] AC-016-03: `content.key_works` is an array of strings (bibliography entries)
-- [ ] AC-016-04: `content.critiques` is an array of strings (known criticisms or limitations)
-- [ ] AC-016-05: `content.connections_prose` is an array of `{target_id, text}` objects (prose descriptions of connections)
-- [ ] AC-016-06: `content` is omitted from JSON when all sub-fields are absent
-- [ ] AC-016-07: Round-trip serialization preserves content fields exactly
-
-**Edge Cases:**
-- Node with partial content (only summary, no key_works): other fields omitted
-- Content fields with unicode, special characters: preserved as-is
+> **REMOVED** (architecture cleanup, 2026-04-02): The `NodeContent` and `ConnectionProse`
+> structs were never populated by the parser — always set to `None`. The `content` field
+> has been removed from the Node IR. If rich content is needed in the future, it should be
+> re-introduced with an actual parsing/extraction pipeline that populates the fields.
 
 ---
 
@@ -1205,7 +1184,7 @@ A summary panel shows network-level metadata: structural observations, external 
 - [ ] AC-032-03: The panel shows network title and description
 - [ ] AC-032-04: Structural observations are listed as bullet points
 - [ ] AC-032-05: External shocks are listed with dates
-- [ ] AC-032-06: Network stats (node count, edge count, chain depth) are shown
+- [ ] AC-032-06: Network stats (node count, edge count) are shown
 - [ ] AC-032-07: The panel is dismissible via a close button or clicking outside
 
 ---

@@ -527,11 +527,10 @@ In-flight LLM requests can be cancelled by the user.
 **AC-093-02**: `LLMService.cancel()` cancels the task and clears the reference.
 
 ### REQ-094: Error Logging
-LLM and file operation errors are logged to a user-accessible log file.
 
-**AC-094-01**: `LogService` writes timestamped entries to `~/Documents/ConceptMapper/Logs/`.
-**AC-094-02**: Log files are named by date (YYYY-MM-DD.log).
-**AC-094-03**: Files older than 7 days are automatically removed.
+> **REMOVED** (architecture cleanup, 2026-04-02): `LogService.swift` was never called
+> anywhere in the codebase — dead code since creation. Deleted. Error logging now uses
+> the system `os.log` Logger already present in `WebViewBridge.swift`.
 
 ### REQ-095: CI/CD Pipeline
 CI validates all four components: Rust, WASM, Web, and Swift.
@@ -542,10 +541,12 @@ CI validates all four components: Rust, WASM, Web, and Swift.
 **AC-095-04**: Swift job builds and tests the MCP server on macOS.
 
 ### REQ-096: App.tsx Decomposition
-File loading logic is extracted from the monolithic App.tsx into a reusable hook.
+File loading logic and Swift bridge are extracted from the monolithic App.tsx into focused modules.
 
 **AC-096-01**: `useFileLoader` hook encapsulates WASM parser initialization and file content loading.
 **AC-096-02**: Hook returns `parserReady`, `error`, `setError`, and `loadFileContent`.
+**AC-096-03**: Swift WKWebView bridge functions are extracted to `web/src/utils/swiftBridge.ts` with typed `SwiftBridgeDeps` interface.
+**AC-096-04**: `registerSwiftBridge()` returns a cleanup function; App.tsx bridge useEffect is reduced to a single call.
 
 ## Taxonomy Wizard Validation & Input
 

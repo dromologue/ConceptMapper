@@ -38,15 +38,10 @@ pub struct Stream {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ExternalShock {
-    pub date: String,
-    pub description: String,
-}
+pub use crate::parser::metadata_parser::ExternalShock;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NetworkStats {
-    pub chain_depth: Option<i32>,
     pub node_count: i32,
     pub edge_count: i32,
 }
@@ -62,29 +57,7 @@ pub struct Node {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<BTreeMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub content: Option<NodeContent>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
-}
-
-/// Rich content for a node, populated from extraction or manual authoring.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NodeContent {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub summary: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub key_works: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub critiques: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub connections_prose: Option<Vec<ConnectionProse>>,
-}
-
-/// A prose description of a connection to another node.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConnectionProse {
-    pub target_id: String,
-    pub text: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

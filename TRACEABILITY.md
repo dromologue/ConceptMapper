@@ -38,8 +38,8 @@
 | REQ-006 | AC-006-01..14 | `tests/assembly_tests.rs` | — | pending |
 | REQ-006 | AC-006-15..16 | — | — | pending |
 | REQ-006 | AC-006-17..20 (unknown author) | `tests/assembly_tests.rs` | — | pending |
-| REQ-007 | AC-007-01..07 | `tests/serialization_tests.rs` | 8 tests | passing |
-| REQ-007 | AC-007-08..09 | — | — | pending |
+| REQ-007 | AC-007-01..07 | `tests/serialization_tests.rs` | 10 tests | passing |
+| REQ-007 | AC-007-08 (weight) | `tests/serialization_tests.rs` | `edge_weight_serialized` | passing |
 | REQ-008 | AC-008-01..06 | `tests/cli_tests.rs` | — | pending |
 | REQ-014 | AC-014-01..06 | `tests/error_tests.rs` | — | pending |
 
@@ -59,7 +59,7 @@
 
 | Spec | Criteria | Test File | Test Name | Status |
 |------|----------|-----------|-----------|--------|
-| REQ-016 | AC-016-01..07 | `tests/serialization_tests.rs` | — | pending |
+| REQ-016 | — | — | REMOVED: NodeContent/ConnectionProse never populated by parser; dead code deleted | removed |
 | REQ-017 | AC-017-01..06 | `tests/node_parser_tests.rs`, `tests/assembly_tests.rs` | — | pending |
 
 ## React Frontend
@@ -170,9 +170,9 @@
 | REQ-091 | AC-091-01..02 (LLM timeout) | `web/src/llm/client.ts` | AbortController with 5-min timeout for Ollama | passing |
 | REQ-092 | AC-092-01..03 (WebView escaping) | `macos/ConceptLLM/WebViewBridge.swift` | JSON serialization via safeJSString, no manual escaping | passing |
 | REQ-093 | AC-093-01..02 (LLM cancellation) | `macos/ConceptLLM/LLMService.swift` | task storage, cancel() method, llmCancel handler | passing |
-| REQ-094 | AC-094-01..03 (error logging) | `macos/ConceptLLM/LogService.swift` | file logging with 7-day rotation | passing |
+| REQ-094 | — | — | REMOVED: LogService.swift was never called; deleted. Errors use os.log Logger | removed |
 | REQ-095 | AC-095-01..04 (CI/CD pipeline) | `.github/workflows/ci.yml` | Rust+WASM+Web+Swift jobs, clippy, fmt, coverage | passing |
-| REQ-096 | AC-096-01..02 (App.tsx decomposition) | `web/src/hooks/useFileLoader.ts` | file loading logic extracted to hook | passing |
+| REQ-096 | AC-096-01..04 (App.tsx decomposition) | `web/src/hooks/useFileLoader.ts`, `web/src/utils/swiftBridge.ts` | file loader hook + typed Swift bridge module | passing |
 
 ## Additional Passing Tests (not yet mapped to spec requirements)
 
@@ -209,7 +209,7 @@
 | REQ-009–013 | React-only, reads IR contract; edge LOD independent of node LOD (P9) | TS strict, React Testing Library | No dangerouslySetInnerHTML |
 | REQ-014 | Parser concerns only | Actionable messages | No internal detail exposure |
 | REQ-015 | Separate extraction tool, not part of parser (P7); preserves rich content (P8); sets edge weight (P9) | Tested against concept library | Sanitizes extracted content |
-| REQ-016 | Rich content model in IR (P8) | Content fields round-trip tested | Content escaped for rendering |
+| REQ-016 | REMOVED — rich content model was dead code | — | — |
 | REQ-017 | Concept hierarchy support (P10); collapsible clusters in viz | Hierarchy validation tested | — |
 | REQ-018 | Mutation layer on IR (P4); notes persist through export | Undo/redo tested; round-trip notes | Edited content escaped |
 | REQ-019 | React-only export from canvas | Image export tested | No user paths in filenames |

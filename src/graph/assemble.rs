@@ -99,7 +99,6 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> ParseResult<Par
             generation: g.generation,
             stream: g.stream,
             fields: if g.fields.is_empty() { None } else { Some(g.fields.into_iter().collect::<BTreeMap<_, _>>()) },
-            content: None,
             notes: g.notes,
         }
     }).collect();
@@ -147,7 +146,6 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> ParseResult<Par
             external_shocks,
             structural_observations,
             network_stats: Some(NetworkStats {
-                chain_depth: None,
                 node_count: ir_nodes.len() as i32,
                 edge_count: ir_edges.len() as i32,
             }),

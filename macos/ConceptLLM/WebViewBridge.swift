@@ -39,14 +39,10 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
             logger.warning("[JS] \(body)")
             return
         case "openFile":
-            print("[Bridge] openFile handler called")
+            logger.info("[Bridge] openFile handler called")
             FileHandler.openFile { [weak self] content, filename, filePath in
-                print("[Bridge] FileHandler returned: \(filename), \(content.count) bytes")
+                logger.info("[Bridge] FileHandler returned: \(filename), \(content.count) bytes")
                 self?.loadFileContent(content, filename: filename, filePath: filePath)
-            }
-        case "saveFile":
-            requestGraphJSON { json in
-                FileHandler.saveFile(content: json, type: "json", title: "Save Graph")
             }
         case "exportImage":
             requestCanvasImage { dataURL in
@@ -145,10 +141,10 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
                     let filename = url.lastPathComponent
                     let js = "window.loadMapWithTemplate?.('\(base64)', '\(filename)', '\(path)', '\(tmplBase64)');"
                     webView?.evaluateJavaScript(js) { _, error in
-                        if let error = error { print("loadMap error: \(error)") }
+                        if let error = error { logger.error("loadMap error: \(error)") }
                     }
                 } catch {
-                    print("loadMap file error: \(error)")
+                    logger.error("loadMap file error: \(error)")
                 }
             }
         case "loadTemplate":
@@ -195,16 +191,7 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
         let js = "window.loadFileContentBase64('\(base64)', \(safeJSString(filename)), \(pathArg));"
         webView?.evaluateJavaScript(js) { _, error in
             if let error = error {
-                print("Bridge error: \(error)")
-            }
-        }
-    }
-
-    /// Request the current graph as JSON from the React app.
-    func requestGraphJSON(completion: @escaping @MainActor (String) -> Void) {
-        webView?.evaluateJavaScript("window.getGraphJSON();") { result, _ in
-            if let json = result as? String {
-                completion(json)
+                logger.error("Bridge error: \(error)")
             }
         }
     }

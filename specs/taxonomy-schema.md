@@ -296,26 +296,10 @@ Each edge has:
 
 ## Rich Content (Optional)
 
-For nodes with detailed descriptions, add content fields. These are displayed in the detail panel but do not affect the graph structure.
-
-Content is specified as additional KV fields in the node block, using a `content_` prefix:
-
-```
-id:               dekker
-name:             Sidney Dekker
-eminence:         major
-generation:       4
-stream:           sensemaking
-content_summary:  Safety scientist who showed that the way we respond to failure determines whether organisations learn from it
-content_key_works: [The Field Guide to Understanding Human Error (2006), Just Culture (2007), Drift into Failure (2011)]
-content_critiques: [Over-emphasises systemic factors at the expense of individual responsibility, Prescriptions can be vague]
-```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `content_summary` | string | One-paragraph summary of the thinker or concept |
-| `content_key_works` | list | Bibliography entries in bracket-delimited list |
-| `content_critiques` | list | Known criticisms or limitations |
+> **REMOVED** (architecture cleanup, 2026-04-02): The `content` field (`NodeContent`,
+> `ConnectionProse`) was never populated by the parser — always `None`. Removed from
+> the Rust IR, TypeScript types, and serialization tests. If rich content is needed,
+> re-introduce with an actual extraction pipeline. See REQ-016 in SPEC.md.
 
 ---
 

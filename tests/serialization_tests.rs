@@ -49,7 +49,6 @@ fn sample_graph_ir() -> GraphIR {
             ],
             structural_observations: vec!["Test observation".to_string()],
             network_stats: Some(NetworkStats {
-                chain_depth: Some(4),
                 node_count: 2,
                 edge_count: 1,
             }),
@@ -62,7 +61,6 @@ fn sample_graph_ir() -> GraphIR {
                 generation: Some(2),
                 stream: Some("psychology".to_string()),
                 fields: Some(thinker_fields),
-                content: None,
                 notes: None,
             },
             Node {
@@ -72,7 +70,6 @@ fn sample_graph_ir() -> GraphIR {
                 generation: Some(3),
                 stream: Some("psychology".to_string()),
                 fields: Some(concept_fields),
-                content: None,
                 notes: None,
             },
         ],
@@ -185,12 +182,8 @@ fn none_fields_omitted() {
     let json = serde_json::to_string(&ir).unwrap();
     let value: serde_json::Value = serde_json::from_str(&json).unwrap();
 
-    // Neither node should have content
-    let thinker = &value["nodes"][0];
-    assert!(thinker.get("content").is_none() || thinker["content"].is_null(),
-        "content should be omitted when absent");
-
     // Nodes without notes should not have notes key
+    let thinker = &value["nodes"][0];
     assert!(thinker.get("notes").is_none() || thinker["notes"].is_null());
 }
 
@@ -220,50 +213,6 @@ fn empty_graph_serializes() {
     assert_eq!(value["edges"].as_array().unwrap().len(), 0);
 }
 
-// AC-007-08: Node content object serialized when present, omitted when absent
-#[test]
-fn content_serialized_when_present() {
-    let mut ir = sample_graph_ir();
-    ir.nodes[0].content = Some(NodeContent {
-        summary: Some("Argyris developed theories of organizational learning.".to_string()),
-        key_works: Some(vec![
-            "Organizational Learning (1978)".to_string(),
-            "Overcoming Organizational Defenses (1990)".to_string(),
-        ]),
-        critiques: Some(vec!["Difficult to implement in practice".to_string()]),
-        connections_prose: Some(vec![
-            ConnectionProse {
-                target_id: "senge".to_string(),
-                text: "Senge built learning organisation concept on Argyris' double-loop theory".to_string(),
-            },
-        ]),
-    });
-
-    let json = serde_json::to_string(&ir).unwrap();
-    let value: serde_json::Value = serde_json::from_str(&json).unwrap();
-
-    let thinker = &value["nodes"][0];
-    assert!(thinker["content"].is_object(), "content should be present");
-    assert!(thinker["content"]["summary"].is_string());
-    assert_eq!(thinker["content"]["key_works"].as_array().unwrap().len(), 2);
-    assert_eq!(thinker["content"]["critiques"].as_array().unwrap().len(), 1);
-    assert_eq!(thinker["content"]["connections_prose"].as_array().unwrap().len(), 1);
-    assert_eq!(thinker["content"]["connections_prose"][0]["target_id"], "senge");
-
-    let concept = &value["nodes"][1];
-    assert!(concept.get("content").is_none() || concept["content"].is_null(),
-        "content should be omitted when absent");
-}
-
-// AC-007-08: Content omitted when all sub-fields are None
-#[test]
-fn content_omitted_when_absent() {
-    let ir = sample_graph_ir();
-    let json = serde_json::to_string(&ir).unwrap();
-
-    assert!(!json.contains("\"content\""), "content key should not appear in JSON");
-}
-
 // AC-007-09: Edge weight field serialized as float
 #[test]
 fn edge_weight_serialized() {
@@ -275,24 +224,6 @@ fn edge_weight_serialized() {
 
     let weight = value["edges"][0]["weight"].as_f64().unwrap();
     assert!((weight - 0.7).abs() < f64::EPSILON, "weight should be 0.7, got {}", weight);
-}
-
-// AC-016-07: Round-trip with content fields
-#[test]
-fn roundtrip_with_content() {
-    let mut ir = sample_graph_ir();
-    ir.nodes[0].content = Some(NodeContent {
-        summary: Some("Test summary with unicode: émigré, naïve".to_string()),
-        key_works: None,
-        critiques: None,
-        connections_prose: None,
-    });
-
-    let json1 = serde_json::to_string_pretty(&ir).unwrap();
-    let deserialized: GraphIR = serde_json::from_str(&json1).unwrap();
-    let json2 = serde_json::to_string_pretty(&deserialized).unwrap();
-
-    assert_eq!(json1, json2, "round-trip with content should produce identical JSON");
 }
 
 // Fields are stored as key-value pairs in the fields HashMap

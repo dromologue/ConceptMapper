@@ -29,6 +29,7 @@ import { createEmptyFilterState } from "./utils/filters";
 import type { FilterState } from "./utils/filters";
 import { normalizeFencedKV } from "./utils/normalize";
 import { useFileLoader } from "./hooks/useFileLoader";
+import { registerSwiftBridge } from "./utils/swiftBridge";
 import "./App.css";
 
 export type ViewMode = string; // "full" or a node type id
@@ -165,160 +166,29 @@ function AppInner() {
 
   // Expose bridge functions for Swift WKWebView
   useEffect(() => {
-    const win = window as unknown as Record<string, unknown>;
-
-    win.loadFileContentBase64 = (base64: string, filename: string, filePath?: string) => {
-      try {
-        const content = atob(base64);
-        const bytes = Uint8Array.from(content, (c) => c.charCodeAt(0));
-        const decoded = new TextDecoder().decode(bytes);
-        // Restore edge colors from .cm header
-        const ecMatch = decoded.match(/<!--\s*edge-colors:\s*(\{.+?\})\s*-->/);
-        if (ecMatch) {
-          try { setEdgeColorOverrides(JSON.parse(ecMatch[1])); } catch { /* ignore */ }
-        } else {
-          setEdgeColorOverrides({});
-        }
-        loadFileContent(decoded, filename, filePath);
-      } catch (err) {
-        console.error("[Bridge] decode error:", err);
-      }
-    };
-
-    // Load a map with its template in one call (avoids race conditions)
-    win.loadMapWithTemplate = (mapBase64: string, _filename: string, filePath: string, tmplBase64: string) => {
-      try {
-        const mapBytes = Uint8Array.from(atob(mapBase64), (c) => c.charCodeAt(0));
-        const decoded = new TextDecoder().decode(mapBytes);
-        // Decode template from base64
-        let tmpl: TaxonomyTemplate | null = null;
-        if (tmplBase64) {
-          try {
-            const tmplBytes = Uint8Array.from(atob(tmplBase64), (c) => c.charCodeAt(0));
-            const tmplStr = new TextDecoder().decode(tmplBytes);
-            if (tmplStr !== "null") tmpl = JSON.parse(tmplStr) as TaxonomyTemplate;
-          } catch { /* ignore */ }
-        }
-        // Parse and migrate with the template
-        const normalized = normalizeFencedKV(decoded);
-        const result = parseMarkdown(normalized);
-        const data = result.graph;
-        if (data.nodes.length > 0) {
-          const { template: migratedTemplate, data: migratedData } = migrateFromParser(data, tmpl);
-          const ir = graphIRFromData(migratedTemplate, migratedData);
-          // Preserve template reference from the .cm file header
-          const tmplMatch = decoded.match(/<!--\s*template:\s*(.+?)\s*-->/i);
-          const tmplRef = tmplMatch?.[1]?.trim();
-          if (tmplRef) ir.metadata.source_template = tmplRef.endsWith(".cmt") ? tmplRef : `${tmplRef}.cmt`;
-          // Restore edge color overrides from .cm file header
-          const edgeColorsMatch = decoded.match(/<!--\s*edge-colors:\s*(\{.+?\})\s*-->/);
-          if (edgeColorsMatch) {
-            try {
-              const colors = JSON.parse(edgeColorsMatch[1]) as Record<string, string>;
-              setEdgeColorOverrides(colors);
-            } catch { /* ignore malformed */ }
-          } else {
-            setEdgeColorOverrides({});
-          }
-          setGraphData(ir);
-          setTemplate(migratedTemplate);
-          setSelectedNode(null);
-          setRevealedNodes(new Set());
-          setFilters(createEmptyFilterState());
-          setError(null);
-          setSourceFilePath(filePath ?? null);
-        }
-      } catch (err) {
-        console.error("[Bridge] loadMapWithTemplate error:", err);
-      }
-    };
-
-    win.getGraphJSON = (): string => {
-      if (!graphData) return "";
-      return exportToMarkdown(graphData, nodeTypeConfigs, edgeColorOverrides);
-    };
-
-    win.getGraphMarkdown = (): string => {
-      if (!graphData) return "";
-      return exportToMarkdown(graphData, nodeTypeConfigs, edgeColorOverrides);
-    };
-
-    win.getCanvasImage = (): string => {
-      const canvas = document.querySelector("canvas");
-      if (!canvas) return "";
-      return canvas.toDataURL("image/png");
-    };
-
-    win.taxonomySaved = (filePath: string) => {
-      setSourceFilePath(filePath);
-    };
-
-    win.showTaxonomyWizard = () => {
-      setShowTaxonomyWizard(true);
-    };
-
-    // Template bridge functions
-    win.templatesLoaded = (json: string) => {
-      try {
-        const list = JSON.parse(json) as { name: string; path: string }[];
-        // Load each template's content
-        for (const t of list) {
-          const webkit = (window as unknown as Record<string, unknown>).webkit as
-            | { messageHandlers?: Record<string, { postMessage: (msg: unknown) => void }> }
-            | undefined;
-          webkit?.messageHandlers?.loadTemplate?.postMessage(JSON.stringify({ path: t.path }));
-        }
-      } catch (err) {
-        console.error("Templates load error:", err);
-      }
-    };
-
-    win.templateLoaded = (json: string) => {
-      try {
-        const tmpl = JSON.parse(json) as TaxonomyTemplate;
-        // The .cmt template always wins — it defines the canonical structure
-        if (graphData) {
-          setTemplate(tmpl);
-        }
-        // Cache it by title for the empty state and taxonomy wizard
-        setLoadedNativeTemplates((prev) => {
-          const next = new Map(prev);
-          next.set(tmpl.title, {
-            title: tmpl.title,
-            description: tmpl.description,
-            streams: tmpl.streams ?? [],
-            generations: tmpl.generations ?? [],
-            node_types: tmpl.node_types,
-          });
-          return next;
-        });
-      } catch (err) {
-        console.error("Template load error:", err);
-      }
-    };
-
-    // Maps bridge function — receives list of saved .cm files
-    win.mapsLoaded = (json: string) => {
-      try {
-        const list = JSON.parse(json) as { name: string; path: string }[];
-        setNativeMaps(list);
-      } catch (err) {
-        console.error("Maps load error:", err);
-      }
-    };
-
-    return () => {
-      delete win.loadFileContentBase64;
-      delete win.loadMapWithTemplate;
-      delete win.getGraphJSON;
-      delete win.getGraphMarkdown;
-      delete win.getCanvasImage;
-      delete win.taxonomySaved;
-      delete win.showTaxonomyWizard;
-      delete win.templatesLoaded;
-      delete win.templateLoaded;
-      delete win.mapsLoaded;
-    };
+    return registerSwiftBridge({
+      loadFileContent,
+      parseMarkdown,
+      migrateFromParser,
+      graphIRFromData,
+      normalizeFencedKV,
+      setGraphData,
+      setTemplate,
+      setSelectedNode: () => setSelectedNode(null),
+      setRevealedNodes: () => setRevealedNodes(new Set()),
+      setFilters: (f) => setFilters(f),
+      setError,
+      setSourceFilePath,
+      setEdgeColorOverrides,
+      setShowTaxonomyWizard,
+      setNativeMaps,
+      setLoadedNativeTemplates,
+      getGraphData: () => graphData,
+      getNodeTypeConfigs: () => nodeTypeConfigs,
+      getEdgeColorOverrides: () => edgeColorOverrides,
+      exportToMarkdown,
+      createEmptyFilterState,
+    });
   }, [loadFileContent, graphData, nodeTypeConfigs, templateFilePath, setGraphData]);
 
   const handleViewModeChange = useCallback((mode: string) => {

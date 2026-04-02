@@ -136,7 +136,6 @@ export interface ExternalShock {
 }
 
 export interface NetworkStats {
-  chain_depth?: number;
   node_count: number;
   edge_count: number;
 }
@@ -148,18 +147,10 @@ export interface GraphNode {
   tags?: string[];
   classifiers?: Record<string, string>;
   properties?: Record<string, string | string[] | number | undefined>;
-  content?: NodeContent;
   notes?: string;
   // Legacy fields — kept for backward compat
   generation?: number;
   stream?: string;
-}
-
-export interface NodeContent {
-  summary?: string;
-  key_works?: string[];
-  critiques?: string[];
-  connections_prose?: { target_id: string; text: string }[];
 }
 
 export interface GraphEdge {

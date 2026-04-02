@@ -1,6 +1,12 @@
 use crate::parser::lexer::{ClassifiedLine, LineType};
-use crate::graph::ir::{ExternalShock};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExternalShock {
+    pub date: String,
+    pub description: String,
+}
 
 /// Parse external shock blocks (fenced blocks with date: and description:).
 pub fn parse_external_shocks(lines: &[ClassifiedLine]) -> Vec<ExternalShock> {
