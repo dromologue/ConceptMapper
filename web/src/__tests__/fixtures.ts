@@ -21,6 +21,17 @@ export const sampleClassifiers: Classifier[] = [
   generationsToClassifier(sampleGenerations),
 ];
 
+export const sampleRegionClassifier: Classifier = {
+  id: "domain",
+  label: "Domain",
+  layout: "region-column",
+  values: [
+    { id: "theory", label: "Theory", color: "#4A90D9" },
+    { id: "practice", label: "Practice", color: "#D94A4A" },
+    { id: "methodology", label: "Methodology", color: "#4AD94A" },
+  ],
+};
+
 export const argyris: GraphNode = {
   id: "argyris",
   node_type: "person",

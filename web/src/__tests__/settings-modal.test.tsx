@@ -1,10 +1,10 @@
-// SPEC: REQ-037 (Settings Modal)
+// SPEC: REQ-037 (Settings Modal), REQ-101 (Region/Column Colour Overrides)
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsModal } from "../ui/SettingsModal";
 import { ThemeProvider } from "../theme/ThemeContext";
-import { sampleStreams } from "./fixtures";
+import { sampleStreams, sampleRegionClassifier } from "./fixtures";
 
 const edgeTypes = ["chain", "originates", "rivalry", "alliance"];
 
@@ -14,6 +14,7 @@ function renderSettings(props: Partial<React.ComponentProps<typeof SettingsModal
       <SettingsModal
         streams={sampleStreams}
         edgeTypes={edgeTypes}
+        classifiers={[]}
         onClose={vi.fn()}
         {...props}
       />
@@ -101,5 +102,33 @@ describe("SettingsModal", () => {
     renderSettings();
     await user.click(screen.getByText("Mind Map"));
     expect(screen.getByText("Smooth blob nodes with flowing branch-like edges")).toBeInTheDocument();
+  });
+
+  // REQ-101: Region/column colour overrides
+  it("does not show region colours section when no region classifiers", () => {
+    renderSettings({ classifiers: [] });
+    expect(screen.queryByText("Domain Colors")).not.toBeInTheDocument();
+  });
+
+  it("shows region colour section for region-column classifier", () => {
+    renderSettings({ classifiers: [sampleRegionClassifier] });
+    expect(screen.getByText("Domain Colors")).toBeInTheDocument();
+    expect(screen.getByText("Theory")).toBeInTheDocument();
+    expect(screen.getByText("Practice")).toBeInTheDocument();
+    expect(screen.getByText("Methodology")).toBeInTheDocument();
+  });
+
+  it("shows colour pickers for region classifier values", () => {
+    renderSettings({ classifiers: [sampleRegionClassifier] });
+    // Each region value should have a color input
+    const colorInputs = document.querySelectorAll<HTMLInputElement>('input[type="color"]');
+    // streams (3) + edge types (4) + region values (3) = 10
+    expect(colorInputs.length).toBe(10);
+  });
+
+  it("does not show region colours for non-layout classifiers", () => {
+    const nonLayoutClassifier = { ...sampleRegionClassifier, id: "role", label: "Role", layout: undefined as unknown as "region" };
+    renderSettings({ classifiers: [nonLayoutClassifier] });
+    expect(screen.queryByText("Role Colors")).not.toBeInTheDocument();
   });
 });

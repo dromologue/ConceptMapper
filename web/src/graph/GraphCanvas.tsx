@@ -1019,7 +1019,6 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         existing.generation = n.generation;
         existing.stream = n.stream;
         existing.properties = n.properties;
-        existing.content = n.content;
         existing.notes = n.notes;
       }
     }
@@ -1153,7 +1152,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
       for (const rv of regionCls.values) {
         const members = visibleNodes.filter((n) => String(n.classifiers?.[regionCls.id]) === rv.id);
-        const color = rv.color ?? "#666";
+        const color = th.classifierColorOverrides?.[rv.id] ?? rv.color ?? "#666";
 
         if (isColumn) {
           // Always draw column backgrounds and labels, even when no visible members

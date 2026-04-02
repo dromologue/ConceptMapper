@@ -1180,16 +1180,7 @@ function AppInner() {
             }
           }}
           propertiesOpen={!!selectedNode}
-          onToggleNotes={() => {
-            if (notesOpen) {
-              setNotesOpen(false);
-            } else {
-              setNotesOpen(true);
-              if (!selectedNode && !selectedEdge && graphData.nodes.length > 0) {
-                setSelectedNode(graphData.nodes[0]);
-              }
-            }
-          }}
+          onToggleNotes={() => setNotesOpen(!notesOpen)}
           notesOpen={notesOpen}
         />
 
@@ -1451,6 +1442,7 @@ function AppInner() {
         <SettingsModal
           streams={graphData.metadata.streams}
           edgeTypes={[...new Set(graphData.edges.map((e) => e.edge_type))]}
+          classifiers={graphData.metadata.classifiers ?? []}
           onClose={() => setShowSettings(false)}
         />
       )}

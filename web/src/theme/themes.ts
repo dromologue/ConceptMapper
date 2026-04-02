@@ -47,6 +47,7 @@ export interface ThemeConfig {
   // User-customizable overrides (not part of presets)
   edgeColorOverrides: Record<string, string>;
   streamColorOverrides: Record<string, string>;
+  classifierColorOverrides: Record<string, string>;
 }
 
 /** Midnight — the current default dark navy theme (exact existing colors). */
@@ -91,6 +92,7 @@ const midnight: ThemeConfig = {
   sidebarBg: "#16213e",
   edgeColorOverrides: {},
   streamColorOverrides: {},
+  classifierColorOverrides: {},
 };
 
 const obsidian: ThemeConfig = {

@@ -273,6 +273,7 @@ The Activity Bar provides direct access to the Properties panel and Notes pane w
 **AC-061D-02**: A Notes button in the Activity Bar toggles the notes pane. The pane stays open as the user navigates between nodes and edges.
 **AC-061D-03**: When the notes pane is open with no selection, a placeholder message is shown.
 **AC-061D-04**: Node metrics are only accessible via the Network Analysis panel, not the Properties panel.
+**AC-061D-05**: Opening the notes pane does not open the properties panel. The two panels are independently toggled.
 
 ### REQ-061E: Font Size Controls
 The zoom controls area includes font size adjustment buttons that scale node and edge labels independently of zoom level.
@@ -579,3 +580,12 @@ The Add Edge modal shows a visual preview line that reflects the selected weight
 
 **AC-100-01**: An SVG preview line is rendered below the weight slider.
 **AC-100-02**: The preview line's stroke width scales with the weight value.
+
+### REQ-101: Region/Column Colour Overrides
+Classifier-based region and column background colours can be customised per-value via the Settings modal, following the same pattern as stream and edge colour overrides.
+
+**AC-101-01**: The Settings modal shows a colour section for each classifier with `region` or `region-column` layout.
+**AC-101-02**: Each classifier value has a colour picker defaulting to the template-defined colour (or `#666666` fallback).
+**AC-101-03**: Colour overrides are stored in `classifierColorOverrides` on the theme context and persisted to localStorage (`cm-classifier-colors`).
+**AC-101-04**: A reset button (×) clears the override for a value, reverting to the template default.
+**AC-101-05**: The canvas region/column rendering applies overrides with priority: user override → template colour → `#666` fallback.

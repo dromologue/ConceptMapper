@@ -14,6 +14,8 @@ interface ThemeContextValue {
   setEdgeColorOverrides: (overrides: Record<string, string>) => void;
   streamColorOverrides: Record<string, string>;
   setStreamColorOverrides: (overrides: Record<string, string>) => void;
+  classifierColorOverrides: Record<string, string>;
+  setClassifierColorOverrides: (overrides: Record<string, string>) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -22,6 +24,7 @@ const LS_THEME = "cm-theme-id";
 const LS_LOOK = "cm-look";
 const LS_EDGE_COLORS = "cm-edge-colors";
 const LS_STREAM_COLORS = "cm-stream-colors";
+const LS_CLASSIFIER_COLORS = "cm-classifier-colors";
 
 function lsGet(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -88,6 +91,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
   const [edgeColorOverrides, setEdgeColorOverridesState] = useState(() => readJson(LS_EDGE_COLORS));
   const [streamColorOverrides, setStreamColorOverridesState] = useState(() => readJson(LS_STREAM_COLORS));
+  const [classifierColorOverrides, setClassifierColorOverridesState] = useState(() => readJson(LS_CLASSIFIER_COLORS));
 
   const theme = getThemeById(themeId);
 
@@ -116,10 +120,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setStreamColorOverridesState(overrides);
   }, []);
 
+  const setClassifierColorOverrides = useCallback((overrides: Record<string, string>) => {
+    lsSet(LS_CLASSIFIER_COLORS, JSON.stringify(overrides));
+    setClassifierColorOverridesState(overrides);
+  }, []);
+
   return (
     <ThemeContext.Provider
       value={{
-        theme: { ...theme, edgeColorOverrides, streamColorOverrides },
+        theme: { ...theme, edgeColorOverrides, streamColorOverrides, classifierColorOverrides },
         setThemeId,
         look,
         setLook,
@@ -127,6 +136,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setEdgeColorOverrides,
         streamColorOverrides,
         setStreamColorOverrides,
+        classifierColorOverrides,
+        setClassifierColorOverrides,
       }}
     >
       {children}

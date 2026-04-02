@@ -1,13 +1,14 @@
 import { useTheme, THEMES } from "../theme/ThemeContext";
-import type { Stream } from "../types/graph-ir";
+import type { Stream, Classifier } from "../types/graph-ir";
 
 interface Props {
   streams: Stream[];
   edgeTypes: string[];
+  classifiers: Classifier[];
   onClose: () => void;
 }
 
-export function SettingsModal({ streams, edgeTypes, onClose }: Props) {
+export function SettingsModal({ streams, edgeTypes, classifiers, onClose }: Props) {
   const {
     theme,
     setThemeId,
@@ -17,7 +18,11 @@ export function SettingsModal({ streams, edgeTypes, onClose }: Props) {
     setEdgeColorOverrides,
     streamColorOverrides,
     setStreamColorOverrides,
+    classifierColorOverrides,
+    setClassifierColorOverrides,
   } = useTheme();
+
+  const regionClassifiers = classifiers.filter((c) => c.layout === "region" || c.layout === "region-column");
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -134,6 +139,40 @@ export function SettingsModal({ streams, edgeTypes, onClose }: Props) {
             ))}
           </div>
         )}
+
+        {/* Region/column colors */}
+        {regionClassifiers.length > 0 && regionClassifiers.map((cls) => (
+          <div key={cls.id} className="settings-section">
+            <div className="field-label" style={{ marginBottom: 8 }}>
+              {cls.label} Colors
+            </div>
+            {cls.values.map((rv) => (
+              <div key={rv.id} className="color-row">
+                <span className="color-row-label">{rv.label}</span>
+                <input
+                  type="color"
+                  value={classifierColorOverrides[rv.id] ?? rv.color ?? "#666666"}
+                  onChange={(e) =>
+                    setClassifierColorOverrides({ ...classifierColorOverrides, [rv.id]: e.target.value })
+                  }
+                />
+                {classifierColorOverrides[rv.id] && (
+                  <button
+                    className="color-reset-btn"
+                    onClick={() => {
+                      const next = { ...classifierColorOverrides };
+                      delete next[rv.id];
+                      setClassifierColorOverrides(next);
+                    }}
+                    title="Reset to default"
+                  >
+                    &times;
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );
