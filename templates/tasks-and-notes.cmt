@@ -1,0 +1,82 @@
+{
+  "title": "Tasks & Notes",
+  "description": "Track notes and simple tasks arranged in groups, organised by tags. Uses an inorganic theme — strata, minerals, and geological formations as metaphors for knowledge layers.",
+  "format_instructions": "When generating .cm files from this template: use markdown with fenced code blocks for nodes. Every property line MUST use 'key: value' format with a colon separator. Required node keys: id, name. Classifier values use the classifier id as the key. Tags use comma-separated format. Edges use 'from: [id] to: [id] type: [edge_type]' format.",
+
+  "classifiers": [
+    {
+      "id": "tag",
+      "label": "Tag",
+      "layout": "region",
+      "values": [
+        { "id": "infrastructure", "label": "Infrastructure", "color": "#708090", "description": "Foundations, systems, tooling — the bedrock" },
+        { "id": "research", "label": "Research", "color": "#4A7FB5", "description": "Investigation, reading, analysis — mineral veins to follow" },
+        { "id": "design", "label": "Design", "color": "#9B6B9E", "description": "Architecture, structure, form — crystalline patterns" },
+        { "id": "operations", "label": "Operations", "color": "#B87333", "description": "Running processes, maintenance — the furnace" },
+        { "id": "communication", "label": "Communication", "color": "#C4A35A", "description": "Writing, presenting, coordinating — signal through wire" }
+      ]
+    },
+    {
+      "id": "phase",
+      "label": "Phase",
+      "layout": "y",
+      "values": [
+        { "id": "raw", "label": "Raw", "description": "Unprocessed — just captured" },
+        { "id": "refining", "label": "Refining", "description": "Being worked on, shaped, clarified" },
+        { "id": "forged", "label": "Forged", "description": "Complete, solid, ready to use" },
+        { "id": "archived", "label": "Archived", "description": "Stored away — sedimented into the record" }
+      ]
+    }
+  ],
+
+  "node_types": [
+    {
+      "id": "task",
+      "label": "Task",
+      "shape": "rectangle",
+      "icon": "T",
+      "size_field": "priority",
+      "size_map": { "critical": 20, "high": 15, "medium": 11, "low": 7 },
+      "fields": [
+        { "key": "priority", "label": "Priority", "type": "select", "options": ["critical", "high", "medium", "low"], "required": true },
+        { "key": "status", "label": "Status", "type": "select", "options": ["pending", "in_progress", "done", "blocked"] },
+        { "key": "due", "label": "Due Date", "type": "text" },
+        { "key": "assignee", "label": "Assignee", "type": "text" }
+      ]
+    },
+    {
+      "id": "note",
+      "label": "Note",
+      "shape": "pill",
+      "icon": "N",
+      "size_field": "weight",
+      "size_map": { "heavy": 18, "medium": 12, "light": 7 },
+      "fields": [
+        { "key": "weight", "label": "Weight", "type": "select", "options": ["heavy", "medium", "light"], "required": true },
+        { "key": "source", "label": "Source", "type": "text" },
+        { "key": "confidence", "label": "Confidence", "type": "select", "options": ["solid", "provisional", "speculative"] }
+      ]
+    },
+    {
+      "id": "group",
+      "label": "Group",
+      "shape": "diamond",
+      "icon": "G",
+      "size_field": "scope",
+      "size_map": { "broad": 22, "focused": 14, "narrow": 9 },
+      "fields": [
+        { "key": "scope", "label": "Scope", "type": "select", "options": ["broad", "focused", "narrow"], "required": true },
+        { "key": "owner", "label": "Owner", "type": "text" }
+      ]
+    }
+  ],
+
+  "edge_types": [
+    { "id": "belongs_to", "label": "Belongs To", "color": "#708090", "directed": true, "style": "solid" },
+    { "id": "depends_on", "label": "Depends On", "color": "#C0392B", "directed": true, "style": "solid" },
+    { "id": "informs", "label": "Informs", "color": "#4A7FB5", "directed": true, "style": "dotted" },
+    { "id": "related", "label": "Related", "color": "#888888", "directed": false, "style": "dashed" },
+    { "id": "blocks", "label": "Blocks", "color": "#E74C3C", "directed": true, "style": "solid" },
+    { "id": "supersedes", "label": "Supersedes", "color": "#9B6B9E", "directed": true, "style": "dashed" }
+  ]
+}

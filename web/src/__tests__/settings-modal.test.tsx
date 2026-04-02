@@ -85,4 +85,21 @@ describe("SettingsModal", () => {
     await user.click(overlay);
     expect(onClose).toHaveBeenCalled();
   });
+
+  it("shows Formal and Mind Map look-and-feel buttons", () => {
+    renderSettings();
+    // Look & Feel section has exactly Formal and Mind Map buttons
+    const lookButtons = screen.getAllByRole("button").filter(
+      (b) => b.classList.contains("export-option-btn") && (b.textContent === "Formal" || b.textContent === "Mind Map")
+    );
+    expect(lookButtons).toHaveLength(2);
+    expect(screen.getByText("Mind Map")).toBeInTheDocument();
+  });
+
+  it("shows correct description for mindmap look", async () => {
+    const user = userEvent.setup();
+    renderSettings();
+    await user.click(screen.getByText("Mind Map"));
+    expect(screen.getByText("Smooth blob nodes with flowing branch-like edges")).toBeInTheDocument();
+  });
 });

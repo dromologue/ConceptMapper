@@ -101,8 +101,8 @@ describe("Look & Feel", () => {
     return (
       <div>
         <span data-testid="look">{look}</span>
-        <button onClick={() => setLook("organic")}>Go Organic</button>
         <button onClick={() => setLook("formal")}>Go Formal</button>
+        <button onClick={() => setLook("mindmap")}>Go Mindmap</button>
       </div>
     );
   }
@@ -112,18 +112,30 @@ describe("Look & Feel", () => {
     expect(screen.getByTestId("look")).toHaveTextContent("formal");
   });
 
-  it("can be switched to organic independently of theme", async () => {
+  it("can be switched to mindmap", async () => {
     const user = userEvent.setup();
     render(<ThemeProvider><LookInspector /></ThemeProvider>);
-    await user.click(screen.getByText("Go Organic"));
-    expect(screen.getByTestId("look")).toHaveTextContent("organic");
+    await user.click(screen.getByText("Go Mindmap"));
+    expect(screen.getByTestId("look")).toHaveTextContent("mindmap");
   });
 
-  it("persists look to localStorage", async () => {
+  it("persists mindmap look to localStorage", async () => {
     const user = userEvent.setup();
     render(<ThemeProvider><LookInspector /></ThemeProvider>);
-    await user.click(screen.getByText("Go Organic"));
-    expect(localStorage.getItem("cm-look")).toBe("organic");
+    await user.click(screen.getByText("Go Mindmap"));
+    expect(localStorage.getItem("cm-look")).toBe("mindmap");
+  });
+
+  it("restores mindmap look from localStorage", () => {
+    localStorage.setItem("cm-look", "mindmap");
+    render(<ThemeProvider><LookInspector /></ThemeProvider>);
+    expect(screen.getByTestId("look")).toHaveTextContent("mindmap");
+  });
+
+  it("falls back to formal for unknown look values", () => {
+    localStorage.setItem("cm-look", "organic");
+    render(<ThemeProvider><LookInspector /></ThemeProvider>);
+    expect(screen.getByTestId("look")).toHaveTextContent("formal");
   });
 });
 

@@ -1,0 +1,328 @@
+# Tasks & Notes — Project Quarry
+
+<!-- template: tasks-and-notes.cmt -->
+<!-- Exported from concept-mapper, 2026-04-02. -->
+
+## Group Nodes
+
+```
+id:               grp_db_migration
+name:             Database Migration
+tag: infrastructure
+phase: refining
+owner: Platform team
+scope: broad
+notes:            All tasks and notes related to migrating from Postgres 14 to 16 across three clusters
+```
+
+```
+id:               grp_api_redesign
+name:             API Redesign
+tag: design
+phase: raw
+owner: Backend guild
+scope: focused
+notes:            Rethinking the public API surface — versioning strategy, deprecation policy, schema evolution
+```
+
+```
+id:               grp_monitoring
+name:             Monitoring Overhaul
+tag: operations
+phase: refining
+owner: SRE
+scope: focused
+notes:            Replacing legacy Nagios checks with structured observability: metrics, traces, logs
+```
+
+```
+id:               grp_vendor_eval
+name:             Vendor Evaluation
+tag: research
+phase: raw
+scope: narrow
+notes:            Evaluating three vendors for managed Kubernetes — cost, support, migration path
+```
+
+```
+id:               grp_launch_comms
+name:             Launch Communications
+tag: communication
+phase: raw
+owner: Product
+scope: focused
+notes:            Internal and external messaging for the v2 platform launch
+```
+
+## Task Nodes
+
+```
+id:               task_pg_backup
+name:             Set up continuous WAL archiving
+tag: infrastructure
+phase: forged
+priority: critical
+status: done
+notes:            Configured pgBackRest with S3 target, 7-day retention, verified restore on staging
+```
+
+```
+id:               task_pg_test_migration
+name:             Run migration dry-run on staging
+tag: infrastructure
+phase: refining
+assignee: Chen
+due: 2026-04-10
+priority: high
+status: in_progress
+notes:            pg_upgrade --check passed; full dry-run with data validation pending
+```
+
+```
+id:               task_pg_extension_audit
+name:             Audit extensions for PG16 compatibility
+tag: infrastructure
+phase: refining
+assignee: Priya
+priority: high
+status: in_progress
+notes:            PostGIS and pg_trgm confirmed compatible; waiting on timescaledb maintainer response
+```
+
+```
+id:               task_api_versioning
+name:             Define API versioning strategy
+tag: design
+phase: raw
+priority: high
+status: pending
+notes:            Header-based vs URL-based vs content negotiation — need to decide before endpoint work starts
+```
+
+```
+id:               task_deprecation_policy
+name:             Draft deprecation policy
+tag: design
+phase: raw
+priority: medium
+status: pending
+notes:            How long do we support old versions? What does the sunset header look like?
+```
+
+```
+id:               task_grafana_dashboards
+name:             Build Grafana dashboards for core services
+tag: operations
+phase: refining
+assignee: Ravi
+priority: medium
+status: in_progress
+notes:            Payment service dashboard done; auth and gateway dashboards in progress
+```
+
+```
+id:               task_alert_runbooks
+name:             Write alert runbooks
+tag: operations
+phase: raw
+priority: medium
+status: pending
+notes:            Each critical alert needs a runbook: what fired, why, how to triage, who to escalate to
+```
+
+```
+id:               task_k8s_poc
+name:             Run Kubernetes PoC with top vendor
+tag: research
+phase: refining
+assignee: Jordan
+priority: high
+status: in_progress
+notes:            Deploying canary workload to evaluate networking model, node autoscaling, and cost
+```
+
+```
+id:               task_write_blogpost
+name:             Write v2 migration blog post
+tag: communication
+phase: raw
+priority: low
+status: pending
+notes:            Technical audience — explain why we migrated, what we learned, performance numbers
+```
+
+```
+id:               task_internal_announce
+name:             Draft internal launch announcement
+tag: communication
+phase: raw
+assignee: Mika
+priority: medium
+status: pending
+notes:            Slack post + wiki page — timeline, what changes for teams, migration guide links
+```
+
+## Note Nodes
+
+```
+id:               note_pg16_perf
+name:             PG16 performance gains are real
+tag: research
+phase: forged
+confidence: solid
+source: Benchmarks on staging (2026-03-28)
+weight: heavy
+notes:            Query planner improvements gave 12-18% speedup on our heaviest analytic queries; COPY is 2x faster with new binary format
+```
+
+```
+id:               note_timescale_risk
+name:             TimescaleDB may not support PG16 in time
+tag: infrastructure
+phase: refining
+confidence: provisional
+weight: heavy
+notes:            Community edition lagging behind; enterprise fork has a beta but no GA date. Fallback: native partitioning + pg_cron
+```
+
+```
+id:               note_api_consumers
+name:             Only three external consumers use v1
+tag: design
+phase: forged
+confidence: solid
+source: API gateway logs, March 2026
+weight: medium
+notes:            PartnerA (80% of traffic), PartnerB (15%), PartnerC (5%). All on annual contracts renewing Q3.
+```
+
+```
+id:               note_nagios_debt
+name:             Nagios config is 4000 lines of undocumented checks
+tag: operations
+phase: forged
+confidence: solid
+source: SRE audit, February 2026
+weight: medium
+notes:            60% of checks are for decommissioned services. No one knows who wrote the rest. Rewriting from scratch is faster than untangling.
+```
+
+```
+id:               note_vendor_pricing
+name:             Vendor B pricing model penalises burst traffic
+tag: research
+phase: refining
+confidence: provisional
+weight: medium
+notes:            Per-node-hour billing with no burst credits. Our Black Friday traffic pattern would cost 3x normal month. Vendor A has committed-use discounts.
+```
+
+```
+id:               note_launch_timing
+name:             Marketing wants launch tied to conference
+tag: communication
+phase: raw
+confidence: speculative
+weight: light
+notes:            KubeCon EU in mid-April suggested as launch moment. Tight but possible if migration completes on schedule.
+```
+
+## Edges
+
+### Task-to-Group
+
+```
+from: task_pg_backup   to: grp_db_migration     type: belongs_to
+
+from: task_pg_test_migration to: grp_db_migration     type: belongs_to
+
+from: task_pg_extension_audit to: grp_db_migration     type: belongs_to
+
+from: task_api_versioning to: grp_api_redesign     type: belongs_to
+
+from: task_deprecation_policy to: grp_api_redesign     type: belongs_to
+
+from: task_grafana_dashboards to: grp_monitoring       type: belongs_to
+
+from: task_alert_runbooks to: grp_monitoring       type: belongs_to
+
+from: task_k8s_poc     to: grp_vendor_eval      type: belongs_to
+
+from: task_write_blogpost to: grp_launch_comms     type: belongs_to
+
+from: task_internal_announce to: grp_launch_comms     type: belongs_to
+
+```
+
+### Note-to-Group
+
+```
+from: note_pg16_perf   to: grp_db_migration     type: belongs_to
+
+from: note_timescale_risk to: grp_db_migration     type: belongs_to
+
+from: note_api_consumers to: grp_api_redesign     type: belongs_to
+
+from: note_nagios_debt to: grp_monitoring       type: belongs_to
+
+from: note_vendor_pricing to: grp_vendor_eval      type: belongs_to
+
+from: note_launch_timing to: grp_launch_comms     type: belongs_to
+
+```
+
+### Task-to-Task
+
+```
+from: task_pg_test_migration to: task_pg_backup       type: depends_on
+  note: Can't run dry-run migration without verified backups
+
+from: task_pg_test_migration to: task_pg_extension_audit type: depends_on
+  note: Migration will fail if incompatible extensions are loaded
+
+from: task_deprecation_policy to: task_api_versioning  type: depends_on
+  note: Deprecation timelines depend on the versioning scheme chosen
+
+from: task_alert_runbooks to: task_grafana_dashboards type: depends_on
+  note: Runbooks reference dashboard panels for triage steps
+
+```
+
+### Note-to-Task
+
+```
+from: note_timescale_risk to: task_pg_test_migration type: blocks
+  note: If TimescaleDB doesn't support PG16, migration scope changes significantly
+
+from: note_pg16_perf   to: task_write_blogpost  type: informs
+  note: Performance benchmarks are the headline for the blog post
+
+from: note_api_consumers to: task_deprecation_policy type: informs
+  note: Contract renewal dates constrain how aggressive deprecation can be
+
+from: note_vendor_pricing to: task_k8s_poc         type: informs
+  note: Pricing model shapes which workloads to test in the PoC
+
+from: note_launch_timing to: task_internal_announce type: informs
+  note: Conference date sets the deadline for internal comms
+
+```
+
+### Group-to-Group
+
+```
+from: grp_db_migration to: grp_api_redesign     type: related
+  note: API v2 depends on new PG16 features — JSON path queries, improved partitioning
+
+from: grp_monitoring   to: grp_db_migration     type: related
+  note: New dashboards need to cover the migrated database clusters
+
+```
+
+## Structural Observations
+
+- **Bottleneck**: The database migration group is the critical path — most other work flows from or depends on it completing successfully
+- **Risk**: TimescaleDB compatibility is the single biggest uncertainty; the fallback plan (native partitioning) needs a spike if no GA date by mid-April
+- **Pattern**: Notes in the "forged" phase are feeding directly into tasks that are still "raw" — knowledge is ahead of action in several areas
+- **Cross-cutting concern**: The launch communications group depends on outcomes from every other group, making it the natural integration point
+- **Tag distribution**: Infrastructure and operations dominate the active work; design and communication are queued behind decisions

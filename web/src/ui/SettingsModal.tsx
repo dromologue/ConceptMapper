@@ -36,12 +36,14 @@ export function SettingsModal({ streams, edgeTypes, onClose }: Props) {
               onClick={() => setLook("formal")}
             >Formal</button>
             <button
-              className={`export-option-btn ${look === "organic" ? "active" : ""}`}
-              onClick={() => setLook("organic")}
-            >Organic</button>
+              className={`export-option-btn ${look === "mindmap" ? "active" : ""}`}
+              onClick={() => setLook("mindmap")}
+            >Mind Map</button>
           </div>
           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
-            {look === "formal" ? "Precise geometric shapes and straight edges" : "Hand-drawn shapes with curved, tapered edges"}
+            {look === "formal"
+              ? "Precise geometric shapes and straight edges"
+              : "Smooth blob nodes with flowing branch-like edges"}
           </div>
         </div>
 

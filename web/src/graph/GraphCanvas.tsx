@@ -26,12 +26,7 @@ function seededRandom(seed: number, index: number): number {
   return (x - Math.floor(x)) * 2 - 1;
 }
 
-/** Apply organic jitter to a coordinate */
-function jitter(val: number, seed: number, index: number, amount: number): number {
-  return val + seededRandom(seed, index) * amount;
-}
-
-/** Draw an organic (hand-drawn) circle with jittered control points */
+/** Draw a jittered circle for region backgrounds */
 function drawOrganicCircle(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, seed: number) {
   const segments = 12;
   const amt = r * 0.05;
@@ -46,24 +41,57 @@ function drawOrganicCircle(ctx: CanvasRenderingContext2D, cx: number, cy: number
   ctx.closePath();
 }
 
-/** Draw an organic rectangle with wobbly corners */
-function drawOrganicRect(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number, seed: number) {
-  const amt = Math.min(w, h) * 0.025;
-  ctx.beginPath();
-  ctx.moveTo(jitter(cx - w / 2, seed, 0, amt), jitter(cy - h / 2, seed, 1, amt));
-  ctx.lineTo(jitter(cx + w / 2, seed, 2, amt), jitter(cy - h / 2, seed, 3, amt));
-  ctx.lineTo(jitter(cx + w / 2, seed, 4, amt), jitter(cy + h / 2, seed, 5, amt));
-  ctx.lineTo(jitter(cx - w / 2, seed, 6, amt), jitter(cy + h / 2, seed, 7, amt));
-  ctx.closePath();
-}
 
-/** Draw an organic polygon with jittered vertices */
-function drawOrganicPolygon(ctx: CanvasRenderingContext2D, _cx: number, _cy: number, points: Array<[number, number]>, seed: number, amt: number) {
+// --- Mind map rendering helpers ---
+
+/** Catmull-Rom smoothing factor for blob control handles (0–1, higher = rounder) */
+const MINDMAP_BLOB_SMOOTH = 0.55;
+
+/**
+ * Draw a smooth closed blob shape through guide points using cubic Bézier splines.
+ * Uses Catmull-Rom-to-Bézier conversion for C2-continuous curves.
+ * Wobble is applied radially from centroid for a hand-drawn feel.
+ */
+function drawMindmapBlob(
+  ctx: CanvasRenderingContext2D,
+  guidePoints: Array<[number, number]>,
+  seed: number,
+  wobbleAmount: number,
+) {
+  const n = guidePoints.length;
+  // Compute centroid
+  let centX = 0, centY = 0;
+  for (const p of guidePoints) { centX += p[0]; centY += p[1]; }
+  centX /= n; centY /= n;
+
+  // Apply radial wobble to each guide point
+  const pts: Array<[number, number]> = guidePoints.map((p, i) => {
+    const dx = p[0] - centX;
+    const dy = p[1] - centY;
+    const wobble = 1 + seededRandom(seed, i) * wobbleAmount;
+    return [centX + dx * wobble, centY + dy * wobble];
+  });
+
+  // Build smooth closed cubic Bézier spline via Catmull-Rom tangents
   ctx.beginPath();
-  for (let i = 0; i < points.length; i++) {
-    const px = jitter(points[i][0], seed, i * 2, amt);
-    const py = jitter(points[i][1], seed, i * 2 + 1, amt);
-    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  for (let i = 0; i < n; i++) {
+    const prev = pts[(i - 1 + n) % n];
+    const curr = pts[i];
+    const next = pts[(i + 1) % n];
+    const next2 = pts[(i + 2) % n];
+
+    // Catmull-Rom tangent at curr → cp1, tangent at next → cp2
+    const t1x = (next[0] - prev[0]) * MINDMAP_BLOB_SMOOTH / 3;
+    const t1y = (next[1] - prev[1]) * MINDMAP_BLOB_SMOOTH / 3;
+    const t2x = (next2[0] - curr[0]) * MINDMAP_BLOB_SMOOTH / 3;
+    const t2y = (next2[1] - curr[1]) * MINDMAP_BLOB_SMOOTH / 3;
+
+    if (i === 0) ctx.moveTo(curr[0], curr[1]);
+    ctx.bezierCurveTo(
+      curr[0] + t1x, curr[1] + t1y,
+      next[0] - t2x, next[1] - t2y,
+      next[0], next[1],
+    );
   }
   ctx.closePath();
 }
@@ -223,11 +251,16 @@ const COLLAPSE_INDICATOR_HIT_SCALE = 2.5;
 const COLLAPSE_INDICATOR_CLICK_SCALE = 3.5;
 const COLLAPSE_INDICATOR_FONT_SCALE = 1.4;
 
-// Visual: organic edge taper
-const ORGANIC_EDGE_CURVE_FACTOR = 0.08;
-const ORGANIC_EDGE_CURVE_MAX = 20;
-const ORGANIC_EDGE_SRC_WIDTH = 0.8;
-const ORGANIC_EDGE_TGT_WIDTH = 0.3;
+// Visual: mindmap edge taper (dramatic branch effect)
+const MINDMAP_EDGE_SRC_WIDTH = 3.5;
+const MINDMAP_EDGE_TGT_WIDTH = 0.15;
+const MINDMAP_EDGE_CURVE_FACTOR = 0.18;
+const MINDMAP_EDGE_CURVE_MAX = 50;
+const MINDMAP_EDGE_S_CURVE_MIX = 0.3;
+
+// Visual: mindmap blob wobble
+const MINDMAP_BLOB_SEGMENTS = 8;
+const MINDMAP_BLOB_WOBBLE = 0.12;
 
 // Visual: marquee rectangle
 const MARQUEE_LINE_WIDTH = 1.5;
@@ -258,7 +291,7 @@ interface Props {
   edgeSourceId: string | null;
   filters: FilterState;
   theme: ThemeConfig;
-  look: "formal" | "organic";
+  look: "formal" | "mindmap";
   nodeTypeConfigs: NodeTypeConfig[];
   collapsedNodes?: Set<string>;
   onToggleCollapse?: (nodeId: string) => void;
@@ -1016,7 +1049,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const regionCls = (currentData.metadata.classifiers ?? []).find((c) => c.layout === "region" || c.layout === "region-column");
     if (regionCls) {
       const visibleNodes = nodesRef.current.filter(isVisible);
-      const isOrganic = lookRef.current === "organic";
+      const isOrganic = lookRef.current === "mindmap";
       const isColumn = regionCls.layout === "region-column";
 
       for (const rv of regionCls.values) {
@@ -1166,30 +1199,48 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         edgeLw = (isHighlighted ? 1.5 : 0.8) * weightScale;
       }
 
-      if (lookRef.current === "organic") {
-        // Organic: slightly curved edge with taper (thicker at source)
+      if (lookRef.current === "mindmap") {
+        // Mindmap: cubic Bézier with dramatic taper and subtle S-curve
         const dx = target.x - source.x;
         const dy = target.y - source.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        // Perpendicular offset for curve (small, proportional to distance)
-        const edgeSeed = hashCode(source.id + target.id);
-        const curveOffset = seededRandom(edgeSeed, 0) * Math.min(dist * ORGANIC_EDGE_CURVE_FACTOR, ORGANIC_EDGE_CURVE_MAX);
-        const mx = (source.x + target.x) / 2 - (dy / dist) * curveOffset;
-        const my = (source.y + target.y) / 2 + (dx / dist) * curveOffset;
-
-        // Draw tapered edge using a filled path (thick at source, thin at target)
         const nx = -dy / dist;
         const ny = dx / dist;
-        const srcW = edgeLw * ORGANIC_EDGE_SRC_WIDTH;
-        const tgtW = edgeLw * ORGANIC_EDGE_TGT_WIDTH;
 
+        const edgeSeed = hashCode(source.id + target.id);
+        const curveSide = seededRandom(edgeSeed, 0) > 0 ? 1 : -1;
+        const curveAmount = Math.min(dist * MINDMAP_EDGE_CURVE_FACTOR, MINDMAP_EDGE_CURVE_MAX);
+
+        // Two control points for cubic Bézier (S-curve capable)
+        const t1 = 0.33, t2 = 0.67;
+        const baseOffsetCP1 = curveAmount * curveSide;
+        const baseOffsetCP2 = curveAmount * curveSide * (1 - 2 * MINDMAP_EDGE_S_CURVE_MIX);
+
+        const cp1x = source.x + dx * t1 + nx * baseOffsetCP1;
+        const cp1y = source.y + dy * t1 + ny * baseOffsetCP1;
+        const cp2x = source.x + dx * t2 + nx * baseOffsetCP2;
+        const cp2y = source.y + dy * t2 + ny * baseOffsetCP2;
+
+        // Taper widths (clamped to source node radius and short edges)
+        const sourceR = getNodeRadius(source, mode, configs);
+        const srcW = Math.min(edgeLw * MINDMAP_EDGE_SRC_WIDTH, sourceR * 0.8, dist * 0.3);
+        const tgtW = edgeLw * MINDMAP_EDGE_TGT_WIDTH;
+        const cp1W = srcW + (tgtW - srcW) * t1;
+        const cp2W = srcW + (tgtW - srcW) * t2;
+
+        // Filled tapered shape: two cubic curves tracing left/right sides
         ctx.beginPath();
         ctx.moveTo(source.x + nx * srcW, source.y + ny * srcW);
-        ctx.quadraticCurveTo(mx + nx * (srcW + tgtW) / 2, my + ny * (srcW + tgtW) / 2,
-          target.x + nx * tgtW, target.y + ny * tgtW);
-        ctx.lineTo(target.x - nx * tgtW, target.y - ny * tgtW);
-        ctx.quadraticCurveTo(mx - nx * (srcW + tgtW) / 2, my - ny * (srcW + tgtW) / 2,
-          source.x - nx * srcW, source.y - ny * srcW);
+        ctx.bezierCurveTo(
+          cp1x + nx * cp1W, cp1y + ny * cp1W,
+          cp2x + nx * cp2W, cp2y + ny * cp2W,
+          target.x + nx * tgtW, target.y + ny * tgtW,
+        );
+        ctx.bezierCurveTo(
+          cp2x - nx * cp2W, cp2y - ny * cp2W,
+          cp1x - nx * cp1W, cp1y - ny * cp1W,
+          source.x - nx * srcW, source.y - ny * srcW,
+        );
         ctx.closePath();
         ctx.fillStyle = ctx.strokeStyle as string;
         ctx.fill();
@@ -1205,8 +1256,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       ctx.setLineDash([]);
       ctx.globalAlpha = 1;
 
-      // Arrowhead
-      if (visual.show_arrow) {
+      // Arrowhead (skipped in mindmap mode — taper implies direction)
+      if (visual.show_arrow && lookRef.current !== "mindmap") {
         const angle = Math.atan2(target.y - source.y, target.x - source.x);
         const r = getNodeRadius(target, mode, configs) + ARROWHEAD_CLEARANCE;
         const tipX = target.x - Math.cos(angle) * r;
@@ -1288,38 +1339,65 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const shape = getNodeShape(node, configs);
 
       // Draw shape path
-      const isOrganic = lookRef.current === "organic";
+      const isMindmap = lookRef.current === "mindmap";
       const nodeSeed = hashCode(node.id);
 
-      if (isOrganic) {
-        // Organic: hand-drawn shapes with jitter
+      if (isMindmap) {
+        // Mindmap: smooth blob shapes via cubic Bézier splines
         if (shape === "rectangle" || shape === "pill") {
           const w = effectiveR * (shape === "pill" ? PILL_WIDTH_SCALE : RECT_WIDTH_SCALE);
           const h = effectiveR * (shape === "pill" ? PILL_HEIGHT_SCALE : RECT_HEIGHT_SCALE);
-          drawOrganicRect(ctx, node.x, node.y, w, h, nodeSeed);
+          const hw = w / 2, hh = h / 2;
+          const ins = 0.15; // corners pulled inward for pillow effect
+          drawMindmapBlob(ctx, [
+            [node.x, node.y - hh],
+            [node.x + hw * (1 - ins), node.y - hh * (1 - ins)],
+            [node.x + hw, node.y],
+            [node.x + hw * (1 - ins), node.y + hh * (1 - ins)],
+            [node.x, node.y + hh],
+            [node.x - hw * (1 - ins), node.y + hh * (1 - ins)],
+            [node.x - hw, node.y],
+            [node.x - hw * (1 - ins), node.y - hh * (1 - ins)],
+          ], nodeSeed, MINDMAP_BLOB_WOBBLE);
         } else if (shape === "diamond") {
           const s = effectiveR * DIAMOND_SCALE;
-          drawOrganicPolygon(ctx, node.x, node.y, [
-            [node.x, node.y - s], [node.x + s, node.y],
-            [node.x, node.y + s], [node.x - s, node.y],
-          ], nodeSeed, s * 0.035);
+          drawMindmapBlob(ctx, [
+            [node.x, node.y - s],
+            [node.x + s * 0.5, node.y - s * 0.5],
+            [node.x + s, node.y],
+            [node.x + s * 0.5, node.y + s * 0.5],
+            [node.x, node.y + s],
+            [node.x - s * 0.5, node.y + s * 0.5],
+            [node.x - s, node.y],
+            [node.x - s * 0.5, node.y - s * 0.5],
+          ], nodeSeed, MINDMAP_BLOB_WOBBLE);
         } else if (shape === "hexagon") {
           const s = effectiveR * HEXAGON_SCALE;
           const pts: Array<[number, number]> = [];
-          for (let i = 0; i < 6; i++) {
-            const angle = (Math.PI / 3) * i - Math.PI / 6;
-            pts.push([node.x + s * Math.cos(angle), node.y + s * Math.sin(angle)]);
+          for (let i = 0; i < 12; i++) {
+            const angle = (Math.PI / 6) * i - Math.PI / 6;
+            const rr = (i % 2 === 0) ? s : s * 0.97;
+            pts.push([node.x + rr * Math.cos(angle), node.y + rr * Math.sin(angle)]);
           }
-          drawOrganicPolygon(ctx, node.x, node.y, pts, nodeSeed, s * 0.035);
+          drawMindmapBlob(ctx, pts, nodeSeed, MINDMAP_BLOB_WOBBLE);
         } else if (shape === "triangle") {
           const s = effectiveR * TRIANGLE_SCALE;
-          drawOrganicPolygon(ctx, node.x, node.y, [
+          drawMindmapBlob(ctx, [
             [node.x, node.y - s],
+            [node.x + s * 0.435, node.y - s * 0.25],
             [node.x + s * 0.87, node.y + s * 0.5],
+            [node.x, node.y + s * 0.5],
             [node.x - s * 0.87, node.y + s * 0.5],
-          ], nodeSeed, s * 0.035);
+            [node.x - s * 0.435, node.y - s * 0.25],
+          ], nodeSeed, MINDMAP_BLOB_WOBBLE);
         } else {
-          drawOrganicCircle(ctx, node.x, node.y, effectiveR, nodeSeed);
+          // Circle: equidistant points → amoeba blob
+          const pts: Array<[number, number]> = [];
+          for (let i = 0; i < MINDMAP_BLOB_SEGMENTS; i++) {
+            const angle = (Math.PI * 2 / MINDMAP_BLOB_SEGMENTS) * i;
+            pts.push([node.x + effectiveR * Math.cos(angle), node.y + effectiveR * Math.sin(angle)]);
+          }
+          drawMindmapBlob(ctx, pts, nodeSeed, MINDMAP_BLOB_WOBBLE);
         }
       } else {
         // Formal: precise geometry

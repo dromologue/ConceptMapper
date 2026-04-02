@@ -227,17 +227,20 @@ Canvas overlay provides zoom in, zoom out, and fit-to-view buttons.
 **AC-060-04**: Fit button calls existing fitToView function.
 **AC-060-05**: Shift+drag marquee zoom still works (existing feature, unchanged).
 
-### REQ-061: Organic Look-and-Feel
-A look-and-feel setting independent of color theme controls rendering style. Can be combined with any theme.
+### REQ-061: Look-and-Feel Options
+A look-and-feel setting independent of color theme controls rendering style. Can be combined with any theme. Two options are available: Formal and Mind Map.
 
-**AC-061-01**: Look-and-feel is a separate setting ("formal" or "organic"), stored in localStorage, not tied to any theme.
-**AC-061-02**: The Settings modal has a Look & Feel toggle (Formal / Organic).
-**AC-061-03**: An "Organic" color theme exists with warm earth tones (usable with either look).
-**AC-061-04**: Organic look uses subtly jittered paths for hand-drawn shapes that remain recognizable.
-**AC-061-05**: Organic edges use quadratic bezier curves with taper (thicker at source, thinner at target).
-**AC-061-06**: Jitter is deterministic per node (based on node ID hash), stable across redraws.
-**AC-061-07**: Formal look renders with precise geometry (unchanged from current behaviour).
-**AC-061-08**: Auto-fit only runs on initial layout, not after user zoom/pan interaction.
+**AC-061-01**: Look-and-feel is a separate setting ("formal" or "mindmap"), stored in localStorage, not tied to any theme.
+**AC-061-02**: The Settings modal has a Look & Feel toggle (Formal / Mind Map).
+**AC-061-03**: Formal look renders with precise geometry — exact circles, sharp rectangles, straight edges.
+**AC-061-04**: Mind Map look renders all node shapes as smooth blobs using cubic Bézier splines (Catmull-Rom-to-Bézier conversion for C2-continuous curves).
+**AC-061-05**: Mind Map edges use cubic Bézier curves with dramatic taper (3.5× line width at source, 0.15× at target) and subtle S-curve inflection.
+**AC-061-06**: Mind Map edge base width is clamped to 80% of the source node radius, preventing edges wider than nodes.
+**AC-061-07**: Mind Map arrowheads are hidden — taper direction implies edge directionality.
+**AC-061-08**: Mind Map blob wobble (12% radial variation) gives a distinctly hand-drawn character while remaining recognizable.
+**AC-061-09**: All rendering uses deterministic seeded random (based on node ID hash), stable across redraws.
+**AC-061-10**: Auto-fit only runs on initial layout, not after user zoom/pan interaction.
+**AC-061-11**: Unknown or legacy look values in localStorage (e.g. "organic") fall back to "formal".
 
 ### REQ-062: Image Export (PNG/PDF)
 Export the current canvas view as PNG or PDF with configurable background.

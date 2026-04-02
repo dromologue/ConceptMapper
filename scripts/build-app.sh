@@ -95,19 +95,16 @@ echo "=== Step 4: Copy web assets, templates, maps, and MCP binary to macOS Reso
 rm -rf macos/Resources/web
 cp -r web/dist/ macos/Resources/web/
 # Copy templates into web dir so fetch() can load them, and into Resources/templates for Swift
-mkdir -p macos/Resources/web/templates
+# Clean and copy templates (repo-only)
+rm -rf macos/Resources/web/templates macos/Resources/templates
+mkdir -p macos/Resources/web/templates macos/Resources/templates
 cp templates/*.cmt macos/Resources/web/templates/
-[ -d examples ] && cp examples/*.cmt macos/Resources/web/templates/ 2>/dev/null || true
-mkdir -p macos/Resources/templates
 cp templates/*.cmt macos/Resources/templates/
-[ -d examples ] && cp examples/*.cmt macos/Resources/templates/ 2>/dev/null || true
-# Copy maps into web dir
-mkdir -p macos/Resources/web/maps
+# Clean and copy maps (repo-only)
+rm -rf macos/Resources/web/maps macos/Resources/maps
+mkdir -p macos/Resources/web/maps macos/Resources/maps
 [ -d Maps ] && cp Maps/*.cm macos/Resources/web/maps/ 2>/dev/null || true
-# Copy example maps into Resources/maps for bundling
-mkdir -p macos/Resources/maps
 [ -d Maps ] && cp Maps/*.cm macos/Resources/maps/ 2>/dev/null || true
-[ -d examples ] && cp examples/*.cm macos/Resources/maps/ 2>/dev/null || true
 # MCP binary
 mkdir -p macos/Resources/bin
 cp mcp-server/.build/release/ConceptMCPMain macos/Resources/bin/ConceptMCP

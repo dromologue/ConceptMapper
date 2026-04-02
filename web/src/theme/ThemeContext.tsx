@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import type { ThemeConfig } from "./themes";
 import { getThemeById, THEMES } from "./themes";
 
-export type LookAndFeel = "formal" | "organic";
+export type LookAndFeel = "formal" | "mindmap";
 
 interface ThemeContextValue {
   theme: ThemeConfig;
@@ -82,7 +82,10 @@ function injectCssVars(theme: ThemeConfig) {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [themeId, setThemeIdState] = useState(() => lsGet(LS_THEME) ?? "midnight");
-  const [look, setLookState] = useState<LookAndFeel>(() => (lsGet(LS_LOOK) as LookAndFeel) ?? "formal");
+  const [look, setLookState] = useState<LookAndFeel>(() => {
+    const stored = lsGet(LS_LOOK);
+    return (stored === "formal" || stored === "mindmap") ? stored : "formal";
+  });
   const [edgeColorOverrides, setEdgeColorOverridesState] = useState(() => readJson(LS_EDGE_COLORS));
   const [streamColorOverrides, setStreamColorOverridesState] = useState(() => readJson(LS_STREAM_COLORS));
 

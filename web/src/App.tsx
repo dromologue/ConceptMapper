@@ -590,9 +590,10 @@ function AppInner() {
     webkit?.messageHandlers?.[handler]?.postMessage(payload ?? {});
   }, []);
 
-  // Request native templates and maps on mount
+  // Request native templates and maps on mount; clear stale localStorage cache
   useEffect(() => {
     if (isNativeApp) {
+      localStorage.removeItem("cm-templates");
       sendToSwift("listTemplates");
       sendToSwift("listMaps");
     }
