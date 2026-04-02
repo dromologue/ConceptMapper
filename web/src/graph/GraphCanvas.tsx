@@ -157,7 +157,7 @@ const X_AXIS_CLASSIFIER_STRENGTH = 0.3;
 const X_AXIS_CENTER_STRENGTH = 0.05;
 const Y_AXIS_CLASSIFIER_STRENGTH = 0.5;
 const Y_AXIS_CENTER_STRENGTH = 0.05;
-const REGION_COLUMN_STRENGTH = 1.0;
+const REGION_COLUMN_STRENGTH = 0.5;
 const REGION_CENTROID_STRENGTH_DEFAULT = 0.8;
 
 // Layout positioning offsets (fraction of canvas dimension)
@@ -230,11 +230,11 @@ const ZOOM_THRESHOLD_EDGE_LABELS_HIGHLIGHT = 0.4;
 
 // Visual: region backgrounds
 const REGION_CIRCLE_PADDING = 60;
-const REGION_CIRCLE_BG_ALPHA = 0.08;
-const REGION_LABEL_ALPHA = 0.4;
+const REGION_CIRCLE_BG_ALPHA = 0.15;
+const REGION_LABEL_ALPHA = 0.6;
 const REGION_LABEL_FONT_SIZE = 14;
 const REGION_LABEL_GAP = 4;
-const COLUMN_BG_ALPHA = 0.05;
+const COLUMN_BG_ALPHA = 0.08;
 const COLUMN_LABEL_ALPHA = 0.5;
 const COLUMN_LABEL_MAX_FONT = 14;
 const COLUMN_LABEL_MIN_FONT = 9;
@@ -743,6 +743,20 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     simRef.current = simulation;
     simInitializedRef.current = true;
     simulation.on("tick", () => {
+      // Pin nodes to column center lines when region-column layout is active
+      const colPositions = regionColumnPositionsRef.current;
+      if (colPositions.size > 0) {
+        const rCls = classifiersRef.current.find((c) => c.layout === "region-column");
+        if (rCls) {
+          for (const n of nodesRef.current) {
+            const val = n.classifiers?.[rCls.id];
+            if (val) {
+              const cx = colPositions.get(String(val));
+              if (cx != null) n.x = cx;
+            }
+          }
+        }
+      }
       const c = ctxRef.current;
       const { width: w, height: h } = canvasSizeRef.current;
       if (c) draw(c, w, h);
