@@ -547,7 +547,6 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const regionCls = cls.find((c) => c.layout === "region" || c.layout === "region-column");
     if (regionCls) {
       const isColumn = regionCls.layout === "region-column";
-      const hasAxis = !!(xCls || yCls);
       if (isColumn) {
         const counts = new Map<string, number>();
         for (const n of nodesRef.current) { const v = n.classifiers?.[regionCls.id]; if (v) counts.set(String(v), (counts.get(String(v)) ?? 0) + 1); }
@@ -563,18 +562,49 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         simulation.force("regionY", null);
       } else {
         const centroids = computeRegionCentroids(regionCls, vw, vh);
-        const rStr = hasAxis ? REGION_CENTROID_STRENGTH_WITH_AXIS : REGION_CENTROID_STRENGTH_DEFAULT;
-        // Region takes over X/Y positioning — remove competing center forces
-        if (!xCls) simulation.force("x", null);
-        if (!yCls) simulation.force("y", null);
-        simulation.force("regionX", d3.forceX<SimNode>((d) => {
-          const val = d.classifiers?.[regionCls.id];
-          return val ? centroids.get(String(val))?.x ?? vw / 2 : vw / 2;
-        }).strength(rStr));
-        simulation.force("regionY", d3.forceY<SimNode>((d) => {
-          const val = d.classifiers?.[regionCls.id];
-          return val ? centroids.get(String(val))?.y ?? vh / 2 : vh / 2;
-        }).strength(rStr));
+        // When an axis classifier claims X or Y, region only controls the free axis
+        // with stronger force since it's the sole positioning force on that axis.
+        const freeAxisStrength = 0.7;
+        const bothAxisStrength = REGION_CENTROID_STRENGTH_DEFAULT;
+        if (xCls && !yCls) {
+          // X is claimed by classifier — region controls Y only
+          simulation.force("y", null);
+          simulation.force("regionX", null);
+          simulation.force("regionY", d3.forceY<SimNode>((d) => {
+            const val = d.classifiers?.[regionCls.id];
+            return val ? centroids.get(String(val))?.y ?? vh / 2 : vh / 2;
+          }).strength(freeAxisStrength));
+        } else if (yCls && !xCls) {
+          // Y is claimed by classifier — region controls X only
+          simulation.force("x", null);
+          simulation.force("regionY", null);
+          simulation.force("regionX", d3.forceX<SimNode>((d) => {
+            const val = d.classifiers?.[regionCls.id];
+            return val ? centroids.get(String(val))?.x ?? vw / 2 : vw / 2;
+          }).strength(freeAxisStrength));
+        } else if (xCls && yCls) {
+          // Both axes claimed — region has limited influence
+          simulation.force("regionX", d3.forceX<SimNode>((d) => {
+            const val = d.classifiers?.[regionCls.id];
+            return val ? centroids.get(String(val))?.x ?? vw / 2 : vw / 2;
+          }).strength(REGION_CENTROID_STRENGTH_WITH_AXIS));
+          simulation.force("regionY", d3.forceY<SimNode>((d) => {
+            const val = d.classifiers?.[regionCls.id];
+            return val ? centroids.get(String(val))?.y ?? vh / 2 : vh / 2;
+          }).strength(REGION_CENTROID_STRENGTH_WITH_AXIS));
+        } else {
+          // No axis classifiers — region controls both axes
+          simulation.force("x", null);
+          simulation.force("y", null);
+          simulation.force("regionX", d3.forceX<SimNode>((d) => {
+            const val = d.classifiers?.[regionCls.id];
+            return val ? centroids.get(String(val))?.x ?? vw / 2 : vw / 2;
+          }).strength(bothAxisStrength));
+          simulation.force("regionY", d3.forceY<SimNode>((d) => {
+            const val = d.classifiers?.[regionCls.id];
+            return val ? centroids.get(String(val))?.y ?? vh / 2 : vh / 2;
+          }).strength(bothAxisStrength));
+        }
       }
     } else {
       simulation.force("regionX", null);
