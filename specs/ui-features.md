@@ -269,11 +269,12 @@ Three layout presets control the D3 force simulation. Presets configure forces (
 ### REQ-061D: Properties and Notes Toolbar Buttons
 The Activity Bar provides direct access to the Properties panel and Notes pane without requiring a node click.
 
-**AC-061D-01**: A Properties button in the Activity Bar toggles the properties panel. If no node is selected, it selects the first node.
-**AC-061D-02**: A Notes button in the Activity Bar toggles the notes pane. The pane stays open as the user navigates between nodes and edges.
+**AC-061D-01**: A Properties button in the Activity Bar toggles the properties panel independently of node selection.
+**AC-061D-02**: A Notes button in the Activity Bar toggles the notes pane independently of node selection and the properties panel.
 **AC-061D-03**: When the notes pane is open with no selection, a placeholder message is shown.
 **AC-061D-04**: Node metrics are only accessible via the Network Analysis panel, not the Properties panel.
-**AC-061D-05**: Opening the notes pane does not open the properties panel. The two panels are independently toggled.
+**AC-061D-05**: Clicking a node on the canvas selects it (highlight, notes content) but does NOT auto-open the properties panel or notes pane.
+**AC-061D-06**: Closing the properties panel does not close the notes pane or deselect the node.
 
 ### REQ-061E: Font Size Controls
 The zoom controls area includes font size adjustment buttons that scale node and edge labels independently of zoom level.

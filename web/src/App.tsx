@@ -80,6 +80,7 @@ function AppInner() {
   const [auxPanelWidth, setAuxPanelWidth] = useState(340);
   const [notesHeight, setNotesHeight] = useState(250);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [propertiesOpen, setPropertiesOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [filters, setFilters] = useState<FilterState>(createEmptyFilterState());
   const [showSettings, setShowSettings] = useState(false);
@@ -722,11 +723,6 @@ function AppInner() {
     }
   }, [isNativeApp, sendToSwift]);
 
-  const handleCloseNode = useCallback(() => {
-    setSelectedNode(null);
-    setNotesOpen(false);
-  }, []);
-
   const handleSelectEdge = useCallback((edge: import("./types/graph-ir").GraphEdge | null, pos?: { x: number; y: number }) => {
     setSelectedEdge(edge);
     setEdgePopoverPos(pos ?? null);
@@ -1172,14 +1168,8 @@ function AppInner() {
           layoutPreset={layoutPreset}
           onLayoutPresetChange={setLayoutPreset}
           onResetLayout={handleResetLayout}
-          onToggleProperties={() => {
-            if (selectedNode) {
-              setSelectedNode(null);
-            } else if (graphData.nodes.length > 0) {
-              setSelectedNode(graphData.nodes[0]);
-            }
-          }}
-          propertiesOpen={!!selectedNode}
+          onToggleProperties={() => setPropertiesOpen(!propertiesOpen)}
+          propertiesOpen={propertiesOpen}
           onToggleNotes={() => setNotesOpen(!notesOpen)}
           notesOpen={notesOpen}
         />
@@ -1348,13 +1338,13 @@ function AppInner() {
           )}
         </div>
 
-        {selectedNode && (
+        {selectedNode && propertiesOpen && (
           <>
             <div className="pane-resizer" onMouseDown={makeResizeHandler(setAuxPanelWidth, auxPanelWidth)} />
             <div className="auxiliary-panel" style={{ width: auxPanelWidth }}>
               <div className="aux-panel-header">
                 <span className="aux-panel-title">Properties</span>
-                <button className="close-btn" onClick={handleCloseNode}>&times;</button>
+                <button className="close-btn" onClick={() => setPropertiesOpen(false)}>&times;</button>
               </div>
               <DetailPanel
                 node={selectedNode}
