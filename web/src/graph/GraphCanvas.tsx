@@ -158,8 +158,8 @@ const X_AXIS_CENTER_STRENGTH = 0.05;
 const Y_AXIS_CLASSIFIER_STRENGTH = 0.5;
 const Y_AXIS_CENTER_STRENGTH = 0.05;
 const REGION_COLUMN_STRENGTH = 0.8;
-const REGION_CENTROID_STRENGTH_WITH_AXIS = 0.15;
-const REGION_CENTROID_STRENGTH_DEFAULT = 0.3;
+const REGION_CENTROID_STRENGTH_WITH_AXIS = 0.3;
+const REGION_CENTROID_STRENGTH_DEFAULT = 0.6;
 
 // Layout positioning offsets (fraction of canvas dimension)
 const X_LAYOUT_START = 0.15;
@@ -564,6 +564,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       } else {
         const centroids = computeRegionCentroids(regionCls, vw, vh);
         const rStr = hasAxis ? REGION_CENTROID_STRENGTH_WITH_AXIS : REGION_CENTROID_STRENGTH_DEFAULT;
+        // Region takes over X/Y positioning — remove competing center forces
+        if (!xCls) simulation.force("x", null);
+        if (!yCls) simulation.force("y", null);
         simulation.force("regionX", d3.forceX<SimNode>((d) => {
           const val = d.classifiers?.[regionCls.id];
           return val ? centroids.get(String(val))?.x ?? vw / 2 : vw / 2;
