@@ -453,14 +453,13 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { edgeTypeConfigsRef.current = edgeTypeConfigs; redraw(); }, [edgeTypeConfigs]);
   useEffect(() => {
     fontScaleRef.current = fontScale;
-    // Re-apply forces so collision radii adjust for new font size
+    // Only update collision force for new font size — don't recompute layout positions
     const simulation = simRef.current;
     if (simulation && simInitializedRef.current) {
-      const { width, height } = canvasSizeRef.current;
-      const cls = classifiersRef.current;
       const isExploded = explodedRef.current;
-      const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
-      applyLayoutForces(simulation, width * factor, height * factor, cls, isExploded, layoutPresetRef.current);
+      const collideExtra = isExploded ? COLLISION_PADDING_EXPLODED : COLLISION_PADDING_NORMAL;
+      const fontCollideExtra = (fontScale - 1) * 20;
+      simulation.force("collide", d3.forceCollide<SimNode>((d) => getNodeRadius(d, "full", nodeTypeConfigsRef.current) + collideExtra + Math.max(0, fontCollideExtra)));
       simulation.alpha(ALPHA_RESTART_MILD).restart();
     } else {
       redraw();
@@ -478,7 +477,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     let radialTargets: Map<string, { x: number; y: number }> | null = null;
     let flowPositions: Map<string, { x: number; y: number }> | null = null;
     if (preset === "radial" && !xCls && !yCls) {
-      radialTargets = computeRadialTargets(nodesRef.current, dataRef.current.edges, vw / 2, vh / 2, fontScaleRef.current);
+      radialTargets = computeRadialTargets(nodesRef.current, dataRef.current.edges, vw / 2, vh / 2);
     }
     if (preset === "flow" && (!xCls || !yCls)) {
       // Build edge-directedness map from the edge data itself
@@ -495,7 +494,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         }
       }
       const depths = computeFlowDepths(nodesRef.current, dataRef.current.edges, edgeDirected);
-      flowPositions = computeFlowPositions(nodesRef.current, dataRef.current.edges, edgeDirected, depths, fontScaleRef.current);
+      flowPositions = computeFlowPositions(nodesRef.current, dataRef.current.edges, edgeDirected, depths);
     }
 
     // X-axis force
