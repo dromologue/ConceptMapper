@@ -451,7 +451,21 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { filtersRef.current = filters; redraw(); }, [filters]);
   useEffect(() => { nodeTypeConfigsRef.current = nodeTypeConfigs; redraw(); }, [nodeTypeConfigs]);
   useEffect(() => { edgeTypeConfigsRef.current = edgeTypeConfigs; redraw(); }, [edgeTypeConfigs]);
-  useEffect(() => { fontScaleRef.current = fontScale; redraw(); }, [fontScale]);
+  useEffect(() => {
+    fontScaleRef.current = fontScale;
+    // Re-apply forces so collision radii adjust for new font size
+    const simulation = simRef.current;
+    if (simulation && simInitializedRef.current) {
+      const { width, height } = canvasSizeRef.current;
+      const cls = classifiersRef.current;
+      const isExploded = explodedRef.current;
+      const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
+      applyLayoutForces(simulation, width * factor, height * factor, cls, isExploded, layoutPresetRef.current);
+      simulation.alpha(ALPHA_RESTART_MILD).restart();
+    } else {
+      redraw();
+    }
+  }, [fontScale]);
   useEffect(() => { selectedEdgeKeyRef.current = selectedEdgeKey; redraw(); }, [selectedEdgeKey]);
   /* eslint-enable react-hooks/exhaustive-deps */
 
@@ -524,7 +538,8 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       : CHARGE_STRENGTH_NORMAL;
     const collideExtra = isExploded ? COLLISION_PADDING_EXPLODED : COLLISION_PADDING_NORMAL;
     simulation.force("charge", d3.forceManyBody().strength(chargeStrength).distanceMax(isExploded ? CHARGE_DISTANCE_MAX_EXPLODED : CHARGE_DISTANCE_MAX_NORMAL));
-    simulation.force("collide", d3.forceCollide<SimNode>((d) => getNodeRadius(d, "full", nodeTypeConfigsRef.current) + collideExtra));
+    const fontCollideExtra = (fontScaleRef.current - 1) * 20; // extra padding when font is scaled up
+    simulation.force("collide", d3.forceCollide<SimNode>((d) => getNodeRadius(d, "full", nodeTypeConfigsRef.current) + collideExtra + Math.max(0, fontCollideExtra)));
 
     // Region forces
     const regionCls = cls.find((c) => c.layout === "region" || c.layout === "region-column");
