@@ -72,14 +72,13 @@ function DebouncedTextarea({ label, value, onCommit }: {
 
 export function DetailPanel({
   node, edges, nodes, classifiers, nodeTypeConfigs, template,
-  onNodeUpdate, onNavigateToNode, onOpenNotes, notesOpen, onNodeDelete, analysis, style,
+  onNodeUpdate, onNavigateToNode, onOpenNotes, notesOpen, onNodeDelete, analysis: _analysis, style,
 }: Props) {
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
   const config = getNodeTypeConfig(nodeTypeConfigs, node.node_type);
 
   const [localName, setLocalName] = useState(node.name);
   const [attrsOpen, setAttrsOpen] = useState(true);
-  const [metricsOpen, setMetricsOpen] = useState(false);
   const [connectionsOpen, setConnectionsOpen] = useState(true);
 
   // Reset only when switching to a different node
@@ -271,44 +270,6 @@ export function DetailPanel({
             </div>
           )}
         </div>
-
-        {/* Metrics section */}
-        {analysis && (
-          <div className="detail-section">
-            <div className="detail-section-header" onClick={() => setMetricsOpen(!metricsOpen)}>
-              <span className="field-label">Metrics</span>
-              <span className="toggle-icon">{metricsOpen ? "▲" : "▼"}</span>
-            </div>
-            {metricsOpen && (
-              <div className="detail-section-body">
-                <div className="editor-field">
-                  <label>Connections</label>
-                  <span className="editor-field-value">{analysis.degreeCounts.get(node.id) ?? 0}</span>
-                </div>
-                <div className="editor-field">
-                  <label>Bridge Score</label>
-                  <span className="editor-field-value">{(analysis.betweenness.get(node.id) ?? 0).toFixed(3)}</span>
-                </div>
-                <div className="editor-field">
-                  <label>Influence</label>
-                  <span className="editor-field-value">{(analysis.eigenvector.get(node.id) ?? 0).toFixed(3)}</span>
-                </div>
-                <div className="editor-field">
-                  <label>Reach</label>
-                  <span className="editor-field-value">{(analysis.closeness.get(node.id) ?? 0).toFixed(3)}</span>
-                </div>
-                <div className="editor-field">
-                  <label>Community</label>
-                  <span className="editor-field-value">{(analysis.communities.get(node.id) ?? 0) + 1}</span>
-                </div>
-                <div className="editor-field">
-                  <label>Core Layer</label>
-                  <span className="editor-field-value">{analysis.kCore.get(node.id) ?? 0}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Connections section */}
         {edges.length > 0 && (

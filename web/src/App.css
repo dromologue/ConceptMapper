@@ -132,9 +132,7 @@ body {
   position: relative;
 }
 .layout-popover {
-  position: absolute;
-  left: 100%;
-  top: 0;
+  position: fixed;
   margin-left: 4px;
   background: var(--bg-secondary, #1e1e3a);
   border: 1px solid var(--bg-hover, #2a2a4a);

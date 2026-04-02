@@ -61,6 +61,80 @@ export function computeFlowDepths(
 }
 
 /**
+ * Compute X-lane positions for flow layout by finding connected components
+ * in the full graph (directed + undirected) and assigning each component
+ * a horizontal lane. Within each component, nodes at the same depth are
+ * spread evenly across the lane width.
+ */
+export function computeFlowXPositions(
+  nodes: { id: string }[],
+  edges: { from: string; to: string }[],
+  depths: Map<string, number>,
+  vw: number,
+): Map<string, number> {
+  // Build undirected adjacency for component detection
+  const adj = new Map<string, Set<string>>();
+  for (const n of nodes) adj.set(n.id, new Set());
+  for (const e of edges) {
+    adj.get(e.from)?.add(e.to);
+    adj.get(e.to)?.add(e.from);
+  }
+
+  // Find connected components via BFS
+  const visited = new Set<string>();
+  const components: string[][] = [];
+  for (const n of nodes) {
+    if (visited.has(n.id)) continue;
+    const comp: string[] = [];
+    const q = [n.id];
+    visited.add(n.id);
+    let j = 0;
+    while (j < q.length) {
+      const cur = q[j++];
+      comp.push(cur);
+      for (const nb of adj.get(cur) ?? []) {
+        if (!visited.has(nb)) { visited.add(nb); q.push(nb); }
+      }
+    }
+    components.push(comp);
+  }
+
+  // Sort components by size (largest first) for better use of space
+  components.sort((a, b) => b.length - a.length);
+
+  const xPos = new Map<string, number>();
+  const numComps = components.length;
+  const margin = 0.08; // 8% margin on each side
+  const usableWidth = vw * (1 - 2 * margin);
+
+  for (let ci = 0; ci < numComps; ci++) {
+    const comp = components[ci];
+    // Lane center for this component
+    const laneCenter = vw * margin + usableWidth * (ci + 0.5) / Math.max(numComps, 1);
+    const laneWidth = usableWidth / Math.max(numComps, 1);
+
+    // Group nodes by depth within this component
+    const byDepth = new Map<number, string[]>();
+    for (const id of comp) {
+      const d = depths.get(id) ?? 0;
+      if (!byDepth.has(d)) byDepth.set(d, []);
+      byDepth.get(d)!.push(id);
+    }
+
+    // Spread nodes at same depth across lane width
+    for (const ids of byDepth.values()) {
+      const count = ids.length;
+      for (let j = 0; j < count; j++) {
+        const offset = count === 1 ? 0 : (j / (count - 1) - 0.5) * laneWidth * 0.8;
+        xPos.set(ids[j], laneCenter + offset);
+      }
+    }
+  }
+
+  return xPos;
+}
+
+/**
  * Compute target positions for radial layout based on degree centrality.
  * Highest-degree nodes at center, lowest at periphery.
  * Nodes at the same degree are spread evenly around a ring with golden-angle offset.

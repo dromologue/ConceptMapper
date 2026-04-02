@@ -119,8 +119,10 @@ export function ActivityBar({
             >
               <IconLayout size={20} />
             </button>
-            {layoutOpen && (
-              <div ref={layoutPopRef} className="layout-popover">
+            {layoutOpen && (() => {
+              const rect = layoutBtnRef.current?.getBoundingClientRect();
+              const style = rect ? { left: rect.right + 4, top: rect.top } : {};
+              return <div ref={layoutPopRef} className="layout-popover" style={style}>
                 {LAYOUT_OPTIONS.map((opt) => (
                   <button
                     key={opt.id}
@@ -143,8 +145,8 @@ export function ActivityBar({
                     </button>
                   </>
                 )}
-              </div>
-            )}
+              </div>;
+            })()}
           </div>
         )}
       </div>
