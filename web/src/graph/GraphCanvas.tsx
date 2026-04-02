@@ -448,6 +448,14 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { revealedRef.current = revealedNodes; redraw(); }, [revealedNodes]);
   useEffect(() => { interactionRef.current = interactionMode; redraw(); }, [interactionMode]);
   useEffect(() => { edgeSourceRef.current = edgeSourceId; redraw(); }, [edgeSourceId]);
+  // Animate pulse while in add-edge mode (edge source is selected)
+  useEffect(() => {
+    if (!edgeSourceId) return;
+    let raf: number;
+    function animate() { redraw(); raf = requestAnimationFrame(animate); }
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, [edgeSourceId]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { filtersRef.current = filters; redraw(); }, [filters]);
   useEffect(() => { nodeTypeConfigsRef.current = nodeTypeConfigs; redraw(); }, [nodeTypeConfigs]);
   useEffect(() => { edgeTypeConfigsRef.current = edgeTypeConfigs; redraw(); }, [edgeTypeConfigs]);
@@ -1517,9 +1525,19 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       ctx.fillStyle = color;
       ctx.fill();
       if (isSelected || isHovered || isEdgeSource) {
-        ctx.strokeStyle = isEdgeSource ? th.canvasEdgeSourceStroke : th.canvasSelectionStroke;
-        ctx.lineWidth = SELECTION_STROKE_WIDTH;
-        ctx.stroke();
+        if (isEdgeSource) {
+          // Pulsing highlight for edge source node
+          const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 200);
+          ctx.strokeStyle = th.canvasEdgeSourceStroke;
+          ctx.lineWidth = SELECTION_STROKE_WIDTH + pulse * 3;
+          ctx.globalAlpha = 0.6 + pulse * 0.4;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        } else {
+          ctx.strokeStyle = th.canvasSelectionStroke;
+          ctx.lineWidth = SELECTION_STROKE_WIDTH;
+          ctx.stroke();
+        }
       }
 
       // Notes indicator
