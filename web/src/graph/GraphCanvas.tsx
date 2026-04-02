@@ -756,18 +756,29 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           }
         }
       } else if (rCls?.layout === "region") {
-        // Pull nodes toward region centroids on both axes
+        // Hard-constrain nodes to stay within their region centroid area.
+        // Each tick: snap node toward centroid, allow only small offset from collision.
         const targets = regionTargetsRef.current;
-        const pull = 0.2;
+        const maxDrift = 120; // max distance a node can drift from centroid (collision spreads them)
         for (const n of nodesRef.current) {
           const val = n.classifiers?.[rCls.id];
           if (val) {
             const target = targets.get(String(val));
             if (target) {
-              n.x += (target.x - n.x) * pull;
-              n.y += (target.y - n.y) * pull;
-              n.vx = (n.vx ?? 0) * 0.7;
-              n.vy = (n.vy ?? 0) * 0.7;
+              const dx = n.x - target.x;
+              const dy = n.y - target.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist > maxDrift) {
+                // Clamp to maxDrift radius from centroid
+                const scale = maxDrift / dist;
+                n.x = target.x + dx * scale;
+                n.y = target.y + dy * scale;
+              }
+              // Also apply a centering pull so nodes cluster near center, not just at edge
+              n.x += (target.x - n.x) * 0.05;
+              n.y += (target.y - n.y) * 0.05;
+              n.vx = (n.vx ?? 0) * 0.9;
+              n.vy = (n.vy ?? 0) * 0.9;
             }
           }
         }
@@ -1240,28 +1251,20 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           ctx.fillText(label, colX, viewTop + COLUMN_LABEL_TOP_OFFSET);
           ctx.globalAlpha = 1;
         } else {
-          // Circle layout: draw around members, or at target centroid if no members visible yet
+          // Circle layout: draw circle at region centroid, sized to contain all members
           const targets = regionTargetsRef.current;
           const target = targets.get(rv.id);
-          let cx: number, cy: number, radius: number;
+          if (!target) continue;
+          const cx = target.x;
+          const cy = target.y;
+          let radius = REGION_CIRCLE_PADDING; // minimum radius
           if (members.length > 0) {
-            cx = 0; cy = 0;
-            for (const m of members) { cx += m.x; cy += m.y; }
-            cx /= members.length;
-            cy /= members.length;
             let maxDist = 0;
             for (const m of members) {
               const dx = m.x - cx, dy = m.y - cy;
               maxDist = Math.max(maxDist, Math.sqrt(dx * dx + dy * dy));
             }
-            radius = maxDist + REGION_CIRCLE_PADDING;
-          } else if (target) {
-            // No visible members but we know where the region should be
-            cx = target.x;
-            cy = target.y;
-            radius = REGION_CIRCLE_PADDING;
-          } else {
-            continue;
+            radius = Math.max(radius, maxDist + 40); // ensure circle contains all nodes + padding
           }
 
           // Filled background
