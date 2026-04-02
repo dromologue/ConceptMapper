@@ -246,7 +246,7 @@ const ZOOM_THRESHOLD_EDGE_LABELS_FILTERED = 0.5;
 const ZOOM_THRESHOLD_EDGE_LABELS_HIGHLIGHT = 0.4;
 
 // Visual: region backgrounds
-const REGION_CIRCLE_PADDING = 60;
+const REGION_CIRCLE_PADDING = 100;
 const REGION_CIRCLE_BG_ALPHA = 0.15;
 const REGION_LABEL_ALPHA = 0.6;
 const REGION_LABEL_FONT_SIZE = 14;
@@ -756,18 +756,18 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           }
         }
       } else if (rCls?.layout === "region") {
-        // Strong pull toward region centroids (not hard pin — let collision spread nodes within)
+        // Pull nodes toward region centroids on both axes
         const targets = regionTargetsRef.current;
-        const xFree = !classifiersRef.current.some((c) => c.layout === "x");
-        const yFree = !classifiersRef.current.some((c) => c.layout === "y");
-        const pull = 0.15;
+        const pull = 0.2;
         for (const n of nodesRef.current) {
           const val = n.classifiers?.[rCls.id];
           if (val) {
             const target = targets.get(String(val));
             if (target) {
-              if (xFree) { n.x += (target.x - n.x) * pull; n.vx = (n.vx ?? 0) * 0.8; }
-              if (yFree) { n.y += (target.y - n.y) * pull; n.vy = (n.vy ?? 0) * 0.8; }
+              n.x += (target.x - n.x) * pull;
+              n.y += (target.y - n.y) * pull;
+              n.vx = (n.vx ?? 0) * 0.7;
+              n.vy = (n.vy ?? 0) * 0.7;
             }
           }
         }
