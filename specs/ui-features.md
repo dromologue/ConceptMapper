@@ -283,6 +283,13 @@ The zoom controls area includes font size adjustment buttons that scale node and
 **AC-061E-04**: Font scale is applied to node labels, edge labels, and is a session-level setting (not persisted).
 **AC-061E-05**: Font scale is passed to GraphCanvas and applied via a ref for efficient re-rendering.
 
+### REQ-061F: Fit to View Respects Visibility
+The Fit to View action zooms to fit only the currently visible nodes, not the entire graph.
+
+**AC-061F-01**: Fit to View computes bounding box from visible nodes only (respecting view mode filter, attribute filters, and collapsed state).
+**AC-061F-02**: If no nodes are visible, falls back to fitting all nodes.
+**AC-061F-03**: Revealed nodes (shown when a filtered node is selected) are included in the fit calculation.
+
 ### REQ-062: Image Export (PNG/PDF)
 Export the current canvas view as PNG or PDF with configurable background.
 

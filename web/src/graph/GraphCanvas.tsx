@@ -600,8 +600,23 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const ns = nodesRef.current;
     const canvas = canvasRef.current;
     if (ns.length === 0 || !canvas) return;
+
+    // Filter to visible nodes only (respecting view mode, filters, collapse)
+    const mode = viewModeRef.current;
+    const configs = nodeTypeConfigsRef.current;
+    const revealed = revealedRef.current;
+    const currentFilters = filtersRef.current;
+    const collapsed = collapsedRef.current;
+    const hiddenByCollapse = computeCollapseState(dataRef.current, collapsed);
+    const visible = ns.filter((n) => {
+      if (hiddenByCollapse.has(n.id)) return false;
+      if (!isNodeFilterVisible(n, currentFilters)) return false;
+      return isNodePrimary(n, mode, configs) || revealed.has(n.id);
+    });
+    const fitNodes = visible.length > 0 ? visible : ns;
+
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    for (const n of ns) {
+    for (const n of fitNodes) {
       if (n.x < minX) minX = n.x;
       if (n.x > maxX) maxX = n.x;
       if (n.y < minY) minY = n.y;
