@@ -164,8 +164,8 @@
 | REQ-089 | AC-089-01..03 (edge type registry) | `web/src/utils/edge-registry.ts` | centralized DEFAULT_EDGE_TYPES, getDefaultEdgeVisual | passing |
 | REQ-090 | AC-090-01..03 (WASM error boundary) | `web/src/parser.ts` | descriptive error on WASM load failure | passing |
 | REQ-091 | AC-091-01..02 (LLM timeout) | `web/src/llm/client.ts` | AbortController with 5-min timeout for Ollama | passing |
-| REQ-092 | AC-092-01..03 (WebView escaping) | `macos/ConceptLLM/WebViewBridge.swift` | JSON serialization via safeJSString, no manual escaping | passing |
-| REQ-093 | AC-093-01..02 (LLM cancellation) | `macos/ConceptLLM/LLMService.swift` | task storage, cancel() method, llmCancel handler | passing |
+| REQ-092 | AC-092-01..03 (WebView escaping) | `macos/ConceptMapper/WebViewBridge.swift` | JSON serialization via safeJSString, no manual escaping | passing |
+| REQ-093 | AC-093-01..02 (LLM cancellation) | `macos/ConceptMapper/LLMService.swift` | task storage, cancel() method, llmCancel handler | passing |
 | REQ-094 | — | — | REMOVED: LogService.swift was never called; deleted. Errors use os.log Logger | removed |
 | REQ-095 | AC-095-01..03 (CI/CD pipeline) | `.github/workflows/ci.yml` | Rust+WASM+Web jobs, clippy, fmt, coverage | passing |
 | REQ-096 | AC-096-01..04 (App.tsx decomposition) | `web/src/hooks/useFileLoader.ts`, `web/src/utils/swiftBridge.ts` | file loader hook + typed Swift bridge module | passing |

@@ -1,5 +1,5 @@
 /**
- * Help content for ConceptLLM.
+ * Help content for ConceptMapper.
  * Each section has a title and markdown-ish content string.
  * The HelpPanel component renders these as searchable, collapsible accordions.
  */
@@ -18,7 +18,7 @@ export const HELP_SECTIONS: HelpSection[] = [
     id: "getting-started",
     title: "Getting Started",
     tags: ["new", "begin", "first", "intro", "start", "overview"],
-    content: `ConceptLLM is a visual concept-mapping tool for exploring relationships between thinkers, ideas, and concepts.
+    content: `ConceptMapper is a visual concept-mapping tool for exploring relationships between thinkers, ideas, and concepts.
 
 When you first open the app you see the **Start Screen** with three options:
 
@@ -42,7 +42,7 @@ If you have previously saved templates, they appear below these buttons. Click o
     id: "core-concepts",
     title: "Core Concepts: Taxonomy, Template, and Map",
     tags: ["taxonomy", "template", "map", "concept", "terminology", "vocabulary", "glossary"],
-    content: `ConceptLLM uses a few key terms that are worth understanding upfront:
+    content: `ConceptMapper uses a few key terms that are worth understanding upfront:
 
 **Taxonomy** -- The structural skeleton of your concept map. It defines:
 - What types of nodes you can create (e.g. Person, Concept, Theory)
@@ -224,7 +224,7 @@ Navigation: Use Back/Next buttons at the bottom. Press Escape to cancel.`,
     id: "llm-mapping",
     title: "Using an LLM to Map Content to a Template",
     tags: ["llm", "ai", "claude", "gpt", "mapping", "extract", "prompt", "template", "generate"],
-    content: `You can use any LLM (Claude, GPT-4, Llama, etc.) to generate concept map content that you then open in ConceptLLM. The workflow is: design your taxonomy in the app, export or describe it to the LLM, and have the LLM produce a .cm file you can open.
+    content: `You can use any LLM (Claude, GPT-4, Llama, etc.) to generate concept map content that you then open in ConceptMapper. The workflow is: design your taxonomy in the app, export or describe it to the LLM, and have the LLM produce a .cm file you can open.
 
 **Step 1: Design your taxonomy**
 
@@ -271,7 +271,7 @@ Here is the text to analyse:
 
 **Step 4: Open the result**
 
-Save the LLM's output as a .cm file and open it in ConceptLLM (File > Open or Cmd+O). The app parses the markdown format and renders the concept map.
+Save the LLM's output as a .cm file and open it in ConceptMapper (File > Open or Cmd+O). The app parses the markdown format and renders the concept map.
 
 **Tips for better results:**
 - Include the full .cmt template so the LLM knows exact field names and options.
@@ -444,7 +444,7 @@ All colour customisations persist across sessions via local storage.
     id: "file-formats",
     title: "File Formats: .cm, .cmt, .json, and Markdown Export",
     tags: ["file", "format", "save", "export", "open", "import", "json", "markdown", "cm", "cmt"],
-    content: `ConceptLLM works with several file formats:
+    content: `ConceptMapper works with several file formats:
 
 **.cm (Concept Map)** -- The primary format. This is a JSON file containing:
 - Version number
@@ -680,7 +680,7 @@ A: Yes. In the taxonomy wizard (Step 2), click "+ Add Type" to create as many no
 A: If a node type has a select-type field (e.g. "Importance" with options major, minor, etc.), you can designate that field to control the visual size of nodes on the canvas. Higher-ranked options produce larger nodes.
 
 **Q: How do I share a map with someone?**
-A: Send them the .cm file. They can open it in ConceptLLM. The file is self-contained JSON. You can also export a markdown version or a PNG image for people who do not have the app.
+A: Send them the .cm file. They can open it in ConceptMapper. The file is self-contained JSON. You can also export a markdown version or a PNG image for people who do not have the app.
 
 **Q: What happens if I close the app without saving?**
 A: If you opened a file, the app auto-saves changes as you work (2-second debounce). If you created a new taxonomy and never saved the file, the data may be lost.`,
@@ -692,7 +692,7 @@ A: If you opened a file, the app auto-saves changes as you work (2-second deboun
     title: "Troubleshooting",
     tags: ["trouble", "error", "problem", "fix", "issue", "bug", "not working"],
     content: `**"No nodes found" error when opening a file**
-The file may not be in a recognised format. ConceptLLM expects either a v2 JSON data file (.cm) or a legacy structured markdown file. Check that the file has the correct structure.
+The file may not be in a recognised format. ConceptMapper expects either a v2 JSON data file (.cm) or a legacy structured markdown file. Check that the file has the correct structure.
 
 **Canvas is blank after creating a taxonomy**
 This is expected -- a new taxonomy has no nodes yet. Use the sidebar's "+ [Type]" buttons to add nodes, or use Map Text to populate from a text source.

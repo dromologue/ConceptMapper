@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct ConceptLLMApp: App {
+struct ConceptMapperApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
@@ -39,7 +39,7 @@ struct ConceptLLMApp: App {
             }
 
             CommandGroup(replacing: .help) {
-                Button("ConceptLLM Help") {
+                Button("ConceptMapper Help") {
                     NotificationCenter.default.post(name: .showHelp, object: nil)
                 }
                 .keyboardShortcut("?")

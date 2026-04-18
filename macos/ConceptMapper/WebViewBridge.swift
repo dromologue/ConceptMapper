@@ -3,7 +3,7 @@ import WebKit
 import AppKit
 import os.log
 
-private let logger = Logger(subsystem: "com.dromologue.ConceptLLM", category: "Bridge")
+private let logger = Logger(subsystem: "com.dromologue.ConceptMapper", category: "Bridge")
 
 /// Handles bidirectional communication between Swift and the React SPA in WKWebView.
 @MainActor

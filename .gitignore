@@ -2,7 +2,7 @@
 /web/node_modules
 /web/dist
 /web/src/wasm
-/macos/ConceptLLM.xcodeproj
+/macos/ConceptMapper.xcodeproj
 /macos/Resources/web
 /macos/build
 .env

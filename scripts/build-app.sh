@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# ConceptLLM — Unified Build Pipeline
+# ConceptMapper — Unified Build Pipeline
 # Usage:
 #   scripts/build-app.sh              # test + build (Release)
 #   scripts/build-app.sh --debug      # test + build (Debug)
@@ -17,7 +17,7 @@ SKIP_TESTS=false
 DO_ARCHIVE=false
 DO_OPEN=false
 BUILD_DIR="$ROOT/macos/build"
-ARCHIVE_PATH="$BUILD_DIR/ConceptLLM.xcarchive"
+ARCHIVE_PATH="$BUILD_DIR/ConceptMapper.xcarchive"
 EXPORT_PATH="$BUILD_DIR/export"
 
 for arg in "$@"; do
@@ -112,14 +112,14 @@ echo ""
 echo "=== Step 6: Build macOS app ($CONFIGURATION) ==="
 cd macos
 xcodebuild \
-  -scheme ConceptLLM \
+  -scheme ConceptMapper \
   -configuration "$CONFIGURATION" \
   -derivedDataPath build \
   build \
   | tail -5
 cd "$ROOT"
 
-APP_PATH="$BUILD_DIR/Build/Products/$CONFIGURATION/ConceptLLM.app"
+APP_PATH="$BUILD_DIR/Build/Products/$CONFIGURATION/ConceptMapper.app"
 echo "App built: $APP_PATH"
 
 # --- Step 7: Archive (optional) ---
@@ -128,7 +128,7 @@ if [ "$DO_ARCHIVE" = true ]; then
   echo "=== Step 7: Archive for App Store ==="
 
   # Auto-increment build number
-  CURRENT_BUILD=$(/usr/libexec/PlistBuddy -c "Print :CURRENT_PROJECT_VERSION" macos/ConceptLLM/Info.plist 2>/dev/null || echo "1")
+  CURRENT_BUILD=$(/usr/libexec/PlistBuddy -c "Print :CURRENT_PROJECT_VERSION" macos/ConceptMapper/Info.plist 2>/dev/null || echo "1")
   if [[ "$CURRENT_BUILD" =~ ^[0-9]+$ ]]; then
     NEXT_BUILD=$((CURRENT_BUILD + 1))
   else
@@ -138,7 +138,7 @@ if [ "$DO_ARCHIVE" = true ]; then
 
   cd macos
   xcodebuild archive \
-    -scheme ConceptLLM \
+    -scheme ConceptMapper \
     -configuration Release \
     -archivePath "$ARCHIVE_PATH" \
     CURRENT_PROJECT_VERSION="$NEXT_BUILD" \
@@ -161,8 +161,8 @@ fi
 # --- Step 8: Verify code signature ---
 echo ""
 echo "=== Verify code signature ==="
-if [ "$DO_ARCHIVE" = true ] && [ -d "$EXPORT_PATH/ConceptLLM.app" ]; then
-  codesign -dv "$EXPORT_PATH/ConceptLLM.app" 2>&1 | head -5
+if [ "$DO_ARCHIVE" = true ] && [ -d "$EXPORT_PATH/ConceptMapper.app" ]; then
+  codesign -dv "$EXPORT_PATH/ConceptMapper.app" 2>&1 | head -5
 elif [ -d "$APP_PATH" ]; then
   codesign -dv "$APP_PATH" 2>&1 | head -5
 fi

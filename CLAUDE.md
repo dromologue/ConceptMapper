@@ -3,7 +3,7 @@
 ## Tech Stack
 - **Core parser**: Rust 2021 edition, compiles to native + WASM (via wasm-bindgen)
 - **Frontend**: React 19 + TypeScript 5.9, D3.js 7.9 (force-directed layout), Zustand (state), Vite 8
-- **macOS app**: SwiftUI (ConceptLLM), WKWebView hosts the React SPA
+- **macOS app**: SwiftUI (ConceptMapper), WKWebView hosts the React SPA
 - **Testing**: `cargo test` (Rust), Vitest (web), GitHub Actions CI
 
 ## Architecture
@@ -36,7 +36,7 @@
 # Manual steps
 cd web && npm run build                    # Build React SPA
 cp -r web/dist/* macos/Resources/web/      # Copy to macOS resources (CRITICAL)
-cd macos && xcodebuild -scheme ConceptLLM  # Build macOS app
+cd macos && xcodebuild -scheme ConceptMapper  # Build macOS app
 
 # Testing
 cargo test --all                           # Rust tests

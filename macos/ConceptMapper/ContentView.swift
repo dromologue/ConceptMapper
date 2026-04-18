@@ -2,7 +2,7 @@ import SwiftUI
 import WebKit
 import os.log
 
-private let logger = Logger(subsystem: "com.dromologue.ConceptLLM", category: "WebView")
+private let logger = Logger(subsystem: "com.dromologue.ConceptMapper", category: "WebView")
 
 struct ContentView: View {
     @StateObject private var bridge = WebViewBridge()
@@ -58,7 +58,7 @@ struct HelpOverlay: View {
             VStack(spacing: 0) {
                 // Header
                 HStack {
-                    Text("ConceptLLM Help")
+                    Text("ConceptMapper Help")
                         .font(.headline)
                     Spacer()
                     Button(action: onClose) {
@@ -75,7 +75,7 @@ struct HelpOverlay: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         helpSection("Getting Started", content: """
-                        ConceptLLM visualises intellectual influence networks as interactive concept maps.
+                        ConceptMapper visualises intellectual influence networks as interactive concept maps.
 
                         Open a .cm file (File → Open or Cmd+O) to load a concept map. The .cm format is a structured markdown file describing thinkers, concepts, and their relationships.
                         """)
@@ -142,7 +142,7 @@ struct HelpOverlay: View {
                         """)
 
                         helpSection("File Format (.cm)", content: """
-                        ConceptLLM uses .cm files — structured markdown with fenced code blocks defining nodes and edges.
+                        ConceptMapper uses .cm files — structured markdown with fenced code blocks defining nodes and edges.
 
                         Key sections:
                         • Generations table: time periods
