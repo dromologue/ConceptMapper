@@ -28,6 +28,24 @@ enum FileHandler {
         return folder
     }
 
+    /// Copy bundled example .cm maps to the user Maps folder on first run (does not overwrite).
+    static func copyBundledMaps() {
+        let folder = getMapsFolder()
+        guard let resourceURL = Bundle.main.resourceURL else { return }
+        let bundledDir = resourceURL.appendingPathComponent("maps")
+        guard FileManager.default.fileExists(atPath: bundledDir.path) else { return }
+        let existing = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "cm" }) ?? []
+        guard existing.isEmpty else { return }
+        if let bundledFiles = try? FileManager.default.contentsOfDirectory(at: bundledDir, includingPropertiesForKeys: nil)
+            .filter({ $0.pathExtension == "cm" }) {
+            for file in bundledFiles {
+                let dest = folder.appendingPathComponent(file.lastPathComponent)
+                try? FileManager.default.copyItem(at: file, to: dest)
+            }
+        }
+    }
+
     /// Enumerate .cm files in the Maps folder.
     static func listMaps(completion: @escaping @MainActor ([Any]) -> Void) {
         let folder = getMapsFolder()

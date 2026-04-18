@@ -4,14 +4,12 @@
 - **Core parser**: Rust 2021 edition, compiles to native + WASM (via wasm-bindgen)
 - **Frontend**: React 19 + TypeScript 5.9, D3.js 7.9 (force-directed layout), Zustand (state), Vite 8
 - **macOS app**: SwiftUI (ConceptLLM), WKWebView hosts the React SPA
-- **MCP server**: Swift CLI tool (ConceptMCP) — exposes parsing/tools over MCP protocol
 - **Testing**: `cargo test` (Rust), Vitest (web), GitHub Actions CI
 
 ## Architecture
 - `src/` — Rust parser: lexer → node/edge/table/metadata parsers → graph IR assembler
 - `web/` — React SPA: components, state (Zustand), D3 visualization, WASM bridge
-- `macos/` — SwiftUI shell: WebViewBridge, LLMService, FileHandler, MCPSetup
-- `mcp-server/` — Swift MCP server: protocol, tools, handlers, CM parser wrapper
+- `macos/` — SwiftUI shell: WebViewBridge, LLMService, FileHandler
 - `templates/` — .cmt taxonomy template files (JSON)
 - `Maps/` — .cm concept map files (structured markdown)
 - `examples/` — Example .cmt/.cm pairs

@@ -39,17 +39,6 @@ struct ConceptLLMApp: App {
             }
 
             CommandGroup(replacing: .help) {
-                Button("MCP Setup: Claude Desktop") {
-                    let instructions = MCPSetup.setupInstructions(for: .claude)
-                    showAlert("MCP Setup — Claude Desktop", instructions)
-                }
-                Button("MCP Setup: Cursor") {
-                    let instructions = MCPSetup.setupInstructions(for: .cursor)
-                    showAlert("MCP Setup — Cursor", instructions)
-                }
-
-                Divider()
-
                 Button("ConceptLLM Help") {
                     NotificationCenter.default.post(name: .showHelp, object: nil)
                 }
@@ -61,23 +50,13 @@ struct ConceptLLMApp: App {
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Ensure app directories exist and copy templates on first run
-        MCPSetup.ensureDirectories()
+        FileHandler.copyBundledTemplates()
+        FileHandler.copyBundledMaps()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         true
     }
-}
-
-// MARK: - Helpers
-
-private func showAlert(_ title: String, _ message: String) {
-    let alert = NSAlert()
-    alert.messageText = title
-    alert.informativeText = message
-    alert.alertStyle = .informational
-    alert.runModal()
 }
 
 extension Notification.Name {

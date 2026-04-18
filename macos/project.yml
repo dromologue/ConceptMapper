@@ -32,9 +32,6 @@ targets:
       - path: Resources/maps
         type: folder
         buildPhase: resources
-      - path: Resources/bin
-        type: folder
-        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.dromologue.ConceptLLM

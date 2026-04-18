@@ -99,18 +99,6 @@ function AppInner() {
   const [showExportImage, setShowExportImage] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [hiddenLabelTypes, setHiddenLabelTypes] = useState<Set<string>>(new Set());
-  const [mcpConfigured, setMcpConfigured] = useState(false);
-
-  // Check MCP status (injected by Swift after page load)
-  useEffect(() => {
-    const check = () => {
-      const val = (window as unknown as Record<string, unknown>).__MCP_CONFIGURED__;
-      if (val === true) setMcpConfigured(true);
-    };
-    check();
-    const timer = setTimeout(check, 1000); // re-check after Swift injection
-    return () => clearTimeout(timer);
-  }, []);
   const [labelMenuOpen, setLabelMenuOpen] = useState(false);
   // analysis is computed via useMemo above
   const [analysisNodeTypes, setAnalysisNodeTypes] = useState<Set<string> | null>(null);
@@ -1429,7 +1417,6 @@ function AppInner() {
         saveIndicator={saveIndicator}
         interactionMode={interactionMode}
         themeName={theme.name}
-        mcpConfigured={mcpConfigured}
       />
 
       {showAddNode && (

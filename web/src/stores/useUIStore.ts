@@ -50,10 +50,6 @@ interface UIState {
   triggerFitToView: () => void;
   triggerZoom: (action: 'in' | 'out') => void;
   clearZoomAction: () => void;
-
-  // MCP status
-  mcpConfigured: boolean;
-  setMcpConfigured: (v: boolean) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -102,7 +98,4 @@ export const useUIStore = create<UIState>((set) => ({
   triggerFitToView: () => set((s) => ({ fitToViewTrigger: s.fitToViewTrigger + 1 })),
   triggerZoom: (action) => set({ zoomAction: { action, ts: Date.now() } }),
   clearZoomAction: () => set({ zoomAction: null }),
-
-  mcpConfigured: false,
-  setMcpConfigured: (v) => set({ mcpConfigured: v }),
 }));

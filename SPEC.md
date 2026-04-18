@@ -1648,18 +1648,3 @@ The taxonomy wizard uses a unified classifiers step instead of separate streams/
 - [x] AC-084-05: Legacy initialData with streams/generations is converted to classifiers
 - [x] AC-084-06: Field type dropdown includes "Date" option, excludes "Textarea"
 
----
-
-## REQ-085: MCP Server Notification Handling
-
-The MCP server correctly handles JSON-RPC notifications (messages with no `id`).
-
-**Expected Behavior:**
-- `notifications/initialized` receives no response (it's a notification, not a request)
-- Only requests (with `id`) receive responses
-- `initialize` response has properly structured `result` object
-
-**Acceptance Criteria:**
-- [x] AC-085-01: `handleRequest` returns `nil` for `notifications/initialized`
-- [x] AC-085-02: Run loop skips response for notifications
-- [x] AC-085-03: `initialize` result is a valid JSON-RPC object (not a string)

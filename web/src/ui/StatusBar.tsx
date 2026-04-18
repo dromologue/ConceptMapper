@@ -6,12 +6,11 @@ interface Props {
   saveIndicator: boolean;
   interactionMode: InteractionMode;
   themeName: string;
-  mcpConfigured?: boolean;
 }
 
 export function StatusBar({
   nodeCount, edgeCount, saveIndicator,
-  interactionMode, themeName, mcpConfigured,
+  interactionMode, themeName,
 }: Props) {
   return (
     <div className="status-bar">
@@ -23,7 +22,6 @@ export function StatusBar({
         )}
       </div>
       <div className="status-bar-right">
-        {mcpConfigured && <span className="status-bar-item status-bar-mcp">MCP</span>}
         <span className="status-bar-item">{nodeCount} nodes</span>
         <span className="status-bar-item">{edgeCount} edges</span>
         <span className={`status-bar-save ${saveIndicator ? "visible" : ""}`}>Saved</span>

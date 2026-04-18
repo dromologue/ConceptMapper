@@ -363,23 +363,6 @@ Selecting a node strongly dims non-connected nodes and edges.
 **AC-069-04**: Highlight works consistently from canvas click, sidebar click, and analysis panel click.
 **AC-069-05**: Community highlight and node highlight are mutually exclusive — selecting one clears the other.
 
-## MCP Server
-
-### REQ-070: MCP Server for LLM Integration
-Swift CLI tool implementing Model Context Protocol over stdio, allowing AI assistants to interact with concept maps.
-
-**AC-070-01**: MCP server is a Swift executable (ConceptMCP) built via Swift Package Manager.
-**AC-070-02**: Server implements JSON-RPC 2.0 over stdio with MCP initialize/tools/list/tools/call methods.
-**AC-070-03**: 15 tools exposed: list_maps, list_templates, open_map, open_template, search_nodes, get_node, get_connections, add_node, update_node, delete_node, add_edge, update_edge, delete_edge, create_map, get_map_stats.
-**AC-070-04**: Server reads/writes .cm files (markdown format) directly on disk.
-**AC-070-05**: Server reads .cmt template files (JSON format) directly.
-**AC-070-06**: Default directories: ~/Documents/ConceptMapper/Maps/ and ~/Documents/ConceptMapper/Templates/.
-**AC-070-07**: Custom directories configurable via --maps-dir and --templates-dir flags.
-**AC-070-08**: add_node, update_node, delete_node, add_edge, update_edge, delete_edge all save changes immediately.
-**AC-070-09**: search_nodes matches against node name, ID, type, property values, and notes.
-**AC-070-10**: create_map loads a template and creates a new .cm file with the template's streams and generations.
-**AC-070-11**: Help content documents full setup instructions for Claude Desktop integration.
-
 ## Network Analysis
 
 ### REQ-063: Network Analysis Engine
@@ -472,13 +455,6 @@ All layout force calculations (initial setup, data change, resize, explode) use 
 
 ## Architecture Improvements (2026-03-29)
 
-### REQ-086: MCP Path Security
-The MCP server validates all resolved file paths stay within allowed directories (maps/templates).
-
-**AC-086-01**: `resolvePath` canonicalizes paths and rejects traversal attempts (e.g., `../../../etc/passwd`).
-**AC-086-02**: Absolute paths outside allowed directories are rejected with a 403 error.
-**AC-086-03**: Extension is appended when missing, not duplicated when present.
-
 ### REQ-087: Parser Type Safety
 The Rust parser uses type-safe abstractions for error handling and section routing.
 
@@ -486,15 +462,6 @@ The Rust parser uses type-safe abstractions for error handling and section routi
 **AC-087-02**: `ParseOutput` struct replaces the ambiguous `ParseResult` struct name.
 **AC-087-03**: `SectionKind` enum with `from_path()` replaces fragile string-contains matching.
 **AC-087-04**: Node IR conversion uses move semantics (`into_iter`) instead of cloning.
-
-### REQ-088: MCP Parser Tests
-The MCP Swift parser has unit tests for parsing, writing, and round-trip fidelity.
-
-**AC-088-01**: Parse nodes from fenced blocks (id, name, type, generation, stream, notes).
-**AC-088-02**: Parse edges with inline format.
-**AC-088-03**: Parse title from H1 header.
-**AC-088-04**: Round-trip: parse -> write -> re-parse preserves nodes, edges, and title.
-**AC-088-05**: Write produces valid markdown with correct structure.
 
 ### REQ-089: Edge Type Registry
 A centralized edge type registry replaces hardcoded edge visuals scattered across multiple files.
@@ -535,12 +502,11 @@ In-flight LLM requests can be cancelled by the user.
 > the system `os.log` Logger already present in `WebViewBridge.swift`.
 
 ### REQ-095: CI/CD Pipeline
-CI validates all four components: Rust, WASM, Web, and Swift.
+CI validates three components: Rust, WASM, and Web.
 
 **AC-095-01**: Rust job runs `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test --all`.
 **AC-095-02**: WASM job builds `cargo build --target wasm32-unknown-unknown --features wasm`.
 **AC-095-03**: Web job runs `npm run lint`, `npm test --coverage`, `npm run build`.
-**AC-095-04**: Swift job builds and tests the MCP server on macOS.
 
 ### REQ-096: App.tsx Decomposition
 File loading logic and Swift bridge are extracted from the monolithic App.tsx into focused modules.

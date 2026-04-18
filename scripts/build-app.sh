@@ -81,17 +81,9 @@ npm run build
 cd "$ROOT"
 echo "React SPA built."
 
-# --- Step 3b: Build MCP server ---
+# --- Step 4: Copy web assets ---
 echo ""
-echo "=== Step 3b: Build MCP server ==="
-cd mcp-server
-swift build -c release 2>&1 | tail -3
-cd "$ROOT"
-echo "MCP server built."
-
-# --- Step 4: Copy web assets + MCP binary ---
-echo ""
-echo "=== Step 4: Copy web assets, templates, maps, and MCP binary to macOS Resources ==="
+echo "=== Step 4: Copy web assets, templates, and maps to macOS Resources ==="
 rm -rf macos/Resources/web
 cp -r web/dist/ macos/Resources/web/
 # Copy templates into web dir so fetch() can load them, and into Resources/templates for Swift
@@ -105,10 +97,7 @@ rm -rf macos/Resources/web/maps macos/Resources/maps
 mkdir -p macos/Resources/web/maps macos/Resources/maps
 [ -d Maps ] && cp Maps/*.cm macos/Resources/web/maps/ 2>/dev/null || true
 [ -d Maps ] && cp Maps/*.cm macos/Resources/maps/ 2>/dev/null || true
-# MCP binary
-mkdir -p macos/Resources/bin
-cp mcp-server/.build/release/ConceptMCPMain macos/Resources/bin/ConceptMCP
-echo "Web assets, templates, maps, and MCP binary copied."
+echo "Web assets, templates, and maps copied."
 
 # --- Step 5: Regenerate Xcode project ---
 echo ""
