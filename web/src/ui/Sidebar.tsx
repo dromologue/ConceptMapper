@@ -72,7 +72,9 @@ export function Sidebar({
 }: Props) {
   const [filter, setFilter] = useState("");
   const [classifierSectionsOpen, setClassifierSectionsOpen] = useState<Record<string, boolean>>({});
-  const [tagsOpen, setTagsOpen] = useState(false);
+  // Tags: open by default so authored tags are discoverable as a filterable list,
+  // matching the Nodes section behaviour (REQ-089).
+  const [tagsOpen, setTagsOpen] = useState(true);
   const [attributeSectionsOpen, setAttributeSectionsOpen] = useState<Record<string, boolean>>({});
   const [nodesOpen, setNodesOpen] = useState(true);
 

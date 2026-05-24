@@ -51,8 +51,17 @@ function AppInner() {
   const [graphData, setGraphDataRaw] = useState<GraphIR | null>(null);
   const undoStack = useRef<GraphIR[]>([]);
   const redoStack = useRef<GraphIR[]>([]);
+  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [viewMode, setViewMode] = useState("full");
+  const [revealedNodes, setRevealedNodes] = useState<Set<string>>(new Set());
+  const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
+  // REQ-088: expand-to-level. 0 = roots only (default on every map load).
+  const [expandLevel, setExpandLevel] = useState(0);
 
-  // Wrapper that pushes to undo history before mutating
+  // Wrapper that pushes to undo history before mutating, AND — on a fresh
+  // graph reference — seeds the expand-level back to 0 with the corresponding
+  // collapsed set, synchronously, so the canvas never paints the full graph
+  // before collapsing (REQ-088 AC-06).
   const setGraphData = useCallback((data: GraphIR | null | ((prev: GraphIR | null) => GraphIR | null)) => {
     setGraphDataRaw((prev) => {
       const next = typeof data === 'function' ? data(prev) : data;
@@ -60,18 +69,14 @@ function AppInner() {
         undoStack.current = [...undoStack.current.slice(-49), prev];
         redoStack.current = [];
       }
+      if (next && next !== prev) {
+        const info = computeHierarchy(next.nodes, next.edges);
+        setExpandLevel(0);
+        setCollapsedNodes(collapsedNodesForLevel(0, info, next.edges));
+      }
       return next;
     });
   }, []);
-  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
-  const [viewMode, setViewMode] = useState("full");
-  const [revealedNodes, setRevealedNodes] = useState<Set<string>>(new Set());
-  const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
-  // REQ-088: expand-to-level. 0 = roots only (default on every map load).
-  const [expandLevel, setExpandLevel] = useState(0);
-  // Track which graph instance we've already seeded — guarantees fresh-load resets level
-  // back to 0 without forgetting user toggles within the same graph.
-  const seededGraphRef = useRef<GraphIR | null>(null);
 
   const hierarchy = useMemo(() => {
     if (!graphData) return null;
@@ -84,15 +89,6 @@ function AppInner() {
       setCollapsedNodes(collapsedNodesForLevel(level, hierarchy, graphData.edges));
     }
   }, [hierarchy, graphData]);
-
-  // On every fresh graph load, default to level 0 (fully collapsed = roots only).
-  useEffect(() => {
-    if (!graphData || !hierarchy) return;
-    if (seededGraphRef.current === graphData) return;
-    seededGraphRef.current = graphData;
-    setExpandLevel(0);
-    setCollapsedNodes(collapsedNodesForLevel(0, hierarchy, graphData.edges));
-  }, [graphData, hierarchy]);
   const [showAddNode, setShowAddNode] = useState<string | null>(null); // node type id or null
   const [interactionMode, setInteractionMode] = useState<import("./stores/useGraphStore").InteractionMode>("normal");
   const [edgeSource, setEdgeSource] = useState<string | null>(null);

@@ -206,4 +206,62 @@ describe("ActivityBar", () => {
     await user.click(screen.getByTitle("Notes"));
     expect(onToggle).toHaveBeenCalled();
   });
+
+  // REQ-088 — expand level stepper
+  describe("expand level stepper", () => {
+    it("hides the stepper when the graph has no hierarchy (maxExpandLevel = 0)", () => {
+      render(<ActivityBar {...defaultProps} expandLevel={0} maxExpandLevel={0} onExpandLevelChange={vi.fn()} />);
+      expect(screen.queryByLabelText("Expand one level")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Collapse one level")).not.toBeInTheDocument();
+    });
+
+    it("renders +, depth label, and − when hierarchy is present", () => {
+      render(<ActivityBar {...defaultProps} expandLevel={1} maxExpandLevel={4} onExpandLevelChange={vi.fn()} />);
+      expect(screen.getByLabelText("Expand one level")).toBeInTheDocument();
+      expect(screen.getByLabelText("Collapse one level")).toBeInTheDocument();
+      expect(screen.getByText("1/4")).toBeInTheDocument();
+    });
+
+    it("disables the − button at level 0 and the + button at maxExpandLevel", () => {
+      const { rerender } = render(
+        <ActivityBar {...defaultProps} expandLevel={0} maxExpandLevel={3} onExpandLevelChange={vi.fn()} />
+      );
+      expect(screen.getByLabelText("Collapse one level")).toBeDisabled();
+      expect(screen.getByLabelText("Expand one level")).not.toBeDisabled();
+      rerender(<ActivityBar {...defaultProps} expandLevel={3} maxExpandLevel={3} onExpandLevelChange={vi.fn()} />);
+      expect(screen.getByLabelText("Expand one level")).toBeDisabled();
+      expect(screen.getByLabelText("Collapse one level")).not.toBeDisabled();
+    });
+
+    it("calls onExpandLevelChange with level+1 when + is clicked", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<ActivityBar {...defaultProps} expandLevel={1} maxExpandLevel={4} onExpandLevelChange={onChange} />);
+      await user.click(screen.getByLabelText("Expand one level"));
+      expect(onChange).toHaveBeenCalledWith(2);
+    });
+
+    it("calls onExpandLevelChange with level-1 when − is clicked", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<ActivityBar {...defaultProps} expandLevel={2} maxExpandLevel={4} onExpandLevelChange={onChange} />);
+      await user.click(screen.getByLabelText("Collapse one level"));
+      expect(onChange).toHaveBeenCalledWith(1);
+    });
+
+    it("double-clicking the depth label toggles between fully collapsed and fully expanded", async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      // From not-fully-expanded → max
+      const { rerender } = render(
+        <ActivityBar {...defaultProps} expandLevel={1} maxExpandLevel={4} onExpandLevelChange={onChange} />
+      );
+      await user.dblClick(screen.getByText("1/4"));
+      expect(onChange).toHaveBeenLastCalledWith(4);
+      // From fully expanded → 0
+      rerender(<ActivityBar {...defaultProps} expandLevel={4} maxExpandLevel={4} onExpandLevelChange={onChange} />);
+      await user.dblClick(screen.getByText("4/4"));
+      expect(onChange).toHaveBeenLastCalledWith(0);
+    });
+  });
 });

@@ -150,34 +150,40 @@ export function ActivityBar({
             <IconExport size={20} />
           </button>
         )}
-        {/* Expand-level stepper (REQ-088) — visible only when the graph has hierarchy */}
+        {/* Expand-level stepper (REQ-088) — vertical to fit the activity bar.
+            Shape: [+] above the current depth label above [−]. Double-click the
+            label to toggle between fully expanded and fully collapsed. */}
         {onExpandLevelChange && maxExpandLevel !== undefined && maxExpandLevel > 0 && (
-          <div className="expand-level-stepper" title={`Show nodes down to level ${expandLevel ?? 0} of ${maxExpandLevel}`}>
+          <div className="expand-level-stepper">
             <button
               type="button"
-              className="activity-bar-btn"
-              onClick={() => onExpandLevelChange(Math.max(0, (expandLevel ?? 0) - 1))}
-              disabled={(expandLevel ?? 0) <= 0}
-              aria-label="Collapse one level"
-            >−</button>
-            <span className="expand-level-label" aria-label="Current expand level">
-              {expandLevel ?? 0}/{maxExpandLevel}
-            </span>
-            <button
-              type="button"
-              className="activity-bar-btn"
+              className="activity-bar-btn expand-level-btn"
               onClick={() => onExpandLevelChange(Math.min(maxExpandLevel, (expandLevel ?? 0) + 1))}
               disabled={(expandLevel ?? 0) >= maxExpandLevel}
               aria-label="Expand one level"
-            >+</button>
+              title={`Expand (level ${(expandLevel ?? 0) + 1} of ${maxExpandLevel})`}
+            >
+              <span className="expand-level-glyph">+</span>
+            </button>
             <button
               type="button"
-              className="activity-bar-btn"
-              onClick={() => onExpandLevelChange(maxExpandLevel)}
-              disabled={(expandLevel ?? 0) >= maxExpandLevel}
-              aria-label="Expand all"
-              title="Expand all"
-            >⤢</button>
+              className="expand-level-label"
+              onDoubleClick={() => onExpandLevelChange((expandLevel ?? 0) >= maxExpandLevel ? 0 : maxExpandLevel)}
+              aria-label="Current depth (double-click to toggle all)"
+              title={`Depth ${expandLevel ?? 0}/${maxExpandLevel} — double-click to ${(expandLevel ?? 0) >= maxExpandLevel ? "collapse" : "expand"} all`}
+            >
+              {expandLevel ?? 0}/{maxExpandLevel}
+            </button>
+            <button
+              type="button"
+              className="activity-bar-btn expand-level-btn"
+              onClick={() => onExpandLevelChange(Math.max(0, (expandLevel ?? 0) - 1))}
+              disabled={(expandLevel ?? 0) <= 0}
+              aria-label="Collapse one level"
+              title={`Collapse (level ${(expandLevel ?? 0) - 1} of ${maxExpandLevel})`}
+            >
+              <span className="expand-level-glyph">−</span>
+            </button>
           </div>
         )}
         {/* Layout preset selector */}

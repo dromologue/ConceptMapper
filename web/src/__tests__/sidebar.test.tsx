@@ -332,3 +332,42 @@ describe("sidebar color dots", () => {
 });
 
 // SPEC: REQ-075 (Explode View) — button moved to ActivityBar
+
+// SPEC: REQ-089 — Tags as first-class Sidebar list, open by default
+describe("Tags section (REQ-089)", () => {
+  const nodesWithTags = [
+    { id: "n1", node_type: "person" as string, name: "Alice", tags: ["research", "ai"], properties: {} },
+    { id: "n2", node_type: "person" as string, name: "Bob", tags: ["ai", "design"], properties: {} },
+    { id: "n3", node_type: "person" as string, name: "Charlie", tags: ["design"], properties: {} },
+  ];
+
+  it("renders the Tags section when any node has tags", () => {
+    render(<Sidebar {...defaultProps} nodes={nodesWithTags} />);
+    expect(screen.getByText("Tags")).toBeInTheDocument();
+  });
+
+  it("Tags section is open by default (lists every unique tag without a click)", () => {
+    render(<Sidebar {...defaultProps} nodes={nodesWithTags} />);
+    // No click needed — the list items should already be rendered.
+    expect(screen.getByText("research")).toBeInTheDocument();
+    expect(screen.getByText("ai")).toBeInTheDocument();
+    expect(screen.getByText("design")).toBeInTheDocument();
+  });
+
+  it("hides the Tags section when no node carries tags", () => {
+    const noTags = nodesWithTags.map(({ tags: _t, ...rest }) => rest);
+    render(<Sidebar {...defaultProps} nodes={noTags} />);
+    expect(screen.queryByText("Tags")).not.toBeInTheDocument();
+  });
+
+  it("calls onTagToggle with the tag and the sorted full set when a tag is clicked", async () => {
+    const user = userEvent.setup();
+    const onTagToggle = vi.fn();
+    render(<Sidebar {...defaultProps} nodes={nodesWithTags} onTagToggle={onTagToggle} />);
+    await user.click(screen.getByText("ai"));
+    expect(onTagToggle).toHaveBeenCalledTimes(1);
+    const [tag, all] = onTagToggle.mock.calls[0];
+    expect(tag).toBe("ai");
+    expect(new Set(all)).toEqual(new Set(["research", "ai", "design"]));
+  });
+});

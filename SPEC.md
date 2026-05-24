@@ -1743,6 +1743,10 @@ Every map opens fully collapsed (only root nodes visible). A toolbar stepper let
 - [x] AC-088-04: `collapsedNodesForLevel(level >= maxDepth, info, edges)` returns the empty set.
 - [x] AC-088-05: Leaves (no outgoing edges) are never returned in the collapsed set.
 - [x] AC-088-06: On every fresh `graphData` reference, the App resets `expandLevel` to 0 and seeds `collapsedNodes` accordingly.
+- [x] AC-088-07: The level-0 seeding happens **synchronously inside the `setGraphData` wrapper** (not in a follow-up `useEffect`) so the canvas never paints the full graph before collapsing.
+- [x] AC-088-08: The stepper is laid out vertically (`+` above the `level/max` label above `−`) to fit the vertical activity-bar column, with `+` and `−` styled as `activity-bar-btn` so they match the rest of the toolbar.
+- [x] AC-088-09: Double-clicking the depth label toggles between fully collapsed (`0`) and fully expanded (`maxExpandLevel`).
+- [x] AC-088-10: The `+` button is disabled at `maxExpandLevel`; the `−` button is disabled at `0`.
 
 ---
 
@@ -1761,3 +1765,5 @@ If a node carries `tags`, the Sidebar exposes a collapsible **Tags** section lis
 - [x] AC-089-02: An existing `node.tags` value wins over a colliding `tags` field on `fields`.
 - [x] AC-089-03: Empty or comma-only tags fields produce `node.tags === undefined`.
 - [x] AC-089-04: The Sidebar Tags section appears whenever `collectAllTags(nodes).length > 0` and lists every unique tag.
+- [x] AC-089-05: The Tags section is **open by default** (mirrors the Nodes section), so authored tags are visible without an extra click.
+- [x] AC-089-06: Clicking a tag in the Sidebar Tags section calls `onTagToggle(tag, allTagsSorted)` and updates the active tag filter via the existing tag filter pipeline.
