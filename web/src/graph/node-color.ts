@@ -1,6 +1,6 @@
-import type { SimNode, Classifier } from "../types/graph-ir";
+import type { GraphNode, Classifier } from "../types/graph-ir";
 
-export function getNodeColor(node: SimNode, classifiers: Classifier[], overrides?: Record<string, string>): string {
+export function getNodeColor(node: GraphNode, classifiers: Classifier[], overrides?: Record<string, string>): string {
   // Use the first classifier whose values carry color definitions
   const colorCls = classifiers.find((c) => c.values.some((v) => v.color)) ?? classifiers[0];
   if (!colorCls) return "#666";

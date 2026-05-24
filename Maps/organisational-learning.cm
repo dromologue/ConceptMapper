@@ -3,25 +3,6 @@
 <!-- template: organisational-learning.cmt -->
 <!-- Exported from concept-mapper, 2026-03-21. -->
 
-## Generations
-
-| Gen | Period | Label | Attention Space Count |
-|-----|--------|-------|-----------------------|
-| 1 | pre-1940 | Founders | 3 |
-| 2 | 1940–1970 | Classical | 4 |
-| 3 | 1970–1990 | Modern | 5 |
-| 4 | 1990–present | Contemporary | 4 |
-
-## Streams
-
-| Stream ID | Name | Colour | Description |
-|-----------|------|--------|-------------|
-| identity | Identity | #4A90D9 | Identity must be safe enough to change |
-| information | Information | #50C878 | Information must be clean enough to act on |
-| institution | Institution | #E67E22 | Institutional form must be convivial enough to permit learning |
-| management | Management | #9B59B6 | Management theory and practice |
-| psychology | Psychology | #E74C3C | Individual cognition, learning, and behaviour |
-
 ## Thinker Nodes
 
 ```

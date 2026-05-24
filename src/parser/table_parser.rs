@@ -9,8 +9,14 @@ pub struct TableRow {
 /// Parse classified lines that form a markdown table into rows.
 /// Expects: header row, separator row, then data rows.
 pub fn parse_table(lines: &[ClassifiedLine]) -> Vec<TableRow> {
-    let table_lines: Vec<&ClassifiedLine> = lines.iter()
-        .filter(|l| matches!(l.line_type, LineType::TableRow { .. } | LineType::TableSeparator))
+    let table_lines: Vec<&ClassifiedLine> = lines
+        .iter()
+        .filter(|l| {
+            matches!(
+                l.line_type,
+                LineType::TableRow { .. } | LineType::TableSeparator
+            )
+        })
         .collect();
 
     if table_lines.len() < 3 {

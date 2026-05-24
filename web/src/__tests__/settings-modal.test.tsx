@@ -1,10 +1,10 @@
-// SPEC: REQ-037 (Settings Modal), REQ-101 (Region/Column Colour Overrides)
+// SPEC: REQ-037 (Settings Modal), REQ-101 (Classifier Value Colour Overrides)
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsModal } from "../ui/SettingsModal";
 import { ThemeProvider } from "../theme/ThemeContext";
-import { sampleStreams, sampleRegionClassifier } from "./fixtures";
+import { sampleRegionClassifier } from "./fixtures";
 
 const edgeTypes = ["chain", "originates", "rivalry", "alliance"];
 
@@ -12,7 +12,6 @@ function renderSettings(props: Partial<React.ComponentProps<typeof SettingsModal
   return render(
     <ThemeProvider>
       <SettingsModal
-        streams={sampleStreams}
         edgeTypes={edgeTypes}
         classifiers={[]}
         onClose={vi.fn()}
@@ -50,14 +49,6 @@ describe("SettingsModal", () => {
     await user.click(screen.getByTitle("Nord"));
     expect(screen.getByTitle("Nord").className).toContain("theme-swatch-active");
     expect(screen.getByTitle("Midnight").className).not.toContain("theme-swatch-active");
-  });
-
-  it("shows stream color pickers for all streams", () => {
-    renderSettings();
-    expect(screen.getByText("Stream Colors")).toBeInTheDocument();
-    expect(screen.getByText("Psychology & Cognition")).toBeInTheDocument();
-    expect(screen.getByText("Systems & Complexity")).toBeInTheDocument();
-    expect(screen.getByText("Sensemaking & Safety")).toBeInTheDocument();
   });
 
   it("shows edge type color pickers for all edge types", () => {
@@ -122,13 +113,22 @@ describe("SettingsModal", () => {
     renderSettings({ classifiers: [sampleRegionClassifier] });
     // Each region value should have a color input
     const colorInputs = document.querySelectorAll<HTMLInputElement>('input[type="color"]');
-    // streams (3) + edge types (4) + region values (3) = 10
-    expect(colorInputs.length).toBe(10);
+    // edge types (4) + region values (3) = 7
+    expect(colorInputs.length).toBe(7);
   });
 
-  it("does not show region colours for non-layout classifiers", () => {
-    const nonLayoutClassifier = { ...sampleRegionClassifier, id: "role", label: "Role", layout: undefined as unknown as "region" };
-    renderSettings({ classifiers: [nonLayoutClassifier] });
-    expect(screen.queryByText("Role Colors")).not.toBeInTheDocument();
+  // Any classifier whose values carry colours gets per-value overrides, regardless of layout.
+  // This subsumes the former "Stream Colors" path (streams used to be a top-level section in
+  // .cm files; they are now just classifier values living in the template).
+  it("shows colour pickers for any classifier whose values have colors, regardless of layout", () => {
+    const colouredClassifier = { ...sampleRegionClassifier, id: "role", label: "Role", layout: undefined as unknown as "region" };
+    renderSettings({ classifiers: [colouredClassifier] });
+    expect(screen.getByText("Role Colors")).toBeInTheDocument();
+  });
+
+  it("does not show colour section for classifiers without colors", () => {
+    const noColour = { id: "generation", label: "Generation", values: [{ id: "1", label: "First" }] };
+    renderSettings({ classifiers: [noColour] });
+    expect(screen.queryByText("Generation Colors")).not.toBeInTheDocument();
   });
 });

@@ -9,8 +9,12 @@ fn header_lines_classified_with_level() {
     let lines = lex(input);
 
     assert!(matches!(&lines[0].line_type, LineType::Header { level: 1, text } if text == "Title"));
-    assert!(matches!(&lines[1].line_type, LineType::Header { level: 2, text } if text == "Section"));
-    assert!(matches!(&lines[2].line_type, LineType::Header { level: 3, text } if text == "Subsection"));
+    assert!(
+        matches!(&lines[1].line_type, LineType::Header { level: 2, text } if text == "Section")
+    );
+    assert!(
+        matches!(&lines[2].line_type, LineType::Header { level: 3, text } if text == "Subsection")
+    );
     assert!(matches!(&lines[3].line_type, LineType::Header { level: 4, text } if text == "Deep"));
 }
 
@@ -67,9 +71,15 @@ fn kv_pairs_inside_fence() {
     let input = "```\nid: argyris\nname: Chris Argyris\ngeneration: 2\n```";
     let lines = lex(input);
 
-    assert!(matches!(&lines[1].line_type, LineType::KVPair { key, value } if key == "id" && value == "argyris"));
-    assert!(matches!(&lines[2].line_type, LineType::KVPair { key, value } if key == "name" && value == "Chris Argyris"));
-    assert!(matches!(&lines[3].line_type, LineType::KVPair { key, value } if key == "generation" && value == "2"));
+    assert!(
+        matches!(&lines[1].line_type, LineType::KVPair { key, value } if key == "id" && value == "argyris")
+    );
+    assert!(
+        matches!(&lines[2].line_type, LineType::KVPair { key, value } if key == "name" && value == "Chris Argyris")
+    );
+    assert!(
+        matches!(&lines[3].line_type, LineType::KVPair { key, value } if key == "generation" && value == "2")
+    );
 }
 
 #[test]
@@ -88,9 +98,18 @@ fn bullet_items_classified() {
     let input = "- Top level\n  - Indented\n    - Deep indent";
     let lines = lex(input);
 
-    assert!(matches!(&lines[0].line_type, LineType::BulletItem { indent: 0, .. }));
-    assert!(matches!(&lines[1].line_type, LineType::BulletItem { indent: 2, .. }));
-    assert!(matches!(&lines[2].line_type, LineType::BulletItem { indent: 4, .. }));
+    assert!(matches!(
+        &lines[0].line_type,
+        LineType::BulletItem { indent: 0, .. }
+    ));
+    assert!(matches!(
+        &lines[1].line_type,
+        LineType::BulletItem { indent: 2, .. }
+    ));
+    assert!(matches!(
+        &lines[2].line_type,
+        LineType::BulletItem { indent: 4, .. }
+    ));
 }
 
 #[test]
@@ -150,8 +169,10 @@ fn indented_kv_pairs_inside_fence() {
     let input = "```\n  note: This is indented\n```";
     let lines = lex(input);
 
-    assert!(matches!(&lines[1].line_type, LineType::KVPair { key, value }
-        if key == "note" && value == "This is indented"));
+    assert!(
+        matches!(&lines[1].line_type, LineType::KVPair { key, value }
+        if key == "note" && value == "This is indented")
+    );
 }
 
 // AC-001 edge case: Inline code backticks are not fence markers

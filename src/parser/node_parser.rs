@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use crate::parser::lexer::{ClassifiedLine, LineType};
 use crate::parser::errors::ParseError;
+use crate::parser::lexer::{ClassifiedLine, LineType};
+use std::collections::HashMap;
 
 /// Extract key-value pairs from classified lines within a fenced block.
 fn extract_kv_map(lines: &[ClassifiedLine]) -> HashMap<String, (String, usize)> {
@@ -27,7 +27,10 @@ pub struct GenericNode {
 
 /// Parse a fenced block's lines into a GenericNode.
 /// Only `id` and `name` are required. All other key-value pairs go into `fields`.
-pub fn parse_generic_node(lines: &[ClassifiedLine], node_type: &str) -> Result<GenericNode, Vec<ParseError>> {
+pub fn parse_generic_node(
+    lines: &[ClassifiedLine],
+    node_type: &str,
+) -> Result<GenericNode, Vec<ParseError>> {
     let kv = extract_kv_map(lines);
     let mut errors = Vec::new();
     let block_line = lines.first().map(|l| l.line_number).unwrap_or(0);
@@ -62,14 +65,16 @@ pub fn parse_generic_node(lines: &[ClassifiedLine], node_type: &str) -> Result<G
         return Err(errors);
     }
 
-    let generation = kv.get("generation")
+    let generation = kv
+        .get("generation")
         .and_then(|(v, _)| v.trim().parse::<i32>().ok());
     let stream = kv.get("stream").map(|(v, _)| v.clone());
     let notes = kv.get("notes").map(|(v, _)| v.clone());
 
     // All other fields go into the HashMap
     let reserved = ["id", "name", "generation", "stream", "notes"];
-    let fields: HashMap<String, String> = kv.iter()
+    let fields: HashMap<String, String> = kv
+        .iter()
         .filter(|(k, _)| !reserved.contains(&k.as_str()))
         .map(|(k, (v, _))| (k.clone(), v.clone()))
         .collect();

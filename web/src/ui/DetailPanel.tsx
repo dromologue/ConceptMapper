@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import type { GraphNode, GraphEdge, Classifier, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
 import { getNodeTypeConfig } from "../migration";
 import { EDGE_LABELS } from "../utils/edge-labels";
@@ -72,7 +72,7 @@ function DebouncedTextarea({ label, value, onCommit }: {
 
 export function DetailPanel({
   node, edges, nodes, classifiers, nodeTypeConfigs, template,
-  onNodeUpdate, onNavigateToNode, onOpenNotes, notesOpen, onNodeDelete, analysis: _analysis, style,
+  onNodeUpdate, onNavigateToNode, onOpenNotes, notesOpen, onNodeDelete, style,
 }: Props) {
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
   const config = getNodeTypeConfig(nodeTypeConfigs, node.node_type);
@@ -81,11 +81,12 @@ export function DetailPanel({
   const [attrsOpen, setAttrsOpen] = useState(true);
   const [connectionsOpen, setConnectionsOpen] = useState(true);
 
-  // Reset only when switching to a different node
-  useEffect(() => {
+  // Reset name only when switching to a different node (derived state from props)
+  const [prevNodeId, setPrevNodeId] = useState(node.id);
+  if (prevNodeId !== node.id) {
+    setPrevNodeId(node.id);
     setLocalName(node.name);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [node.id]);
+  }
 
   // Debounced text field update (300ms delay)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);

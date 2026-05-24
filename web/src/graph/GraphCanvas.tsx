@@ -153,7 +153,6 @@ function computeRegionColumns(
 }
 
 // --- Configuration constants ---
-/* eslint-disable @typescript-eslint/no-unused-vars */
 
 // D3 force simulation
 const CHARGE_STRENGTH_NORMAL = -400;
@@ -304,7 +303,6 @@ const FLOW_X_STRENGTH = 0.5;
 // Layout preset: radial (centrality-based)
 const RADIAL_POSITION_STRENGTH = 0.4;
 const RADIAL_CHARGE = -350;
-/* eslint-enable @typescript-eslint/no-unused-vars */
 
 interface Props {
   data: GraphIR;

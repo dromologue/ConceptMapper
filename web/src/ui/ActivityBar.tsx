@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import type { NodeTypeConfig, LayoutPreset } from "../types/graph-ir";
 import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconHelp, IconFitView, IconExport, IconAnalysis, IconExplode, IconLayout, IconProperties, IconNotes } from "./Icons";
 
@@ -54,8 +54,16 @@ export function ActivityBar({
   notesOpen,
 }: Props) {
   const [layoutOpen, setLayoutOpen] = useState(false);
+  const [layoutPopStyle, setLayoutPopStyle] = useState<{ left: number; top: number } | null>(null);
   const layoutBtnRef = useRef<HTMLButtonElement>(null);
   const layoutPopRef = useRef<HTMLDivElement>(null);
+
+  // Measure the trigger button after it renders so the popover can be anchored to it.
+  useLayoutEffect(() => {
+    if (!layoutOpen) return;
+    const rect = layoutBtnRef.current?.getBoundingClientRect();
+    if (rect) setLayoutPopStyle({ left: rect.right + 4, top: rect.top });
+  }, [layoutOpen]);
 
   // Close popover on outside click
   useEffect(() => {
@@ -145,10 +153,8 @@ export function ActivityBar({
             >
               <IconLayout size={20} />
             </button>
-            {layoutOpen && (() => {
-              const rect = layoutBtnRef.current?.getBoundingClientRect();
-              const style = rect ? { left: rect.right + 4, top: rect.top } : {};
-              return <div ref={layoutPopRef} className="layout-popover" style={style}>
+            {layoutOpen && (
+              <div ref={layoutPopRef} className="layout-popover" style={layoutPopStyle ?? {}}>
                 {LAYOUT_OPTIONS.map((opt) => (
                   <button
                     key={opt.id}
@@ -171,8 +177,8 @@ export function ActivityBar({
                     </button>
                   </>
                 )}
-              </div>;
-            })()}
+              </div>
+            )}
           </div>
         )}
       </div>

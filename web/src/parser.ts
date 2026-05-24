@@ -40,7 +40,8 @@ export async function initParser(): Promise<void> {
     throw new Error(
       `Failed to initialize the concept map parser. ` +
       `This may be caused by a browser that doesn't support WebAssembly. ` +
-      `Original error: ${err instanceof Error ? err.message : String(err)}`
+      `Original error: ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err },
     );
   }
 }

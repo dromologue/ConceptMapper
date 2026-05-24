@@ -141,6 +141,7 @@ if [ "$DO_ARCHIVE" = true ]; then
     -scheme ConceptMapper \
     -configuration Release \
     -archivePath "$ARCHIVE_PATH" \
+    -allowProvisioningUpdates \
     CURRENT_PROJECT_VERSION="$NEXT_BUILD" \
     | tail -5
 
@@ -152,6 +153,7 @@ if [ "$DO_ARCHIVE" = true ]; then
     -archivePath "$ARCHIVE_PATH" \
     -exportOptionsPlist ExportOptions.plist \
     -exportPath "$EXPORT_PATH" \
+    -allowProvisioningUpdates \
     | tail -5
 
   cd "$ROOT"

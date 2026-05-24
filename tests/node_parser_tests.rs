@@ -9,7 +9,8 @@ fn lex_fenced_block(input: &str) -> Vec<concept_mapper_core::parser::lexer::Clas
     let fenced = format!("```\n{}\n```", input);
     let lines = lex(&fenced);
     // Skip FenceOpen and FenceClose
-    lines.into_iter()
+    lines
+        .into_iter()
         .filter(|l| !matches!(l.line_type, LineType::FenceOpen | LineType::FenceClose))
         .collect()
 }
@@ -39,11 +40,26 @@ institutional_base: Harvard Business School";
     assert_eq!(node.generation, Some(2));
     assert_eq!(node.stream.as_deref(), Some("psychology"));
     // Custom fields go into the HashMap
-    assert_eq!(node.fields.get("dates").map(|s| s.as_str()), Some("1923–2013"));
-    assert_eq!(node.fields.get("eminence").map(|s| s.as_str()), Some("dominant"));
-    assert_eq!(node.fields.get("structural_roles").map(|s| s.as_str()), Some("intellectual_leader, chain_originator"));
-    assert_eq!(node.fields.get("active_period").map(|s| s.as_str()), Some("1960–1995"));
-    assert_eq!(node.fields.get("institutional_base").map(|s| s.as_str()), Some("Harvard Business School"));
+    assert_eq!(
+        node.fields.get("dates").map(|s| s.as_str()),
+        Some("1923–2013")
+    );
+    assert_eq!(
+        node.fields.get("eminence").map(|s| s.as_str()),
+        Some("dominant")
+    );
+    assert_eq!(
+        node.fields.get("structural_roles").map(|s| s.as_str()),
+        Some("intellectual_leader, chain_originator")
+    );
+    assert_eq!(
+        node.fields.get("active_period").map(|s| s.as_str()),
+        Some("1960–1995")
+    );
+    assert_eq!(
+        node.fields.get("institutional_base").map(|s| s.as_str()),
+        Some("Harvard Business School")
+    );
     assert!(node.fields.get("key_concept_ids").is_some());
 }
 
@@ -65,9 +81,15 @@ institutional_base: University of Hertfordshire";
     let node = parse_generic_node(&lines, "thinker").expect("should parse stacey");
 
     assert_eq!(node.id, "stacey");
-    assert_eq!(node.fields.get("eminence").map(|s| s.as_str()), Some("major"));
+    assert_eq!(
+        node.fields.get("eminence").map(|s| s.as_str()),
+        Some("major")
+    );
     assert_eq!(node.generation, Some(3));
-    assert_eq!(node.fields.get("structural_roles").map(|s| s.as_str()), Some("structural_rival, peripheral_critic"));
+    assert_eq!(
+        node.fields.get("structural_roles").map(|s| s.as_str()),
+        Some("structural_rival, peripheral_critic")
+    );
 }
 
 // AC-003-13: Senge example (birth-only dates format)
@@ -88,9 +110,18 @@ institutional_base: MIT Sloan";
     let node = parse_generic_node(&lines, "thinker").expect("should parse senge");
 
     assert_eq!(node.id, "senge");
-    assert_eq!(node.fields.get("dates").map(|s| s.as_str()), Some("b. 1947"));
-    assert_eq!(node.fields.get("eminence").map(|s| s.as_str()), Some("major"));
-    assert_eq!(node.fields.get("structural_roles").map(|s| s.as_str()), Some("synthesiser"));
+    assert_eq!(
+        node.fields.get("dates").map(|s| s.as_str()),
+        Some("b. 1947")
+    );
+    assert_eq!(
+        node.fields.get("eminence").map(|s| s.as_str()),
+        Some("major")
+    );
+    assert_eq!(
+        node.fields.get("structural_roles").map(|s| s.as_str()),
+        Some("synthesiser")
+    );
 }
 
 // AC-003-11: Missing required fields produce ParseError with line number
@@ -102,8 +133,10 @@ fn node_missing_id_produces_error() {
 
     assert!(result.is_err());
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.message.contains("id")),
-        "expected error about missing 'id'");
+    assert!(
+        errors.iter().any(|e| e.message.contains("id")),
+        "expected error about missing 'id'"
+    );
 }
 
 #[test]
@@ -114,8 +147,10 @@ fn node_missing_name_produces_error() {
 
     assert!(result.is_err());
     let errors = result.unwrap_err();
-    assert!(errors.iter().any(|e| e.message.contains("name")),
-        "expected error about missing 'name'");
+    assert!(
+        errors.iter().any(|e| e.message.contains("name")),
+        "expected error about missing 'name'"
+    );
 }
 
 // AC-003-12: Unknown fields go into the fields HashMap (not ignored)
@@ -133,9 +168,18 @@ unknown_field: whatever";
     let node = parse_generic_node(&lines, "thinker").expect("should parse with extra fields");
 
     assert_eq!(node.id, "test");
-    assert_eq!(node.fields.get("favorite_color").map(|s| s.as_str()), Some("blue"));
-    assert_eq!(node.fields.get("unknown_field").map(|s| s.as_str()), Some("whatever"));
-    assert_eq!(node.fields.get("eminence").map(|s| s.as_str()), Some("minor"));
+    assert_eq!(
+        node.fields.get("favorite_color").map(|s| s.as_str()),
+        Some("blue")
+    );
+    assert_eq!(
+        node.fields.get("unknown_field").map(|s| s.as_str()),
+        Some("whatever")
+    );
+    assert_eq!(
+        node.fields.get("eminence").map(|s| s.as_str()),
+        Some("minor")
+    );
 }
 
 // Invalid eminence values are now stored as-is (no validation at parser level)
@@ -144,7 +188,10 @@ fn eminence_stored_as_string() {
     let input = "id: test\nname: Test\neminence: legendary\ngeneration: 1\nstream: mgmt";
     let lines = lex_fenced_block(input);
     let node = parse_generic_node(&lines, "thinker").expect("should parse — no enum validation");
-    assert_eq!(node.fields.get("eminence").map(|s| s.as_str()), Some("legendary"));
+    assert_eq!(
+        node.fields.get("eminence").map(|s| s.as_str()),
+        Some("legendary")
+    );
 }
 
 // --- Concept Node Tests (now parsed as GenericNode) ---
@@ -168,11 +215,26 @@ stream:       psychology";
     assert_eq!(node.id, "double_loop");
     assert_eq!(node.name, "Double-Loop Learning");
     assert_eq!(node.node_type, "concept");
-    assert_eq!(node.fields.get("originator_id").map(|s| s.as_str()), Some("argyris"));
-    assert_eq!(node.fields.get("date_introduced").map(|s| s.as_str()), Some("1977"));
-    assert_eq!(node.fields.get("concept_type").map(|s| s.as_str()), Some("distinction"));
-    assert_eq!(node.fields.get("abstraction_level").map(|s| s.as_str()), Some("theoretical"));
-    assert_eq!(node.fields.get("status").map(|s| s.as_str()), Some("active"));
+    assert_eq!(
+        node.fields.get("originator_id").map(|s| s.as_str()),
+        Some("argyris")
+    );
+    assert_eq!(
+        node.fields.get("date_introduced").map(|s| s.as_str()),
+        Some("1977")
+    );
+    assert_eq!(
+        node.fields.get("concept_type").map(|s| s.as_str()),
+        Some("distinction")
+    );
+    assert_eq!(
+        node.fields.get("abstraction_level").map(|s| s.as_str()),
+        Some("theoretical")
+    );
+    assert_eq!(
+        node.fields.get("status").map(|s| s.as_str()),
+        Some("active")
+    );
     assert_eq!(node.generation, Some(3));
     assert_eq!(node.stream.as_deref(), Some("psychology"));
 }
@@ -194,8 +256,14 @@ stream:       sensemaking";
     let node = parse_generic_node(&lines, "concept").expect("should parse cynefin");
 
     assert_eq!(node.id, "cynefin");
-    assert_eq!(node.fields.get("concept_type").map(|s| s.as_str()), Some("framework"));
-    assert_eq!(node.fields.get("abstraction_level").map(|s| s.as_str()), Some("operational"));
+    assert_eq!(
+        node.fields.get("concept_type").map(|s| s.as_str()),
+        Some("framework")
+    );
+    assert_eq!(
+        node.fields.get("abstraction_level").map(|s| s.as_str()),
+        Some("operational")
+    );
 }
 
 // AC-004-11: Concept with notes field
@@ -216,7 +284,10 @@ notes:        Series-originated concept drawing on all How We Learn thinkers";
     let node = parse_generic_node(&lines, "concept").expect("should parse seven_conditions");
 
     assert_eq!(node.id, "seven_conditions");
-    assert_eq!(node.fields.get("concept_type").map(|s| s.as_str()), Some("synthesis"));
+    assert_eq!(
+        node.fields.get("concept_type").map(|s| s.as_str()),
+        Some("synthesis")
+    );
     assert!(node.notes.is_some());
     assert!(node.notes.unwrap().contains("Series-originated"));
 }
@@ -237,7 +308,10 @@ stream:       social";
     let lines = lex_fenced_block(input);
     let node = parse_generic_node(&lines, "concept").expect("should parse structuration");
 
-    assert_eq!(node.fields.get("abstraction_level").map(|s| s.as_str()), Some("meta-theoretical"));
+    assert_eq!(
+        node.fields.get("abstraction_level").map(|s| s.as_str()),
+        Some("meta-theoretical")
+    );
 }
 
 // AC-004-10: Missing id produces ParseError
@@ -265,9 +339,18 @@ parent_concept_id: cynefin";
 
     let lines = lex_fenced_block(input);
     let node = parse_generic_node(&lines, "concept").expect("should parse sub-concept");
-    assert_eq!(node.fields.get("parent_concept_id").map(|s| s.as_str()), Some("cynefin"));
-    assert!(node.generation.is_none(), "generation should be None for sub-concept");
-    assert!(node.stream.is_none(), "stream should be None for sub-concept");
+    assert_eq!(
+        node.fields.get("parent_concept_id").map(|s| s.as_str()),
+        Some("cynefin")
+    );
+    assert!(
+        node.generation.is_none(),
+        "generation should be None for sub-concept"
+    );
+    assert!(
+        node.stream.is_none(),
+        "stream should be None for sub-concept"
+    );
 }
 
 // Edge case: missing optional notes field defaults to None

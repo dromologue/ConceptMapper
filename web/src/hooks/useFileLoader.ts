@@ -3,6 +3,7 @@ import type { GraphIR, TaxonomyTemplate, ConceptMapData } from "../types/graph-i
 import { initParser, parseMarkdown } from "../parser";
 import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData } from "../migration";
 import { normalizeFencedKV } from "../utils/normalize";
+import { findStructuralSections, formatStructuralSectionWarning } from "../utils/map-validator";
 
 /**
  * Hook that manages WASM parser initialization and .cm/.cmt file loading.
@@ -109,6 +110,10 @@ export function useFileLoader(
               if (tmplFile) ir.metadata.source_template = tmplFile.endsWith(".cmt") ? tmplFile : `${tmplFile}.cmt`;
               // Validate map data against template
               const warnings = validateMapAgainstTemplate(ir, migratedTemplate);
+              // Flag any leftover structural sections (Generations, Streams) in the .cm body
+              for (const sw of findStructuralSections(content)) {
+                warnings.push(formatStructuralSectionWarning(sw));
+              }
               setLoadWarnings(warnings);
               setGraphData(ir);
               setTemplate(migratedTemplate);

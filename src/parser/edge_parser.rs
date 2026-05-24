@@ -1,5 +1,5 @@
-use crate::parser::lexer::{ClassifiedLine, LineType};
 use crate::parser::errors::ParseError;
+use crate::parser::lexer::{ClassifiedLine, LineType};
 
 /// A parsed edge. Edge types are user-defined strings, not an enum.
 #[derive(Debug, Clone)]
@@ -96,11 +96,8 @@ fn parse_single_edge(lines: &[&ClassifiedLine]) -> Result<ParsedEdge, Vec<ParseE
                     _ => {} // ignore unknown keys
                 }
             }
-            LineType::Prose { text } => {
-                // Continuation of a note (indented text)
-                if !note_parts.is_empty() {
-                    note_parts.push(text.clone());
-                }
+            LineType::Prose { text } if !note_parts.is_empty() => {
+                note_parts.push(text.clone());
             }
             _ => {}
         }

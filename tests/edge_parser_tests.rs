@@ -1,5 +1,5 @@
-use concept_mapper_core::parser::lexer::{lex, LineType};
 use concept_mapper_core::parser::edge_parser::*;
+use concept_mapper_core::parser::lexer::{lex, LineType};
 
 // SPEC: REQ-005 - Edge Parsing
 
@@ -7,7 +7,8 @@ use concept_mapper_core::parser::edge_parser::*;
 fn lex_fenced_inner(input: &str) -> Vec<concept_mapper_core::parser::lexer::ClassifiedLine> {
     let fenced = format!("```\n{}\n```", input);
     let lines = lex(&fenced);
-    lines.into_iter()
+    lines
+        .into_iter()
         .filter(|l| !matches!(l.line_type, LineType::FenceOpen | LineType::FenceClose))
         .collect()
 }
@@ -36,7 +37,11 @@ fn parse_edge_with_single_line_note() {
 
     assert_eq!(edges.len(), 1);
     assert!(edges[0].note.is_some());
-    assert!(edges[0].note.as_ref().unwrap().contains("Model I as Taylorism"));
+    assert!(edges[0]
+        .note
+        .as_ref()
+        .unwrap()
+        .contains("Model I as Taylorism"));
 }
 
 // AC-005-05: Multi-line notes joined with spaces
@@ -122,7 +127,10 @@ from: deming    to: argyris    type: alliance
     let rivalry_count = edges.iter().filter(|e| e.edge_type == "rivalry").count();
     let alliance_count = edges.iter().filter(|e| e.edge_type == "alliance").count();
     let chain_count = edges.iter().filter(|e| e.edge_type == "chain").count();
-    let teacher_count = edges.iter().filter(|e| e.edge_type == "teacher_pupil").count();
+    let teacher_count = edges
+        .iter()
+        .filter(|e| e.edge_type == "teacher_pupil")
+        .count();
 
     assert_eq!(rivalry_count, 3, "expected 3 rivalry edges");
     assert_eq!(alliance_count, 2, "expected 2 alliance edges");
@@ -222,10 +230,26 @@ fn parse_edge_with_trailing_whitespace() {
 #[test]
 fn custom_edge_types_accepted() {
     let types = vec![
-        "teacher_pupil", "chain", "rivalry", "alliance", "synthesis", "institutional",
-        "originates", "develops", "contests", "applies",
-        "extends", "opposes", "subsumes", "enables", "reframes",
-        "blocks", "depends_on", "subtask_of", "delivers", "custom_type",
+        "teacher_pupil",
+        "chain",
+        "rivalry",
+        "alliance",
+        "synthesis",
+        "institutional",
+        "originates",
+        "develops",
+        "contests",
+        "applies",
+        "extends",
+        "opposes",
+        "subsumes",
+        "enables",
+        "reframes",
+        "blocks",
+        "depends_on",
+        "subtask_of",
+        "delivers",
+        "custom_type",
     ];
 
     for t in types {
@@ -244,7 +268,10 @@ fn edge_weight_defaults_to_one() {
     let lines = lex_fenced_inner(input);
     let edges = parse_edges(&lines).expect("should parse");
 
-    assert!((edges[0].weight - 1.0).abs() < f64::EPSILON, "default weight should be 1.0");
+    assert!(
+        (edges[0].weight - 1.0).abs() < f64::EPSILON,
+        "default weight should be 1.0"
+    );
 }
 
 #[test]
@@ -253,7 +280,10 @@ fn edge_weight_parsed_when_present() {
     let lines = lex_fenced_inner(input);
     let edges = parse_edges(&lines).expect("should parse");
 
-    assert!((edges[0].weight - 0.7).abs() < f64::EPSILON, "weight should be 0.7");
+    assert!(
+        (edges[0].weight - 0.7).abs() < f64::EPSILON,
+        "weight should be 0.7"
+    );
 }
 
 #[test]
@@ -262,5 +292,8 @@ fn edge_weight_clamped_to_range() {
     let lines = lex_fenced_inner(input);
     let edges = parse_edges(&lines).expect("should parse");
 
-    assert!((edges[0].weight - 10.0).abs() < f64::EPSILON, "weight should be clamped to 10.0");
+    assert!(
+        (edges[0].weight - 10.0).abs() < f64::EPSILON,
+        "weight should be clamped to 10.0"
+    );
 }

@@ -1,13 +1,13 @@
 use std::collections::{BTreeMap, HashMap};
 
 use crate::graph::ir::*;
+use crate::parser::edge_parser;
 use crate::parser::errors::{ParseError, ParseResult, ParseWarning};
 use crate::parser::lexer::{lex, ClassifiedLine, LineType};
-use crate::parser::sections::{split_sections, SectionKind};
-use crate::parser::node_parser::{self, GenericNode};
-use crate::parser::edge_parser;
-use crate::parser::table_parser;
 use crate::parser::metadata_parser;
+use crate::parser::node_parser::{self, GenericNode};
+use crate::parser::sections::{split_sections, SectionKind};
+use crate::parser::table_parser;
 
 /// Output of parsing a full document.
 pub struct ParseOutput {
@@ -91,17 +91,22 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> ParseResult<Par
     }
 
     // Convert generic nodes to IR nodes (move semantics to avoid cloning)
-    let ir_nodes: Vec<Node> = generic_nodes.into_iter().map(|g| {
-        Node {
+    let ir_nodes: Vec<Node> = generic_nodes
+        .into_iter()
+        .map(|g| Node {
             id: g.id,
             node_type: g.node_type,
             name: g.name,
             generation: g.generation,
             stream: g.stream,
-            fields: if g.fields.is_empty() { None } else { Some(g.fields.into_iter().collect::<BTreeMap<_, _>>()) },
+            fields: if g.fields.is_empty() {
+                None
+            } else {
+                Some(g.fields.into_iter().collect::<BTreeMap<_, _>>())
+            },
             notes: g.notes,
-        }
-    }).collect();
+        })
+        .collect();
 
     // Convert edges to IR edges
     let mut ir_edges: Vec<Edge> = Vec::new();
@@ -162,42 +167,54 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> ParseResult<Par
 /// edge_types defined in the .cmt taxonomy template when one is loaded.
 fn edge_visual(edge_type: &str) -> (bool, EdgeVisual) {
     match edge_type {
-        "rivalry" | "opposes" => (false, EdgeVisual {
-            style: "dashed".to_string(),
-            color: Some("#D94A4A".to_string()),
-            show_arrow: false,
-        }),
-        "alliance" | "institutional" => (false, EdgeVisual {
-            style: "dotted".to_string(),
-            color: Some("#999999".to_string()),
-            show_arrow: false,
-        }),
+        "rivalry" | "opposes" => (
+            false,
+            EdgeVisual {
+                style: "dashed".to_string(),
+                color: Some("#D94A4A".to_string()),
+                show_arrow: false,
+            },
+        ),
+        "alliance" | "institutional" => (
+            false,
+            EdgeVisual {
+                style: "dotted".to_string(),
+                color: Some("#999999".to_string()),
+                show_arrow: false,
+            },
+        ),
         // Default: directed solid edge for all other types
-        _ => (true, EdgeVisual {
-            style: "solid".to_string(),
-            color: None,
-            show_arrow: true,
-        }),
+        _ => (
+            true,
+            EdgeVisual {
+                style: "solid".to_string(),
+                color: None,
+                show_arrow: true,
+            },
+        ),
     }
 }
 
 /// Look up a cell value by column name (case-insensitive substring match).
 fn table_get(row: &table_parser::TableRow, key: &str) -> Option<String> {
-    row.cells.iter()
+    row.cells
+        .iter()
         .find(|(k, _)| k.to_lowercase().contains(&key.to_lowercase()))
         .map(|(_, v)| v.clone())
 }
 
 fn parse_generations(lines: &[ClassifiedLine]) -> Vec<Generation> {
     let rows = table_parser::parse_table(lines);
-    rows.iter().map(|row| {
-        Generation {
-            number: table_get(row, "Gen").and_then(|v| v.trim().parse().ok()).unwrap_or(0),
+    rows.iter()
+        .map(|row| Generation {
+            number: table_get(row, "Gen")
+                .and_then(|v| v.trim().parse().ok())
+                .unwrap_or(0),
             period: table_get(row, "Period"),
             label: table_get(row, "Label"),
             attention_space_count: table_get(row, "Attention").and_then(|v| v.trim().parse().ok()),
-        }
-    }).collect()
+        })
+        .collect()
 }
 
 fn normalize_color(raw: &str) -> String {
@@ -211,19 +228,29 @@ fn normalize_color(raw: &str) -> String {
         "pink" => "#E91E8C",
         "grey" | "gray" => "#999999",
         _ => raw.trim(), // already hex or CSS color
-    }.to_string()
+    }
+    .to_string()
 }
 
 fn parse_streams(lines: &[ClassifiedLine]) -> Vec<Stream> {
     let rows = table_parser::parse_table(lines);
-    rows.iter().map(|row| {
-        Stream {
-            id: table_get(row, "Stream ID").unwrap_or_default().trim().trim_matches('`').to_string(),
-            name: table_get(row, "Name").unwrap_or_default().trim().to_string(),
-            color: table_get(row, "Colour").or_else(|| table_get(row, "Color")).map(|c| normalize_color(&c)),
+    rows.iter()
+        .map(|row| Stream {
+            id: table_get(row, "Stream ID")
+                .unwrap_or_default()
+                .trim()
+                .trim_matches('`')
+                .to_string(),
+            name: table_get(row, "Name")
+                .unwrap_or_default()
+                .trim()
+                .to_string(),
+            color: table_get(row, "Colour")
+                .or_else(|| table_get(row, "Color"))
+                .map(|c| normalize_color(&c)),
             description: table_get(row, "Description"),
-        }
-    }).collect()
+        })
+        .collect()
 }
 
 fn parse_generic_blocks(
@@ -240,7 +267,6 @@ fn parse_generic_blocks(
     }
 }
 
-
 fn parse_edge_blocks(
     lines: &[ClassifiedLine],
     edges: &mut Vec<edge_parser::ParsedEdge>,
@@ -254,10 +280,7 @@ fn parse_edge_blocks(
     }
 }
 
-fn parse_shock_blocks(
-    lines: &[ClassifiedLine],
-    shocks: &mut Vec<ExternalShock>,
-) {
+fn parse_shock_blocks(lines: &[ClassifiedLine], shocks: &mut Vec<ExternalShock>) {
     for block in extract_fenced_blocks(lines) {
         let mut parsed = metadata_parser::parse_external_shocks(&block);
         shocks.append(&mut parsed);

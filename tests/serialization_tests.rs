@@ -1,5 +1,5 @@
-use std::collections::BTreeMap;
 use concept_mapper_core::graph::ir::*;
+use std::collections::BTreeMap;
 
 // SPEC: REQ-007 - JSON Serialization
 
@@ -7,10 +7,16 @@ fn sample_graph_ir() -> GraphIR {
     let mut thinker_fields = BTreeMap::new();
     thinker_fields.insert("dates".to_string(), "1923–2013".to_string());
     thinker_fields.insert("eminence".to_string(), "dominant".to_string());
-    thinker_fields.insert("structural_roles".to_string(), "intellectual_leader".to_string());
+    thinker_fields.insert(
+        "structural_roles".to_string(),
+        "intellectual_leader".to_string(),
+    );
     thinker_fields.insert("active_period".to_string(), "1960–1995".to_string());
     thinker_fields.insert("key_concept_ids".to_string(), "[double_loop]".to_string());
-    thinker_fields.insert("institutional_base".to_string(), "Harvard Business School".to_string());
+    thinker_fields.insert(
+        "institutional_base".to_string(),
+        "Harvard Business School".to_string(),
+    );
 
     let mut concept_fields = BTreeMap::new();
     concept_fields.insert("originator_id".to_string(), "argyris".to_string());
@@ -25,28 +31,22 @@ fn sample_graph_ir() -> GraphIR {
             title: Some("Test Network".to_string()),
             source_file: Some("test.md".to_string()),
             parsed_at: Some("2026-03-14T00:00:00Z".to_string()),
-            generations: vec![
-                Generation {
-                    number: 1,
-                    period: Some("~1880–1920".to_string()),
-                    label: Some("Founders".to_string()),
-                    attention_space_count: Some(3),
-                },
-            ],
-            streams: vec![
-                Stream {
-                    id: "mgmt".to_string(),
-                    name: "Management & Organisation".to_string(),
-                    color: Some("#4A90D9".to_string()),
-                    description: Some("How organisations should be designed".to_string()),
-                },
-            ],
-            external_shocks: vec![
-                ExternalShock {
-                    date: "1950s".to_string(),
-                    description: "Quality revolution in Japan".to_string(),
-                },
-            ],
+            generations: vec![Generation {
+                number: 1,
+                period: Some("~1880–1920".to_string()),
+                label: Some("Founders".to_string()),
+                attention_space_count: Some(3),
+            }],
+            streams: vec![Stream {
+                id: "mgmt".to_string(),
+                name: "Management & Organisation".to_string(),
+                color: Some("#4A90D9".to_string()),
+                description: Some("How organisations should be designed".to_string()),
+            }],
+            external_shocks: vec![ExternalShock {
+                date: "1950s".to_string(),
+                description: "Quality revolution in Japan".to_string(),
+            }],
             structural_observations: vec!["Test observation".to_string()],
             network_stats: Some(NetworkStats {
                 node_count: 2,
@@ -73,21 +73,19 @@ fn sample_graph_ir() -> GraphIR {
                 notes: None,
             },
         ],
-        edges: vec![
-            Edge {
-                from: "argyris".to_string(),
-                to: "double_loop".to_string(),
-                edge_type: "originates".to_string(),
-                directed: true,
-                weight: 1.0,
-                note: None,
-                visual: EdgeVisual {
-                    style: "solid".to_string(),
-                    color: None,
-                    show_arrow: true,
-                },
+        edges: vec![Edge {
+            from: "argyris".to_string(),
+            to: "double_loop".to_string(),
+            edge_type: "originates".to_string(),
+            directed: true,
+            weight: 1.0,
+            note: None,
+            visual: EdgeVisual {
+                style: "solid".to_string(),
+                color: None,
+                show_arrow: true,
             },
-        ],
+        }],
     }
 }
 
@@ -172,7 +170,10 @@ fn roundtrip_serialization() {
     let deserialized: GraphIR = serde_json::from_str(&json1).unwrap();
     let json2 = serde_json::to_string_pretty(&deserialized).unwrap();
 
-    assert_eq!(json1, json2, "round-trip serialization should produce identical JSON");
+    assert_eq!(
+        json1, json2,
+        "round-trip serialization should produce identical JSON"
+    );
 }
 
 // AC-007-07: None optional fields omitted from JSON
@@ -223,7 +224,11 @@ fn edge_weight_serialized() {
     let value: serde_json::Value = serde_json::from_str(&json).unwrap();
 
     let weight = value["edges"][0]["weight"].as_f64().unwrap();
-    assert!((weight - 0.7).abs() < f64::EPSILON, "weight should be 0.7, got {}", weight);
+    assert!(
+        (weight - 0.7).abs() < f64::EPSILON,
+        "weight should be 0.7, got {}",
+        weight
+    );
 }
 
 // Fields are stored as key-value pairs in the fields HashMap

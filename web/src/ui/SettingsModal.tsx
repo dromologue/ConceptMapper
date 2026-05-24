@@ -1,14 +1,13 @@
 import { useTheme, THEMES } from "../theme/ThemeContext";
-import type { Stream, Classifier } from "../types/graph-ir";
+import type { Classifier } from "../types/graph-ir";
 
 interface Props {
-  streams: Stream[];
   edgeTypes: string[];
   classifiers: Classifier[];
   onClose: () => void;
 }
 
-export function SettingsModal({ streams, edgeTypes, classifiers, onClose }: Props) {
+export function SettingsModal({ edgeTypes, classifiers, onClose }: Props) {
   const {
     theme,
     setThemeId,
@@ -16,13 +15,13 @@ export function SettingsModal({ streams, edgeTypes, classifiers, onClose }: Prop
     setLook,
     edgeColorOverrides,
     setEdgeColorOverrides,
-    streamColorOverrides,
-    setStreamColorOverrides,
     classifierColorOverrides,
     setClassifierColorOverrides,
   } = useTheme();
 
-  const regionClassifiers = classifiers.filter((c) => c.layout === "region" || c.layout === "region-column");
+  // Any classifier whose values carry colors gets per-value color overrides
+  // (region/region-column previously, now any layout — covers former "streams")
+  const coloredClassifiers = classifiers.filter((c) => c.values.some((v) => v.color));
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -76,38 +75,6 @@ export function SettingsModal({ streams, edgeTypes, classifiers, onClose }: Prop
           </div>
         </div>
 
-        {/* Stream colors */}
-        {streams.length > 0 && (
-          <div className="settings-section">
-            <div className="field-label" style={{ marginBottom: 8 }}>Stream Colors</div>
-            {streams.map((s) => (
-              <div key={s.id} className="color-row">
-                <span className="color-row-label">{s.name}</span>
-                <input
-                  type="color"
-                  value={streamColorOverrides[s.id] ?? s.color ?? "#666666"}
-                  onChange={(e) =>
-                    setStreamColorOverrides({ ...streamColorOverrides, [s.id]: e.target.value })
-                  }
-                />
-                {streamColorOverrides[s.id] && (
-                  <button
-                    className="color-reset-btn"
-                    onClick={() => {
-                      const next = { ...streamColorOverrides };
-                      delete next[s.id];
-                      setStreamColorOverrides(next);
-                    }}
-                    title="Reset to default"
-                  >
-                    &times;
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Edge type colors */}
         {edgeTypes.length > 0 && (
           <div className="settings-section">
@@ -140,8 +107,8 @@ export function SettingsModal({ streams, edgeTypes, classifiers, onClose }: Prop
           </div>
         )}
 
-        {/* Region/column colors */}
-        {regionClassifiers.length > 0 && regionClassifiers.map((cls) => (
+        {/* Classifier value colors (region, column, and any classifier with colors) */}
+        {coloredClassifiers.length > 0 && coloredClassifiers.map((cls) => (
           <div key={cls.id} className="settings-section">
             <div className="field-label" style={{ marginBottom: 8 }}>
               {cls.label} Colors

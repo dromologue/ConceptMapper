@@ -19,7 +19,8 @@ pub fn parse_external_shocks(lines: &[ClassifiedLine]) -> Vec<ExternalShock> {
                 // Flush previous
                 if let Some(map) = current.take() {
                     if let Some(date) = map.get("date").and_then(|v| v.first()) {
-                        let desc = map.get("description")
+                        let desc = map
+                            .get("description")
                             .map(|v| v.join(" "))
                             .unwrap_or_default();
                         shocks.push(ExternalShock {
@@ -54,7 +55,8 @@ pub fn parse_external_shocks(lines: &[ClassifiedLine]) -> Vec<ExternalShock> {
     // Flush last
     if let Some(map) = current {
         if let Some(date) = map.get("date").and_then(|v| v.first()) {
-            let desc = map.get("description")
+            let desc = map
+                .get("description")
                 .map(|v| v.join(" "))
                 .unwrap_or_default();
             shocks.push(ExternalShock {
@@ -69,7 +71,8 @@ pub fn parse_external_shocks(lines: &[ClassifiedLine]) -> Vec<ExternalShock> {
 
 /// Parse bullet items into structural observations.
 pub fn parse_observations(lines: &[ClassifiedLine]) -> Vec<String> {
-    lines.iter()
+    lines
+        .iter()
         .filter_map(|l| match &l.line_type {
             LineType::BulletItem { text, .. } => Some(text.clone()),
             _ => None,

@@ -45,7 +45,9 @@ fn classify_line(line: &str, in_fence: &mut bool) -> LineType {
     let trimmed = line.trim();
 
     // Fence toggle (must check before KV pairs since KV pairs only matter inside fences)
-    if trimmed == "```" || trimmed.starts_with("```") && trimmed.ends_with("```") && trimmed.len() == 3 {
+    if trimmed == "```"
+        || trimmed.starts_with("```") && trimmed.ends_with("```") && trimmed.len() == 3
+    {
         // More precise: line is exactly ``` possibly with trailing whitespace
         if trimmed == "```" {
             if *in_fence {
@@ -66,7 +68,9 @@ fn classify_line(line: &str, in_fence: &mut bool) -> LineType {
         if trimmed.is_empty() {
             return LineType::BlankLine;
         }
-        return LineType::Prose { text: trimmed.to_string() };
+        return LineType::Prose {
+            text: trimmed.to_string(),
+        };
     }
 
     // Blank line
@@ -86,7 +90,11 @@ fn classify_line(line: &str, in_fence: &mut bool) -> LineType {
     // Table separator (check before table row)
     if trimmed.starts_with('|') && trimmed.ends_with('|') {
         let inner = &trimmed[1..trimmed.len() - 1];
-        if inner.chars().all(|c| c == '-' || c == ':' || c == '|' || c == ' ') && inner.contains('-') {
+        if inner
+            .chars()
+            .all(|c| c == '-' || c == ':' || c == '|' || c == ' ')
+            && inner.contains('-')
+        {
             return LineType::TableSeparator;
         }
     }
@@ -106,7 +114,9 @@ fn classify_line(line: &str, in_fence: &mut bool) -> LineType {
     }
 
     // Everything else is prose
-    LineType::Prose { text: trimmed.to_string() }
+    LineType::Prose {
+        text: trimmed.to_string(),
+    }
 }
 
 fn try_parse_kv(line: &str) -> Option<LineType> {

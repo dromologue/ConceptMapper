@@ -22,6 +22,7 @@ import { HelpPanel } from "./ui/HelpPanel";
 import { EdgePopover } from "./ui/EdgePopover";
 import { IconSearch } from "./ui/Icons";
 import { parseMarkdown } from "./parser";
+import { getNodeColor } from "./graph/node-color";
 import { ThemeProvider, useTheme } from "./theme/ThemeContext";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData, getTemplateClassifiers } from "./migration";
@@ -179,7 +180,7 @@ function AppInner() {
       exportToMarkdown,
       createEmptyFilterState,
     });
-  }, [loadFileContent, graphData, nodeTypeConfigs, templateFilePath, setGraphData]);
+  }, [loadFileContent, graphData, nodeTypeConfigs, templateFilePath, setGraphData, edgeColorOverrides, setEdgeColorOverrides, setError]);
 
   const handleViewModeChange = useCallback((mode: string) => {
     setViewMode(mode);
@@ -608,7 +609,7 @@ function AppInner() {
 
     setShowTaxonomyWizard(false);
     setTaxonomyEditData(undefined);
-  }, [isNativeApp, sendToSwift, graphData, setGraphData, taxonomyEditData]);
+  }, [isNativeApp, sendToSwift, graphData, setGraphData, taxonomyEditData, setError]);
 
   // Create a new empty map using an existing template's structure (no wizard)
   const handleNewFileFromTemplate = useCallback((tmplData: TaxonomyWizardInitial) => {
@@ -649,7 +650,7 @@ function AppInner() {
     if (isNativeApp) {
       sendToSwift("saveNewTaxonomy", JSON.stringify({ content: md, title: mapTitle }));
     }
-  }, [isNativeApp, sendToSwift, setGraphData]);
+  }, [isNativeApp, sendToSwift, setGraphData, setError]);
 
   // Open wizard in edit mode with current taxonomy data
   const handleEditTaxonomy = useCallback(() => {
@@ -1123,8 +1124,7 @@ function AppInner() {
                     <span
                       className={`type-indicator ${typeConfig?.shape !== "circle" ? "non-circle" : ""}`}
                       style={{
-                        backgroundColor:
-                          graphData.metadata.streams.find((s) => s.id === n.stream)?.color ?? "#666",
+                        backgroundColor: getNodeColor(n, graphData.metadata.classifiers ?? []),
                       }}
                     />
                     {n.name}
@@ -1439,7 +1439,6 @@ function AppInner() {
       )}
       {showSettings && (
         <SettingsModal
-          streams={graphData.metadata.streams}
           edgeTypes={[...new Set(graphData.edges.map((e) => e.edge_type))]}
           classifiers={graphData.metadata.classifiers ?? []}
           onClose={() => setShowSettings(false)}

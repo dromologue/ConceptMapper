@@ -1648,3 +1648,27 @@ The taxonomy wizard uses a unified classifiers step instead of separate streams/
 - [x] AC-084-05: Legacy initialData with streams/generations is converted to classifiers
 - [x] AC-084-06: Field type dropdown includes "Date" option, excludes "Textarea"
 
+---
+
+## REQ-085: Template-Owned Structure (Strict Separation)
+
+Every `.cm` map references its `.cmt` template via an HTML comment, and the template is the **sole** source of structural information. Map files contain only content (nodes, edges, observations); they never contain classifier, stream, generation, node-type, or edge-type *definitions*. The runtime must read structure from the template, not from the map.
+
+This requirement complements REQ-083 (exporter contract) by covering the loader, validator, and runtime consumers.
+
+**Expected Behavior:**
+- Every map begins with `<!-- template: <filename>.cmt -->` (or omits `.cmt` and the loader appends it).
+- The loader resolves the reference by fetching `templates/<filename>.cmt` and uses its `classifiers`, `node_types`, and `edge_types` as authoritative.
+- If a map omits the template reference, the loader falls back to the currently active template (no implicit guessing by filename).
+- The loader emits a warning for every `## Generations` or `## Streams` section header found in the raw map body — these are legacy structural sections that must be moved into the template's `classifiers` array.
+- Runtime code reads classifier values (including colour) from `template.classifiers`, never from the legacy `metadata.streams` or `metadata.generations` arrays.
+- The Settings modal renders per-value colour pickers for any classifier whose values carry `color`, regardless of `layout` — this subsumes the former "Stream Colors" section.
+
+**Acceptance Criteria:**
+- [x] AC-085-01: Every `.cm` file in `Maps/` and `examples/` contains a `<!-- template: …cmt -->` comment as one of its first lines.
+- [x] AC-085-02: No `.cm` file in `Maps/` or `examples/` contains a `## Generations` or `## Streams` section.
+- [x] AC-085-03: `findStructuralSections(content)` in `web/src/utils/map-validator.ts` returns one entry per disallowed structural header in the raw map body.
+- [x] AC-085-04: The file loader surfaces a warning per detected structural section via `setLoadWarnings`.
+- [x] AC-085-05: `App.tsx` resolves search-result node colour via `getNodeColor(node, classifiers)` — not via `metadata.streams.find(...)`.
+- [x] AC-085-06: `SettingsModal` no longer accepts a `streams` prop; per-classifier colour overrides are derived from `classifiers.filter((c) => c.values.some((v) => v.color))`.
+

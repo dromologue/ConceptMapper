@@ -8,11 +8,9 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
-  configs:
-    Debug:
-      CODE_SIGN_IDENTITY: "Apple Development"
-    Release:
-      CODE_SIGN_IDENTITY: "Apple Distribution"
+  # CODE_SIGN_IDENTITY intentionally omitted: with CODE_SIGN_STYLE=Automatic,
+  # Xcode chooses Apple Development for `build` and Apple Distribution for `archive`
+  # (the archive's export method comes from ExportOptions.plist).
 targets:
   ConceptMapper:
     type: application

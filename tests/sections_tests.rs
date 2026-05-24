@@ -23,8 +23,12 @@ fn h3_headers_create_subsections() {
     let sections = split_sections(lines);
 
     // Should have: Parent (empty), Child A, Child B
-    let child_a = sections.iter().find(|s| s.path.len() == 2 && s.path[1] == "Child A");
-    let child_b = sections.iter().find(|s| s.path.len() == 2 && s.path[1] == "Child B");
+    let child_a = sections
+        .iter()
+        .find(|s| s.path.len() == 2 && s.path[1] == "Child A");
+    let child_b = sections
+        .iter()
+        .find(|s| s.path.len() == 2 && s.path[1] == "Child B");
 
     assert!(child_a.is_some(), "expected subsection Child A");
     assert!(child_b.is_some(), "expected subsection Child B");
@@ -55,7 +59,10 @@ fn section_paths_from_header_text() {
 
     let subsection = sections.iter().find(|s| s.path.len() == 2);
     assert!(subsection.is_some());
-    assert_eq!(subsection.unwrap().path, vec!["2. Node Types", "2.1 Thinker Node"]);
+    assert_eq!(
+        subsection.unwrap().path,
+        vec!["2. Node Types", "2.1 Thinker Node"]
+    );
 }
 
 // AC-002 edge case: h1 headers are not section boundaries
@@ -66,7 +73,9 @@ fn h1_not_section_boundary() {
     let sections = split_sections(lines);
 
     // h1 should be in the preamble, not create a section
-    let has_title_section = sections.iter().any(|s| s.path.iter().any(|p| p.contains("Document Title")));
+    let has_title_section = sections
+        .iter()
+        .any(|s| s.path.iter().any(|p| p.contains("Document Title")));
     assert!(!has_title_section, "h1 should not create a section");
 }
 

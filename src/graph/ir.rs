@@ -1,5 +1,5 @@
-use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 /// The top-level Graph IR — the contract between Rust and React.
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -113,14 +113,14 @@ function SelectOptionsInput({ value, onChange, ...rest }: {
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">) {
   const [text, setText] = useState(value.join(", "));
   // Sync from parent when options change externally (e.g. reset)
-  const ref = React.useRef(value);
-  if (ref.current !== value && JSON.stringify(ref.current) !== JSON.stringify(value)) {
-    ref.current = value;
+  const [prevValue, setPrevValue] = useState(value);
+  if (prevValue !== value && JSON.stringify(prevValue) !== JSON.stringify(value)) {
+    setPrevValue(value);
     setText(value.join(", "));
   }
   const commit = () => {
     const parsed = text.split(",").map((s) => s.trim()).filter(Boolean);
-    ref.current = parsed;
+    setPrevValue(parsed);
     onChange(parsed);
   };
   return (

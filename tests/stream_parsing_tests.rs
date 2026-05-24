@@ -28,8 +28,14 @@ eminence: minor
     let streams = &result.graph.metadata.streams;
 
     assert_eq!(streams.len(), 2);
-    assert_eq!(streams[0].id, "mgmt", "backticks should be stripped from stream ID");
-    assert_eq!(streams[1].id, "psych", "backticks should be stripped from stream ID");
+    assert_eq!(
+        streams[0].id, "mgmt",
+        "backticks should be stripped from stream ID"
+    );
+    assert_eq!(
+        streams[1].id, "psych",
+        "backticks should be stripped from stream ID"
+    );
 }
 
 #[test]
@@ -61,12 +67,36 @@ eminence: minor
     let result = parse_document(input, None).expect("should parse");
     let streams = &result.graph.metadata.streams;
 
-    assert_eq!(streams[0].color.as_deref(), Some("#4A90D9"), "Blue → #4A90D9");
-    assert_eq!(streams[1].color.as_deref(), Some("#E6A23C"), "Amber → #E6A23C");
-    assert_eq!(streams[2].color.as_deref(), Some("#4AD94A"), "Green → #4AD94A");
-    assert_eq!(streams[3].color.as_deref(), Some("#9B59B6"), "Purple → #9B59B6");
-    assert_eq!(streams[4].color.as_deref(), Some("#D94A4A"), "Red → #D94A4A");
-    assert_eq!(streams[5].color.as_deref(), Some("#ABCDEF"), "Hex preserved as-is");
+    assert_eq!(
+        streams[0].color.as_deref(),
+        Some("#4A90D9"),
+        "Blue → #4A90D9"
+    );
+    assert_eq!(
+        streams[1].color.as_deref(),
+        Some("#E6A23C"),
+        "Amber → #E6A23C"
+    );
+    assert_eq!(
+        streams[2].color.as_deref(),
+        Some("#4AD94A"),
+        "Green → #4AD94A"
+    );
+    assert_eq!(
+        streams[3].color.as_deref(),
+        Some("#9B59B6"),
+        "Purple → #9B59B6"
+    );
+    assert_eq!(
+        streams[4].color.as_deref(),
+        Some("#D94A4A"),
+        "Red → #D94A4A"
+    );
+    assert_eq!(
+        streams[5].color.as_deref(),
+        Some("#ABCDEF"),
+        "Hex preserved as-is"
+    );
 }
 
 #[test]
@@ -94,6 +124,9 @@ eminence: minor
     let stream_id = &result.graph.metadata.streams[0].id;
     let node_stream = result.graph.nodes[0].stream.as_deref().unwrap();
 
-    assert_eq!(stream_id, node_stream,
-        "stream table ID '{}' should match node stream field '{}'", stream_id, node_stream);
+    assert_eq!(
+        stream_id, node_stream,
+        "stream table ID '{}' should match node stream field '{}'",
+        stream_id, node_stream
+    );
 }
