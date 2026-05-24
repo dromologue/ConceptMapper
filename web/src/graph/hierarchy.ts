@@ -63,11 +63,11 @@ export function computeHierarchy(nodes: GraphNode[], edges: GraphEdge[]): Hierar
 /**
  * Given a target visible level N, return the set of nodes to mark as "collapsed".
  * A node is collapsed (visible with a +/- indicator) if its depth equals N AND
- * it has any deeper descendant. The existing collapse-utils cascade then hides
- * everything below.
+ * it has any deeper descendant.
  *
- * Level 0: roots are collapsed → only roots visible.
- * Level >= maxDepth: empty set → everything visible.
+ * NOTE: this set alone does NOT hide deeper nodes — the bidirectional cascade
+ * in `computeCollapseState` won't propagate through tree-shaped graphs. Use
+ * `hiddenNodesForLevel` for the actual hiding.
  */
 export function collapsedNodesForLevel(
   level: number,
@@ -80,6 +80,21 @@ export function collapsedNodesForLevel(
   const result = new Set<string>();
   for (const [id, d] of info.depths) {
     if (d === level && hasOutgoing.has(id)) result.add(id);
+  }
+  return result;
+}
+
+/**
+ * The set of node ids whose depth exceeds `level`. These are hidden directly
+ * by the renderer (independent of the cascade-based collapse used for manual
+ * +/- clicks). Returns an empty set when `level >= maxDepth` (everything
+ * visible).
+ */
+export function hiddenNodesForLevel(level: number, info: HierarchyInfo): Set<string> {
+  if (level >= info.maxDepth) return new Set();
+  const result = new Set<string>();
+  for (const [id, d] of info.depths) {
+    if (d > level) result.add(id);
   }
   return result;
 }

@@ -1,6 +1,6 @@
 // SPEC: REQ-088 (Collapse/Expand to Level)
 import { describe, it, expect } from "vitest";
-import { computeHierarchy, collapsedNodesForLevel } from "../graph/hierarchy";
+import { computeHierarchy, collapsedNodesForLevel, hiddenNodesForLevel } from "../graph/hierarchy";
 import type { GraphNode, GraphEdge } from "../types/graph-ir";
 
 function n(id: string): GraphNode {
@@ -91,5 +91,47 @@ describe("collapsedNodesForLevel", () => {
     const collapsed = collapsedNodesForLevel(2, info, edges);
     // a1, a2, b1 are leaves → not collapsed
     expect(collapsed).toEqual(new Set());
+  });
+});
+
+describe("hiddenNodesForLevel (REQ-088 fix — tree-shaped graphs)", () => {
+  // The bug: bidirectional cascade in computeCollapseState refuses to hide
+  // interior nodes whose children aren't also collapsed. For a tree rooted
+  // at "root" with children {a, b} and grandchildren {a1, a2, b1}:
+  //   - collapsing {root} alone doesn't hide a, b, a1, a2, b1
+  //     (each has at least one non-collapsed neighbour).
+  // hiddenNodesForLevel sidesteps the cascade and hides strictly by depth.
+  const nodes = [n("root"), n("a"), n("b"), n("a1"), n("a2"), n("b1")];
+  const edges = [e("root", "a"), e("root", "b"), e("a", "a1"), e("a", "a2"), e("b", "b1")];
+  const info = computeHierarchy(nodes, edges);
+
+  it("level 0 hides every descendant of every root", () => {
+    const hidden = hiddenNodesForLevel(0, info);
+    expect(hidden).toEqual(new Set(["a", "b", "a1", "a2", "b1"]));
+  });
+
+  it("level 1 reveals depth-1 children but still hides their children", () => {
+    const hidden = hiddenNodesForLevel(1, info);
+    expect(hidden).toEqual(new Set(["a1", "a2", "b1"]));
+  });
+
+  it("level >= maxDepth hides nothing", () => {
+    expect(hiddenNodesForLevel(info.maxDepth, info)).toEqual(new Set());
+    expect(hiddenNodesForLevel(99, info)).toEqual(new Set());
+  });
+
+  it("graphs with no edges (maxDepth = 0) hide nothing at any level", () => {
+    const isolated = computeHierarchy([n("a"), n("b")], []);
+    expect(hiddenNodesForLevel(0, isolated)).toEqual(new Set());
+  });
+
+  it("deep chain: each level reveals exactly one more node", () => {
+    const chainNodes = [n("r"), n("a"), n("b"), n("c")];
+    const chainEdges = [e("r", "a"), e("a", "b"), e("b", "c")];
+    const chainInfo = computeHierarchy(chainNodes, chainEdges);
+    expect(hiddenNodesForLevel(0, chainInfo)).toEqual(new Set(["a", "b", "c"]));
+    expect(hiddenNodesForLevel(1, chainInfo)).toEqual(new Set(["b", "c"]));
+    expect(hiddenNodesForLevel(2, chainInfo)).toEqual(new Set(["c"]));
+    expect(hiddenNodesForLevel(3, chainInfo)).toEqual(new Set());
   });
 });

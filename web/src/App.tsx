@@ -24,7 +24,7 @@ import { EdgePopover } from "./ui/EdgePopover";
 import { IconSearch } from "./ui/Icons";
 import { parseMarkdown } from "./parser";
 import { getNodeColor } from "./graph/node-color";
-import { computeHierarchy, collapsedNodesForLevel } from "./graph/hierarchy";
+import { computeHierarchy, collapsedNodesForLevel, hiddenNodesForLevel } from "./graph/hierarchy";
 import { ThemeProvider, useTheme } from "./theme/ThemeContext";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData, getTemplateClassifiers } from "./migration";
@@ -98,6 +98,17 @@ function AppInner() {
     if (!graphData) return null;
     return computeHierarchy(graphData.nodes, graphData.edges);
   }, [graphData]);
+
+  // REQ-088: level-based hiding. The cascade in computeCollapseState only
+  // hides leaves whose ONLY neighbours are collapsed — useless for tree-shaped
+  // graphs where every interior child has its own children. We instead derive
+  // the hidden set straight from depth: anything deeper than `expandLevel`
+  // is hidden. The `collapsedNodes` state still drives the +/- indicator and
+  // the cascade for manual user clicks.
+  const hiddenByLevel = useMemo(
+    () => (hierarchy ? hiddenNodesForLevel(expandLevel, hierarchy) : new Set<string>()),
+    [hierarchy, expandLevel],
+  );
 
   const handleExpandLevelChange = useCallback((level: number) => {
     setExpandLevel(level);
@@ -654,7 +665,7 @@ function AppInner() {
 
     setShowTaxonomyWizard(false);
     setTaxonomyEditData(undefined);
-  }, [isNativeApp, sendToSwift, graphData, setGraphData, loadGraphFresh, taxonomyEditData, setError]);
+  }, [isNativeApp, sendToSwift, graphData, setGraphData, loadGraphFresh, taxonomyEditData, setError, sourceFilePath]);
 
   // Create a new empty map using an existing template's structure (no wizard)
   const handleNewFileFromTemplate = useCallback((tmplData: TaxonomyWizardInitial) => {
@@ -1261,6 +1272,7 @@ function AppInner() {
               look={look}
               nodeTypeConfigs={nodeTypeConfigs}
               collapsedNodes={collapsedNodes}
+              hiddenIds={hiddenByLevel}
               onToggleCollapse={(nodeId) => {
                 setCollapsedNodes((prev) => {
                   const next = new Set(prev);

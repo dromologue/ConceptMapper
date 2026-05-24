@@ -317,6 +317,9 @@ interface Props {
   look: "formal" | "mindmap";
   nodeTypeConfigs: NodeTypeConfig[];
   collapsedNodes?: Set<string>;
+  /** Nodes hidden unconditionally (e.g. by level-based reveal — REQ-088).
+   * Merged with the cascade-derived hidden set in computeCollapseState. */
+  hiddenIds?: Set<string>;
   onToggleCollapse?: (nodeId: string) => void;
   onSelectEdge?: (edge: GraphEdge | null, pos?: { x: number; y: number }) => void;
   selectedEdgeKey?: string | null; // "from|to" key for highlighting
@@ -361,7 +364,7 @@ function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): NodeSha
   return "circle";
 }
 
-export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity, exploded, layoutPreset, fontScale = 1, edgeTypeConfigs, focusMode = true }: Props) {
+export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, hiddenIds, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity, exploded, layoutPreset, fontScale = 1, edgeTypeConfigs, focusMode = true }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const transformRef = useRef(d3.zoomIdentity);
@@ -405,6 +408,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const nodeTypeConfigsRef = useRef(nodeTypeConfigs);
   const edgeTypeConfigsRef = useRef(edgeTypeConfigs);
   const collapsedRef = useRef(collapsedNodes ?? new Set<string>());
+  const hiddenIdsRef = useRef(hiddenIds ?? new Set<string>());
   const onToggleCollapseRef = useRef(onToggleCollapse);
   const onSelectEdgeRef = useRef(onSelectEdge);
   const hasChildrenRef = useRef<Set<string>>(new Set());
@@ -455,6 +459,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   // omit `redraw` from deps — it reads only from refs and is stable.
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => { collapsedRef.current = collapsedNodes ?? new Set(); redraw(); }, [collapsedNodes]);
+  useEffect(() => { hiddenIdsRef.current = hiddenIds ?? new Set(); redraw(); }, [hiddenIds]);
   useEffect(() => { themeRef.current = theme; redraw(); }, [theme]);
   useEffect(() => { lookRef.current = look; redraw(); }, [look]);
   useEffect(() => { focusModeRef.current = focusMode; redraw(); }, [focusMode]);
@@ -633,8 +638,10 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const revealed = revealedRef.current;
     const currentFilters = filtersRef.current;
     const collapsed = collapsedRef.current;
+    const hiddenIds = hiddenIdsRef.current;
     const { hiddenByCollapse } = computeCollapseState(dataRef.current.edges, collapsed);
     const visible = ns.filter((n) => {
+      if (hiddenIds.has(n.id)) return false;
       if (hiddenByCollapse.has(n.id)) return false;
       if (!isNodeFilterVisible(n, currentFilters)) return false;
       return isNodePrimary(n, mode, configs) || revealed.has(n.id);
@@ -1186,11 +1193,13 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
     // Compute collapse state (works for all edge types, not just directed)
     const collapsed = collapsedRef.current;
+    const hiddenIds = hiddenIdsRef.current;
     const { hasChildren, hiddenByCollapse } = computeCollapseState(currentData.edges, collapsed);
     hasChildrenRef.current = hasChildren;
 
     const currentFilters = filtersRef.current;
     const isVisible = (node: SimNode) => {
+      if (hiddenIds.has(node.id)) return false;
       if (hiddenByCollapse.has(node.id)) return false;
       if (!isNodeFilterVisible(node, currentFilters)) return false;
       if (isAdding) return true;
