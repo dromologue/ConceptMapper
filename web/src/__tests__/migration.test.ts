@@ -500,3 +500,49 @@ describe("layout conflict resolution", () => {
     expect(ir.nodes[0].classifiers?.["condition"]).toBe("alpha");
   });
 });
+
+// REQ-089: a `tags` field declared on the template is lifted from
+// node.properties (CSV string) into the typed node.tags array, so the
+// Sidebar Tags section actually populates from authored data.
+describe("tags field lifted into node.tags array", () => {
+  it("parses a comma-separated tags field into a string[] on node.tags", () => {
+    const parsed = {
+      version: "1.0",
+      metadata: { title: "T", external_shocks: [], structural_observations: [] },
+      nodes: [
+        { id: "n1", node_type: "note", name: "First", fields: { tags: "research, ux, ai" } },
+      ],
+      edges: [],
+    } as unknown as GraphIR;
+    const { data } = migrateFromParser(parsed);
+    expect(data.nodes[0].tags).toEqual(["research", "ux", "ai"]);
+    // and removed from properties so it isn't double-stored
+    expect((data.nodes[0].properties as Record<string, string>).tags).toBeUndefined();
+  });
+
+  it("does not overwrite an existing typed node.tags", () => {
+    const parsed = {
+      version: "1.0",
+      metadata: { title: "T", external_shocks: [], structural_observations: [] },
+      nodes: [
+        { id: "n1", node_type: "note", name: "First", tags: ["existing"], fields: { tags: "ignored" } },
+      ],
+      edges: [],
+    } as unknown as GraphIR;
+    const { data } = migrateFromParser(parsed);
+    expect(data.nodes[0].tags).toEqual(["existing"]);
+  });
+
+  it("leaves node.tags unset when the tags field is empty or whitespace", () => {
+    const parsed = {
+      version: "1.0",
+      metadata: { title: "T", external_shocks: [], structural_observations: [] },
+      nodes: [
+        { id: "n1", node_type: "note", name: "First", fields: { tags: " , , " } },
+      ],
+      edges: [],
+    } as unknown as GraphIR;
+    const { data } = migrateFromParser(parsed);
+    expect(data.nodes[0].tags).toBeUndefined();
+  });
+});

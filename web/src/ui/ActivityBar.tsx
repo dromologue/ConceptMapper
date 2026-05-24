@@ -24,6 +24,11 @@ interface Props {
   propertiesOpen?: boolean;
   onToggleNotes?: () => void;
   notesOpen?: boolean;
+  /** Current visible hierarchy level (0 = roots only). Omit to hide the control. */
+  expandLevel?: number;
+  /** Max hierarchy depth in the graph. Required for stepper bounds. */
+  maxExpandLevel?: number;
+  onExpandLevelChange?: (level: number) => void;
 }
 
 const LAYOUT_OPTIONS: { id: LayoutPreset; label: string; desc: string }[] = [
@@ -52,6 +57,9 @@ export function ActivityBar({
   propertiesOpen,
   onToggleNotes,
   notesOpen,
+  expandLevel,
+  maxExpandLevel,
+  onExpandLevelChange,
 }: Props) {
   const [layoutOpen, setLayoutOpen] = useState(false);
   const [layoutPopStyle, setLayoutPopStyle] = useState<{ left: number; top: number } | null>(null);
@@ -141,6 +149,36 @@ export function ActivityBar({
           >
             <IconExport size={20} />
           </button>
+        )}
+        {/* Expand-level stepper (REQ-088) — visible only when the graph has hierarchy */}
+        {onExpandLevelChange && maxExpandLevel !== undefined && maxExpandLevel > 0 && (
+          <div className="expand-level-stepper" title={`Show nodes down to level ${expandLevel ?? 0} of ${maxExpandLevel}`}>
+            <button
+              type="button"
+              className="activity-bar-btn"
+              onClick={() => onExpandLevelChange(Math.max(0, (expandLevel ?? 0) - 1))}
+              disabled={(expandLevel ?? 0) <= 0}
+              aria-label="Collapse one level"
+            >−</button>
+            <span className="expand-level-label" aria-label="Current expand level">
+              {expandLevel ?? 0}/{maxExpandLevel}
+            </span>
+            <button
+              type="button"
+              className="activity-bar-btn"
+              onClick={() => onExpandLevelChange(Math.min(maxExpandLevel, (expandLevel ?? 0) + 1))}
+              disabled={(expandLevel ?? 0) >= maxExpandLevel}
+              aria-label="Expand one level"
+            >+</button>
+            <button
+              type="button"
+              className="activity-bar-btn"
+              onClick={() => onExpandLevelChange(maxExpandLevel)}
+              disabled={(expandLevel ?? 0) >= maxExpandLevel}
+              aria-label="Expand all"
+              title="Expand all"
+            >⤢</button>
+          </div>
         )}
         {/* Layout preset selector */}
         {onLayoutPresetChange && (

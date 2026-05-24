@@ -1721,3 +1721,43 @@ Tags are the only first-class string-list attribute on a node. To make their reu
 - [x] AC-087-04: Clicking a suggestion commits it.
 - [x] AC-087-05: Both `AddNodeModal` and `DetailPanel` use `TagInput` with `existingTags = collectAllTags(graphData.nodes)`.
 
+
+---
+
+## REQ-088: Collapse / Expand to Level
+
+Every map opens fully collapsed (only root nodes visible). A toolbar stepper lets the user expand or collapse the hierarchy by one level at a time, or jump to "expand all". Level is recomputed from the graph's directed-edge structure on every load.
+
+**Expected Behavior:**
+- `computeHierarchy(nodes, edges)` in `web/src/graph/hierarchy.ts` returns `{ depths: Map<id, number>, maxDepth, roots }`.
+- Roots = nodes with no incoming directed edge (sorted, deterministic).
+- Depth = shortest-path distance from any root via BFS along directed edges. Unreached nodes get depth 0 so they remain visible at every level (covers cycles + disconnected hubs).
+- `collapsedNodesForLevel(level, info, edges)` returns the set of nodes at exactly that depth that have outgoing edges (i.e. parents to hide their children via the existing cascade-hide in `collapse-utils.ts`).
+- App seeds level=0 on every fresh graph load via a ref-guarded effect; manual per-node toggling still works after that.
+- `ActivityBar` renders a stepper (`−` / `level/max` / `+` / "expand all" ⤢) above the layout-preset selector, only when `maxExpandLevel > 0`.
+
+**Acceptance Criteria:**
+- [x] AC-088-01: `computeHierarchy` returns the correct depths for a chain, a multi-root DAG, and shortest-path resolution when a node is reachable from multiple parents at different depths.
+- [x] AC-088-02: Nodes in a pure cycle (no root reachable) get depth 0 and `roots` is empty.
+- [x] AC-088-03: `collapsedNodesForLevel(0, info, edges)` returns exactly the roots that have outgoing edges.
+- [x] AC-088-04: `collapsedNodesForLevel(level >= maxDepth, info, edges)` returns the empty set.
+- [x] AC-088-05: Leaves (no outgoing edges) are never returned in the collapsed set.
+- [x] AC-088-06: On every fresh `graphData` reference, the App resets `expandLevel` to 0 and seeds `collapsedNodes` accordingly.
+
+---
+
+## REQ-089: Tags as a First-Class Sidebar List
+
+If a node carries `tags`, the Sidebar exposes a collapsible **Tags** section listing every unique tag in the graph, with click-to-filter behaviour identical to the classifier lists. The user authors tags either via the `TagInput` UI (REQ-087) or by writing `tags: a, b, c` on a node block in the `.cm` file.
+
+**Expected Behavior:**
+- In `migrateFromParser`, a `tags` field on a parsed node (CSV string from the WASM parser) is lifted into `node.tags: string[]` and removed from `properties`.
+- An existing typed `node.tags` is not overwritten by a colliding `tags` field; the field is left in `properties` only if the parsed list is non-empty.
+- Empty / whitespace-only / comma-only `tags` fields produce no `node.tags` and the field is left untouched.
+- The Sidebar's existing Tags section renders when any node has at least one tag; the list is built via `collectAllTags(graphData.nodes)`.
+
+**Acceptance Criteria:**
+- [x] AC-089-01: `tags: "research, ux, ai"` on a parsed node becomes `node.tags = ["research","ux","ai"]` and `properties.tags` is unset.
+- [x] AC-089-02: An existing `node.tags` value wins over a colliding `tags` field on `fields`.
+- [x] AC-089-03: Empty or comma-only tags fields produce `node.tags === undefined`.
+- [x] AC-089-04: The Sidebar Tags section appears whenever `collectAllTags(nodes).length > 0` and lists every unique tag.

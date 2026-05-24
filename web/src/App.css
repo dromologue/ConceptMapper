@@ -3112,3 +3112,31 @@ select.settings-input {
 .tag-suggestion:hover {
   background: var(--accent-soft, rgba(74,144,217,0.18));
 }
+
+/* --- Expand level stepper (REQ-088) --- */
+.expand-level-stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border, #444);
+  border-radius: 4px;
+  margin: 4px 0;
+}
+.expand-level-stepper button {
+  min-width: 22px;
+  padding: 2px 4px;
+  font-size: 14px;
+  line-height: 1;
+}
+.expand-level-stepper button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.expand-level-label {
+  font-size: 11px;
+  color: var(--text-muted, #888);
+  min-width: 28px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}

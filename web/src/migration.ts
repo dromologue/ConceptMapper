@@ -167,6 +167,19 @@ export function migrateFromParser(parsed: GraphIR, activeTemplate?: TaxonomyTemp
     notes: n.notes,
   }));
 
+  // REQ-089: lift a `tags` field (CSV string) into node.tags: string[].
+  // Tags are the only first-class string-list attribute on a node (REQ-086),
+  // and the parser stores them as a comma-separated string. The Sidebar Tags
+  // section reads from node.tags, so without this lift the section is empty.
+  for (const node of nodes) {
+    const props = node.properties as Record<string, string>;
+    if (!node.tags && typeof props.tags === "string") {
+      const parsed = props.tags.split(",").map((t) => t.trim()).filter(Boolean);
+      if (parsed.length > 0) node.tags = parsed;
+      delete props.tags;
+    }
+  }
+
   // Lift any node field whose key matches a classifier ID into the node.classifiers map.
   for (const node of nodes) {
     if (!effectiveClassifiers) continue;

@@ -24,6 +24,7 @@ import { EdgePopover } from "./ui/EdgePopover";
 import { IconSearch } from "./ui/Icons";
 import { parseMarkdown } from "./parser";
 import { getNodeColor } from "./graph/node-color";
+import { computeHierarchy, collapsedNodesForLevel } from "./graph/hierarchy";
 import { ThemeProvider, useTheme } from "./theme/ThemeContext";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData, getTemplateClassifiers } from "./migration";
@@ -66,6 +67,32 @@ function AppInner() {
   const [viewMode, setViewMode] = useState("full");
   const [revealedNodes, setRevealedNodes] = useState<Set<string>>(new Set());
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
+  // REQ-088: expand-to-level. 0 = roots only (default on every map load).
+  const [expandLevel, setExpandLevel] = useState(0);
+  // Track which graph instance we've already seeded — guarantees fresh-load resets level
+  // back to 0 without forgetting user toggles within the same graph.
+  const seededGraphRef = useRef<GraphIR | null>(null);
+
+  const hierarchy = useMemo(() => {
+    if (!graphData) return null;
+    return computeHierarchy(graphData.nodes, graphData.edges);
+  }, [graphData]);
+
+  const handleExpandLevelChange = useCallback((level: number) => {
+    setExpandLevel(level);
+    if (hierarchy && graphData) {
+      setCollapsedNodes(collapsedNodesForLevel(level, hierarchy, graphData.edges));
+    }
+  }, [hierarchy, graphData]);
+
+  // On every fresh graph load, default to level 0 (fully collapsed = roots only).
+  useEffect(() => {
+    if (!graphData || !hierarchy) return;
+    if (seededGraphRef.current === graphData) return;
+    seededGraphRef.current = graphData;
+    setExpandLevel(0);
+    setCollapsedNodes(collapsedNodesForLevel(0, hierarchy, graphData.edges));
+  }, [graphData, hierarchy]);
   const [showAddNode, setShowAddNode] = useState<string | null>(null); // node type id or null
   const [interactionMode, setInteractionMode] = useState<import("./stores/useGraphStore").InteractionMode>("normal");
   const [edgeSource, setEdgeSource] = useState<string | null>(null);
@@ -1150,6 +1177,9 @@ function AppInner() {
           propertiesOpen={propertiesOpen}
           onToggleNotes={() => setNotesOpen(!notesOpen)}
           notesOpen={notesOpen}
+          expandLevel={expandLevel}
+          maxExpandLevel={hierarchy?.maxDepth ?? 0}
+          onExpandLevelChange={handleExpandLevelChange}
         />
 
         {sidebarOpen && (
