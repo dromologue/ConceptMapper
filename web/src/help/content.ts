@@ -41,26 +41,26 @@ If you have previously saved templates, they appear below these buttons. Click o
   {
     id: "core-concepts",
     title: "Core Concepts: Taxonomy, Template, and Map",
-    tags: ["taxonomy", "template", "map", "concept", "terminology", "vocabulary", "glossary"],
+    tags: ["taxonomy", "template", "map", "concept", "terminology", "vocabulary", "glossary", "classifier"],
     content: `ConceptMapper uses a few key terms that are worth understanding upfront:
 
 **Taxonomy** -- The structural skeleton of your concept map. It defines:
-- What types of nodes you can create (e.g. Person, Concept, Theory)
-- What categories (streams) exist (e.g. disciplines, schools of thought)
-- What time periods (generations) the map spans
-- What fields/attributes each node type has
+- The node types you can create (e.g. Person, Concept, Theory)
+- The classifiers used to group nodes (e.g. domain, era, status)
+- The fields each node type carries
+- The edge types and how they look (colour, line style, directed/undirected)
 
-**Template (.cmt)** -- A reusable taxonomy structure without any actual nodes or edges. You create a template by clicking "Save as Template" in the taxonomy wizard's review step. Templates appear on the start screen for quick reuse.
+**Template (.cmt)** -- A reusable taxonomy structure without any actual nodes or edges. Stored as JSON. The template ALWAYS owns the structure — the map file never carries node-type or classifier definitions of its own. A .cm file references its template via an HTML comment header (\`<!-- template: foo.cmt -->\`).
 
-**Concept Map (.cm)** -- A complete map file containing both the taxonomy structure and all your nodes, edges, and notes. This is a JSON file that auto-saves as you work.
+**Concept Map (.cm)** -- A structured markdown file containing nodes, edges, and notes. Auto-saves to its source path as you work.
 
-**Stream (Category)** -- A thematic grouping for nodes. Each stream has a name, colour, and optional description. Streams control the colour-coding of nodes on the canvas. In the sidebar and legend, you can filter by stream.
+**Classifier** -- A generic grouping dimension defined in the template. Classifiers replace the older hardcoded "streams" and "generations" — they are completely generic, so the template author chooses both the dimensions (e.g. domain, era, status) and the allowed values. Every classifier appears as a filterable section in the sidebar.
 
-**Generation (Horizon / Time Period)** -- A numbered time period or phase. Generations position nodes vertically on the canvas. Each generation can have a period label (e.g. "1960-1980") and a descriptive label (e.g. "Founders").
+**Node Types** -- The kinds of entities in your map. Each type has a shape (circle or rectangle), icon, colour, and field set. There are no built-in privileged types — everything comes from the template.
 
-**Node Types** -- The kinds of entities in your map. The defaults are Person (circle shape) and Concept (rectangle shape), but you can define custom types with any fields you need.
+**Edges** -- Directed or undirected relationships. Edge types are defined in the template (label, colour, line style). Per-map colour overrides live in Settings.
 
-**Edges** -- Directed or undirected relationships between nodes. Edge types depend on what you are connecting (thinker-to-thinker, thinker-to-concept, concept-to-concept).`,
+**Tags** -- A free-form labelling system. Any node type can declare a \`tags\` field; values appear as pills with autocomplete drawn from tags already used in the map. Tags also surface as a filterable section in the sidebar.`,
   },
 
   // ── The Workspace Layout ─────────────────────────────────────────
@@ -83,12 +83,14 @@ If you have previously saved templates, they appear below these buttons. Click o
 
 **Sidebar** (left panel) -- The Explorer panel showing:
 - Action buttons to add nodes (one per node type) and edges
-- A collapsible Streams list for filtering by category
+- A collapse/expand-to-level stepper (see "Collapse and Expand to Level")
+- One collapsible filter section per classifier defined in the template
+- A Tags section (open by default) when any node uses tags
 - A collapsible Nodes list with a filter/search box
 
 **Canvas** (centre) -- The main interactive graph visualization. Pan by dragging, zoom with scroll wheel or pinch, Shift+drag for marquee zoom.
 
-**Auxiliary Panel** (right, appears when a node is selected) -- The Properties panel showing the selected node's attributes, with an inline name editor, stream/generation selectors, custom fields, and a connections list. A resize handle between the canvas and this panel lets you adjust width.
+**Auxiliary Panel** (right, appears when a node is selected) -- The Properties panel showing the selected node's attributes, with an inline name editor, classifier dropdowns, custom fields, tag pills with autocomplete, and a connections list. A resize handle between the canvas and this panel lets you adjust width.
 
 **Bottom Pane** (below the canvas, when open):
 - Notes pane: Inline markdown editor for the selected node's notes`,
@@ -187,34 +189,31 @@ When a node is selected, its connections appear in the "Connections" section of 
   // ── The Taxonomy Wizard ──────────────────────────────────────────
   {
     id: "taxonomy-wizard",
-    title: "The Taxonomy Wizard (6 Steps)",
-    tags: ["taxonomy", "wizard", "create", "new", "define", "setup", "node type", "stream", "generation"],
-    content: `The Taxonomy Wizard guides you through setting up your map's structure in 6 steps. Open it from the start screen ("New Taxonomy") or from the Activity Bar (list icon at bottom) to edit an existing map.
+    title: "The Taxonomy Wizard",
+    tags: ["taxonomy", "wizard", "create", "new", "define", "setup", "node type", "classifier"],
+    content: `The Taxonomy Wizard is where you define and edit the structural skeleton of a map. Open it from the start screen ("New Taxonomy") or from the Activity Bar (list icon at bottom) to edit the current map's taxonomy.
 
-**Step 1: Title and Description**
-Give your taxonomy a title (required) and an optional description.
+**Title and Description**
+A title is required; the description is optional and surfaces in the start screen and on the map header.
 
-**Step 2: Node Types**
-Define the kinds of entities in your map. Each node type has:
+**Node Types**
+Each node type has:
 - Name (e.g. "Person", "Concept", "Institution")
 - Shape: Circle or Rectangle (affects how nodes render on the canvas)
 - Icon: A 1-2 character symbol shown in the sidebar
-- Fields: Custom attributes for this type (text, select dropdown, or textarea)
-- Size driven by: Optionally select a dropdown field whose value controls node size
+- Fields: Custom attributes (text, select, textarea, or the special \`tags\` field)
+- Size driven by: Optionally select a numeric or select field whose value scales the node radius
 
-Click "+ Add Type" for more types, or expand/collapse existing ones.
+**Classifiers**
+Classifiers are the generic grouping dimensions of your map. There are no hardcoded ones — you choose the dimensions you need (e.g. domain, era, status, region). Each classifier has an id (used as the field key on nodes), a label, an optional colour palette, and a list of allowed values. Any field on a node whose key matches a classifier id is treated as a classifier value (filterable, surfaced in the sidebar).
 
-**Step 3: Edge Types**
-Define the kinds of relationships in your map. Each edge type has a label, colour, directed/undirected flag, and line style (solid, dashed, dotted). Pre-configured defaults cover common patterns (teacher-pupil, rivalry, alliance, etc.) but you can add custom types.
+**Edge Types**
+Each edge type has a label, colour, directed/undirected flag, and line style (solid, dashed, dotted).
 
-**Step 4: Categories (Streams)**
-Define your thematic groupings. Each stream has a name, colour picker, and optional description. These become the colour-coded categories visible in the sidebar and legend.
+**Review**
+See a summary of everything you defined. From here you can also click **"Save as Template"** to store this structure as a reusable .cmt. Click "Create" (new) or "Save" (edit mode) to finalize.
 
-**Step 5: Horizons (Generations / Time Periods)**
-Define time periods or phases. Each horizon has a number (auto-assigned), a period string (e.g. "1950-1970"), and a label (e.g. "Founders"). Horizons control vertical positioning on the canvas.
-
-**Step 6: Review**
-See a summary of everything you defined. From here you can also click **"Save as Template"** to store this structure for reuse without any nodes/edges. Click "Create" (new) or "Save" (edit mode) to finalize.
+**Round-trip to disk (REQ-090):** When you save changes from "Edit Taxonomy" on an existing map, the app writes the updated .cmt silently — no dialog. It first tries to overwrite the template file *next to the map* (e.g. \`Maps/my-domain/my-domain.cmt\`); if no such file exists, it falls back to your shared Templates folder. The next time you open the map, the edits are already there.
 
 Navigation: Use Back/Next buttons at the bottom. Press Escape to cancel.`,
   },
@@ -340,28 +339,76 @@ from: node_c to: node_d type: rivalry
   // ── Sidebar and Filtering ────────────────────────────────────────
   {
     id: "sidebar-filtering",
-    title: "Sidebar: Explorer, Streams, and Filtering",
-    tags: ["sidebar", "explorer", "filter", "stream", "category", "list"],
+    title: "Sidebar: Explorer, Classifiers, Tags, and Filtering",
+    tags: ["sidebar", "explorer", "filter", "classifier", "tag", "list"],
     content: `The sidebar (toggle with the panel icon in the Activity Bar) has several sections:
 
 **Action Buttons** (top)
 One "+ [Type]" button per node type defined in your taxonomy, plus a "+ Edge" button. During edge-drawing mode, this button changes to "Cancel Edge".
 
-**Filter Sections** (collapsible, collapsed by default)
+**Collapse / Expand Stepper**
+A vertical control with a + on top, the current expand level in the middle, and a - underneath. See "Collapse and Expand to Level" for the full mechanics.
+
+**Filter Sections** (collapsible)
 Click any section header to expand it:
 
-- **Streams** -- Lists all streams/categories with colour dots. Click a value to uncheck it (hide nodes of that category). Click again to re-check. A "Show All" button appears when any filter is active.
-- **Phases** -- Lists all generations/phases. Same toggle behaviour.
-- **Attribute Filters** -- One section per filterable field from your node type configs. Select-type fields always appear. Text fields appear when they have 30 or fewer unique values. Click values to uncheck/recheck.
-- **Date Range** -- If your node types have date_from/date_to fields, a date range filter appears with From/To year inputs.
+- **One section per classifier** — Generated dynamically from the template's classifier list. Each shows a coloured dot per value with a checkbox. Click a value to uncheck it (hide nodes of that value). A "Show All" button appears when any filter is active.
+- **Tags** (open by default when tags are present) — Lists every tag in use across the map with a count. Click a tag to filter; click again to clear.
+- **Attribute Filters** — One section per filterable field from your node type configs. Select-type fields always appear. Text fields appear when they have 30 or fewer unique values.
+- **Date Range** — If your node types have date_from/date_to fields, a date range filter appears with From/To year inputs.
 
 **Filter logic:**
-- Between categories (e.g. Streams AND Phases): nodes must pass ALL active filters.
-- Within a category (e.g. two streams checked): nodes matching ANY checked value are shown.
+- Between sections (e.g. classifier A AND tags): nodes must pass ALL active filters.
+- Within a section (e.g. two values checked): nodes matching ANY checked value are shown.
 - Unchecked values hide matching nodes from both the canvas and the node list.
 
 **Nodes** (collapsible)
 A searchable, scrollable list of all visible nodes (respects active filters) sorted alphabetically. Each entry shows a colour indicator and the node name. Use the filter input to search by name. Click a node to select it on the canvas.`,
+  },
+
+  // ── Collapse and Expand to Level (REQ-088) ───────────────────────
+  {
+    id: "collapse-expand-level",
+    title: "Collapse and Expand to Level",
+    tags: ["collapse", "expand", "level", "depth", "hierarchy", "stepper", "fold"],
+    content: `Every map opens **fully collapsed** at level 0. Only the root nodes (those with no incoming directed edges) are visible. The stepper in the sidebar controls how deep the visible hierarchy goes.
+
+**The stepper**
+A small vertical control: **+** on top, the current level number in the middle, **-** on the bottom.
+- **+** reveals the next level of children.
+- **-** collapses the deepest visible level.
+- **Double-click the number** to toggle between fully collapsed (0) and fully expanded.
+
+**How depth is computed**
+The app performs a BFS from every root and assigns each node the shortest distance from any root. Level 0 = roots; level 1 = direct children; and so on. Cycles and unreachable nodes are assigned depth 0 so they remain visible at every level.
+
+**Fresh load vs. mutation**
+A fresh load (open file, switch map) always reseeds to level 0 — the map opens collapsed.
+Manual edits (adding nodes, drawing edges, editing properties) preserve the current view state — your stepper position does not jump back to zero when you make changes.
+
+**Why this matters**
+Concept maps with hundreds of nodes are unreadable when shown all at once. The stepper lets you progressively disclose structure: start with the trunks, then reveal branches, then leaves.`,
+  },
+
+  // ── Tags (REQ-087 / REQ-089) ─────────────────────────────────────
+  {
+    id: "tags",
+    title: "Tags: Pills, Autocomplete, and the Sidebar List",
+    tags: ["tag", "tagging", "label", "keyword", "autocomplete", "pill"],
+    content: `Tags are a first-class labelling mechanism. Any node type can declare a \`tags\` field in the taxonomy; nodes then carry a list of comma-separated tag values.
+
+**Entering tags**
+In the Properties panel, the tags field renders as pills:
+- Type a few characters — a dropdown appears with matching tags already used elsewhere in the map (REQ-087 autocomplete).
+- Press Enter or pick from the dropdown to add the tag as a pill.
+- Click the × on a pill to remove it.
+- Tags are saved automatically with the rest of the node's properties.
+
+**The Tags sidebar section (REQ-089)**
+When any node in the map carries one or more tags, a **Tags** section appears in the sidebar (open by default). It lists every tag in use with the count of nodes that have it. Click a tag to filter the canvas to nodes carrying that tag; click again to clear.
+
+**Why tags are special**
+Classifiers are structural (defined in the template); tags are emergent (added freely as you work). Use classifiers to encode the structure of your domain (e.g. "domain: economics"); use tags to capture cross-cutting themes you discover only after the map exists (e.g. "#liquidity-risk", "#post-crisis").`,
   },
 
   // ── Notes Editor ─────────────────────────────────────────────────
@@ -446,16 +493,16 @@ All colour customisations persist across sessions via local storage.
     tags: ["file", "format", "save", "export", "open", "import", "json", "markdown", "cm", "cmt"],
     content: `ConceptMapper works with several file formats:
 
-**.cm (Concept Map)** -- The primary format. This is a JSON file containing:
-- Version number
-- Template reference
-- All nodes with their properties
-- All edges
-- External shocks and structural observations
+**.cm (Concept Map)** -- The primary format. Structured markdown containing:
+- An HTML comment header pointing at the .cmt template: \`<!-- template: foo.cmt -->\`
+- Optional edge-colour overrides header: \`<!-- edge-colors: {...} -->\`
+- A fenced code block per node, with \`key: value\` properties (including any classifier fields and a tags CSV)
+- A fenced Edges block (\`from: a to: b type: x\`)
+- A free-form Notes section
 
-The app auto-saves to the source .cm file as you make changes (with a 2-second debounce).
+The app auto-saves to the source .cm file as you make changes (with a short debounce).
 
-**.cmt (Concept Map Template)** -- A JSON file containing only the taxonomy structure (node types, streams, generations) without any nodes or edges. Used for reusable templates.
+**.cmt (Concept Map Template)** -- A JSON file containing the taxonomy: title, description, classifiers, node_types, edge_types. The template ALWAYS owns the structure — the .cm map file never carries node-type or classifier definitions of its own. A .cmt can live either in your shared Templates folder or right next to its map (e.g. \`Maps/my-domain/my-domain.cmt\` alongside \`Maps/my-domain/my-domain.cm\`); the app resolves it from the path referenced in the .cm header.
 
 **.json** -- The app can open plain .json files if they follow the concept map data schema.
 
@@ -649,8 +696,8 @@ The k-core number indicates which "shell" of the network a node belongs to. It i
     content: `**Q: How do I get started with a blank map?**
 A: Click "New Taxonomy" on the start screen and follow the 6-step wizard. At minimum, give it a title, keep the default node types (Person and Concept), add at least one stream/category, and one generation.
 
-**Q: What is the difference between a stream and a generation?**
-A: Streams are thematic categories (like academic disciplines or schools of thought) -- they control node colour. Generations are time periods (like decades or eras) -- they control vertical positioning on the canvas.
+**Q: What happened to streams and generations? My old maps used them.**
+A: They are no longer privileged dimensions. The current model uses generic **classifiers** defined entirely in the template — pick whatever dimensions your domain needs (e.g. domain, era, region, status). Old .cm files are migrated on load: any \`stream:\` or \`generation:\` keys are lifted into classifier fields, and old "Streams" / "Generations" sections become Notes. Your maps still work.
 
 **Q: Can I rename or redefine node types after creating a map?**
 A: Yes. Click the taxonomy/list icon at the bottom of the Activity Bar to re-open the wizard in edit mode. Changes to the taxonomy apply to the existing map.
@@ -671,7 +718,10 @@ A: Yes. Design your taxonomy in the app, export the .cmt template, and use any L
 A: It stores the current taxonomy structure (node types, streams, generations) without any nodes or edges. The template appears on the start screen for quick reuse when creating new maps.
 
 **Q: How do I customise node colours?**
-A: Node colours come from their stream/category. Go to Settings > Stream Colours to change the colour for any stream. This affects all nodes in that stream.
+A: Node colours come from the classifier marked as colour-providing in the template (typically the first one). Each classifier value has its own colour; change it in the template via the Taxonomy wizard.
+
+**Q: If I edit the taxonomy in the app, where does it save?**
+A: Silently — no dialog. The app first looks for the .cmt template *next to the map* (e.g. \`Maps/my-domain/my-domain.cmt\`); if it finds one there, it overwrites that file. Otherwise it writes to your shared Templates folder. Either way, the next time you open the map, your edits are in place.
 
 **Q: Can I have more than two node types?**
 A: Yes. In the taxonomy wizard (Step 2), click "+ Add Type" to create as many node types as you need. Each can have its own shape, icon, and custom fields.
@@ -698,7 +748,7 @@ The file may not be in a recognised format. ConceptMapper expects either a v2 JS
 This is expected -- a new taxonomy has no nodes yet. Use the sidebar's "+ [Type]" buttons to add nodes, or use Map Text to populate from a text source.
 
 **Nodes appear in unexpected positions**
-Node positioning is determined by stream (horizontal) and generation (vertical). Check that your nodes have the correct stream and generation assigned in the Properties panel.
+Layout is force-directed; positions emerge from the edges. If you have classifier-driven layout enabled in the template, the relevant classifier value determines a node's region. Check the node's classifier values in the Properties panel.
 
 **Auto-save is not working**
 Auto-save requires that the file was opened from disk (giving the app a file path to write to). If you are working with an unsaved new map, use File > Save As (Cmd+S) to establish a file path first.

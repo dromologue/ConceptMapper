@@ -58,10 +58,9 @@ function AppInner() {
   // REQ-088: expand-to-level. 0 = roots only (default on every map load).
   const [expandLevel, setExpandLevel] = useState(0);
 
-  // Wrapper that pushes to undo history before mutating, AND — on a fresh
-  // graph reference — seeds the expand-level back to 0 with the corresponding
-  // collapsed set, synchronously, so the canvas never paints the full graph
-  // before collapsing (REQ-088 AC-06).
+  // Wrapper that pushes to undo history before mutating. Preserves the
+  // current view state (expand level, manual collapses) — mutations like
+  // "add node" should not re-collapse the graph.
   const setGraphData = useCallback((data: GraphIR | null | ((prev: GraphIR | null) => GraphIR | null)) => {
     setGraphDataRaw((prev) => {
       const next = typeof data === 'function' ? data(prev) : data;
@@ -69,13 +68,30 @@ function AppInner() {
         undoStack.current = [...undoStack.current.slice(-49), prev];
         redoStack.current = [];
       }
-      if (next && next !== prev) {
-        const info = computeHierarchy(next.nodes, next.edges);
-        setExpandLevel(0);
-        setCollapsedNodes(collapsedNodesForLevel(0, info, next.edges));
+      return next;
+    });
+  }, []);
+
+  // Distinct from setGraphData: called when a fresh map is *loaded* (from disk,
+  // a new wizard-created map, or a Swift bridge load). Seeds the view to
+  // "fully collapsed" — REQ-088 — in the same render so the canvas never
+  // briefly paints the full graph.
+  const loadGraphFresh = useCallback((next: GraphIR | null) => {
+    setGraphDataRaw((prev) => {
+      if (prev && next && prev !== next) {
+        undoStack.current = [...undoStack.current.slice(-49), prev];
+        redoStack.current = [];
       }
       return next;
     });
+    if (next) {
+      const info = computeHierarchy(next.nodes, next.edges);
+      setExpandLevel(0);
+      setCollapsedNodes(collapsedNodesForLevel(0, info, next.edges));
+    } else {
+      setExpandLevel(0);
+      setCollapsedNodes(new Set());
+    }
   }, []);
 
   const hierarchy = useMemo(() => {
@@ -144,8 +160,10 @@ function AppInner() {
     setRevealedNodes(new Set());
     setFilters(createEmptyFilterState());
   }, []);
+  // File loader uses loadGraphFresh so newly-opened maps start fully collapsed
+  // (REQ-088). In-app mutations go through setGraphData and keep the user's view.
   const { parserReady, error, setError, loadFileContent, loadWarnings, setLoadWarnings } = useFileLoader(
-    template, setGraphData, setTemplate, resetUI, setSourceFilePath
+    template, loadGraphFresh, setTemplate, resetUI, setSourceFilePath
   );
 
   // Active node type configs — from template or defaults
@@ -188,6 +206,7 @@ function AppInner() {
       graphIRFromData,
       normalizeFencedKV,
       setGraphData,
+      loadGraphFresh,
       setTemplate,
       setSelectedNode: () => setSelectedNode(null),
       setRevealedNodes: () => setRevealedNodes(new Set()),
@@ -204,7 +223,7 @@ function AppInner() {
       exportToMarkdown,
       createEmptyFilterState,
     });
-  }, [loadFileContent, graphData, nodeTypeConfigs, templateFilePath, setGraphData, edgeColorOverrides, setEdgeColorOverrides, setError]);
+  }, [loadFileContent, graphData, nodeTypeConfigs, templateFilePath, setGraphData, loadGraphFresh, edgeColorOverrides, setEdgeColorOverrides, setError]);
 
   const handleViewModeChange = useCallback((mode: string) => {
     setViewMode(mode);
@@ -577,7 +596,8 @@ function AppInner() {
       };
       setGraphData(updated);
       setTemplate(newTemplate);
-      // Auto-save the .cmt template file when taxonomy is edited
+      // REQ-090: auto-save the .cmt to the same path the loaded map references,
+      // silently (no dialog), so the next map load picks up the edits.
       if (isNativeApp) {
         const templateJson = JSON.stringify({
           title: data.title,
@@ -587,7 +607,13 @@ function AppInner() {
           node_types: data.node_types,
           edge_types: data.edge_types,
         }, null, 2);
-        sendToSwift("saveTemplate", JSON.stringify({ content: templateJson, title: data.title }));
+        sendToSwift("saveTemplate", JSON.stringify({
+          content: templateJson,
+          title: data.title,
+          sourceTemplate: graphData.metadata.source_template ?? null,
+          sourceMapPath: sourceFilePath ?? null,
+          silent: !!graphData.metadata.source_template,
+        }));
       }
     } else {
       // Create mode: new empty graph
@@ -610,7 +636,7 @@ function AppInner() {
 
       if (isNativeApp) {
         sendToSwift("saveNewTaxonomy", JSON.stringify({ content: md, title: data.title }));
-        setGraphData(newGraph);
+        loadGraphFresh(newGraph);
       } else {
         const blob = new Blob([md], { type: "text/markdown" });
         const url = URL.createObjectURL(blob);
@@ -619,7 +645,7 @@ function AppInner() {
         a.download = `${data.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.cm`;
         a.click();
         URL.revokeObjectURL(url);
-        setGraphData(newGraph);
+        loadGraphFresh(newGraph);
       }
 
       setSelectedNode(null);
@@ -628,7 +654,7 @@ function AppInner() {
 
     setShowTaxonomyWizard(false);
     setTaxonomyEditData(undefined);
-  }, [isNativeApp, sendToSwift, graphData, setGraphData, taxonomyEditData, setError]);
+  }, [isNativeApp, sendToSwift, graphData, setGraphData, loadGraphFresh, taxonomyEditData, setError]);
 
   // Create a new empty map using an existing template's structure (no wizard)
   const handleNewFileFromTemplate = useCallback((tmplData: TaxonomyWizardInitial) => {
@@ -655,7 +681,7 @@ function AppInner() {
     };
 
     setTemplate(newTemplate);
-    setGraphData(newGraph);
+    loadGraphFresh(newGraph);
     setSelectedNode(null);
     setError(null);
 
@@ -664,7 +690,7 @@ function AppInner() {
     if (isNativeApp) {
       sendToSwift("saveNewTaxonomy", JSON.stringify({ content: md, title: mapTitle }));
     }
-  }, [isNativeApp, sendToSwift, setGraphData, setError]);
+  }, [isNativeApp, sendToSwift, loadGraphFresh, setError]);
 
   // Open wizard in edit mode with current taxonomy data
   const handleEditTaxonomy = useCallback(() => {

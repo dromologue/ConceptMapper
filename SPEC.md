@@ -1767,3 +1767,32 @@ If a node carries `tags`, the Sidebar exposes a collapsible **Tags** section lis
 - [x] AC-089-04: The Sidebar Tags section appears whenever `collectAllTags(nodes).length > 0` and lists every unique tag.
 - [x] AC-089-05: The Tags section is **open by default** (mirrors the Nodes section), so authored tags are visible without an extra click.
 - [x] AC-089-06: Clicking a tag in the Sidebar Tags section calls `onTagToggle(tag, allTagsSorted)` and updates the active tag filter via the existing tag filter pipeline.
+
+## REQ-090: Taxonomy Edits Round-Trip to Template File
+
+When a user edits the taxonomy of an open map via the Taxonomy wizard, the resulting `.cmt` template MUST be written back to disk silently (no `NSSavePanel`) so that the next time the map is opened, the edits are already loaded. The template file may live in either of two locations and the writer MUST respect that:
+
+1. **Next to the map** — e.g. `Maps/my-domain/my-domain.cmt` colocated with `Maps/my-domain/my-domain.cm`. This is how generators like `cmap_gen` organise per-domain bundles, where each map carries its own customised template alongside it.
+2. **Shared Templates folder** — `~/Documents/ConceptMapper/Templates/<name>.cmt`. The fallback location used when the map does not carry its own template alongside it.
+
+The .cm file references its template via the `<!-- template: foo.cmt -->` header (REQ-085). On taxonomy edit:
+
+- JS posts `saveTemplate` with `{ content, title, sourceTemplate, sourceMapPath, silent: true }`.
+- Swift resolves the write target as: `dirname(sourceMapPath)/sourceTemplate` if that file **already exists**; otherwise it falls back to `getTemplatesFolder()/sourceTemplate`.
+- The write is silent — no panel, no confirmation. The user sees their changes persist on the next load.
+- The "Save as New Template" flow (explicit user action) still uses `NSSavePanel`.
+
+**Expected Behavior:**
+
+- `FileHandler.overwriteTemplateForMap(content:, templateFilename:, sourceMapPath:, completion:)` writes silently and returns the saved path via completion.
+- If `sourceMapPath` is non-nil and the candidate path (`dirname/templateFilename`) exists on disk, the candidate is overwritten and the templates folder is never touched.
+- If `sourceMapPath` is nil OR the candidate path does not exist, the writer falls back to the shared Templates folder, creating it if necessary.
+- The .cm file's `<!-- template: -->` header is not modified by this flow — the template reference is preserved.
+
+**Acceptance Criteria:**
+
+- [x] AC-090-01: Editing the taxonomy of a map whose .cmt sits next to it overwrites the colocated .cmt and does NOT create a copy in the shared Templates folder.
+- [x] AC-090-02: Editing the taxonomy of a map whose .cmt is referenced from the shared Templates folder overwrites the shared file.
+- [x] AC-090-03: No `NSSavePanel` is displayed during silent save; the user is not interrupted.
+- [x] AC-090-04: After silent save, reopening the same map shows the edited classifiers / node types / edge types without re-edit.
+- [x] AC-090-05: The "Save as New Template" button in the wizard's Review step continues to surface `NSSavePanel` (this flow is non-silent).

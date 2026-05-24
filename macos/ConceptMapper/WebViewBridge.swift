@@ -160,15 +160,37 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
                 }
             }
         case "saveTemplate":
-            // JS sends JSON with { content, title }
+            // JS sends JSON with { content, title, sourceTemplate?, sourceMapPath?, silent? }
+            // Resolution order for the .cmt write target (REQ-090):
+            //   1. <dirname(sourceMapPath)>/<sourceTemplate>   — the template lives next to its map
+            //      (this is how generators like cmap_gen organise per-domain bundles).
+            //   2. <userTemplatesFolder>/<sourceTemplate>      — the app's shared templates folder.
+            //   3. NSSavePanel                                 — last-resort if no source info or silent=false.
             if let data = body.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-               let content = json["content"],
-               let title = json["title"] {
-                let filename = title.lowercased()
-                    .replacingOccurrences(of: "[^a-z0-9]+", with: "_", options: .regularExpression)
-                    .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
-                FileHandler.saveTemplateFile(content: content, defaultName: "\(filename).cmt") { _ in }
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let content = json["content"] as? String,
+               let title = json["title"] as? String {
+                let sourceTemplate = json["sourceTemplate"] as? String
+                let sourceMapPath = json["sourceMapPath"] as? String
+                let silent = (json["silent"] as? Bool) ?? false
+                let defaultName: String
+                if let src = sourceTemplate, !src.isEmpty {
+                    defaultName = src.hasSuffix(".cmt") ? src : "\(src).cmt"
+                } else {
+                    let slug = title.lowercased()
+                        .replacingOccurrences(of: "[^a-z0-9]+", with: "_", options: .regularExpression)
+                        .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+                    defaultName = "\(slug).cmt"
+                }
+                if silent, sourceTemplate != nil {
+                    FileHandler.overwriteTemplateForMap(
+                        content: content,
+                        templateFilename: defaultName,
+                        sourceMapPath: sourceMapPath
+                    ) { _ in }
+                } else {
+                    FileHandler.saveTemplateFile(content: content, defaultName: defaultName) { _ in }
+                }
             }
 
         case "openURL":

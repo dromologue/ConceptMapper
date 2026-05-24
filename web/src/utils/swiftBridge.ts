@@ -24,6 +24,8 @@ export interface SwiftBridgeDeps {
 
   // Setters
   setGraphData: (ir: GraphIR) => void;
+  /** Fresh-load entry point — seeds the expand-level back to 0 (REQ-088). */
+  loadGraphFresh: (ir: GraphIR | null) => void;
   setTemplate: (t: TaxonomyTemplate | null) => void;
   setSelectedNode: (n: null) => void;
   setRevealedNodes: (s: Set<string>) => void;
@@ -109,7 +111,8 @@ export function registerSwiftBridge(deps: SwiftBridgeDeps): () => void {
         } else {
           deps.setEdgeColorOverrides({});
         }
-        deps.setGraphData(ir);
+        // Fresh load from the Swift bridge → seed level=0 so the map opens collapsed.
+        deps.loadGraphFresh(ir);
         deps.setTemplate(migratedTemplate);
         deps.setSelectedNode(null);
         deps.setRevealedNodes(new Set());

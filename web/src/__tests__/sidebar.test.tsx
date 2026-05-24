@@ -355,7 +355,7 @@ describe("Tags section (REQ-089)", () => {
   });
 
   it("hides the Tags section when no node carries tags", () => {
-    const noTags = nodesWithTags.map(({ tags: _t, ...rest }) => rest);
+    const noTags = nodesWithTags.map((n) => ({ id: n.id, name: n.name, node_type: n.node_type, properties: n.properties }));
     render(<Sidebar {...defaultProps} nodes={noTags} />);
     expect(screen.queryByText("Tags")).not.toBeInTheDocument();
   });

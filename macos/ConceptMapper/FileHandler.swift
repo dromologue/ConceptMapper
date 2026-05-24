@@ -160,6 +160,55 @@ enum FileHandler {
         }
     }
 
+    /// Silently overwrite a .cmt template (no NSSavePanel). Used by REQ-090 —
+    /// taxonomy edits round-trip to disk so the next map load reflects them.
+    /// Resolution order:
+    ///   1. <dirname(sourceMapPath)>/<templateFilename> — template colocated with the map
+    ///      (this is how generators like cmap_gen organise per-domain bundles).
+    ///   2. <userTemplatesFolder>/<templateFilename> — the app's shared templates folder.
+    static func overwriteTemplateForMap(
+        content: String,
+        templateFilename: String,
+        sourceMapPath: String?,
+        completion: @escaping @MainActor (String) -> Void
+    ) {
+        // Prefer next-to-map location if the file currently exists there.
+        if let mapPath = sourceMapPath, !mapPath.isEmpty {
+            let mapDir = URL(fileURLWithPath: mapPath).deletingLastPathComponent()
+            let candidate = mapDir.appendingPathComponent(templateFilename)
+            if FileManager.default.fileExists(atPath: candidate.path) {
+                do {
+                    try content.write(to: candidate, atomically: true, encoding: .utf8)
+                    DispatchQueue.main.async { completion(candidate.path) }
+                    return
+                } catch {
+                    DispatchQueue.main.async {
+                        let alert = NSAlert()
+                        alert.messageText = "Failed to save template"
+                        alert.informativeText = error.localizedDescription
+                        alert.runModal()
+                    }
+                    return
+                }
+            }
+        }
+        // Fallback: shared templates folder.
+        let folder = getTemplatesFolder()
+        let url = folder.appendingPathComponent(templateFilename)
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try content.write(to: url, atomically: true, encoding: .utf8)
+            DispatchQueue.main.async { completion(url.path) }
+        } catch {
+            DispatchQueue.main.async {
+                let alert = NSAlert()
+                alert.messageText = "Failed to save template"
+                alert.informativeText = error.localizedDescription
+                alert.runModal()
+            }
+        }
+    }
+
     /// Show NSSavePanel for a .cmt template file.
     static func saveTemplateFile(content: String, defaultName: String, completion: @escaping @MainActor (String) -> Void) {
         let panel = NSSavePanel()

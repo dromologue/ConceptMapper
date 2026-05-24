@@ -35,6 +35,17 @@ describe("HelpPanel", () => {
     expect(screen.getByText("Troubleshooting")).toBeInTheDocument();
   });
 
+  it("documents the new features (REQ-087 / REQ-088 / REQ-089 / REQ-090)", () => {
+    render(<HelpPanel onClose={vi.fn()} />);
+    // REQ-088: collapse / expand to level
+    expect(screen.getByText("Collapse and Expand to Level")).toBeInTheDocument();
+    // REQ-087 + REQ-089: tags + sidebar tag list
+    expect(screen.getByText("Tags: Pills, Autocomplete, and the Sidebar List")).toBeInTheDocument();
+    // REQ-090: the round-trip behaviour is documented in the taxonomy wizard section.
+    const wizardSection = HELP_SECTIONS.find((s) => s.id === "taxonomy-wizard");
+    expect(wizardSection?.content).toMatch(/Round-trip to disk/i);
+  });
+
   it("includes the expected number of help sections", () => {
     expect(HELP_SECTIONS.length).toBeGreaterThanOrEqual(12);
     // Each section should have id, title, content
