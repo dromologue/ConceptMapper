@@ -11,6 +11,7 @@ import { EDGE_LABELS } from "../utils/edge-labels";
 import { getNodeColor } from "./node-color";
 import { communityColor } from "../ui/AnalysisPanel";
 import { computeFlowDepths, computeFlowPositions, computeRadialTargets } from "./layout-presets";
+import { truncateLabel, LABEL_TRUNCATE_LENGTH } from "../utils/label";
 
 // --- Organic rendering helpers ---
 
@@ -910,9 +911,24 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const isEdgeMode = interactionRef.current !== "normal";
       canvas.style.cursor = isEdgeMode ? "crosshair" : (newHovered || hoverIndicator) ? "pointer" : "grab";
 
-      // Edge hover tooltip
+      // Hover tooltip — shows the full name for nodes whose label was
+      // truncated, OR the edge type/note for edges.
       const tooltip = tooltipRef.current;
-      if (!newHovered && tooltip) {
+      if (newHovered && tooltip) {
+        if (hoveredEdgeRef.current) {
+          hoveredEdgeRef.current = null;
+          needsRedraw = true;
+        }
+        const hoveredNode = nodesRef.current.find((n) => n.id === newHovered);
+        if (hoveredNode && hoveredNode.name.length > LABEL_TRUNCATE_LENGTH) {
+          tooltip.textContent = hoveredNode.name;
+          tooltip.style.display = "block";
+          tooltip.style.left = `${event.offsetX + TOOLTIP_OFFSET_X}px`;
+          tooltip.style.top = `${event.offsetY + TOOLTIP_OFFSET_Y}px`;
+        } else {
+          tooltip.style.display = "none";
+        }
+      } else if (!newHovered && tooltip) {
         const edgeHit = findEdgeAt(event.offsetX, event.offsetY);
         if (edgeHit !== hoveredEdgeRef.current) {
           hoveredEdgeRef.current = edgeHit;
@@ -1679,7 +1695,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
         const labelColor = (!focusModeRef.current || isHighlighted) ? (isRevealed ? th.canvasLabelDim : th.canvasLabelHighlight) : th.canvasLabelDim;
         ctx.fillStyle = labelColor;
-        ctx.fillText(node.name, node.x, baseY);
+        ctx.fillText(truncateLabel(node.name), node.x, baseY);
 
         if (showTags) {
           ctx.font = `${tagsFS}px -apple-system, sans-serif`;

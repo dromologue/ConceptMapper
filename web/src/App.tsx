@@ -31,6 +31,7 @@ import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData, getTemplateClas
 import { createEmptyFilterState } from "./utils/filters";
 import type { FilterState } from "./utils/filters";
 import { normalizeFencedKV } from "./utils/normalize";
+import { escapeKVValue } from "./utils/kv-escape";
 import { useFileLoader } from "./hooks/useFileLoader";
 import { registerSwiftBridge } from "./utils/swiftBridge";
 import "./App.css";
@@ -1599,13 +1600,13 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[], edge
     for (const node of typeNodes) {
       lines.push("```");
       lines.push(`id:               ${node.id}`);
-      lines.push(`name:             ${node.name}`);
+      lines.push(`name:             ${escapeKVValue(node.name)}`);
 
       // Write classifier values (e.g. category: idea, urgency: now)
       if (node.classifiers) {
         for (const [key, value] of Object.entries(node.classifiers)) {
           if (value != null && value !== "") {
-            lines.push(`${key}: ${value}`);
+            lines.push(`${key}: ${escapeKVValue(String(value))}`);
           }
         }
       }
@@ -1615,15 +1616,17 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[], edge
         lines.push(`tags: ${node.tags.join(", ")}`);
       }
 
-      // Write properties
+      // Write properties (textarea fields may contain newlines — escape them
+      // so the round-trip preserves the value).
       const props = node.properties ?? {};
       for (const [key, value] of Object.entries(props)) {
         if (value != null && value !== "") {
-          lines.push(`${key}: ${value}`);
+          lines.push(`${key}: ${escapeKVValue(String(value))}`);
         }
       }
 
-      if (node.notes) lines.push(`notes:            ${node.notes.replace(/\n/g, " ")}`);
+      // Notes — escape newlines so multi-line outlines survive round-trip.
+      if (node.notes) lines.push(`notes:            ${escapeKVValue(node.notes)}`);
       lines.push("```\n");
     }
   }

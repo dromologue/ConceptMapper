@@ -4,6 +4,7 @@ import type {
   NodeTypeConfig, FieldConfig,
   Classifier,
 } from "./types/graph-ir";
+import { unescapeKVValue } from "./utils/kv-escape";
 
 /** Raw node shape from the WASM parser (Rust outputs `fields`, not `properties`) */
 interface RawParsedNode extends Omit<GraphNode, 'properties'> {
@@ -158,13 +159,24 @@ export function migrateFromParser(parsed: GraphIR, activeTemplate?: TaxonomyTemp
 
   const classifiers = effectiveClassifiers ?? getTemplateClassifiers(template);
 
+  // Decode the kv-escape used by the exporter so that multi-line values
+  // (textarea fields, outline notes) and literal backslashes round-trip
+  // through the .cm file unchanged.
+  const decodedProps = (fields: Record<string, string> | undefined) => {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(fields ?? {})) {
+      out[k] = typeof v === "string" ? unescapeKVValue(v) : v;
+    }
+    return out;
+  };
+
   const nodes: DataNode[] = rawNodes.map((n) => ({
     id: n.id,
     node_type: n.node_type,
-    name: n.name,
+    name: typeof n.name === "string" ? unescapeKVValue(n.name) : n.name,
     tags: n.tags,
-    properties: { ...(n.fields ?? {}) },
-    notes: n.notes,
+    properties: decodedProps(n.fields),
+    notes: typeof n.notes === "string" ? unescapeKVValue(n.notes) : n.notes,
   }));
 
   // REQ-089: lift a `tags` field (CSV string) into node.tags: string[].

@@ -1448,8 +1448,11 @@ canvas:active {
   color: var(--text-secondary, #ddd);
   pointer-events: none;
   z-index: 20;
-  white-space: pre-line;
-  max-width: 260px;
+  white-space: pre-wrap;          /* preserve explicit \n AND wrap long lines */
+  overflow-wrap: anywhere;        /* break inside un-spaced identifiers if needed */
+  word-break: break-word;
+  max-width: 220px;
+  line-height: 1.35;
 }
 
 /* ===== Edge Popover ===== */
