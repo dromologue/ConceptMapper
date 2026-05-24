@@ -92,3 +92,28 @@ fn h4_treated_as_content() {
     // The h4 line should be in the section's content
     assert!(sections[0].lines.len() >= 2);
 }
+
+// REGRESSION: "## Note Nodes" and "## Pillar Nodes" must classify as
+// SectionKind::Nodes("note") / Nodes("pillar"), not SectionKind::Notes.
+// "X Nodes" lowercased contains the substring "note" (inside "nodes"), so an
+// earlier version that classified by `path_str.contains("note")` silently
+// dropped every node block in templates that used these section names.
+#[test]
+fn x_nodes_section_classified_as_nodes_not_notes() {
+    use concept_mapper_core::parser::sections::SectionKind;
+    assert_eq!(
+        SectionKind::from_path("note nodes"),
+        SectionKind::Nodes("note".to_string()),
+        "## Note Nodes must parse as Nodes(\"note\")"
+    );
+    assert_eq!(
+        SectionKind::from_path("pillar nodes"),
+        SectionKind::Nodes("pillar".to_string()),
+        "## Pillar Nodes must parse as Nodes(\"pillar\")"
+    );
+    assert_eq!(
+        SectionKind::from_path("notes"),
+        SectionKind::Notes,
+        "## Notes (bare) is the free-form notes section"
+    );
+}

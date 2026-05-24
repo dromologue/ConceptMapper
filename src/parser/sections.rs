@@ -13,18 +13,21 @@ impl SectionKind {
     /// Classify a section from its joined, lowercased path string.
     pub fn from_path(path_str: &str) -> SectionKind {
         if path_str.contains("edge") {
-            SectionKind::Edges
-        } else if path_str.contains("note") || path_str.contains("observation") {
-            SectionKind::Notes
-        } else if path_str.contains("node") {
-            if let Some(node_type) = extract_node_type(path_str) {
-                SectionKind::Nodes(node_type)
-            } else {
-                SectionKind::Unknown
-            }
-        } else {
-            SectionKind::Unknown
+            return SectionKind::Edges;
         }
+        // Nodes MUST be checked before Notes: "X Nodes" lowercased contains
+        // the substring "note" (inside "nodes"). extract_node_type relies on
+        // the "*node*" word boundary so `## Notes` does not match here.
+        if path_str.contains("node") {
+            if let Some(node_type) = extract_node_type(path_str) {
+                return SectionKind::Nodes(node_type);
+            }
+        }
+        let first = path_str.split_whitespace().next().unwrap_or("");
+        if first == "notes" || path_str.contains("observation") {
+            return SectionKind::Notes;
+        }
+        SectionKind::Unknown
     }
 }
 
