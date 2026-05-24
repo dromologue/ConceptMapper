@@ -2,7 +2,7 @@ import type {
   GraphIR, GraphNode,
   TaxonomyTemplate, ConceptMapData, DataNode,
   NodeTypeConfig, FieldConfig,
-  Classifier, Stream, Generation,
+  Classifier,
 } from "./types/graph-ir";
 
 /** Raw node shape from the WASM parser (Rust outputs `fields`, not `properties`) */
@@ -55,69 +55,9 @@ export const DEFAULT_NODE_CONFIG: NodeTypeConfig = {
 
 export const DEFAULT_NODE_TYPES: NodeTypeConfig[] = [DEFAULT_NODE_CONFIG];
 
-/** Convert legacy Stream[] to a Classifier with layout "x" */
-export function streamsToClassifier(streams: Stream[], label?: string): Classifier {
-  return {
-    id: label?.toLowerCase().replace(/\s+/g, "_") ?? "stream",
-    label: label ?? "Streams",
-    layout: "x",
-    values: streams.map((s) => ({
-      id: s.id,
-      label: s.name,
-      color: s.color,
-      description: s.description,
-    })),
-  };
-}
-
-/** Convert legacy Generation[] to a Classifier with layout "y" */
-export function generationsToClassifier(generations: Generation[], label?: string): Classifier {
-  return {
-    id: label?.toLowerCase().replace(/\s+/g, "_") ?? "generation",
-    label: label ?? "Generations",
-    layout: "y",
-    values: generations.map((g) => ({
-      id: String(g.number),
-      label: g.label ?? `${g.number}`,
-      description: g.period,
-    })),
-  };
-}
-
-/** Build classifiers from a template, using classifiers if present or converting legacy streams/gens */
+/** Return the classifiers the template declares (the sole structural axis). */
 export function getTemplateClassifiers(template: TaxonomyTemplate): Classifier[] {
-  if (template.classifiers && template.classifiers.length > 0) return template.classifiers;
-  const result: Classifier[] = [];
-  if (template.streams && template.streams.length > 0) {
-    result.push(streamsToClassifier(template.streams, template.stream_label));
-  }
-  if (template.generations && template.generations.length > 0) {
-    result.push(generationsToClassifier(template.generations, template.generation_label));
-  }
-  return result;
-}
-
-/** Populate node.classifiers from legacy stream/generation fields.
- *  Maps stream → any classifier whose values contain the stream ID,
- *  and generation → any classifier whose values contain the generation number.
- *  This works regardless of classifier layout (x, y, region, etc). */
-function populateNodeClassifiers(node: GraphNode, classifiers: Classifier[]): void {
-  if (node.classifiers && Object.keys(node.classifiers).length > 0) return;
-  const cls: Record<string, string> = {};
-  for (const c of classifiers) {
-    // Try to match stream to a classifier by value IDs
-    if (node.stream && !cls[c.id]) {
-      const match = c.values.find((v) => v.id === node.stream);
-      if (match) cls[c.id] = node.stream;
-    }
-    // Try to match generation to a classifier by value IDs
-    if (node.generation != null && !cls[c.id]) {
-      const genStr = String(node.generation);
-      const match = c.values.find((v) => v.id === genStr);
-      if (match) cls[c.id] = genStr;
-    }
-  }
-  if (Object.keys(cls).length > 0) node.classifiers = cls;
+  return template.classifiers ?? [];
 }
 
 /**
@@ -171,7 +111,7 @@ export function migrateFromParser(parsed: GraphIR, activeTemplate?: TaxonomyTemp
   if (!activeTemplate?.classifiers && rawNodes.length > 0) {
     const fieldCounts = new Map<string, Map<string, number>>();
     const fieldNodeTypes = new Map<string, Set<string>>(); // track which node types use each field
-    const reservedKeys = new Set(["id", "name", "notes", "tags", "generation", "stream"]);
+    const reservedKeys = new Set(["id", "name", "notes", "tags"]);
     for (const n of rawNodes) {
       if (!n.fields) continue;
       for (const [k, v] of Object.entries(n.fields)) {
@@ -210,10 +150,8 @@ export function migrateFromParser(parsed: GraphIR, activeTemplate?: TaxonomyTemp
 
   const template: TaxonomyTemplate = {
     title: parsed.metadata.title ?? activeTemplate?.title ?? "Untitled",
-    description: parsed.metadata.structural_observations[0] ?? activeTemplate?.description ?? undefined,
+    description: parsed.metadata.notes?.[0] ?? activeTemplate?.description ?? undefined,
     classifiers: effectiveClassifiers,
-    streams: parsed.metadata.streams,
-    generations: parsed.metadata.generations,
     node_types: mergedNodeTypes,
     edge_types: mergedEdgeTypes,
   };
@@ -224,30 +162,24 @@ export function migrateFromParser(parsed: GraphIR, activeTemplate?: TaxonomyTemp
     id: n.id,
     node_type: n.node_type,
     name: n.name,
-    generation: n.generation,
-    stream: n.stream,
     tags: n.tags,
     properties: { ...(n.fields ?? {}) },
     notes: n.notes,
   }));
 
-  // Populate classifiers on nodes from fields or legacy stream/generation
+  // Lift any node field whose key matches a classifier ID into the node.classifiers map.
   for (const node of nodes) {
-    const gn = node as unknown as GraphNode;
-    // Extract classifier values from node properties (works with both template and auto-detected classifiers)
-    if (effectiveClassifiers) {
-      if (!gn.classifiers) gn.classifiers = {};
-      for (const cls of effectiveClassifiers) {
-        const val = (node.properties as Record<string, string>)[cls.id];
-        if (val) {
-          gn.classifiers[cls.id] = val;
-          // Remove from properties since it's now a classifier
-          delete (node.properties as Record<string, string>)[cls.id];
-        }
+    if (!effectiveClassifiers) continue;
+    const props = node.properties as Record<string, string>;
+    const cls: Record<string, string> = {};
+    for (const c of classifiers) {
+      const val = props[c.id];
+      if (val) {
+        cls[c.id] = val;
+        delete props[c.id];
       }
     }
-    populateNodeClassifiers(gn, classifiers);
-    node.classifiers = gn.classifiers;
+    if (Object.keys(cls).length > 0) node.classifiers = cls;
   }
 
   const data: ConceptMapData = {
@@ -256,8 +188,7 @@ export function migrateFromParser(parsed: GraphIR, activeTemplate?: TaxonomyTemp
     classifiers,
     nodes,
     edges: parsed.edges,
-    external_shocks: parsed.metadata.external_shocks,
-    structural_observations: parsed.metadata.structural_observations,
+    notes: parsed.metadata.notes,
   };
 
   return { template, data };
@@ -267,34 +198,24 @@ export function migrateFromParser(parsed: GraphIR, activeTemplate?: TaxonomyTemp
  * Merge a template + data into a runtime GraphIR (for rendering).
  */
 export function graphIRFromData(template: TaxonomyTemplate, data: ConceptMapData): GraphIR {
-  const nodes: GraphNode[] = data.nodes.map((dn) => {
-    const node: GraphNode = {
-      id: dn.id,
-      node_type: dn.node_type,
-      name: dn.name,
-      generation: dn.generation,
-      stream: dn.stream,
-      tags: dn.tags,
-      classifiers: dn.classifiers,
-      properties: { ...dn.properties },
-      notes: dn.notes,
-    };
-
-    return node;
-  });
+  const nodes: GraphNode[] = data.nodes.map((dn) => ({
+    id: dn.id,
+    node_type: dn.node_type,
+    name: dn.name,
+    tags: dn.tags,
+    classifiers: dn.classifiers,
+    properties: { ...dn.properties },
+    notes: dn.notes,
+  }));
 
   const classifiers = getTemplateClassifiers(template);
-  for (const node of nodes) populateNodeClassifiers(node, classifiers);
 
   return {
     version: data.version,
     metadata: {
       title: template.title,
       classifiers,
-      streams: template.streams ?? [],
-      generations: template.generations ?? [],
-      external_shocks: data.external_shocks,
-      structural_observations: data.structural_observations,
+      notes: data.notes ?? [],
       template,
     },
     nodes,
@@ -310,8 +231,6 @@ export function dataFromGraphIR(graphIR: GraphIR, templateRef: string = ""): Con
     id: n.id,
     node_type: n.node_type,
     name: n.name,
-    generation: n.generation,
-    stream: n.stream,
     tags: n.tags,
     classifiers: n.classifiers,
     properties: n.properties ?? {},
@@ -323,14 +242,11 @@ export function dataFromGraphIR(graphIR: GraphIR, templateRef: string = ""): Con
     template: templateRef,
     title: graphIR.metadata.title,
     classifiers: graphIR.metadata.classifiers,
-    streams: graphIR.metadata.streams,
-    generations: graphIR.metadata.generations,
     node_types: graphIR.metadata.template?.node_types,
     edge_types: graphIR.metadata.template?.edge_types,
     nodes,
     edges: graphIR.edges,
-    external_shocks: graphIR.metadata.external_shocks,
-    structural_observations: graphIR.metadata.structural_observations,
+    notes: graphIR.metadata.notes,
   };
 }
 

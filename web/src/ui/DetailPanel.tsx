@@ -3,6 +3,8 @@ import type { GraphNode, GraphEdge, Classifier, NodeTypeConfig, TaxonomyTemplate
 import { getNodeTypeConfig } from "../migration";
 import { EDGE_LABELS } from "../utils/edge-labels";
 import type { NetworkAnalysis } from "../utils/graph-analysis";
+import { TagInput } from "./TagInput";
+import { collectAllTags } from "../utils/tags";
 
 interface Props {
   node: GraphNode;
@@ -187,32 +189,11 @@ export function DetailPanel({
               {/* Tags */}
               <div className="editor-field">
                 <label>Tags</label>
-                <div className="tag-pills">
-                  {(node.tags ?? []).map((tag, i) => (
-                    <span key={i} className="tag-pill">
-                      {tag}
-                      <button className="tag-remove" onClick={() => {
-                        const newTags = (node.tags ?? []).filter((_, idx) => idx !== i);
-                        onNodeUpdate(node.id, { tags: newTags.length > 0 ? newTags : undefined });
-                      }}>&times;</button>
-                    </span>
-                  ))}
-                  <input
-                    className="tag-input"
-                    type="text"
-                    placeholder="Add tag..."
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === ",") {
-                        e.preventDefault();
-                        const val = (e.target as HTMLInputElement).value.trim();
-                        if (val && !(node.tags ?? []).includes(val)) {
-                          onNodeUpdate(node.id, { tags: [...(node.tags ?? []), val] });
-                        }
-                        (e.target as HTMLInputElement).value = "";
-                      }
-                    }}
-                  />
-                </div>
+                <TagInput
+                  value={node.tags ?? []}
+                  existingTags={collectAllTags(nodes)}
+                  onChange={(next) => onNodeUpdate(node.id, { tags: next.length > 0 ? next : undefined })}
+                />
               </div>
               {/* Dynamic fields from config */}
               {config?.fields.map((field) => {

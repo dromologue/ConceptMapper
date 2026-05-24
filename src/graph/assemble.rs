@@ -7,7 +7,6 @@ use crate::parser::lexer::{lex, ClassifiedLine, LineType};
 use crate::parser::metadata_parser;
 use crate::parser::node_parser::{self, GenericNode};
 use crate::parser::sections::{split_sections, SectionKind};
-use crate::parser::table_parser;
 
 /// Output of parsing a full document.
 pub struct ParseOutput {
@@ -22,10 +21,7 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> ParseResult<Par
 
     let mut generic_nodes: Vec<GenericNode> = Vec::new();
     let mut edges = Vec::new();
-    let mut generations = Vec::new();
-    let mut streams = Vec::new();
-    let mut external_shocks = Vec::new();
-    let mut structural_observations = Vec::new();
+    let mut notes: Vec<String> = Vec::new();
     let mut errors = Vec::new();
     let mut warnings = Vec::new();
     let mut title = None;
@@ -46,20 +42,11 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> ParseResult<Par
         let path_str = section.path.join(" > ").to_lowercase();
 
         match SectionKind::from_path(&path_str) {
-            SectionKind::Generations => {
-                generations = parse_generations(&section.lines);
-            }
-            SectionKind::Streams => {
-                streams = parse_streams(&section.lines);
-            }
             SectionKind::Edges => {
                 parse_edge_blocks(&section.lines, &mut edges, &mut errors);
             }
-            SectionKind::ExternalShocks => {
-                parse_shock_blocks(&section.lines, &mut external_shocks);
-            }
-            SectionKind::StructuralObservations => {
-                structural_observations = metadata_parser::parse_observations(&section.lines);
+            SectionKind::Notes => {
+                notes.extend(metadata_parser::parse_notes(&section.lines));
             }
             SectionKind::Nodes(node_type) => {
                 parse_generic_blocks(&section.lines, &node_type, &mut generic_nodes, &mut errors);
@@ -97,8 +84,6 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> ParseResult<Par
             id: g.id,
             node_type: g.node_type,
             name: g.name,
-            generation: g.generation,
-            stream: g.stream,
             fields: if g.fields.is_empty() {
                 None
             } else {
@@ -146,10 +131,7 @@ pub fn parse_document(input: &str, source_file: Option<&str>) -> ParseResult<Par
             title,
             source_file: source_file.map(|s| s.to_string()),
             parsed_at: Some(chrono::Utc::now().to_rfc3339()),
-            generations,
-            streams,
-            external_shocks,
-            structural_observations,
+            notes,
             network_stats: Some(NetworkStats {
                 node_count: ir_nodes.len() as i32,
                 edge_count: ir_edges.len() as i32,
@@ -195,64 +177,6 @@ fn edge_visual(edge_type: &str) -> (bool, EdgeVisual) {
     }
 }
 
-/// Look up a cell value by column name (case-insensitive substring match).
-fn table_get(row: &table_parser::TableRow, key: &str) -> Option<String> {
-    row.cells
-        .iter()
-        .find(|(k, _)| k.to_lowercase().contains(&key.to_lowercase()))
-        .map(|(_, v)| v.clone())
-}
-
-fn parse_generations(lines: &[ClassifiedLine]) -> Vec<Generation> {
-    let rows = table_parser::parse_table(lines);
-    rows.iter()
-        .map(|row| Generation {
-            number: table_get(row, "Gen")
-                .and_then(|v| v.trim().parse().ok())
-                .unwrap_or(0),
-            period: table_get(row, "Period"),
-            label: table_get(row, "Label"),
-            attention_space_count: table_get(row, "Attention").and_then(|v| v.trim().parse().ok()),
-        })
-        .collect()
-}
-
-fn normalize_color(raw: &str) -> String {
-    match raw.trim().to_lowercase().as_str() {
-        "blue" => "#4A90D9",
-        "red" => "#D94A4A",
-        "green" => "#4AD94A",
-        "amber" | "orange" => "#E6A23C",
-        "purple" => "#9B59B6",
-        "yellow" => "#F5D623",
-        "pink" => "#E91E8C",
-        "grey" | "gray" => "#999999",
-        _ => raw.trim(), // already hex or CSS color
-    }
-    .to_string()
-}
-
-fn parse_streams(lines: &[ClassifiedLine]) -> Vec<Stream> {
-    let rows = table_parser::parse_table(lines);
-    rows.iter()
-        .map(|row| Stream {
-            id: table_get(row, "Stream ID")
-                .unwrap_or_default()
-                .trim()
-                .trim_matches('`')
-                .to_string(),
-            name: table_get(row, "Name")
-                .unwrap_or_default()
-                .trim()
-                .to_string(),
-            color: table_get(row, "Colour")
-                .or_else(|| table_get(row, "Color"))
-                .map(|c| normalize_color(&c)),
-            description: table_get(row, "Description"),
-        })
-        .collect()
-}
-
 fn parse_generic_blocks(
     lines: &[ClassifiedLine],
     node_type: &str,
@@ -277,13 +201,6 @@ fn parse_edge_blocks(
             Ok(mut parsed) => edges.append(&mut parsed),
             Err(mut errs) => errors.append(&mut errs),
         }
-    }
-}
-
-fn parse_shock_blocks(lines: &[ClassifiedLine], shocks: &mut Vec<ExternalShock>) {
-    for block in extract_fenced_blocks(lines) {
-        let mut parsed = metadata_parser::parse_external_shocks(&block);
-        shocks.append(&mut parsed);
     }
 }
 

@@ -8,19 +8,19 @@ function makeNode(overrides: Partial<GraphNode> = {}): GraphNode {
     id: "n1",
     node_type: "person",
     name: "Alice",
-    generation: 1,
-    stream: "s1",
+    classifiers: { discipline: "philosophy" },
     properties: { importance: "major" },
     ...overrides,
   };
 }
 
 describe("createEmptyFilterState", () => {
-  it("returns null for all filter categories", () => {
+  it("returns an empty state with no active filters", () => {
     const state = createEmptyFilterState();
-    expect(state.streams).toBeNull();
-    expect(state.generations).toBeNull();
+    expect(state.classifiers).toHaveLength(0);
     expect(state.attributes).toHaveLength(0);
+    expect(state.dateRanges).toHaveLength(0);
+    expect(state.tags).toBeNull();
   });
 });
 
@@ -29,13 +29,16 @@ describe("isFilterActive", () => {
     expect(isFilterActive(createEmptyFilterState())).toBe(false);
   });
 
-  it("returns true when streams filter is set", () => {
-    const state: FilterState = { ...createEmptyFilterState(), streams: new Set(["s1"]) };
+  it("returns true when a classifier filter is set", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      classifiers: [{ classifierId: "discipline", values: new Set(["philosophy"]) }],
+    };
     expect(isFilterActive(state)).toBe(true);
   });
 
-  it("returns true when generations filter is set", () => {
-    const state: FilterState = { ...createEmptyFilterState(), generations: new Set([1]) };
+  it("returns true when a tag filter is set", () => {
+    const state: FilterState = { ...createEmptyFilterState(), tags: new Set(["research"]) };
     expect(isFilterActive(state)).toBe(true);
   });
 
@@ -62,38 +65,48 @@ describe("isNodeFilterVisible", () => {
     expect(isNodeFilterVisible(node, createEmptyFilterState())).toBe(true);
   });
 
-  // --- Stream filtering ---
+  // --- Classifier filtering (the only way to filter by structural axis) ---
 
-  it("shows node when its stream is in the active set", () => {
-    const state: FilterState = { ...createEmptyFilterState(), streams: new Set(["s1"]) };
-    expect(isNodeFilterVisible(makeNode({ stream: "s1" }), state)).toBe(true);
+  it("shows node when its classifier value matches the filter", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      classifiers: [{ classifierId: "discipline", values: new Set(["philosophy"]) }],
+    };
+    expect(isNodeFilterVisible(makeNode({ classifiers: { discipline: "philosophy" } }), state)).toBe(true);
   });
 
-  it("hides node when its stream is NOT in the active set", () => {
-    const state: FilterState = { ...createEmptyFilterState(), streams: new Set(["s2"]) };
-    expect(isNodeFilterVisible(makeNode({ stream: "s1" }), state)).toBe(false);
+  it("hides node when its classifier value does NOT match the filter", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      classifiers: [{ classifierId: "discipline", values: new Set(["philosophy"]) }],
+    };
+    expect(isNodeFilterVisible(makeNode({ classifiers: { discipline: "sociology" } }), state)).toBe(false);
   });
 
-  it("hides node with no stream when stream filter is active", () => {
-    const state: FilterState = { ...createEmptyFilterState(), streams: new Set(["s1"]) };
-    expect(isNodeFilterVisible(makeNode({ stream: undefined }), state)).toBe(false);
+  it("hides node with no classifier value when classifier filter is active", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      classifiers: [{ classifierId: "discipline", values: new Set(["philosophy"]) }],
+    };
+    expect(isNodeFilterVisible(makeNode({ classifiers: undefined }), state)).toBe(false);
   });
 
-  // --- Generation filtering ---
-
-  it("shows node when its generation is in the active set", () => {
-    const state: FilterState = { ...createEmptyFilterState(), generations: new Set([1]) };
-    expect(isNodeFilterVisible(makeNode({ generation: 1 }), state)).toBe(true);
+  it("ignores classifier filter with null values (inactive)", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      classifiers: [{ classifierId: "discipline", values: null }],
+    };
+    expect(isNodeFilterVisible(makeNode(), state)).toBe(true);
   });
 
-  it("hides node when its generation is NOT in the active set", () => {
-    const state: FilterState = { ...createEmptyFilterState(), generations: new Set([2]) };
-    expect(isNodeFilterVisible(makeNode({ generation: 1 }), state)).toBe(false);
-  });
-
-  it("hides node with no generation when generation filter is active", () => {
-    const state: FilterState = { ...createEmptyFilterState(), generations: new Set([1]) };
-    expect(isNodeFilterVisible(makeNode({ generation: undefined }), state)).toBe(false);
+  it("supports OR within a classifier (multiple selected values)", () => {
+    const state: FilterState = {
+      ...createEmptyFilterState(),
+      classifiers: [{ classifierId: "discipline", values: new Set(["philosophy", "sociology"]) }],
+    };
+    expect(isNodeFilterVisible(makeNode({ classifiers: { discipline: "philosophy" } }), state)).toBe(true);
+    expect(isNodeFilterVisible(makeNode({ classifiers: { discipline: "sociology" } }), state)).toBe(true);
+    expect(isNodeFilterVisible(makeNode({ classifiers: { discipline: "psychology" } }), state)).toBe(false);
   });
 
   // --- Attribute filtering ---
@@ -119,7 +132,6 @@ describe("isNodeFilterVisible", () => {
       ...createEmptyFilterState(),
       attributes: [{ nodeType: "person", field: "importance", values: new Set(["dominant"]) }],
     };
-    // concept node should NOT be affected by person.importance filter
     expect(isNodeFilterVisible(makeNode({ node_type: "concept", properties: { importance: "minor" } }), state)).toBe(true);
   });
 
@@ -143,28 +155,30 @@ describe("isNodeFilterVisible", () => {
 
   it("requires ALL active filter categories to pass (AND logic)", () => {
     const state: FilterState = {
-      streams: new Set(["s1"]),
-      generations: new Set([1]),
-      classifiers: [],
+      classifiers: [
+        { classifierId: "discipline", values: new Set(["philosophy"]) },
+        { classifierId: "generation", values: new Set(["1"]) },
+      ],
       attributes: [{ nodeType: "person", field: "importance", values: new Set(["major"]) }],
       dateRanges: [],
       tags: null,
     };
-    // Passes all three
-    expect(isNodeFilterVisible(makeNode({ stream: "s1", generation: 1, properties: { importance: "major" } }), state)).toBe(true);
-    // Fails stream
-    expect(isNodeFilterVisible(makeNode({ stream: "s2", generation: 1, properties: { importance: "major" } }), state)).toBe(false);
-    // Fails generation
-    expect(isNodeFilterVisible(makeNode({ stream: "s1", generation: 2, properties: { importance: "major" } }), state)).toBe(false);
-    // Fails attribute
-    expect(isNodeFilterVisible(makeNode({ stream: "s1", generation: 1, properties: { importance: "minor" } }), state)).toBe(false);
-  });
-
-  it("supports OR within a category (multiple selected values)", () => {
-    const state: FilterState = { ...createEmptyFilterState(), streams: new Set(["s1", "s2"]) };
-    expect(isNodeFilterVisible(makeNode({ stream: "s1" }), state)).toBe(true);
-    expect(isNodeFilterVisible(makeNode({ stream: "s2" }), state)).toBe(true);
-    expect(isNodeFilterVisible(makeNode({ stream: "s3" }), state)).toBe(false);
+    expect(isNodeFilterVisible(makeNode({
+      classifiers: { discipline: "philosophy", generation: "1" },
+      properties: { importance: "major" },
+    }), state)).toBe(true);
+    expect(isNodeFilterVisible(makeNode({
+      classifiers: { discipline: "sociology", generation: "1" },
+      properties: { importance: "major" },
+    }), state)).toBe(false);
+    expect(isNodeFilterVisible(makeNode({
+      classifiers: { discipline: "philosophy", generation: "2" },
+      properties: { importance: "major" },
+    }), state)).toBe(false);
+    expect(isNodeFilterVisible(makeNode({
+      classifiers: { discipline: "philosophy", generation: "1" },
+      properties: { importance: "minor" },
+    }), state)).toBe(false);
   });
 
   it("supports OR within attribute filters", () => {
@@ -248,79 +262,30 @@ describe("isNodeFilterVisible", () => {
       ...createEmptyFilterState(),
       dateRanges: [{ nodeType: "person", fromField: "date_from", toField: "date_to", range: { from: "2026-01-01", to: "2026-06-30" } }],
     };
-    // Node within range
     expect(isNodeFilterVisible(makeNode({ properties: { date_from: "2026-03", date_to: "2026-05" } }), state)).toBe(true);
-    // Node after range
     expect(isNodeFilterVisible(makeNode({ properties: { date_from: "2026-07", date_to: "2026-08" } }), state)).toBe(false);
-    // Node before range
     expect(isNodeFilterVisible(makeNode({ properties: { date_from: "2025-06", date_to: "2025-12" } }), state)).toBe(false);
-  });
-
-  // --- Classifier filtering ---
-
-  it("shows node when its classifier value matches the filter", () => {
-    const state: FilterState = {
-      ...createEmptyFilterState(),
-      classifiers: [{ classifierId: "discipline", values: new Set(["philosophy"]) }],
-    };
-    expect(isNodeFilterVisible(makeNode({ classifiers: { discipline: "philosophy" } }), state)).toBe(true);
-  });
-
-  it("hides node when its classifier value does NOT match the filter", () => {
-    const state: FilterState = {
-      ...createEmptyFilterState(),
-      classifiers: [{ classifierId: "discipline", values: new Set(["philosophy"]) }],
-    };
-    expect(isNodeFilterVisible(makeNode({ classifiers: { discipline: "sociology" } }), state)).toBe(false);
-  });
-
-  it("hides node with no classifier value when classifier filter is active", () => {
-    const state: FilterState = {
-      ...createEmptyFilterState(),
-      classifiers: [{ classifierId: "discipline", values: new Set(["philosophy"]) }],
-    };
-    expect(isNodeFilterVisible(makeNode({ classifiers: undefined }), state)).toBe(false);
-  });
-
-  it("ignores classifier filter with null values (inactive)", () => {
-    const state: FilterState = {
-      ...createEmptyFilterState(),
-      classifiers: [{ classifierId: "discipline", values: null }],
-    };
-    expect(isNodeFilterVisible(makeNode(), state)).toBe(true);
   });
 
   // --- Tag filtering ---
 
   it("shows node when it has a matching tag", () => {
-    const state: FilterState = {
-      ...createEmptyFilterState(),
-      tags: new Set(["research"]),
-    };
+    const state: FilterState = { ...createEmptyFilterState(), tags: new Set(["research"]) };
     expect(isNodeFilterVisible(makeNode({ tags: ["research", "ai"] }), state)).toBe(true);
   });
 
   it("hides node when none of its tags match the filter", () => {
-    const state: FilterState = {
-      ...createEmptyFilterState(),
-      tags: new Set(["research"]),
-    };
+    const state: FilterState = { ...createEmptyFilterState(), tags: new Set(["research"]) };
     expect(isNodeFilterVisible(makeNode({ tags: ["design", "ux"] }), state)).toBe(false);
   });
 
   it("hides node with no tags when tag filter is active", () => {
-    const state: FilterState = {
-      ...createEmptyFilterState(),
-      tags: new Set(["research"]),
-    };
+    const state: FilterState = { ...createEmptyFilterState(), tags: new Set(["research"]) };
     expect(isNodeFilterVisible(makeNode({ tags: undefined }), state)).toBe(false);
   });
 
   it("shows all nodes when tag filter is null", () => {
-    const state: FilterState = {
-      ...createEmptyFilterState(),
-      tags: null,
-    };
+    const state: FilterState = { ...createEmptyFilterState(), tags: null };
     expect(isNodeFilterVisible(makeNode({ tags: ["anything"] }), state)).toBe(true);
     expect(isNodeFilterVisible(makeNode({ tags: undefined }), state)).toBe(true);
   });

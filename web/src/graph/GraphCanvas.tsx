@@ -1070,10 +1070,10 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       if (existing) {
         existing.name = n.name;
         existing.node_type = n.node_type;
-        existing.generation = n.generation;
-        existing.stream = n.stream;
+        existing.classifiers = n.classifiers;
         existing.properties = n.properties;
         existing.notes = n.notes;
+        existing.tags = n.tags;
       }
     }
 

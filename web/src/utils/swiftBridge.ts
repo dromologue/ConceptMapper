@@ -170,9 +170,9 @@ export function registerSwiftBridge(deps: SwiftBridgeDeps): () => void {
         next.set(tmpl.title, {
           title: tmpl.title,
           description: tmpl.description,
-          streams: tmpl.streams ?? [],
-          generations: tmpl.generations ?? [],
+          classifiers: tmpl.classifiers,
           node_types: tmpl.node_types,
+          edge_types: tmpl.edge_types,
         });
         return next;
       });

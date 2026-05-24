@@ -19,8 +19,6 @@ pub struct GenericNode {
     pub id: String,
     pub name: String,
     pub node_type: String,
-    pub generation: Option<i32>,
-    pub stream: Option<String>,
     pub fields: HashMap<String, String>,
     pub notes: Option<String>,
 }
@@ -65,14 +63,11 @@ pub fn parse_generic_node(
         return Err(errors);
     }
 
-    let generation = kv
-        .get("generation")
-        .and_then(|(v, _)| v.trim().parse::<i32>().ok());
-    let stream = kv.get("stream").map(|(v, _)| v.clone());
     let notes = kv.get("notes").map(|(v, _)| v.clone());
 
-    // All other fields go into the HashMap
-    let reserved = ["id", "name", "generation", "stream", "notes"];
+    // All other fields go into the HashMap. Only id/name/notes are reserved;
+    // every other key (including classifier references) is a generic field.
+    let reserved = ["id", "name", "notes"];
     let fields: HashMap<String, String> = kv
         .iter()
         .filter(|(k, _)| !reserved.contains(&k.as_str()))
@@ -83,8 +78,6 @@ pub fn parse_generic_node(
         id,
         name,
         node_type: node_type.to_string(),
-        generation,
-        stream,
         fields,
         notes,
     })

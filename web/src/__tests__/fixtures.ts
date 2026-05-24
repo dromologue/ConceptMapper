@@ -1,25 +1,34 @@
 import type { GraphIR, GraphNode, GraphEdge, NodeTypeConfig, Classifier } from "../types/graph-ir";
-import { DEFAULT_NODE_CONFIG, DEFAULT_PERSON_CONFIG, DEFAULT_CONCEPT_CONFIG, streamsToClassifier, generationsToClassifier } from "../migration";
+import { DEFAULT_NODE_CONFIG, DEFAULT_PERSON_CONFIG, DEFAULT_CONCEPT_CONFIG } from "../migration";
 
 export const defaultNodeTypeConfigs: NodeTypeConfig[] = [DEFAULT_NODE_CONFIG];
 export const legacyNodeTypeConfigs: NodeTypeConfig[] = [DEFAULT_PERSON_CONFIG, DEFAULT_CONCEPT_CONFIG];
 
-export const sampleStreams = [
-  { id: "psychology", name: "Psychology & Cognition", color: "#D9A84A", description: "How individuals think" },
-  { id: "systems", name: "Systems & Complexity", color: "#4AD94A", description: "How systems work" },
-  { id: "sensemaking", name: "Sensemaking & Safety", color: "#9B59B6", description: "How meaning is constructed" },
-];
+// Classifier that used to be modelled as "streams" — now just a regular classifier.
+export const conditionClassifier: Classifier = {
+  id: "condition",
+  label: "Conditions",
+  layout: "x",
+  values: [
+    { id: "psychology", label: "Psychology & Cognition", color: "#D9A84A", description: "How individuals think" },
+    { id: "systems", label: "Systems & Complexity", color: "#4AD94A", description: "How systems work" },
+    { id: "sensemaking", label: "Sensemaking & Safety", color: "#9B59B6", description: "How meaning is constructed" },
+  ],
+};
 
-export const sampleGenerations = [
-  { number: 2, period: "~1930–1960", label: "Systematisers", attention_space_count: 4 },
-  { number: 3, period: "~1960–1985", label: "Flowering", attention_space_count: 5 },
-  { number: 5, period: "~2000–present", label: "Practitioners", attention_space_count: 4 },
-];
+// Classifier that used to be modelled as "generations" — now just a regular classifier.
+export const generationClassifier: Classifier = {
+  id: "generation",
+  label: "Generations",
+  layout: "y",
+  values: [
+    { id: "2", label: "Systematisers", description: "~1930–1960" },
+    { id: "3", label: "Flowering", description: "~1960–1985" },
+    { id: "5", label: "Practitioners", description: "~2000–present" },
+  ],
+};
 
-export const sampleClassifiers: Classifier[] = [
-  streamsToClassifier(sampleStreams),
-  generationsToClassifier(sampleGenerations),
-];
+export const sampleClassifiers: Classifier[] = [conditionClassifier, generationClassifier];
 
 export const sampleRegionClassifier: Classifier = {
   id: "domain",
@@ -36,13 +45,12 @@ export const argyris: GraphNode = {
   id: "argyris",
   node_type: "person",
   name: "Chris Argyris",
-  generation: 2,
-  stream: "psychology",
+  classifiers: { generation: "2", condition: "psychology" },
+  tags: ["Harvard Business School"],
   properties: {
     importance: "dominant",
     date_from: "1923",
     date_to: "2013",
-    tags: "Harvard Business School",
     structural_roles: "intellectual_leader, chain_originator",
   },
 };
@@ -51,12 +59,11 @@ export const senge: GraphNode = {
   id: "senge",
   node_type: "person",
   name: "Peter Senge",
-  generation: 3,
-  stream: "systems",
+  classifiers: { generation: "3", condition: "systems" },
+  tags: ["MIT Sloan"],
   properties: {
     importance: "major",
     date_from: "1947",
-    tags: "MIT Sloan",
     structural_roles: "synthesiser",
   },
 };
@@ -65,12 +72,11 @@ export const dekker: GraphNode = {
   id: "dekker",
   node_type: "person",
   name: "Sidney Dekker",
-  generation: 5,
-  stream: "sensemaking",
+  classifiers: { generation: "5", condition: "sensemaking" },
+  tags: ["Griffith University"],
   properties: {
     importance: "major",
     date_from: "1969",
-    tags: "Griffith University",
     structural_roles: "intellectual_leader",
   },
 };
@@ -79,8 +85,7 @@ export const doubleLoop: GraphNode = {
   id: "double_loop",
   node_type: "concept",
   name: "Double-Loop Learning",
-  generation: 3,
-  stream: "psychology",
+  classifiers: { generation: "3", condition: "psychology" },
   properties: {
     concept_type: "distinction",
     abstraction_level: "theoretical",
@@ -94,8 +99,7 @@ export const cynefin: GraphNode = {
   id: "cynefin",
   node_type: "concept",
   name: "Cynefin Framework",
-  generation: 5,
-  stream: "sensemaking",
+  classifiers: { generation: "5", condition: "sensemaking" },
   properties: {
     concept_type: "framework",
     abstraction_level: "operational",
@@ -131,10 +135,8 @@ export const sampleGraphData: GraphIR = {
     title: "Test Network",
     source_file: "test.md",
     parsed_at: "2026-03-14T00:00:00Z",
-    generations: sampleGenerations,
-    streams: sampleStreams,
-    external_shocks: [{ date: "2001", description: "Agile Manifesto" }],
-    structural_observations: ["Test observation"],
+    classifiers: sampleClassifiers,
+    notes: ["Test observation", "Agile Manifesto, 2001"],
     network_stats: { node_count: 5, edge_count: 3 },
   },
   nodes: [argyris, senge, dekker, doubleLoop, cynefin],
@@ -165,4 +167,3 @@ export const classifierWithColors: Classifier = {
 };
 
 export const multiClassifiers: Classifier[] = [classifierWithoutColors, classifierWithColors];
-

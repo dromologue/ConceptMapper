@@ -15,30 +15,13 @@ pub struct Metadata {
     pub title: Option<String>,
     pub source_file: Option<String>,
     pub parsed_at: Option<String>,
-    pub generations: Vec<Generation>,
-    pub streams: Vec<Stream>,
-    pub external_shocks: Vec<ExternalShock>,
-    pub structural_observations: Vec<String>,
+    /// Optional document-level notes (the .cm body can carry a free-form
+    /// `## Notes` section). Anything more structured belongs in a node
+    /// defined by the template — there are no privileged content types.
+    #[serde(default)]
+    pub notes: Vec<String>,
     pub network_stats: Option<NetworkStats>,
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Generation {
-    pub number: i32,
-    pub period: Option<String>,
-    pub label: Option<String>,
-    pub attention_space_count: Option<i32>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Stream {
-    pub id: String,
-    pub name: String,
-    pub color: Option<String>,
-    pub description: Option<String>,
-}
-
-pub use crate::parser::metadata_parser::ExternalShock;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NetworkStats {
@@ -51,9 +34,7 @@ pub struct Node {
     pub id: String,
     pub node_type: String,
     pub name: String,
-    pub generation: Option<i32>,
-    pub stream: Option<String>,
-    /// All custom key-value fields for this node.
+    /// All custom key-value fields for this node, including classifier references.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fields: Option<BTreeMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -1422,27 +1422,7 @@ from: more_is_different to: physics_complex_systems type: applies
 
 ```
 
-## External Shocks
-
-```
-date: 1984
-description: Santa Fe Institute founded — institutional anchor for complexity science, creating a permanent home for interdisciplinary complexity research
-
-date: 1987
-description: Gleick publishes "Chaos" — massive public interest in chaos theory and complexity; cultural moment
-
-date: 1998-1999
-description: Watts-Strogatz and Barabási-Albert papers — network science crystallizes as a field within 18 months
-
-date: 2008
-description: Global financial crisis — mainstream exposure for complexity economics; models of systemic risk and contagion gain urgency
-
-date: 2020
-description: COVID-19 pandemic — complexity science and network epidemiology become central to public health response worldwide
-
-```
-
-## Structural Observations
+## Notes
 
 - The map shows a clear temporal flow from left (1940s) to right (2020s), with fields budding off parent fields as they mature
 - Cybernetics and Systems Theory are the twin roots from which nearly all other streams descend
@@ -1452,3 +1432,8 @@ description: COVID-19 pandemic — complexity science and network epidemiology b
 - The fields are not cleanly separable — nearly every major researcher bridges two or more domains
 - Applied Complexity (2010s–2020s) represents the current frontier: complexity methods reaching policy, health, and organizational practice
 - The map itself is a complexity artifact — self-referential, with Castellani mapping the field he participates in
+- 1984: Santa Fe Institute founded — institutional anchor for complexity science, creating a permanent home for interdisciplinary complexity research
+- 1987: Gleick publishes "Chaos" — massive public interest in chaos theory and complexity; cultural moment
+- 1998-1999: Watts-Strogatz and Barabási-Albert papers — network science crystallizes as a field within 18 months
+- 2008: Global financial crisis — mainstream exposure for complexity economics; models of systemic risk and contagion gain urgency
+- 2020: COVID-19 pandemic — complexity science and network epidemiology become central to public health response worldwide

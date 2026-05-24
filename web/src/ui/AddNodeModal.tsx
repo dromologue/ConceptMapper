@@ -1,16 +1,19 @@
 import { useState } from "react";
 import type { Classifier, NodeTypeConfig } from "../types/graph-ir";
+import { TagInput } from "./TagInput";
 
 interface Props {
   nodeTypeConfigs: NodeTypeConfig[];
   classifiers: Classifier[];
+  /** Pool of tags already in the graph — used for autocomplete suggestions. */
+  existingTags?: string[];
   onAdd: (nodeType: string, name: string, classifierValues: Record<string, string>, tags: string[], properties: Record<string, string | undefined>) => void;
   onCancel: () => void;
   /** Pre-select a specific node type */
   initialNodeType?: string;
 }
 
-export function AddNodeModal({ nodeTypeConfigs, classifiers, onAdd, onCancel, initialNodeType }: Props) {
+export function AddNodeModal({ nodeTypeConfigs, classifiers, existingTags = [], onAdd, onCancel, initialNodeType }: Props) {
   const [selectedType, setSelectedType] = useState(initialNodeType ?? nodeTypeConfigs[0]?.id ?? "");
   const [name, setName] = useState("");
   const [classifierValues, setClassifierValues] = useState<Record<string, string>>(() => {
@@ -20,7 +23,7 @@ export function AddNodeModal({ nodeTypeConfigs, classifiers, onAdd, onCancel, in
     });
     return init;
   });
-  const [tagsInput, setTagsInput] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const config = nodeTypeConfigs.find((t) => t.id === selectedType);
 
   // Initialize properties with default values from select fields
@@ -43,7 +46,6 @@ export function AddNodeModal({ nodeTypeConfigs, classifiers, onAdd, onCancel, in
       const val = properties[field.key];
       if (val) props[field.key] = val;
     }
-    const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
     onAdd(selectedType, name.trim(), classifierValues, tags, props);
   };
 
@@ -101,12 +103,7 @@ export function AddNodeModal({ nodeTypeConfigs, classifiers, onAdd, onCancel, in
           ))}
           <div className="modal-field">
             <label>Tags</label>
-            <input
-              type="text"
-              placeholder="tag1, tag2, tag3"
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-            />
+            <TagInput value={tags} existingTags={existingTags} onChange={setTags} />
           </div>
           {/* Config-driven required fields */}
           {config?.fields.filter((f) => f.required || f.type === "select").map((field) => (

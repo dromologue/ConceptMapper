@@ -39,7 +39,7 @@ interface GraphState {
   // Node operations
   handleSelectNode: (node: GraphNode | null) => void;
   handleNodeUpdate: (nodeId: string, updates: Partial<GraphNode>) => void;
-  handleAddNode: (nodeType: string, name: string, stream: string, generation: number, properties: Record<string, string | undefined>) => void;
+  handleAddNode: (nodeType: string, name: string, classifierValues: Record<string, string>, tags: string[], properties: Record<string, string | undefined>) => void;
   handleDeleteNode: (nodeId: string) => void;
   handleNavigateToNode: (nodeId: string) => void;
   handleCloseNode: () => void;
@@ -58,8 +58,6 @@ interface GraphState {
   toggleCollapse: (nodeId: string) => void;
 
   // Filter handlers
-  handleStreamToggle: (streamId: string, allStreamIds: string[]) => void;
-  handleGenerationToggle: (gen: number, allGens: number[]) => void;
   handleAttributeToggle: (nodeType: string, field: string, value: string, allValues: string[]) => void;
   handleDateRangeChange: (nodeType: string, fromField: string, toField: string | undefined, bound: "from" | "to", value: string) => void;
   handleShowAllFilters: () => void;
@@ -148,12 +146,19 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     });
   },
 
-  handleAddNode: (nodeType, name, stream, generation, properties) => {
+  handleAddNode: (nodeType, name, classifierValues, tags, properties) => {
     const s = get();
     if (!s.graphData) return;
     s.pushState();
     const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-    const newNode: GraphNode = { id, node_type: nodeType, name, generation, stream, properties: { ...properties } };
+    const newNode: GraphNode = {
+      id,
+      node_type: nodeType,
+      name,
+      classifiers: classifierValues,
+      tags: tags.length > 0 ? tags : undefined,
+      properties: { ...properties },
+    };
     set({
       graphData: { ...s.graphData, nodes: [...s.graphData.nodes, newNode] },
       selectedNode: newNode,
@@ -283,40 +288,6 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     const next = new Set(s.collapsedNodes);
     if (next.has(nodeId)) next.delete(nodeId); else next.add(nodeId);
     return { collapsedNodes: next };
-  }),
-
-  handleStreamToggle: (streamId, allStreamIds) => set((s) => {
-    const streams = s.filters.streams;
-    if (!streams) {
-      const next = new Set(allStreamIds);
-      next.delete(streamId);
-      return { filters: { ...s.filters, streams: next } };
-    }
-    const next = new Set(streams);
-    if (next.has(streamId)) {
-      next.delete(streamId);
-    } else {
-      next.add(streamId);
-      if (next.size >= allStreamIds.length) return { filters: { ...s.filters, streams: null } };
-    }
-    return { filters: { ...s.filters, streams: next } };
-  }),
-
-  handleGenerationToggle: (gen, allGens) => set((s) => {
-    const gens = s.filters.generations;
-    if (!gens) {
-      const next = new Set(allGens);
-      next.delete(gen);
-      return { filters: { ...s.filters, generations: next } };
-    }
-    const next = new Set(gens);
-    if (next.has(gen)) {
-      next.delete(gen);
-    } else {
-      next.add(gen);
-      if (next.size >= allGens.length) return { filters: { ...s.filters, generations: null } };
-    }
-    return { filters: { ...s.filters, generations: next } };
   }),
 
   handleAttributeToggle: (nodeType, field, value, allValues) => set((s) => {

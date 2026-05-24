@@ -37,8 +37,12 @@ institutional_base: Harvard Business School";
     assert_eq!(node.id, "argyris");
     assert_eq!(node.name, "Chris Argyris");
     assert_eq!(node.node_type, "thinker");
-    assert_eq!(node.generation, Some(2));
-    assert_eq!(node.stream.as_deref(), Some("psychology"));
+    // generation and stream are now generic fields too — nothing is privileged
+    assert_eq!(node.fields.get("generation").map(|s| s.as_str()), Some("2"));
+    assert_eq!(
+        node.fields.get("stream").map(|s| s.as_str()),
+        Some("psychology")
+    );
     // Custom fields go into the HashMap
     assert_eq!(
         node.fields.get("dates").map(|s| s.as_str()),
@@ -85,7 +89,7 @@ institutional_base: University of Hertfordshire";
         node.fields.get("eminence").map(|s| s.as_str()),
         Some("major")
     );
-    assert_eq!(node.generation, Some(3));
+    assert_eq!(node.fields.get("generation").map(|s| s.as_str()), Some("3"));
     assert_eq!(
         node.fields.get("structural_roles").map(|s| s.as_str()),
         Some("structural_rival, peripheral_critic")
@@ -235,8 +239,11 @@ stream:       psychology";
         node.fields.get("status").map(|s| s.as_str()),
         Some("active")
     );
-    assert_eq!(node.generation, Some(3));
-    assert_eq!(node.stream.as_deref(), Some("psychology"));
+    assert_eq!(node.fields.get("generation").map(|s| s.as_str()), Some("3"));
+    assert_eq!(
+        node.fields.get("stream").map(|s| s.as_str()),
+        Some("psychology")
+    );
 }
 
 // AC-004-11: Cynefin concept parses correctly
@@ -326,9 +333,9 @@ fn concept_missing_id_produces_error() {
     assert!(errors.iter().any(|e| e.message.contains("id")));
 }
 
-// Sub-concept with parent_concept_id and no generation/stream
+// Sub-concept with parent_concept_id and no classifier-style fields
 #[test]
-fn sub_concept_without_generation_stream() {
+fn sub_concept_without_classifier_fields() {
     let input = "id: clear_domain
 name: Clear Domain
 originator_id: snowden
@@ -343,14 +350,8 @@ parent_concept_id: cynefin";
         node.fields.get("parent_concept_id").map(|s| s.as_str()),
         Some("cynefin")
     );
-    assert!(
-        node.generation.is_none(),
-        "generation should be None for sub-concept"
-    );
-    assert!(
-        node.stream.is_none(),
-        "stream should be None for sub-concept"
-    );
+    assert!(node.fields.get("generation").is_none());
+    assert!(node.fields.get("stream").is_none());
 }
 
 // Edge case: missing optional notes field defaults to None

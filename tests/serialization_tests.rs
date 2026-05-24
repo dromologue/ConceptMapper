@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 // SPEC: REQ-007 - JSON Serialization
 
 fn sample_graph_ir() -> GraphIR {
+    // generation/stream are now ordinary fields (classifier references), not privileged columns
     let mut thinker_fields = BTreeMap::new();
     thinker_fields.insert("dates".to_string(), "1923–2013".to_string());
     thinker_fields.insert("eminence".to_string(), "dominant".to_string());
@@ -17,6 +18,8 @@ fn sample_graph_ir() -> GraphIR {
         "institutional_base".to_string(),
         "Harvard Business School".to_string(),
     );
+    thinker_fields.insert("generation".to_string(), "2".to_string());
+    thinker_fields.insert("stream".to_string(), "psychology".to_string());
 
     let mut concept_fields = BTreeMap::new();
     concept_fields.insert("originator_id".to_string(), "argyris".to_string());
@@ -24,6 +27,8 @@ fn sample_graph_ir() -> GraphIR {
     concept_fields.insert("concept_type".to_string(), "distinction".to_string());
     concept_fields.insert("abstraction_level".to_string(), "theoretical".to_string());
     concept_fields.insert("status".to_string(), "active".to_string());
+    concept_fields.insert("generation".to_string(), "3".to_string());
+    concept_fields.insert("stream".to_string(), "psychology".to_string());
 
     GraphIR {
         version: "1.0".to_string(),
@@ -31,23 +36,10 @@ fn sample_graph_ir() -> GraphIR {
             title: Some("Test Network".to_string()),
             source_file: Some("test.md".to_string()),
             parsed_at: Some("2026-03-14T00:00:00Z".to_string()),
-            generations: vec![Generation {
-                number: 1,
-                period: Some("~1880–1920".to_string()),
-                label: Some("Founders".to_string()),
-                attention_space_count: Some(3),
-            }],
-            streams: vec![Stream {
-                id: "mgmt".to_string(),
-                name: "Management & Organisation".to_string(),
-                color: Some("#4A90D9".to_string()),
-                description: Some("How organisations should be designed".to_string()),
-            }],
-            external_shocks: vec![ExternalShock {
-                date: "1950s".to_string(),
-                description: "Quality revolution in Japan".to_string(),
-            }],
-            structural_observations: vec!["Test observation".to_string()],
+            notes: vec![
+                "Quality revolution in Japan, 1950s".to_string(),
+                "Test observation".to_string(),
+            ],
             network_stats: Some(NetworkStats {
                 node_count: 2,
                 edge_count: 1,
@@ -58,8 +50,6 @@ fn sample_graph_ir() -> GraphIR {
                 id: "argyris".to_string(),
                 node_type: "thinker".to_string(),
                 name: "Chris Argyris".to_string(),
-                generation: Some(2),
-                stream: Some("psychology".to_string()),
                 fields: Some(thinker_fields),
                 notes: None,
             },
@@ -67,8 +57,6 @@ fn sample_graph_ir() -> GraphIR {
                 id: "double_loop".to_string(),
                 node_type: "concept".to_string(),
                 name: "Double-Loop Learning".to_string(),
-                generation: Some(3),
-                stream: Some("psychology".to_string()),
                 fields: Some(concept_fields),
                 notes: None,
             },
@@ -197,10 +185,7 @@ fn empty_graph_serializes() {
             title: None,
             source_file: None,
             parsed_at: None,
-            generations: vec![],
-            streams: vec![],
-            external_shocks: vec![],
-            structural_observations: vec![],
+            notes: vec![],
             network_stats: None,
         },
         nodes: vec![],

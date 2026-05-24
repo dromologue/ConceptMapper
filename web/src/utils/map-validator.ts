@@ -9,8 +9,15 @@
  *   to the template's `classifiers` array.
  */
 
-/** Section headers that define structure and must not appear in .cm content. */
-const STRUCTURAL_SECTIONS = ["Generations", "Streams"] as const;
+/** Section headers that define structure (or carry hardcoded domain types) and
+ *  must not appear in .cm content. They were privileged categories in earlier
+ *  versions; they are now ordinary classifier values or generic notes. */
+const STRUCTURAL_SECTIONS = [
+  "Generations",
+  "Streams",
+  "External Shocks",
+  "Structural Observations",
+] as const;
 
 export interface StructuralSectionWarning {
   section: string;

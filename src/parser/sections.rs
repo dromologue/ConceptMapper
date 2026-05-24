@@ -3,11 +3,8 @@ use crate::parser::lexer::{ClassifiedLine, LineType};
 /// Identifies the semantic kind of a document section from its header path.
 #[derive(Debug, Clone, PartialEq)]
 pub enum SectionKind {
-    Generations,
-    Streams,
     Edges,
-    ExternalShocks,
-    StructuralObservations,
+    Notes,
     Nodes(String),
     Unknown,
 }
@@ -15,16 +12,10 @@ pub enum SectionKind {
 impl SectionKind {
     /// Classify a section from its joined, lowercased path string.
     pub fn from_path(path_str: &str) -> SectionKind {
-        if path_str.contains("generation") && !path_str.contains("node") {
-            SectionKind::Generations
-        } else if path_str.contains("stream") && !path_str.contains("node") {
-            SectionKind::Streams
-        } else if path_str.contains("edge") {
+        if path_str.contains("edge") {
             SectionKind::Edges
-        } else if path_str.contains("external") && path_str.contains("shock") {
-            SectionKind::ExternalShocks
-        } else if path_str.contains("structural") && path_str.contains("observation") {
-            SectionKind::StructuralObservations
+        } else if path_str.contains("note") || path_str.contains("observation") {
+            SectionKind::Notes
         } else if path_str.contains("node") {
             if let Some(node_type) = extract_node_type(path_str) {
                 SectionKind::Nodes(node_type)

@@ -150,12 +150,8 @@ export function useFileLoader(
               const tmpl: TaxonomyTemplate = {
                 title: cmData.title ?? template?.title ?? "Untitled",
                 classifiers: cmData.classifiers ?? template?.classifiers,
-                streams: cmData.streams ?? template?.streams ?? [],
-                generations: cmData.generations ?? template?.generations ?? [],
                 node_types: cmData.node_types ?? template?.node_types ?? DEFAULT_NODE_TYPES,
                 edge_types: cmData.edge_types ?? template?.edge_types,
-                stream_label: (parsed as Record<string, unknown>).stream_label as string | undefined ?? template?.stream_label,
-                generation_label: (parsed as Record<string, unknown>).generation_label as string | undefined ?? template?.generation_label,
               };
               const ir = graphIRFromData(tmpl, cmData);
               setGraphData(ir);

@@ -4,29 +4,29 @@ import { getNodeColor } from "../graph/node-color";
 import type { GraphIR, SimNode, Classifier, TaxonomyTemplate } from "../types/graph-ir";
 import { classifierWithoutColors, classifierWithColors, multiClassifiers } from "./fixtures";
 
-// Simulates raw WASM parser output which uses `fields` (Rust convention)
+// Simulates raw WASM parser output which uses `fields` (Rust convention).
+// generation/stream are now ordinary fields — not privileged columns.
 const minimalParsed = {
   version: "1.0",
   metadata: {
     title: "Test",
-    generations: [{ number: 1, period: "2020-2025" }],
-    streams: [{ id: "main", name: "Main", color: "#4A90D9" }],
-    external_shocks: [],
-    structural_observations: [],
+    notes: [],
+    
   },
   nodes: [
     {
-      id: "t1", node_type: "thinker", name: "Thinker One", generation: 1, stream: "main",
+      id: "t1", node_type: "thinker", name: "Thinker One",
       fields: {
         dates: "1960-2020", eminence: "major", structural_roles: "leader",
-        institutional_base: "MIT",
+        institutional_base: "MIT", generation: "1", stream: "main",
       },
     },
     {
-      id: "c1", node_type: "concept", name: "Concept One", generation: 1, stream: "main",
+      id: "c1", node_type: "concept", name: "Concept One",
       fields: {
         originator_id: "t1", concept_type: "framework",
         abstraction_level: "theoretical", status: "active",
+        generation: "1", stream: "main",
       },
     },
   ],
@@ -295,8 +295,8 @@ describe("template reference in export", () => {
       template: "test.cmt",
       nodes: [{ id: "n1", node_type: "field", name: "Node 1", classifiers: { domain: "math_physical", decade: "1940s" }, properties: {} }],
       edges: [],
-      external_shocks: [],
-      structural_observations: [],
+      notes: [],
+      
     };
     const ir = graphIRFromData(tmpl, data);
     expect(ir.metadata.classifiers).toBeDefined();
@@ -388,15 +388,17 @@ describe("layout conflict resolution", () => {
     };
     const data = {
       version: "2.0", template: "", nodes: [], edges: [],
-      external_shocks: [], structural_observations: [],
+      external_shocks: [], 
     };
     const ir = graphIRFromData(tmpl, data);
     expect(ir.metadata.classifiers![0].layout).toBe("region");
     expect(ir.metadata.classifiers![1].layout).toBe("y");
   });
 
-  // REQ-107: Classifier value mapping
-  it("maps stream to classifier by value ID regardless of layout", () => {
+  // REQ-086: A node field whose key matches a classifier ID is lifted into
+  // node.classifiers. This is now the ONLY structural binding path — no
+  // privileged stream/generation handling.
+  it("lifts a node field into classifiers when the field key matches a classifier ID", () => {
     const template: TaxonomyTemplate = {
       title: "Test",
       classifiers: [
@@ -416,29 +418,30 @@ describe("layout conflict resolution", () => {
       version: "1.0",
       metadata: {
         title: "Test",
-        streams: [{ id: "main", name: "Main" }],
-        generations: [],
-        external_shocks: [],
-        structural_observations: [],
+        notes: [],
+        
       },
       nodes: [
-        { id: "n1", node_type: "node", name: "Node 1", stream: "main" },
+        // The field key "domain" matches the classifier id → lifted
+        { id: "n1", node_type: "node", name: "Node 1", fields: { domain: "main" } } as unknown as GraphIR["nodes"][number],
       ],
       edges: [],
     };
     const { data } = migrateFromParser(parsed, template);
     const ir = graphIRFromData(template, data);
     expect(ir.nodes[0].classifiers?.["domain"]).toBe("main");
+    // The lifted value is removed from properties so it isn't double-stored
+    expect(ir.nodes[0].properties?.["domain"]).toBeUndefined();
   });
 
-  it("maps generation to classifier by value ID regardless of layout", () => {
+  it("lifts a numeric-string field into the matching classifier value", () => {
     const template: TaxonomyTemplate = {
       title: "Test",
       classifiers: [
         {
-          id: "era",
-          label: "Era",
-          layout: "region",
+          id: "generation",
+          label: "Generation",
+          layout: "y",
           values: [
             { id: "1", label: "First" },
             { id: "2", label: "Second" },
@@ -451,22 +454,20 @@ describe("layout conflict resolution", () => {
       version: "1.0",
       metadata: {
         title: "Test",
-        streams: [],
-        generations: [{ number: 1 }, { number: 2 }],
-        external_shocks: [],
-        structural_observations: [],
+        notes: [],
+        
       },
       nodes: [
-        { id: "n1", node_type: "node", name: "Node 1", generation: 2 },
+        { id: "n1", node_type: "node", name: "Node 1", fields: { generation: "2" } } as unknown as GraphIR["nodes"][number],
       ],
       edges: [],
     };
     const { data } = migrateFromParser(parsed, template);
     const ir = graphIRFromData(template, data);
-    expect(ir.nodes[0].classifiers?.["era"]).toBe("2");
+    expect(ir.nodes[0].classifiers?.["generation"]).toBe("2");
   });
 
-  it("maps stream to classifier even when layout is not x", () => {
+  it("lifts classifier-keyed fields regardless of layout", () => {
     const template: TaxonomyTemplate = {
       title: "Test",
       classifiers: [
@@ -486,13 +487,11 @@ describe("layout conflict resolution", () => {
       version: "1.0",
       metadata: {
         title: "Test",
-        streams: [{ id: "alpha", name: "Alpha" }],
-        generations: [],
-        external_shocks: [],
-        structural_observations: [],
+        notes: [],
+        
       },
       nodes: [
-        { id: "n1", node_type: "node", name: "Node 1", stream: "alpha" },
+        { id: "n1", node_type: "node", name: "Node 1", fields: { condition: "alpha" } } as unknown as GraphIR["nodes"][number],
       ],
       edges: [],
     };

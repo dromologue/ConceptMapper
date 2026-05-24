@@ -28,18 +28,13 @@ export interface FilterState {
   attributes: AttributeFilter[];
   dateRanges: DateRangeFilter[];
   tags: Set<string> | null;          // null = all shown
-  // Legacy — keep temporarily
-  streams: Set<string> | null;       // null = all shown
-  generations: Set<number> | null;   // null = all shown
 }
 
 export function createEmptyFilterState(): FilterState {
-  return { streams: null, generations: null, classifiers: [], attributes: [], dateRanges: [], tags: null };
+  return { classifiers: [], attributes: [], dateRanges: [], tags: null };
 }
 
 export function isFilterActive(filters: FilterState): boolean {
-  if (filters.streams !== null) return true;
-  if (filters.generations !== null) return true;
   for (const cf of filters.classifiers) {
     if (cf.values !== null) return true;
   }
@@ -92,16 +87,6 @@ export function isNodeFilterVisible(node: GraphNode, filters: FilterState): bool
   if (filters.tags !== null) {
     if (!node.tags || node.tags.length === 0) return false;
     if (!node.tags.some((t) => filters.tags!.has(t))) return false;
-  }
-
-  // Streams: OR within
-  if (filters.streams !== null) {
-    if (!node.stream || !filters.streams.has(node.stream)) return false;
-  }
-
-  // Generations: OR within
-  if (filters.generations !== null) {
-    if (node.generation == null || !filters.generations.has(node.generation)) return false;
   }
 
   // Attribute filters: AND between categories, OR within each

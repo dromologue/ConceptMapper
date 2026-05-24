@@ -31,12 +31,10 @@ fn parse_organisational_learning_example() {
         .as_ref()
         .unwrap()
         .contains("Organisational Learning"));
-    // REQ-085: streams and generations are structural and must live in the .cmt template,
-    // not in the .cm map body. The parsed map therefore exposes empty arrays.
-    assert!(graph.metadata.generations.is_empty());
-    assert!(graph.metadata.streams.is_empty());
-    assert!(!graph.metadata.external_shocks.is_empty());
-    assert!(!graph.metadata.structural_observations.is_empty());
+    // REQ-085/REQ-086: nothing structural lives in the .cm body — no
+    // streams/generations/external_shocks. Only generic notes survive as
+    // document-level free-form text.
+    assert!(!graph.metadata.notes.is_empty());
 }
 
 #[test]

@@ -1672,3 +1672,52 @@ This requirement complements REQ-083 (exporter contract) by covering the loader,
 - [x] AC-085-05: `App.tsx` resolves search-result node colour via `getNodeColor(node, classifiers)` — not via `metadata.streams.find(...)`.
 - [x] AC-085-06: `SettingsModal` no longer accepts a `streams` prop; per-classifier colour overrides are derived from `classifiers.filter((c) => c.values.some((v) => v.color))`.
 
+---
+
+## REQ-086: Generic Structural Model (No Privileged Domain Types)
+
+The IR and runtime carry **no hardcoded structural types** that came from earlier domain examples. The only first-class concepts are:
+
+- **Template-owned**: `classifiers`, `node_types`, `edge_types`.
+- **Per-node**: `id`, `name`, `node_type`, `classifiers` (a map of classifier-id → value-id), `properties` (arbitrary key/value), `tags` (string list — see REQ-087), `notes` (free-form per-node text).
+- **Per-edge**: `from`, `to`, `edge_type`, `directed`, `weight`, `note`, `visual`.
+- **Per-document**: `title`, `notes` (free-form bullet list under `## Notes`).
+
+Everything else previously baked into the IR — `Stream`, `Generation`, `ExternalShock`, `structural_observations`, `node.stream`, `node.generation` — has been removed. Anything domain-specific (a "stream", a "shock", a "phase") must be modelled either as a **classifier value** (if it's a discrete category that nodes are placed into) or as a **node type** (if it's a distinct kind of thing with its own attributes). The runtime never special-cases names.
+
+**Expected Behavior:**
+- The Rust IR (`src/graph/ir.rs`) exposes only `Metadata { title, source_file, parsed_at, notes, network_stats }` and `Node { id, node_type, name, fields, notes }`.
+- The TypeScript IR (`web/src/types/graph-ir.ts`) mirrors this: no `Stream`, `Generation`, `ExternalShock` types; no `metadata.streams`, `metadata.generations`, `metadata.external_shocks`, `metadata.structural_observations`; no `node.stream`, `node.generation`.
+- `FilterState` carries only `classifiers`, `attributes`, `dateRanges`, `tags` — no `streams`/`generations`.
+- `migrateFromParser` lifts any node field whose key matches a classifier id into `node.classifiers`, then removes it from `properties`. There is no special path for `stream` or `generation`.
+- `SectionKind` in the parser recognises only `Edges`, `Notes`, `Nodes(type)`, `Unknown` — no `Generations`, `Streams`, `ExternalShocks`, `StructuralObservations`.
+- The exporter writes `## <Type> Nodes`, `## Edges`, and `## Notes` only.
+
+**Acceptance Criteria:**
+- [x] AC-086-01: `grep -rE "Stream|Generation|ExternalShock" src/ web/src --include="*.rs" --include="*.ts" --include="*.tsx"` returns no type/struct/interface declarations.
+- [x] AC-086-02: All four bundled maps (`Maps/*.cm`, `examples/*.cm`) contain no `## Streams`, `## Generations`, `## External Shocks`, or `## Structural Observations` sections.
+- [x] AC-086-03: A node field whose key matches a classifier id is lifted into `node.classifiers` and removed from `properties` (covered by `web/src/__tests__/migration.test.ts` "lifts a node field into classifiers").
+- [x] AC-086-04: `FilterState` has no `streams` or `generations` fields (covered by `web/src/__tests__/filters.test.ts`).
+- [x] AC-086-05: `cargo test --all`, `npm test`, and the full Release + `--archive` build all pass against the generic IR.
+
+---
+
+## REQ-087: Tag Autocomplete from Existing Tags
+
+Tags are the only first-class string-list attribute on a node. To make their reuse cheap and consistent, the tag entry control offers an autocomplete dropdown populated from every tag currently in the graph.
+
+**Expected Behavior:**
+- `TagInput` (`web/src/ui/TagInput.tsx`) renders existing tags as removable pills plus a single text input.
+- As the user types, suggestions appear filtered by case-insensitive substring match against the pool of existing tags, excluding those already on this node.
+- Keyboard: Arrow Up/Down navigates suggestions; Enter (or comma) commits the highlighted suggestion if any, otherwise commits the typed draft; Backspace on an empty input removes the last pill; Escape closes the dropdown.
+- Clicking a suggestion commits it.
+- Duplicate tags are silently rejected.
+- The pool is computed once per render via `collectAllTags(nodes)` in `web/src/utils/tags.ts`.
+
+**Acceptance Criteria:**
+- [x] AC-087-01: `collectAllTags` deduplicates and sorts tags across a list of nodes (handles `undefined` tags).
+- [x] AC-087-02: `TagInput` filters suggestions by substring of the draft text, excluding tags already on the node.
+- [x] AC-087-03: Pressing Enter when a suggestion is highlighted commits it; otherwise commits the typed draft.
+- [x] AC-087-04: Clicking a suggestion commits it.
+- [x] AC-087-05: Both `AddNodeModal` and `DetailPanel` use `TagInput` with `existingTags = collectAllTags(graphData.nodes)`.
+

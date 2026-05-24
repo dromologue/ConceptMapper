@@ -33,7 +33,7 @@ export interface EdgeTypeConfig {
   style?: string;        // "solid" | "dashed" | "dotted"
 }
 
-// --- Classifier types (replaces streams + generations) ---
+// --- Classifier types: the only structural axis the runtime understands ---
 
 export interface ClassifierValue {
   id: string;
@@ -55,11 +55,6 @@ export interface TaxonomyTemplate {
   classifiers?: Classifier[];
   node_types: NodeTypeConfig[];
   edge_types?: EdgeTypeConfig[];
-  // Legacy fields — kept for backward compat with old .cmt files
-  streams?: Stream[];
-  generations?: Generation[];
-  stream_label?: string;
-  generation_label?: string;
 }
 
 /** .cm data file format (v2 JSON) */
@@ -72,11 +67,9 @@ export interface ConceptMapData {
   edge_types?: EdgeTypeConfig[];
   nodes: DataNode[];
   edges: GraphEdge[];
-  external_shocks: ExternalShock[];
-  structural_observations: string[];
-  // Legacy fields
-  streams?: Stream[];
-  generations?: Generation[];
+  /** Free-form document-level notes. Anything more structured belongs in
+   *  a node defined by the template. */
+  notes?: string[];
 }
 
 export interface DataNode {
@@ -87,9 +80,6 @@ export interface DataNode {
   classifiers?: Record<string, string>;
   properties: Record<string, string | string[] | number | undefined>;
   notes?: string;
-  // Legacy fields
-  generation?: number;
-  stream?: string;
 }
 
 // --- Runtime types ---
@@ -107,32 +97,10 @@ export interface Metadata {
   source_template?: string;     // .cmt filename, preserved across save/load
   parsed_at?: string;
   classifiers?: Classifier[];
-  external_shocks: ExternalShock[];
-  structural_observations: string[];
+  /** Free-form document-level notes (populated from a `## Notes` section). */
+  notes: string[];
   network_stats?: NetworkStats;
   template?: TaxonomyTemplate;  // merged at runtime after load
-  // Legacy fields — kept for backward compat
-  generations: Generation[];
-  streams: Stream[];
-}
-
-export interface Generation {
-  number: number;
-  period?: string;
-  label?: string;
-  attention_space_count?: number;
-}
-
-export interface Stream {
-  id: string;
-  name: string;
-  color?: string;
-  description?: string;
-}
-
-export interface ExternalShock {
-  date: string;
-  description: string;
 }
 
 export interface NetworkStats {
@@ -148,9 +116,6 @@ export interface GraphNode {
   classifiers?: Record<string, string>;
   properties?: Record<string, string | string[] | number | undefined>;
   notes?: string;
-  // Legacy fields — kept for backward compat
-  generation?: number;
-  stream?: string;
 }
 
 export interface GraphEdge {

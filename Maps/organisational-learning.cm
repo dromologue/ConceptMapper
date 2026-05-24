@@ -9,7 +9,7 @@
 id:               bourdieu
 name:             Pierre Bourdieu
 generation:       3
-stream:           identity
+condition:        identity
 dates: 1930–2002
 eminence: dominant
 institutional_base: Collège de France
@@ -20,7 +20,7 @@ notes:            Habitus, capital, hysteresis — the mechanisms of identity re
 id:               bateson
 name:             Gregory Bateson
 generation:       2
-stream:           information
+condition:        information
 dates: 1904–1980
 eminence: dominant
 institutional_base: Palo Alto
@@ -31,7 +31,7 @@ notes:            Double bind theory — contradictory messages at different log
 id:               illich
 name:             Ivan Illich
 generation:       3
-stream:           institution
+condition:        institution
 dates: 1926–2002
 eminence: dominant
 institutional_base: CIDOC, Cuernavaca
@@ -42,7 +42,7 @@ notes:            Radical critique of institutions: hidden curriculum, iatrogene
 id:               goffman
 name:             Erving Goffman
 generation:       2
-stream:           information
+condition:        information
 dates: 1922–1982
 eminence: dominant
 institutional_base: University of Pennsylvania
@@ -53,7 +53,7 @@ notes:            Front stage/back stage, face-work, stigma, interaction order �
 id:               giddens
 name:             Anthony Giddens
 generation:       3
-stream:           identity
+condition:        identity
 dates: b. 1938
 eminence: major
 institutional_base: Cambridge, LSE
@@ -64,7 +64,7 @@ notes:            Ontological security; structuration theory — signification, 
 id:               kahneman
 name:             Daniel Kahneman
 generation:       3
-stream:           psychology
+condition:        psychology
 dates: 1934–2024
 eminence: major
 institutional_base: Princeton
@@ -75,7 +75,7 @@ notes:            Losses loom twice as large as gains; resistance fiercest at th
 id:               argyris
 name:             Chris Argyris
 generation:       2
-stream:           information
+condition:        information
 dates: 1923–2013
 eminence: major
 institutional_base: Harvard Business School
@@ -86,7 +86,7 @@ notes:            Defensive routines, Model II, espoused theory vs theory-in-use
 id:               heifetz
 name:             Ronald Heifetz
 generation:       4
-stream:           institution
+condition:        institution
 dates: b. 1951
 eminence: major
 institutional_base: Harvard Kennedy School
@@ -97,7 +97,7 @@ notes:            Adaptive leadership; the holding environment; distinguish tech
 id:               freire
 name:             Paulo Freire
 generation:       3
-stream:           identity
+condition:        identity
 dates: 1921–1997
 eminence: major
 institutional_base: University of Recife
@@ -108,7 +108,7 @@ notes:            Banking education vs problem-posing education; pedagogy of the
 id:               edmondson
 name:             Amy Edmondson
 generation:       4
-stream:           information
+condition:        information
 dates: b. 1959
 eminence: major
 institutional_base: Harvard Business School
@@ -119,7 +119,7 @@ notes:            Psychological safety is the floor; safety without high standar
 id:               wenger
 name:             Etienne Wenger
 generation:       4
-stream:           identity
+condition:        identity
 dates: b. 1952
 eminence: major
 institutional_base: Institute for Research on Learning
@@ -130,7 +130,7 @@ notes:            Legitimate peripheral participation; communities of practice; 
 id:               nonaka
 name:             Ikujiro Nonaka
 generation:       3
-stream:           management
+condition:        management
 dates: b. 1935
 eminence: major
 institutional_base: Hitotsubashi University
@@ -141,7 +141,7 @@ notes:            SECI model; the critical step is externalisation (tacit to exp
 id:               drucker
 name:             Peter Drucker
 generation:       2
-stream:           management
+condition:        management
 dates: 1909–2005
 eminence: major
 institutional_base: Claremont Graduate University
@@ -152,7 +152,7 @@ notes:            The knowledge worker must define the task; abandonment review 
 id:               seligman
 name:             Martin Seligman
 generation:       3
-stream:           psychology
+condition:        psychology
 dates: b. 1942
 eminence: secondary
 institutional_base: University of Pennsylvania
@@ -163,7 +163,7 @@ notes:            Learned helplessness; explanatory style — permanent, pervasi
 id:               bandura
 name:             Albert Bandura
 generation:       3
-stream:           psychology
+condition:        psychology
 dates: 1925–2021
 eminence: secondary
 institutional_base: Stanford
@@ -174,7 +174,7 @@ notes:            Mastery experience is the most powerful recovery path; self-ef
 id:               dweck
 name:             Carol Dweck
 generation:       4
-stream:           psychology
+condition:        psychology
 dates: b. 1946
 eminence: secondary
 institutional_base: Stanford
@@ -185,7 +185,7 @@ notes:            Organisations that celebrate talent reinforce fixed mindset; t
 id:               weick
 name:             Karl Weick
 generation:       3
-stream:           management
+condition:        management
 dates: b. 1936
 eminence: secondary
 institutional_base: University of Michigan
@@ -196,7 +196,7 @@ notes:            Small wins — demonstrate through action not argument; sensem
 id:               schon
 name:             Donald Schön
 generation:       3
-stream:           information
+condition:        information
 dates: 1930–1997
 eminence: secondary
 institutional_base: MIT
@@ -207,7 +207,7 @@ notes:            Frame reflection; most undiscussables are not facts people are
 id:               westrum
 name:             Ron Westrum
 generation:       3
-stream:           information
+condition:        information
 dates: b. 1939
 eminence: secondary
 institutional_base: Eastern Michigan University
@@ -218,7 +218,7 @@ notes:            Organisational typology: pathological (messengers punished), b
 id:               deming
 name:             W. Edwards Deming
 generation:       2
-stream:           management
+condition:        management
 dates: 1900–1993
 eminence: major
 institutional_base: New York University
@@ -229,7 +229,7 @@ notes:            Most variation is common cause (system); blaming individuals t
 id:               peters
 name:             Tom Peters
 generation:       3
-stream:           management
+condition:        management
 dates: b. 1942
 eminence: secondary
 institutional_base: McKinsey, independent
@@ -240,7 +240,7 @@ notes:            Close to the customer, close to the work; MBWA is an epistemol
 id:               normann
 name:             Richard Normann
 generation:       3
-stream:           management
+condition:        management
 dates: 1943–2003
 eminence: secondary
 institutional_base: SMG, Stockholm
@@ -251,7 +251,7 @@ notes:            - The map is not just incomplete;  - it actively misleads by p
 id:               taylor
 name:             Frederick Taylor
 generation:       1
-stream:           management
+condition:        management
 dates: 1856–1915
 eminence: major
 institutional_base: Bethlehem Steel
@@ -262,7 +262,7 @@ notes:            Scientific management; the separation of thinking from doing
 id:               weber
 name:             Max Weber
 generation:       1
-stream:           institution
+condition:        institution
 dates: 1864–1920
 eminence: major
 institutional_base: University of Munich
@@ -273,7 +273,7 @@ notes:            Bureaucratic rationality; the iron cage — the system built f
 id:               stacey
 name:             Ralph Stacey
 generation:       4
-stream:           institution
+condition:        institution
 dates: b. 1942
 eminence: secondary
 institutional_base: University of Hertfordshire
@@ -284,7 +284,7 @@ notes:            Complex responsive processes; in a convivial institution peopl
 id:               march
 name:             James March
 generation:       3
-stream:           institution
+condition:        institution
 dates: 1928–2018
 eminence: secondary
 institutional_base: Stanford
@@ -295,7 +295,7 @@ notes:            Exploitation/exploration balance; the manipulative institution
 id:               taleb
 name:             Nassim Nicholas Taleb
 generation:       4
-stream:           institution
+condition:        institution
 dates: b. 1960
 eminence: secondary
 institutional_base: NYU Tandon
@@ -306,7 +306,7 @@ notes:            Inability to abandon creates fragility; hidden liabilities sha
 id:               follett
 name:             Mary Parker Follett
 generation:       1
-stream:           institution
+condition:        institution
 dates: 1868–1933
 eminence: secondary
 institutional_base: Independent
@@ -319,7 +319,7 @@ notes:            Integration over domination or compromise; joint study — par
 id:               habitus
 name:             Habitus
 generation:       3
-stream:           identity
+condition:        identity
 abstraction_level: theoretical
 concept_type: mechanism
 date_introduced: 1972
@@ -332,7 +332,7 @@ notes:            Durable, transposable dispositions acquired through lived expe
 id:               capital
 name:             Capital (Forms)
 generation:       3
-stream:           identity
+condition:        identity
 abstraction_level: theoretical
 concept_type: framework
 date_introduced: 1979
@@ -345,7 +345,7 @@ notes:            What you are worth in the field; economic, cultural, social, s
 id:               hysteresis
 name:             Hysteresis
 generation:       3
-stream:           identity
+condition:        identity
 abstraction_level: theoretical
 concept_type: mechanism
 date_introduced: 1977
@@ -358,7 +358,7 @@ notes:            The lag between a changed field and an unchanged habitus; the 
 id:               double_bind
 name:             Double Bind
 generation:       2
-stream:           information
+condition:        information
 abstraction_level: theoretical
 concept_type: mechanism
 date_introduced: 1956
@@ -371,7 +371,7 @@ notes:            Contradictory messages at different logical levels with no per
 id:               hidden_curriculum
 name:             Hidden Curriculum
 generation:       3
-stream:           institution
+condition:        institution
 abstraction_level: theoretical
 concept_type: mechanism
 date_introduced: 1971
@@ -384,7 +384,7 @@ notes:            Lessons taught by the institutional form itself: learning requ
 id:               radical_monopoly
 name:             Radical Monopoly
 generation:       3
-stream:           institution
+condition:        institution
 abstraction_level: theoretical
 concept_type: mechanism
 date_introduced: 1973
@@ -397,7 +397,7 @@ notes:            Not a monopoly over competing products but over the conditions
 id:               iatrogenesis
 name:             Iatrogenesis
 generation:       3
-stream:           institution
+condition:        institution
 abstraction_level: theoretical
 concept_type: framework
 date_introduced: 1975
@@ -410,7 +410,7 @@ notes:            When the cure causes the disease — clinical, social, and cul
 id:               conviviality
 name:             Conviviality
 generation:       3
-stream:           institution
+condition:        institution
 abstraction_level: theoretical
 concept_type: distinction
 date_introduced: 1973
@@ -423,7 +423,7 @@ notes:            Convivial institutions provide resources people use for their 
 id:               front_back_stage
 name:             Front Stage / Back Stage
 generation:       2
-stream:           information
+condition:        information
 abstraction_level: theoretical
 concept_type: distinction
 date_introduced: 1959
@@ -436,7 +436,7 @@ notes:            Managed performance vs dropped performance; the gap between fo
 id:               face_work
 name:             Face-Work
 generation:       2
-stream:           information
+condition:        information
 abstraction_level: theoretical
 concept_type: mechanism
 date_introduced: 1967
@@ -449,7 +449,7 @@ notes:            Mutual face protection; both parties benefit from the silence;
 id:               stigma
 name:             Stigma
 generation:       2
-stream:           identity
+condition:        identity
 abstraction_level: theoretical
 concept_type: mechanism
 date_introduced: 1963
@@ -462,7 +462,7 @@ notes:            - Transformation creates stigma; communicated through expressi
 id:               ontological_security
 name:             Ontological Security
 generation:       3
-stream:           identity
+condition:        identity
 abstraction_level: theoretical
 concept_type: principle
 date_introduced: 1984
@@ -475,7 +475,7 @@ notes:            Routines provide existential continuity; disruption produces a
 id:               structuration
 name:             Structuration
 generation:       3
-stream:           identity
+condition:        identity
 abstraction_level: meta-theoretical
 concept_type: framework
 date_introduced: 1984
@@ -488,7 +488,7 @@ notes:            Signification, domination, and legitimation must move together
 id:               loss_aversion
 name:             Loss Aversion
 generation:       3
-stream:           psychology
+condition:        psychology
 abstraction_level: theoretical
 concept_type: mechanism
 date_introduced: 1979
@@ -501,7 +501,7 @@ notes:            Losses loom twice as large as gains; resistance fiercest at th
 id:               defensive_routines
 name:             Defensive Routines
 generation:       2
-stream:           information
+condition:        information
 abstraction_level: theoretical
 concept_type: mechanism
 date_introduced: 1985
@@ -514,7 +514,7 @@ notes:            The gap between espoused theory and theory-in-use; organisatio
 id:               espoused_vs_inuse
 name:             Espoused Theory vs Theory-in-Use
 generation:       2
-stream:           information
+condition:        information
 abstraction_level: theoretical
 concept_type: distinction
 date_introduced: 1974
@@ -527,7 +527,7 @@ notes:            What people say they do vs what they actually do; the core dia
 id:               frame_reflection
 name:             Frame Reflection
 generation:       3
-stream:           information
+condition:        information
 abstraction_level: theoretical
 concept_type: mechanism
 date_introduced: 1983
@@ -540,7 +540,7 @@ notes:            Most undiscussables are not facts people are hiding but frames
 id:               psychological_safety
 name:             Psychological Safety
 generation:       4
-stream:           information
+condition:        information
 abstraction_level: operational
 concept_type: principle
 date_introduced: 1999
@@ -553,7 +553,7 @@ notes:            The floor for learning; safety without high standards produces
 id:               adaptive_leadership
 name:             Adaptive Leadership
 generation:       4
-stream:           institution
+condition:        institution
 abstraction_level: theoretical
 concept_type: framework
 date_introduced: 1994
@@ -566,7 +566,7 @@ notes:            Distinguish technical from adaptive work; the holding environm
 id:               banking_education
 name:             Banking Education
 generation:       3
-stream:           identity
+condition:        identity
 abstraction_level: theoretical
 concept_type: distinction
 date_introduced: 1968
@@ -579,7 +579,7 @@ notes:            Depositing knowledge vs problem-posing education; positions pe
 id:               legitimate_peripheral_participation
 name:             Legitimate Peripheral Participation
 generation:       4
-stream:           identity
+condition:        identity
 abstraction_level: theoretical
 concept_type: mechanism
 date_introduced: 1991
@@ -592,7 +592,7 @@ notes:            Newcomers learn by doing genuine tasks at the edges of practic
 id:               seci_model
 name:             SECI Model
 generation:       3
-stream:           management
+condition:        management
 abstraction_level: theoretical
 concept_type: framework
 date_introduced: 1995
@@ -605,7 +605,7 @@ notes:            Socialisation, Externalisation, Combination, Internalisation; 
 id:               learned_helplessness
 name:             Learned Helplessness
 generation:       3
-stream:           psychology
+condition:        psychology
 abstraction_level: theoretical
 concept_type: mechanism
 date_introduced: 1967
@@ -618,7 +618,7 @@ notes:            Not a mood but a sedimented disposition formed through repeate
 id:               mastery_experience
 name:             Mastery Experience
 generation:       3
-stream:           psychology
+condition:        psychology
 abstraction_level: operational
 concept_type: mechanism
 date_introduced: 1977
@@ -631,7 +631,7 @@ notes:            The most powerful recovery path from learned helplessness; act
 id:               growth_mindset
 name:             Growth Mindset
 generation:       4
-stream:           psychology
+condition:        psychology
 abstraction_level: operational
 concept_type: distinction
 date_introduced: 2006
@@ -644,7 +644,7 @@ notes:            Organisations that celebrate talent reinforce fixed mindset; t
 id:               small_wins
 name:             Small Wins
 generation:       3
-stream:           management
+condition:        management
 abstraction_level: operational
 concept_type: prescription
 date_introduced: 1984
@@ -657,7 +657,7 @@ notes:            Demonstrate through action not argument; make learning visible
 id:               org_typology
 name:             Organisational Typology
 generation:       3
-stream:           information
+condition:        information
 abstraction_level: operational
 concept_type: framework
 date_introduced: 2004
@@ -670,7 +670,7 @@ notes:            Pathological (messengers punished), bureaucratic (messengers s
 id:               common_cause_variation
 name:             Common Cause Variation
 generation:       2
-stream:           management
+condition:        management
 abstraction_level: theoretical
 concept_type: principle
 date_introduced: 1950
@@ -683,7 +683,7 @@ notes:            Most variation is system; blaming individuals teaches them to 
 id:               knowledge_worker
 name:             Knowledge Worker
 generation:       2
-stream:           management
+condition:        management
 abstraction_level: theoretical
 concept_type: principle
 date_introduced: 1959
@@ -696,7 +696,7 @@ notes:            The knowledge worker must define the task; definition requires
 id:               exploitation_exploration
 name:             Exploitation / Exploration
 generation:       3
-stream:           institution
+condition:        institution
 abstraction_level: theoretical
 concept_type: distinction
 date_introduced: 1991
@@ -709,7 +709,7 @@ notes:            The manipulative institution is an exploitation machine; explo
 id:               iron_cage
 name:             Iron Cage
 generation:       1
-stream:           institution
+condition:        institution
 abstraction_level: theoretical
 concept_type: mechanism
 date_introduced: 1905
@@ -722,7 +722,7 @@ notes:            The system built for rational purposes becomes a prison preven
 id:               integration
 name:             Integration
 generation:       1
-stream:           institution
+condition:        institution
 abstraction_level: theoretical
 concept_type: distinction
 date_introduced: 1924
@@ -735,7 +735,7 @@ notes:            Domination (one side wins), compromise (both give up), integra
 id:               scientific_management
 name:             Scientific Management
 generation:       1
-stream:           management
+condition:        management
 abstraction_level: operational
 concept_type: framework
 date_introduced: 1911
@@ -994,18 +994,7 @@ from: common_cause_variation to: defensive_routines   type: enables
 
 ```
 
-## External Shocks
-
-```
-date: 1990s
-description: The learning organisation movement (Senge, Fifth Discipline) creates institutional demand for organisational learning programmes — the very institutionalisation Illich warned against
-
-date: 2020s
-description: AI transformation programmes replicate the same pattern: process mistaken for condition, institutional learning programmes degrading the conditions they claim to create
-
-```
-
-## Structural Observations
+## Notes
 
 - **Central thesis**: Learning is a condition, not a process; three conditions (identity, information, institution) must be present
 - **Dominant thinkers**: Bourdieu (identity), Bateson (information), Illich (institution) provide the foundational mechanisms
@@ -1014,3 +1003,5 @@ description: AI transformation programmes replicate the same pattern: process mi
 - **Cross-condition links**: Double bind (information) connects to habitus (identity) through structuration (Giddens); hidden curriculum (institution) undermines identity condition
 - **Attention space**: 4–5 active positions per generation; contemporary generation dominated by Edmondson, Heifetz, Wenger, Dweck, Stacey
 - **Practical synthesis**: The nine probes operationalise the three conditions as diagnostic instruments for leaders
+- 1990s: The learning organisation movement (Senge, Fifth Discipline) creates institutional demand for organisational learning programmes — the very institutionalisation Illich warned against
+- 2020s: AI transformation programmes replicate the same pattern: process mistaken for condition, institutional learning programmes degrading the conditions they claim to create

@@ -319,7 +319,7 @@ from: grp_monitoring   to: grp_db_migration     type: related
 
 ```
 
-## Structural Observations
+## Notes
 
 - **Bottleneck**: The database migration group is the critical path — most other work flows from or depends on it completing successfully
 - **Risk**: TimescaleDB compatibility is the single biggest uncertainty; the fallback plan (native partitioning) needs a spike if no GA date by mid-April

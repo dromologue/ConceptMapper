@@ -7,14 +7,12 @@ const sampleGraph: GraphIR = {
   version: '2.0',
   metadata: {
     title: 'Test',
-    generations: [{ number: 1 }],
-    streams: [{ id: 's1', name: 'Stream 1' }],
-    external_shocks: [],
-    structural_observations: [],
+    notes: [],
+    
   },
   nodes: [
-    { id: 'n1', node_type: 'person', name: 'Alice', generation: 1, stream: 's1', properties: { importance: 'major' } },
-    { id: 'n2', node_type: 'person', name: 'Bob', generation: 1, stream: 's1', properties: {} },
+    { id: 'n1', node_type: 'person', name: 'Alice', classifiers: { generation: '1', stream: 's1' }, properties: { importance: 'major' } },
+    { id: 'n2', node_type: 'person', name: 'Bob', classifiers: { generation: '1', stream: 's1' }, properties: {} },
   ],
   edges: [
     { from: 'n1', to: 'n2', edge_type: 'chain', directed: true, weight: 1, visual: { style: 'solid', show_arrow: true } },
@@ -46,10 +44,10 @@ describe('useGraphStore', () => {
 
     it('has empty filters', () => {
       const { filters } = useGraphStore.getState();
-      expect(filters.streams).toBeNull();
-      expect(filters.generations).toBeNull();
+      expect(filters.classifiers).toEqual([]);
       expect(filters.attributes).toEqual([]);
       expect(filters.dateRanges).toEqual([]);
+      expect(filters.tags).toBeNull();
     });
 
     it('has empty history and future', () => {
@@ -76,7 +74,7 @@ describe('useGraphStore', () => {
       useGraphStore.getState().setGraphData(sampleGraph);
       useUIStore.getState().openModal('addNode');
 
-      useGraphStore.getState().handleAddNode('person', 'Charlie', 's1', 1, { importance: 'minor' });
+      useGraphStore.getState().handleAddNode('person', 'Charlie', {}, [], { importance: 'minor' });
 
       const state = useGraphStore.getState();
       expect(state.graphData!.nodes).toHaveLength(3);
@@ -92,7 +90,7 @@ describe('useGraphStore', () => {
     });
 
     it('does nothing when graphData is null', () => {
-      useGraphStore.getState().handleAddNode('person', 'Charlie', 's1', 1, {});
+      useGraphStore.getState().handleAddNode('person', 'Charlie', {}, [], {});
       expect(useGraphStore.getState().graphData).toBeNull();
     });
   });
@@ -213,7 +211,7 @@ describe('useGraphStore', () => {
   describe('Undo/Redo', () => {
     it('undo restores previous state after adding a node', () => {
       useGraphStore.getState().setGraphData(sampleGraph);
-      useGraphStore.getState().handleAddNode('person', 'Charlie', 's1', 1, {});
+      useGraphStore.getState().handleAddNode('person', 'Charlie', {}, [], {});
 
       expect(useGraphStore.getState().graphData!.nodes).toHaveLength(3);
 
@@ -225,7 +223,7 @@ describe('useGraphStore', () => {
 
     it('redo restores the added node after undo', () => {
       useGraphStore.getState().setGraphData(sampleGraph);
-      useGraphStore.getState().handleAddNode('person', 'Charlie', 's1', 1, {});
+      useGraphStore.getState().handleAddNode('person', 'Charlie', {}, [], {});
       useGraphStore.getState().undo();
       useGraphStore.getState().redo();
 
@@ -257,44 +255,25 @@ describe('useGraphStore', () => {
 
     it('pushing state clears future', () => {
       useGraphStore.getState().setGraphData(sampleGraph);
-      useGraphStore.getState().handleAddNode('person', 'Charlie', 's1', 1, {});
+      useGraphStore.getState().handleAddNode('person', 'Charlie', {}, [], {});
       useGraphStore.getState().undo();
       expect(useGraphStore.getState().future).toHaveLength(1);
 
       // A new mutation should clear future
-      useGraphStore.getState().handleAddNode('person', 'Dave', 's1', 1, {});
+      useGraphStore.getState().handleAddNode('person', 'Dave', {}, [], {});
       expect(useGraphStore.getState().future).toHaveLength(0);
     });
   });
 
   describe('Filter handlers', () => {
-    it('handleStreamToggle toggles stream visibility', () => {
-      // Initially streams is null (all visible)
-      useGraphStore.getState().handleStreamToggle('s1', ['s1', 's2']);
-
-      const { filters } = useGraphStore.getState();
-      // Toggling off s1 from "all visible" should show only s2
-      expect(filters.streams).toBeDefined();
-      expect(filters.streams!.has('s2')).toBe(true);
-      expect(filters.streams!.has('s1')).toBe(false);
-    });
-
-    it('handleStreamToggle returns to null when all streams re-enabled', () => {
-      useGraphStore.getState().handleStreamToggle('s1', ['s1', 's2']);
-      // Now s2 is visible, s1 is hidden. Toggle s1 back on.
-      useGraphStore.getState().handleStreamToggle('s1', ['s1', 's2']);
-
-      expect(useGraphStore.getState().filters.streams).toBeNull();
-    });
-
     it('handleShowAllFilters resets to empty state', () => {
-      useGraphStore.getState().handleStreamToggle('s1', ['s1', 's2']);
+      useGraphStore.getState().handleAttributeToggle('person', 'importance', 'major', ['major', 'minor']);
       useGraphStore.getState().handleShowAllFilters();
 
       const { filters } = useGraphStore.getState();
-      expect(filters.streams).toBeNull();
-      expect(filters.generations).toBeNull();
+      expect(filters.classifiers).toEqual([]);
       expect(filters.attributes).toEqual([]);
+      expect(filters.tags).toBeNull();
     });
 
     it('handleAttributeToggle adds an attribute filter', () => {

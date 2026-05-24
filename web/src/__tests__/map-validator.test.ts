@@ -34,9 +34,19 @@ describe("findStructuralSections", () => {
     expect(warnings.map((w) => w.section)).toEqual(["Generations", "Streams"]);
   });
 
-  it("does not flag content sections (Nodes, Edges, Observations)", () => {
-    const content = "# Map\n\n## Thinker Nodes\n\n## Edges\n\n## Structural Observations\n";
+  it("does not flag content sections (Nodes, Edges, Notes)", () => {
+    const content = "# Map\n\n## Thinker Nodes\n\n## Edges\n\n## Notes\n";
     expect(findStructuralSections(content)).toEqual([]);
+  });
+
+  it("flags legacy ## External Shocks (now ordinary notes)", () => {
+    const content = "# Map\n\n## External Shocks\n";
+    expect(findStructuralSections(content).map((w) => w.section)).toEqual(["External Shocks"]);
+  });
+
+  it("flags legacy ## Structural Observations (replaced by ## Notes)", () => {
+    const content = "# Map\n\n## Structural Observations\n";
+    expect(findStructuralSections(content).map((w) => w.section)).toEqual(["Structural Observations"]);
   });
 
   it("does not flag h3 or h1 headers with structural names", () => {

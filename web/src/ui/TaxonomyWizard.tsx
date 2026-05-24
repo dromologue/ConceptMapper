@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import type { Classifier, NodeTypeConfig, FieldConfig, EdgeTypeConfig, FieldType, Stream, Generation } from "../types/graph-ir";
+import type { Classifier, NodeTypeConfig, FieldConfig, EdgeTypeConfig, FieldType } from "../types/graph-ir";
 
 const DEFAULT_COLORS = ["#4A90D9", "#50C878", "#FF7F50", "#9B59B6", "#F1C40F", "#E74C3C", "#1ABC9C", "#E67E22"];
 const DEFAULT_EDGE_COLORS = ["#888888", "#4A90D9", "#D94A4A", "#50C878", "#9B59B6", "#E67E22", "#F1C40F"];
@@ -68,11 +68,6 @@ export interface TaxonomyWizardInitial {
   classifiers?: Classifier[];
   node_types?: NodeTypeConfig[];
   edge_types?: EdgeTypeConfig[];
-  // Legacy fields for backward compat
-  streams?: Stream[];
-  generations?: Generation[];
-  stream_label?: string;
-  generation_label?: string;
 }
 
 interface Props {
@@ -169,37 +164,8 @@ export function TaxonomyWizard({ onComplete, onCancel, initialData, onSaveTempla
         })),
       }));
     }
-    // Convert legacy streams/generations
-    const cls: WizardClassifier[] = [];
-    if (initialData?.streams?.length) {
-      cls.push({
-        id: initialData.stream_label?.toLowerCase().replace(/\s+/g, "_") ?? "stream",
-        label: initialData.stream_label ?? "Categories",
-        layout: "x",
-        values: initialData.streams.map((s) => ({
-          id: s.id,
-          label: s.name,
-          color: s.color ?? DEFAULT_COLORS[0],
-          description: s.description ?? "",
-        })),
-      });
-    }
-    if (initialData?.generations?.length) {
-      cls.push({
-        id: initialData.generation_label?.toLowerCase().replace(/\s+/g, "_") ?? "generation",
-        label: initialData.generation_label ?? "Phases",
-        layout: "y",
-        values: initialData.generations.map((g) => ({
-          id: String(g.number),
-          label: g.label ?? String(g.number),
-          color: "",
-          description: g.period ?? "",
-        })),
-      });
-    }
-    return cls.length > 0
-      ? cls
-      : [{ id: "category", label: "Categories", layout: "x", values: [{ id: "", label: "", color: DEFAULT_COLORS[0], description: "" }] }];
+    // Default seed when starting fresh
+    return [{ id: "category", label: "Categories", layout: "x", values: [{ id: "", label: "", color: DEFAULT_COLORS[0], description: "" }] }];
   });
 
   // Edge Types

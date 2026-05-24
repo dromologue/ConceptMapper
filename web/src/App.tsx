@@ -7,6 +7,7 @@ import { ActivityBar } from "./ui/ActivityBar";
 import { Sidebar } from "./ui/Sidebar";
 import { StatusBar } from "./ui/StatusBar";
 import { AddNodeModal } from "./ui/AddNodeModal";
+import { collectAllTags } from "./utils/tags";
 import { AddEdgeModal } from "./ui/AddEdgeModal";
 import { SettingsModal } from "./ui/SettingsModal";
 import { TaxonomyWizard } from "./ui/TaxonomyWizard";
@@ -545,11 +546,9 @@ function AppInner() {
           ...graphData.metadata,
           title: data.title,
           classifiers: data.classifiers,
-          streams: [],
-          generations: [],
-          structural_observations: data.description
-            ? [data.description, ...graphData.metadata.structural_observations.slice(1)]
-            : graphData.metadata.structural_observations,
+          notes: data.description
+            ? [data.description, ...graphData.metadata.notes.slice(1)]
+            : graphData.metadata.notes,
           template: newTemplate,
         },
       };
@@ -574,10 +573,7 @@ function AppInner() {
         metadata: {
           title: data.title,
           classifiers: data.classifiers,
-          generations: [],
-          streams: [],
-          external_shocks: [],
-          structural_observations: data.description ? [data.description] : [],
+          notes: data.description ? [data.description] : [],
           template: newTemplate,
         },
         nodes: [],
@@ -618,8 +614,6 @@ function AppInner() {
       title: tmplData.title,
       description: tmplData.description,
       classifiers: tmplData.classifiers,
-      streams: tmplData.streams,
-      generations: tmplData.generations,
       node_types: tmplData.node_types ?? DEFAULT_NODE_TYPES,
       edge_types: tmplData.edge_types,
     };
@@ -630,10 +624,7 @@ function AppInner() {
       metadata: {
         title: mapTitle,
         classifiers,
-        generations: tmplData.generations ?? [],
-        streams: tmplData.streams ?? [],
-        external_shocks: [],
-        structural_observations: [],
+        notes: [],
         template: newTemplate,
       },
       nodes: [],
@@ -657,10 +648,8 @@ function AppInner() {
     if (!graphData) return;
     setTaxonomyEditData({
       title: graphData.metadata.title ?? "",
-      description: graphData.metadata.structural_observations[0] ?? undefined,
+      description: graphData.metadata.notes?.[0] ?? undefined,
       classifiers: graphData.metadata.classifiers,
-      streams: graphData.metadata.streams,
-      generations: graphData.metadata.generations,
       node_types: nodeTypeConfigs,
       edge_types: template?.edge_types,
     });
@@ -1423,6 +1412,7 @@ function AppInner() {
         <AddNodeModal
           nodeTypeConfigs={nodeTypeConfigs}
           classifiers={graphData.metadata.classifiers ?? []}
+          existingTags={collectAllTags(graphData.nodes)}
           onAdd={handleAddNode}
           onCancel={() => setShowAddNode(null)}
           initialNodeType={showAddNode}
@@ -1583,20 +1573,9 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[], edge
     }
   }
 
-  if (data.metadata.external_shocks.length > 0) {
-    lines.push("## External Shocks\n");
-    lines.push("```");
-    for (const s of data.metadata.external_shocks) {
-      lines.push(`date: ${s.date}`);
-      lines.push(`description: ${s.description}`);
-      lines.push("");
-    }
-    lines.push("```\n");
-  }
-
-  if (data.metadata.structural_observations.length > 0) {
-    lines.push("## Structural Observations\n");
-    for (const o of data.metadata.structural_observations) lines.push(`- ${o}`);
+  if (data.metadata.notes && data.metadata.notes.length > 0) {
+    lines.push("## Notes\n");
+    for (const o of data.metadata.notes) lines.push(`- ${o}`);
     lines.push("");
   }
 

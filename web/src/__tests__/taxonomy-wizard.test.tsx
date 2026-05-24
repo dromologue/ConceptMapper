@@ -171,27 +171,6 @@ describe("TaxonomyWizard", () => {
     expect(screen.getByText("Save")).toBeInTheDocument();
   });
 
-  it("edit mode with legacy streams/generations converts to classifiers", async () => {
-    const user = userEvent.setup();
-    render(
-      <TaxonomyWizard
-        onComplete={vi.fn()}
-        onCancel={vi.fn()}
-        initialData={{
-          title: "Legacy",
-          streams: [{ id: "psych", name: "Psychology", color: "#4A90D9" }],
-          generations: [{ number: 1, period: "1960-1980", label: "Founders" }],
-        }}
-      />
-    );
-    // Navigate to classifiers step
-    await user.click(screen.getByText("Next")); // → node_types
-    await user.click(screen.getByText("Next")); // → classifiers
-    expect(screen.getByText("Define Classifiers")).toBeInTheDocument();
-    // Should have converted streams to a classifier
-    expect(screen.getByDisplayValue("Psychology")).toBeInTheDocument();
-  });
-
   it("Save as Template button calls onSaveTemplate", async () => {
     const user = userEvent.setup();
     const onSaveTemplate = vi.fn();

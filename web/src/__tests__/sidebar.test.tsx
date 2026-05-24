@@ -6,9 +6,9 @@ import { legacyNodeTypeConfigs } from "./fixtures";
 import { createEmptyFilterState } from "../utils/filters";
 
 const mockNodes = [
-  { id: "n1", name: "Alice", node_type: "person" as string, stream: "s1", generation: 1, properties: { importance: "major" } },
-  { id: "n2", name: "Bob", node_type: "person" as string, stream: "s2", generation: 1, properties: { importance: "minor" } },
-  { id: "c1", name: "Theory X", node_type: "concept" as string, stream: "s1", generation: 2, properties: { concept_type: "framework" } },
+  { id: "n1", name: "Alice", node_type: "person" as string, classifiers: { stream: "s1", generation: "1" }, properties: { importance: "major" } },
+  { id: "n2", name: "Bob", node_type: "person" as string, classifiers: { stream: "s2", generation: "1" }, properties: { importance: "minor" } },
+  { id: "c1", name: "Theory X", node_type: "concept" as string, classifiers: { stream: "s1", generation: "2" }, properties: { concept_type: "framework" } },
 ];
 
 const defaultProps = {
@@ -178,9 +178,7 @@ describe("Sidebar", () => {
 
   it("hides filtered-out nodes from the node list", () => {
     const filters = {
-      streams: new Set(["s1"]),
-      generations: null,
-      classifiers: [],
+      classifiers: [{ classifierId: "stream", values: new Set(["s1"]) }],
       attributes: [],
       dateRanges: [],
       tags: null,
@@ -193,9 +191,7 @@ describe("Sidebar", () => {
 
   it("shows Show All button when filters are active", () => {
     const filters = {
-      streams: new Set(["s1"]),
-      generations: null,
-      classifiers: [],
+      classifiers: [{ classifierId: "stream", values: new Set(["s1"]) }],
       attributes: [],
       dateRanges: [],
       tags: null,
@@ -213,9 +209,7 @@ describe("Sidebar", () => {
     const user = userEvent.setup();
     const onShowAll = vi.fn();
     const filters = {
-      streams: new Set(["s1"]),
-      generations: null,
-      classifiers: [],
+      classifiers: [{ classifierId: "stream", values: new Set(["s1"]) }],
       attributes: [],
       dateRanges: [],
       tags: null,
@@ -229,8 +223,8 @@ describe("Sidebar", () => {
   it("renders only template-defined attribute filters", async () => {
     const user = userEvent.setup();
     const nodesWithProps = [
-      { id: "n1", name: "Alice", node_type: "person", stream: "s1", generation: 1, properties: { importance: "major", tags: "Harvard" } },
-      { id: "n2", name: "Bob", node_type: "person", stream: "s2", generation: 1, properties: { importance: "minor", tags: "MIT" } },
+      { id: "n1", name: "Alice", node_type: "person", classifiers: { stream: "s1", generation: "1" }, properties: { importance: "major", tags: "Harvard" } },
+      { id: "n2", name: "Bob", node_type: "person", classifiers: { stream: "s2", generation: "1" }, properties: { importance: "minor", tags: "MIT" } },
     ];
     render(<Sidebar {...defaultProps} nodes={nodesWithProps} />);
     // Importance IS in template fields — should appear
@@ -245,8 +239,8 @@ describe("Sidebar", () => {
   it("renders date range filter for nodes with date_from/date_to fields", async () => {
     const user = userEvent.setup();
     const nodesWithDates = [
-      { id: "n1", name: "Alice", node_type: "person", stream: "s1", generation: 1, properties: { importance: "major", date_from: "1923", date_to: "2013" } },
-      { id: "n2", name: "Bob", node_type: "person", stream: "s2", generation: 1, properties: { importance: "minor", date_from: "1947" } },
+      { id: "n1", name: "Alice", node_type: "person", classifiers: { stream: "s1", generation: "1" }, properties: { importance: "major", date_from: "1923", date_to: "2013" } },
+      { id: "n2", name: "Bob", node_type: "person", classifiers: { stream: "s2", generation: "1" }, properties: { importance: "minor", date_from: "1947" } },
     ];
     render(<Sidebar {...defaultProps} nodes={nodesWithDates} />);
     expect(screen.getByText("Person Date Range")).toBeInTheDocument();

@@ -22,14 +22,14 @@ describe("AddNodeModal — Default node type", () => {
   it("renders name input and classifier fields", () => {
     render(<AddNodeModal {...defaultProps} />);
     expect(screen.getByPlaceholderText("e.g. New Node")).toBeInTheDocument();
-    expect(screen.getByText("Streams")).toBeInTheDocument();
+    expect(screen.getByText("Conditions")).toBeInTheDocument();
     expect(screen.getByText("Generations")).toBeInTheDocument();
   });
 
   it("renders essential fields (name, classifiers, tags)", () => {
     render(<AddNodeModal {...defaultProps} />);
     expect(screen.getByText("Name")).toBeInTheDocument();
-    expect(screen.getByText("Streams")).toBeInTheDocument();
+    expect(screen.getByText("Conditions")).toBeInTheDocument();
     expect(screen.getByText("Tags")).toBeInTheDocument();
   });
 

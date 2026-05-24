@@ -3037,3 +3037,78 @@ select.settings-input {
 .analysis-path-arrow {
   color: var(--text-dim);
 }
+
+/* --- Tag input with autocomplete (REQ-087) --- */
+.tag-input-wrapper {
+  position: relative;
+}
+.tag-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  padding: 4px;
+  border: 1px solid var(--border, #444);
+  border-radius: 4px;
+  background: var(--bg-input, transparent);
+  min-height: 28px;
+}
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  background: var(--accent-soft, rgba(74,144,217,0.18));
+  color: var(--text-body, inherit);
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.tag-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted, #888);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.tag-remove:hover {
+  color: var(--text-body, #fff);
+}
+.tag-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  flex: 1;
+  min-width: 100px;
+  font-size: 12px;
+  color: inherit;
+  padding: 2px 4px;
+}
+.tag-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 2px 0 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--bg-panel, #222);
+  border: 1px solid var(--border, #444);
+  border-radius: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.tag-suggestion {
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-body, inherit);
+}
+.tag-suggestion-active,
+.tag-suggestion:hover {
+  background: var(--accent-soft, rgba(74,144,217,0.18));
+}
