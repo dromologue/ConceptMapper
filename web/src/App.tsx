@@ -24,7 +24,7 @@ import { EdgePopover } from "./ui/EdgePopover";
 import { IconSearch } from "./ui/Icons";
 import { parseMarkdown } from "./parser";
 import { getNodeColor } from "./graph/node-color";
-import { computeHierarchy, collapsedNodesForLevel, hiddenNodesForLevel } from "./graph/hierarchy";
+import { computeHierarchy, computeVisibility } from "./graph/hierarchy";
 import { ThemeProvider, useTheme } from "./theme/ThemeContext";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData, getTemplateClassifiers } from "./migration";
@@ -54,9 +54,12 @@ function AppInner() {
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [viewMode, setViewMode] = useState("full");
   const [revealedNodes, setRevealedNodes] = useState<Set<string>>(new Set());
-  const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
   // REQ-088: expand-to-level. 0 = roots only (default on every map load).
+  // Manual +/- clicks populate userCollapsed / userExpanded and ALWAYS win
+  // over the stepper. computeVisibility folds these into a single hidden set.
   const [expandLevel, setExpandLevel] = useState(0);
+  const [userCollapsed, setUserCollapsed] = useState<Set<string>>(new Set());
+  const [userExpanded, setUserExpanded] = useState<Set<string>>(new Set());
 
   // Wrapper that pushes to undo history before mutating. Preserves the
   // current view state (expand level, manual collapses) — mutations like
@@ -84,14 +87,9 @@ function AppInner() {
       }
       return next;
     });
-    if (next) {
-      const info = computeHierarchy(next.nodes, next.edges);
-      setExpandLevel(0);
-      setCollapsedNodes(collapsedNodesForLevel(0, info, next.edges));
-    } else {
-      setExpandLevel(0);
-      setCollapsedNodes(new Set());
-    }
+    setExpandLevel(0);
+    setUserCollapsed(new Set());
+    setUserExpanded(new Set());
   }, []);
 
   const hierarchy = useMemo(() => {
@@ -99,23 +97,27 @@ function AppInner() {
     return computeHierarchy(graphData.nodes, graphData.edges);
   }, [graphData]);
 
-  // REQ-088: level-based hiding. The cascade in computeCollapseState only
-  // hides leaves whose ONLY neighbours are collapsed — useless for tree-shaped
-  // graphs where every interior child has its own children. We instead derive
-  // the hidden set straight from depth: anything deeper than `expandLevel`
-  // is hidden. The `collapsedNodes` state still drives the +/- indicator and
-  // the cascade for manual user clicks.
-  const hiddenByLevel = useMemo(
-    () => (hierarchy ? hiddenNodesForLevel(expandLevel, hierarchy) : new Set<string>()),
-    [hierarchy, expandLevel],
+  // REQ-088 unified visibility. computeVisibility does BFS from the roots and
+  // honours both the stepper (depth < expandLevel) and manual overrides
+  // (userCollapsed / userExpanded), which always win. Cumulative reveal:
+  // expandLevel=N shows every node at depth ≤ N unless an ancestor was
+  // manually collapsed; manual + on a collapsed node reveals its direct
+  // children regardless of level.
+  const visibility = useMemo(
+    () => hierarchy
+      ? computeVisibility(hierarchy, graphData?.edges ?? [], expandLevel, userCollapsed, userExpanded)
+      : null,
+    [hierarchy, graphData, expandLevel, userCollapsed, userExpanded],
   );
+  const hiddenByLevel = visibility?.hidden ?? new Set<string>();
+  // `collapsedNodes` for GraphCanvas drives the +/- glyph: nodes whose
+  // children are currently hidden render "+", everything else with children
+  // renders "−".
+  const collapsedNodes = visibility?.showsPlus ?? new Set<string>();
 
   const handleExpandLevelChange = useCallback((level: number) => {
     setExpandLevel(level);
-    if (hierarchy && graphData) {
-      setCollapsedNodes(collapsedNodesForLevel(level, hierarchy, graphData.edges));
-    }
-  }, [hierarchy, graphData]);
+  }, []);
   const [showAddNode, setShowAddNode] = useState<string | null>(null); // node type id or null
   const [interactionMode, setInteractionMode] = useState<import("./stores/useGraphStore").InteractionMode>("normal");
   const [edgeSource, setEdgeSource] = useState<string | null>(null);
@@ -1274,12 +1276,35 @@ function AppInner() {
               collapsedNodes={collapsedNodes}
               hiddenIds={hiddenByLevel}
               onToggleCollapse={(nodeId) => {
-                setCollapsedNodes((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(nodeId)) next.delete(nodeId);
-                  else next.add(nodeId);
-                  return next;
-                });
+                // REQ-088: clicking +/- ALWAYS overrides the stepper. The
+                // toggle is based on the node's current state ("+" shown →
+                // user wants to expand; "−" shown → user wants to collapse).
+                const currentlyCollapsed = collapsedNodes.has(nodeId);
+                if (currentlyCollapsed) {
+                  setUserExpanded((prev) => {
+                    const next = new Set(prev);
+                    next.add(nodeId);
+                    return next;
+                  });
+                  setUserCollapsed((prev) => {
+                    if (!prev.has(nodeId)) return prev;
+                    const next = new Set(prev);
+                    next.delete(nodeId);
+                    return next;
+                  });
+                } else {
+                  setUserCollapsed((prev) => {
+                    const next = new Set(prev);
+                    next.add(nodeId);
+                    return next;
+                  });
+                  setUserExpanded((prev) => {
+                    if (!prev.has(nodeId)) return prev;
+                    const next = new Set(prev);
+                    next.delete(nodeId);
+                    return next;
+                  });
+                }
               }}
               onSelectEdge={handleSelectEdge}
               selectedEdgeKey={selectedEdge ? `${selectedEdge.from}|${selectedEdge.to}` : null}

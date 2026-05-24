@@ -1,6 +1,6 @@
 // SPEC: REQ-088 (Collapse/Expand to Level)
 import { describe, it, expect } from "vitest";
-import { computeHierarchy, collapsedNodesForLevel, hiddenNodesForLevel } from "../graph/hierarchy";
+import { computeHierarchy, collapsedNodesForLevel, hiddenNodesForLevel, computeVisibility } from "../graph/hierarchy";
 import type { GraphNode, GraphEdge } from "../types/graph-ir";
 
 function n(id: string): GraphNode {
@@ -133,5 +133,61 @@ describe("hiddenNodesForLevel (REQ-088 fix — tree-shaped graphs)", () => {
     expect(hiddenNodesForLevel(1, chainInfo)).toEqual(new Set(["b", "c"]));
     expect(hiddenNodesForLevel(2, chainInfo)).toEqual(new Set(["c"]));
     expect(hiddenNodesForLevel(3, chainInfo)).toEqual(new Set());
+  });
+});
+
+describe("computeVisibility (REQ-088 unified model)", () => {
+  // tree: root → [a, b]; a → [a1, a2]; b → [b1]
+  const nodes = [n("root"), n("a"), n("b"), n("a1"), n("a2"), n("b1")];
+  const edges = [e("root", "a"), e("root", "b"), e("a", "a1"), e("a", "a2"), e("b", "b1")];
+  const info = computeHierarchy(nodes, edges);
+  const empty = new Set<string>();
+
+  it("level 0 with no overrides: only roots visible, root shows '+'", () => {
+    const v = computeVisibility(info, edges, 0, empty, empty);
+    expect(v.hidden).toEqual(new Set(["a", "b", "a1", "a2", "b1"]));
+    expect(v.showsPlus).toEqual(new Set(["root"]));
+    expect(v.showsMinus).toEqual(new Set());
+  });
+
+  it("level is CUMULATIVE — stepping to 2 still shows level 1 (user-reported bug)", () => {
+    const v = computeVisibility(info, edges, 2, empty, empty);
+    expect(v.hidden).toEqual(new Set()); // depth 0, 1, 2 all visible; no depth-3 nodes
+    // root and a, b all have children currently visible → "−"
+    expect(v.showsMinus).toEqual(new Set(["root", "a", "b"]));
+    expect(v.showsPlus).toEqual(new Set());
+  });
+
+  it("level 1: roots + their children visible; depth-2 hidden; a/b show '+'", () => {
+    const v = computeVisibility(info, edges, 1, empty, empty);
+    expect(v.hidden).toEqual(new Set(["a1", "a2", "b1"]));
+    expect(v.showsPlus).toEqual(new Set(["a", "b"]));     // their children are hidden
+    expect(v.showsMinus).toEqual(new Set(["root"]));      // root's children are visible
+  });
+
+  it("manual '+' on a collapsed node overrides the stepper (REQ-088)", () => {
+    // Stepper at level 0 (only root visible). User clicks '+' on root.
+    const v = computeVisibility(info, edges, 0, empty, new Set(["root"]));
+    expect(v.hidden).toEqual(new Set(["a1", "a2", "b1"])); // root expanded by 1 layer
+    expect(v.showsMinus).toEqual(new Set(["root"]));
+    expect(v.showsPlus).toEqual(new Set(["a", "b"]));
+  });
+
+  it("manual '−' on a node overrides the stepper", () => {
+    // Stepper at level 3 (everything visible). User collapses 'a'.
+    const v = computeVisibility(info, edges, 3, new Set(["a"]), empty);
+    expect(v.hidden).toEqual(new Set(["a1", "a2"]));      // a's subtree hidden
+    expect(v.showsPlus).toEqual(new Set(["a"]));          // a shows '+'
+    expect(v.showsMinus).toEqual(new Set(["root", "b"])); // others still expanded
+  });
+
+  it("manual expand on one node + manual collapse on a sibling at the same level", () => {
+    // User opens at level 0 (only root visible), clicks + on root (sees a, b),
+    // clicks + on a (sees a1, a2), clicks − on b (b1 stays hidden).
+    const v = computeVisibility(info, edges, 0, new Set(["b"]), new Set(["root", "a"]));
+    expect(v.hidden).toEqual(new Set(["b1"]));
+    expect(v.showsMinus.has("a")).toBe(true);
+    expect(v.showsMinus.has("root")).toBe(true);
+    expect(v.showsPlus.has("b")).toBe(true);
   });
 });

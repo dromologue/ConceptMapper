@@ -637,12 +637,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const configs = nodeTypeConfigsRef.current;
     const revealed = revealedRef.current;
     const currentFilters = filtersRef.current;
-    const collapsed = collapsedRef.current;
     const hiddenIds = hiddenIdsRef.current;
-    const { hiddenByCollapse } = computeCollapseState(dataRef.current.edges, collapsed);
     const visible = ns.filter((n) => {
       if (hiddenIds.has(n.id)) return false;
-      if (hiddenByCollapse.has(n.id)) return false;
       if (!isNodeFilterVisible(n, currentFilters)) return false;
       return isNodePrimary(n, mode, configs) || revealed.has(n.id);
     });
@@ -1191,16 +1188,19 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       });
     }
 
-    // Compute collapse state (works for all edge types, not just directed)
+    // REQ-088 unified visibility — hiddenIds is computed by computeVisibility
+    // in App.tsx and already accounts for both stepper (depth) and manual +/-
+    // overrides. We only call computeCollapseState here to derive hasChildren
+    // (which nodes get a clickable +/- glyph); its hiddenByCollapse cascade
+    // is intentionally ignored.
     const collapsed = collapsedRef.current;
     const hiddenIds = hiddenIdsRef.current;
-    const { hasChildren, hiddenByCollapse } = computeCollapseState(currentData.edges, collapsed);
+    const { hasChildren } = computeCollapseState(currentData.edges, collapsed);
     hasChildrenRef.current = hasChildren;
 
     const currentFilters = filtersRef.current;
     const isVisible = (node: SimNode) => {
       if (hiddenIds.has(node.id)) return false;
-      if (hiddenByCollapse.has(node.id)) return false;
       if (!isNodeFilterVisible(node, currentFilters)) return false;
       if (isAdding) return true;
       return isNodePrimary(node, mode, configs) || revealed.has(node.id);

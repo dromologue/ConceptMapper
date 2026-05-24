@@ -85,10 +85,9 @@ export function collapsedNodesForLevel(
 }
 
 /**
- * The set of node ids whose depth exceeds `level`. These are hidden directly
- * by the renderer (independent of the cascade-based collapse used for manual
- * +/- clicks). Returns an empty set when `level >= maxDepth` (everything
- * visible).
+ * The set of node ids whose depth exceeds `level`. Pure depth filter — does
+ * NOT honour manual +/- overrides. Use `computeVisibility` for the full
+ * model. Kept for tests that only exercise stepper behaviour.
  */
 export function hiddenNodesForLevel(level: number, info: HierarchyInfo): Set<string> {
   if (level >= info.maxDepth) return new Set();
@@ -97,4 +96,83 @@ export function hiddenNodesForLevel(level: number, info: HierarchyInfo): Set<str
     if (d > level) result.add(id);
   }
   return result;
+}
+
+export interface VisibilityResult {
+  /** Nodes to hide from the canvas. */
+  hidden: Set<string>;
+  /** Nodes that have child subtrees currently hidden — these render a "+" glyph. */
+  showsPlus: Set<string>;
+  /** Nodes whose child subtrees are currently visible — these render a "−" glyph. */
+  showsMinus: Set<string>;
+}
+
+/**
+ * Unified visibility for REQ-088. BFS from every root; at each node decide
+ * whether to walk into its directed children:
+ *
+ *   reveal(N) = !userCollapsed(N) && (userExpanded(N) || depth(N) < expandLevel)
+ *
+ * Manual +/- on a node ALWAYS wins over the stepper. Unreachable / cycle
+ * nodes (depth fallback = 0) are treated as roots so they stay visible at
+ * every level.
+ */
+export function computeVisibility(
+  info: HierarchyInfo,
+  edges: GraphEdge[],
+  expandLevel: number,
+  userCollapsed: Set<string>,
+  userExpanded: Set<string>,
+): VisibilityResult {
+  const outEdges = new Map<string, string[]>();
+  for (const id of info.depths.keys()) outEdges.set(id, []);
+  for (const e of edges) {
+    if (info.depths.has(e.from) && info.depths.has(e.to)) {
+      outEdges.get(e.from)!.push(e.to);
+    }
+  }
+
+  const visible = new Set<string>();
+  const queue: string[] = [];
+
+  // Seed with roots AND any depth-0 fallback nodes (cycles / disconnected hubs).
+  for (const r of info.roots) {
+    if (!visible.has(r)) { visible.add(r); queue.push(r); }
+  }
+  for (const [id, d] of info.depths) {
+    if (d === 0 && !visible.has(id)) { visible.add(id); queue.push(id); }
+  }
+
+  const showsPlus = new Set<string>();
+  const showsMinus = new Set<string>();
+
+  while (queue.length > 0) {
+    const cur = queue.shift()!;
+    const depth = info.depths.get(cur) ?? 0;
+    const children = outEdges.get(cur) ?? [];
+
+    const reveal =
+      !userCollapsed.has(cur) &&
+      (userExpanded.has(cur) || depth < expandLevel);
+
+    if (children.length > 0) {
+      if (reveal) showsMinus.add(cur);
+      else showsPlus.add(cur);
+    }
+
+    if (reveal) {
+      for (const child of children) {
+        if (!visible.has(child)) {
+          visible.add(child);
+          queue.push(child);
+        }
+      }
+    }
+  }
+
+  const hidden = new Set<string>();
+  for (const id of info.depths.keys()) {
+    if (!visible.has(id)) hidden.add(id);
+  }
+  return { hidden, showsPlus, showsMinus };
 }
