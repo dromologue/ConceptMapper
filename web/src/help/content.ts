@@ -371,7 +371,7 @@ A searchable, scrollable list of all visible nodes (respects active filters) sor
     id: "collapse-expand-level",
     title: "Collapse and Expand to Level",
     tags: ["collapse", "expand", "level", "depth", "hierarchy", "stepper", "fold"],
-    content: `Every map opens **fully collapsed** at level 0. Only the root nodes (those with no incoming directed edges) are visible. The stepper in the sidebar controls how deep the visible hierarchy goes.
+    content: `Every map opens **fully expanded** — all nodes and their links visible. The stepper in the sidebar controls how deep the visible hierarchy goes; step down to progressively collapse leaves toward the roots.
 
 **The stepper**
 A small vertical control: **+** on top, the current level number in the middle, **-** on the bottom.
@@ -383,8 +383,8 @@ A small vertical control: **+** on top, the current level number in the middle, 
 The app performs a BFS from every root and assigns each node the shortest distance from any root. Level 0 = roots; level 1 = direct children; and so on. Cycles and unreachable nodes are assigned depth 0 so they remain visible at every level.
 
 **Fresh load vs. mutation**
-A fresh load (open file, switch map) always reseeds to level 0 — the map opens collapsed.
-Manual edits (adding nodes, drawing edges, editing properties) preserve the current view state — your stepper position does not jump back to zero when you make changes.
+A fresh load (open file, switch map) reseeds to the maximum depth — the map opens fully expanded.
+Manual edits (adding nodes, drawing edges, editing properties) preserve the current view state — your stepper position does not jump when you make changes.
 
 **Why this matters**
 Concept maps with hundreds of nodes are unreadable when shown all at once. The stepper lets you progressively disclose structure: start with the trunks, then reveal branches, then leaves.`,

@@ -55,9 +55,10 @@ function AppInner() {
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [viewMode, setViewMode] = useState("full");
   const [revealedNodes, setRevealedNodes] = useState<Set<string>>(new Set());
-  // REQ-088: expand-to-level. 0 = roots only (default on every map load).
-  // Manual +/- clicks populate userCollapsed / userExpanded and ALWAYS win
-  // over the stepper. computeVisibility folds these into a single hidden set.
+  // REQ-088: expand-to-level. Default on map load is fully expanded
+  // (maxDepth) so users see the full graph and its links; they can step the
+  // level down to collapse. Manual +/- clicks populate userCollapsed /
+  // userExpanded and ALWAYS win over the stepper.
   const [expandLevel, setExpandLevel] = useState(0);
   const [userCollapsed, setUserCollapsed] = useState<Set<string>>(new Set());
   const [userExpanded, setUserExpanded] = useState<Set<string>>(new Set());
@@ -78,8 +79,8 @@ function AppInner() {
 
   // Distinct from setGraphData: called when a fresh map is *loaded* (from disk,
   // a new wizard-created map, or a Swift bridge load). Seeds the view to
-  // "fully collapsed" — REQ-088 — in the same render so the canvas never
-  // briefly paints the full graph.
+  // "fully expanded" — REQ-088 — so the user sees the whole graph and its
+  // links on first paint; they can step the level down to collapse.
   const loadGraphFresh = useCallback((next: GraphIR | null) => {
     setGraphDataRaw((prev) => {
       if (prev && next && prev !== next) {
@@ -88,7 +89,8 @@ function AppInner() {
       }
       return next;
     });
-    setExpandLevel(0);
+    const maxDepth = next ? computeHierarchy(next.nodes, next.edges).maxDepth : 0;
+    setExpandLevel(maxDepth);
     setUserCollapsed(new Set());
     setUserExpanded(new Set());
   }, []);
@@ -174,7 +176,7 @@ function AppInner() {
     setRevealedNodes(new Set());
     setFilters(createEmptyFilterState());
   }, []);
-  // File loader uses loadGraphFresh so newly-opened maps start fully collapsed
+  // File loader uses loadGraphFresh so newly-opened maps start fully expanded
   // (REQ-088). In-app mutations go through setGraphData and keep the user's view.
   const { parserReady, error, setError, loadFileContent, loadWarnings, setLoadWarnings } = useFileLoader(
     template, loadGraphFresh, setTemplate, resetUI, setSourceFilePath

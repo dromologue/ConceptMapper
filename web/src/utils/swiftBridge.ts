@@ -24,7 +24,7 @@ export interface SwiftBridgeDeps {
 
   // Setters
   setGraphData: (ir: GraphIR) => void;
-  /** Fresh-load entry point — seeds the expand-level back to 0 (REQ-088). */
+  /** Fresh-load entry point — seeds the expand-level to maxDepth (REQ-088). */
   loadGraphFresh: (ir: GraphIR | null) => void;
   setTemplate: (t: TaxonomyTemplate | null) => void;
   setSelectedNode: (n: null) => void;
