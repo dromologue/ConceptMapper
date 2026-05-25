@@ -190,6 +190,12 @@ export function migrateFromParser(parsed: GraphIR, activeTemplate?: TaxonomyTemp
       if (parsed.length > 0) node.tags = parsed;
       delete props.tags;
     }
+    // REQ-111: lift `notes_file` to a first-class field on the node so it
+    // doesn't pollute the Properties panel.
+    if (typeof props.notes_file === "string" && props.notes_file.trim()) {
+      node.notes_file = props.notes_file.trim();
+      delete props.notes_file;
+    }
   }
 
   // Lift any node field whose key matches a classifier ID into the node.classifiers map.
@@ -231,6 +237,7 @@ export function graphIRFromData(template: TaxonomyTemplate, data: ConceptMapData
     classifiers: dn.classifiers,
     properties: { ...dn.properties },
     notes: dn.notes,
+    notes_file: dn.notes_file,
   }));
 
   const classifiers = getTemplateClassifiers(template);

@@ -1629,6 +1629,9 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[], edge
 
       // Notes — escape newlines so multi-line outlines survive round-trip.
       if (node.notes) lines.push(`notes:            ${escapeKVValue(node.notes)}`);
+      // REQ-111: persist the absolute path of an attached markdown file. The
+      // notes pane re-loads from disk on open and writes back on edit.
+      if (node.notes_file) lines.push(`notes_file:       ${escapeKVValue(node.notes_file)}`);
       lines.push("```\n");
     }
   }

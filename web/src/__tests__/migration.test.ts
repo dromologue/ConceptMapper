@@ -82,6 +82,34 @@ describe("migrateFromParser", () => {
     expect(data.edges).toHaveLength(1);
     expect(data.edges[0].edge_type).toBe("originates");
   });
+
+  // SPEC: REQ-111 (AC-111-07) — notes_file lift
+  it("lifts notes_file from raw fields to a first-class node property", () => {
+    const withNotesFile = {
+      ...minimalParsed,
+      nodes: [
+        {
+          id: "n1", node_type: "note", name: "Atomic note",
+          fields: { notes_file: "/Users/me/notes/atomic.md", pillar: "lead" },
+        },
+      ],
+    } as unknown as GraphIR;
+    const { data } = migrateFromParser(withNotesFile);
+    const node = data.nodes[0];
+    expect(node.notes_file).toBe("/Users/me/notes/atomic.md");
+    // It must NOT remain in properties — that would pollute the editable
+    // Properties panel as a generic text field.
+    expect(node.properties.notes_file).toBeUndefined();
+  });
+
+  it("ignores empty or whitespace-only notes_file values", () => {
+    const blank = {
+      ...minimalParsed,
+      nodes: [{ id: "n1", node_type: "note", name: "x", fields: { notes_file: "   " } }],
+    } as unknown as GraphIR;
+    const { data } = migrateFromParser(blank);
+    expect(data.nodes[0].notes_file).toBeUndefined();
+  });
 });
 
 describe("graphIRFromData round-trip", () => {
@@ -97,6 +125,21 @@ describe("graphIRFromData round-trip", () => {
     const ir = graphIRFromData(template, data);
     const concept = ir.nodes.find((n) => n.id === "c1");
     expect(concept!.properties?.concept_type).toBe("framework");
+  });
+
+  // SPEC: REQ-111 (AC-111-07) — notes_file round-trips through the runtime IR
+  it("round-trips notes_file from raw parse through graphIRFromData", () => {
+    const parsed = {
+      version: "1.0",
+      metadata: { title: "t", notes: [] },
+      nodes: [{ id: "n1", node_type: "note", name: "A", fields: { notes_file: "/abs/path/file.md" } }],
+      edges: [],
+    } as unknown as GraphIR;
+    const { template, data } = migrateFromParser(parsed);
+    const ir = graphIRFromData(template, data);
+    expect(ir.nodes[0].notes_file).toBe("/abs/path/file.md");
+    // Still absent from properties
+    expect(ir.nodes[0].properties?.notes_file).toBeUndefined();
   });
 });
 

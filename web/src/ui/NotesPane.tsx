@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import ReactMarkdown from "react-markdown";
 import type { GraphNode, GraphEdge } from "../types/graph-ir";
 import { EDGE_LABELS } from "../utils/edge-labels";
+import { postToSwift } from "../utils/swiftBridge";
 
 interface Props {
   node: GraphNode;
@@ -11,130 +13,91 @@ interface Props {
   style?: React.CSSProperties;
 }
 
-interface OutlineItem {
-  text: string;
-  indent: number; // 0-based indent level
-}
-
-/** Parse notes string into outline items. Each line is a bullet; leading 2-space groups = indent. */
-function parseOutline(notes: string): OutlineItem[] {
-  if (!notes) return [{ text: "", indent: 0 }];
-  return notes.split("\n").map((line) => {
-    // Count leading "  " pairs OR leading "- " bullet markers
-    let stripped = line;
-    let indent = 0;
-    while (stripped.startsWith("  ")) {
-      indent++;
-      stripped = stripped.slice(2);
-    }
-    // Strip leading bullet marker if present
-    if (stripped.startsWith("- ")) stripped = stripped.slice(2);
-    else if (stripped.startsWith("* ")) stripped = stripped.slice(2);
-    return { text: stripped, indent };
-  });
-}
-
-/** Serialize outline items back to notes string. Uses 2-space indentation + "- " prefix. */
-function serializeOutline(items: OutlineItem[]): string {
-  return items.map((item) => "  ".repeat(item.indent) + "- " + item.text).join("\n");
-}
+type Mode = "edit" | "preview";
 
 export function NotesPane({ node, edges, nodes, onNodeUpdate }: Props) {
+  // key on node.id so switching nodes re-mounts the editor with fresh state.
   return <NotesPaneInner key={node.id} node={node} edges={edges} nodes={nodes} onNodeUpdate={onNodeUpdate} />;
 }
 
 function NotesPaneInner({ node, edges, nodes, onNodeUpdate }: Props) {
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-  const [items, setItems] = useState<OutlineItem[]>(() => parseOutline(node.notes ?? ""));
-  const [focusedLine, setFocusedLine] = useState(0);
+  const [content, setContent] = useState<string>(node.notes ?? "");
+  const [attachedPath, setAttachedPath] = useState<string | undefined>(node.notes_file);
+  const [mode, setMode] = useState<Mode>("preview");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const inputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Focus the right input when focusedLine changes
+  // Persist debounced edits. When a file is attached we also write through to
+  // the source file; otherwise the text lives inline on the node.
+  const save = useCallback(
+    (newContent: string, path: string | undefined) => {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        onNodeUpdate(node.id, { notes: newContent || undefined });
+        if (path) {
+          postToSwift("writeNotesFile", JSON.stringify({ path, content: newContent }));
+        }
+      }, 500);
+    },
+    [node.id, onNodeUpdate],
+  );
+
+  // On mount / path change: if a file is attached, pull its content from disk
+  // and overwrite the inline notes. This makes the file the source of truth
+  // any time the pane opens.
   useEffect(() => {
-    const input = inputRefs.current.get(focusedLine);
-    if (input) input.focus();
-  }, [focusedLine, items.length]);
+    if (!attachedPath) return;
+    const onRead = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { nodeId: string; path: string; content: string; exists: boolean };
+      if (detail.nodeId !== node.id) return;
+      if (detail.exists) {
+        setContent(detail.content);
+        onNodeUpdate(node.id, { notes: detail.content || undefined });
+      }
+    };
+    window.addEventListener("notesFileRead", onRead);
+    postToSwift("readNotesFile", JSON.stringify({ nodeId: node.id, path: attachedPath }));
+    return () => window.removeEventListener("notesFileRead", onRead);
+  }, [attachedPath, node.id, onNodeUpdate]);
 
-  const save = useCallback((newItems: OutlineItem[]) => {
-    clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      const text = serializeOutline(newItems);
-      onNodeUpdate(node.id, { notes: text || undefined });
-    }, 500);
+  // Handle attach-completion (Swift fires this after the file picker returns).
+  useEffect(() => {
+    const onAttached = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { nodeId: string; path: string; content: string };
+      if (detail.nodeId !== node.id) return;
+      setAttachedPath(detail.path);
+      setContent(detail.content);
+      onNodeUpdate(node.id, { notes_file: detail.path, notes: detail.content || undefined });
+    };
+    window.addEventListener("notesFileAttached", onAttached);
+    return () => window.removeEventListener("notesFileAttached", onAttached);
   }, [node.id, onNodeUpdate]);
 
-  const updateItems = (newItems: OutlineItem[]) => {
-    setItems(newItems);
-    save(newItems);
+  const onContentChange = (val: string) => {
+    setContent(val);
+    save(val, attachedPath);
   };
 
-  const handleTextChange = (index: number, text: string) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], text };
-    updateItems(newItems);
+  const onAttachClick = () => {
+    postToSwift("attachNotesFile", JSON.stringify({ nodeId: node.id }));
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    const input = e.currentTarget;
-
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const newItems = [...items];
-      if (e.shiftKey) {
-        // Outdent (min 0)
-        if (newItems[index].indent > 0) {
-          newItems[index] = { ...newItems[index], indent: newItems[index].indent - 1 };
-          updateItems(newItems);
-        }
-      } else {
-        // Indent (max = parent indent + 1)
-        const maxIndent = index > 0 ? newItems[index - 1].indent + 1 : 0;
-        if (newItems[index].indent < maxIndent) {
-          newItems[index] = { ...newItems[index], indent: newItems[index].indent + 1 };
-          updateItems(newItems);
-        }
-      }
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      // Split at cursor: text before cursor stays, text after goes to new line
-      const cursorPos = input.selectionStart ?? items[index].text.length;
-      const textBefore = items[index].text.slice(0, cursorPos);
-      const textAfter = items[index].text.slice(cursorPos);
-      const newItems = [...items];
-      newItems[index] = { ...newItems[index], text: textBefore };
-      newItems.splice(index + 1, 0, { text: textAfter, indent: items[index].indent });
-      updateItems(newItems);
-      setFocusedLine(index + 1);
-    } else if (e.key === "Backspace" && input.selectionStart === 0 && input.selectionEnd === 0) {
-      e.preventDefault();
-      if (items[index].indent > 0) {
-        // First outdent
-        const newItems = [...items];
-        newItems[index] = { ...newItems[index], indent: newItems[index].indent - 1 };
-        updateItems(newItems);
-      } else if (index > 0) {
-        // Merge with previous line
-        const newItems = [...items];
-        const prevText = newItems[index - 1].text;
-        newItems[index - 1] = { ...newItems[index - 1], text: prevText + newItems[index].text };
-        newItems.splice(index, 1);
-        updateItems(newItems);
-        setFocusedLine(index - 1);
-        // Set cursor to end of previous text after focus
-        setTimeout(() => {
-          const prevInput = inputRefs.current.get(index - 1);
-          if (prevInput) {
-            prevInput.setSelectionRange(prevText.length, prevText.length);
-          }
-        }, 0);
-      }
-    } else if (e.key === "ArrowUp") {
-      if (index > 0) { e.preventDefault(); setFocusedLine(index - 1); }
-    } else if (e.key === "ArrowDown") {
-      if (index < items.length - 1) { e.preventDefault(); setFocusedLine(index + 1); }
-    }
+  // Detach: drop the file reference but KEEP the loaded text inline. The user
+  // can edit or re-attach later — no work is lost.
+  const onDetachClick = () => {
+    setAttachedPath(undefined);
+    onNodeUpdate(node.id, { notes_file: undefined });
   };
+
+  const toggleMode = () => {
+    setMode((m) => (m === "edit" ? "preview" : "edit"));
+  };
+
+  // When entering edit mode, focus the textarea.
+  useEffect(() => {
+    if (mode === "edit") textareaRef.current?.focus();
+  }, [mode]);
 
   const edgeNotes = edges
     .filter((e) => e.note)
@@ -142,14 +105,39 @@ function NotesPaneInner({ node, edges, nodes, onNodeUpdate }: Props) {
       const otherId = e.from === node.id ? e.to : e.from;
       const otherNode = nodeMap.get(otherId);
       const label = EDGE_LABELS[e.edge_type] ?? e.edge_type;
-      const direction = e.from === node.id ? "\u2192" : "\u2190";
+      const direction = e.from === node.id ? "→" : "←";
       return { label: `${label} ${direction} ${otherNode?.name ?? otherId}`, note: e.note! };
     });
+
+  const attachedBasename = attachedPath ? attachedPath.split("/").pop() ?? attachedPath : undefined;
 
   return (
     <div className="notes-pane">
       <div className="notes-pane-header">
         <span className="notes-pane-title">Notes: {node.name}</span>
+        <div className="notes-pane-actions">
+          {attachedPath ? (
+            <>
+              <span className="notes-attached-file" title={attachedPath}>
+                {attachedBasename}
+              </span>
+              <button className="notes-pane-btn" onClick={onDetachClick} title="Detach file (keep content)">
+                Detach
+              </button>
+            </>
+          ) : (
+            <button className="notes-pane-btn" onClick={onAttachClick} title="Attach a markdown file">
+              Attach .md
+            </button>
+          )}
+          <button
+            className="notes-pane-btn notes-pane-btn-primary"
+            onClick={toggleMode}
+            title={mode === "edit" ? "Show rendered markdown" : "Edit markdown source"}
+          >
+            {mode === "edit" ? "Preview" : "Edit"}
+          </button>
+        </div>
       </div>
 
       {edgeNotes.length > 0 && (
@@ -165,30 +153,24 @@ function NotesPaneInner({ node, edges, nodes, onNodeUpdate }: Props) {
       )}
 
       <div className="notes-content">
-        <div className="outline-editor">
-          {items.map((item, i) => (
-            <div
-              key={i}
-              className="outline-item"
-              style={{ paddingLeft: item.indent * 20 + 4 }}
-            >
-              <span className="outline-bullet">&#x2022;</span>
-              <input
-                ref={(el) => { if (el) inputRefs.current.set(i, el); else inputRefs.current.delete(i); }}
-                className="outline-input"
-                type="text"
-                value={item.text}
-                onChange={(e) => handleTextChange(i, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(i, e)}
-                onFocus={() => setFocusedLine(i)}
-                placeholder={i === 0 ? "Start typing..." : ""}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="outline-hint">
-          Tab to indent &middot; Shift+Tab to outdent &middot; Enter for new line
-        </div>
+        {mode === "edit" ? (
+          <textarea
+            ref={textareaRef}
+            className="notes-editor"
+            value={content}
+            onChange={(e) => onContentChange(e.target.value)}
+            placeholder={attachedPath ? `Editing ${attachedBasename}...` : "Write markdown here. Use **bold**, _italic_, [links](url), # headings, - lists..."}
+            spellCheck={false}
+          />
+        ) : (
+          <div className="notes-preview">
+            {content.trim() ? (
+              <ReactMarkdown>{content}</ReactMarkdown>
+            ) : (
+              <em className="notes-preview-empty">No notes. Click Edit to add some.</em>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

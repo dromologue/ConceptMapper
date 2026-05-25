@@ -100,6 +100,7 @@ describe("DetailPanel — Concept Node", () => {
   });
 });
 
+// SPEC: REQ-111 (Notes file attach + markdown rendering)
 describe("NotesPane", () => {
   const defaultNotesProps = {
     nodes: sampleGraphData.nodes,
@@ -112,25 +113,59 @@ describe("NotesPane", () => {
     expect(screen.getByText(/Notes: Chris Argyris/)).toBeInTheDocument();
   });
 
-  it("shows outline editor with input fields", () => {
+  it("opens in preview mode by default", () => {
     render(<NotesPane node={argyris} edges={[]} {...defaultNotesProps} />);
-    const editor = document.querySelector(".outline-editor");
-    expect(editor).toBeInTheDocument();
-    const inputs = document.querySelectorAll(".outline-input");
-    expect(inputs.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Edit")).toBeInTheDocument();
+    expect(document.querySelector(".notes-preview")).toBeInTheDocument();
   });
 
-  it("renders notes content as outline items", () => {
-    const nodeWithNotes = { ...argyris, notes: "- First point\n  - Sub point\n- Second point" };
-    render(<NotesPane node={nodeWithNotes} edges={[]} {...defaultNotesProps} />);
-    expect(screen.getByDisplayValue("First point")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Sub point")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Second point")).toBeInTheDocument();
+  it("renders empty-state hint when there are no notes", () => {
+    render(<NotesPane node={argyris} edges={[]} {...defaultNotesProps} />);
+    expect(screen.getByText(/No notes/)).toBeInTheDocument();
   });
 
-  it("shows indent hint text", () => {
+  it("renders markdown content as HTML in preview mode", () => {
+    const node = { ...argyris, notes: "# Heading\n\n**bold** text and a [link](https://example.com)." };
+    render(<NotesPane node={node} edges={[]} {...defaultNotesProps} />);
+    const preview = document.querySelector(".notes-preview")!;
+    expect(preview.querySelector("h1")).toHaveTextContent("Heading");
+    expect(preview.querySelector("strong")).toHaveTextContent("bold");
+    expect(preview.querySelector("a")).toHaveAttribute("href", "https://example.com");
+  });
+
+  it("switches to a wrapping textarea in edit mode", async () => {
+    const user = userEvent.setup();
+    const node = { ...argyris, notes: "Some long line that should wrap naturally inside the textarea rather than overflowing horizontally." };
+    render(<NotesPane node={node} edges={[]} {...defaultNotesProps} />);
+    await user.click(screen.getByText("Edit"));
+    const textarea = document.querySelector(".notes-editor") as HTMLTextAreaElement;
+    expect(textarea).toBeInTheDocument();
+    expect(textarea.value).toContain("Some long line");
+    expect(screen.getByText("Preview")).toBeInTheDocument();
+  });
+
+  it("shows Attach button when no file is attached", () => {
     render(<NotesPane node={argyris} edges={[]} {...defaultNotesProps} />);
-    expect(screen.getByText(/Tab to indent/)).toBeInTheDocument();
+    expect(screen.getByText(/Attach \.md/)).toBeInTheDocument();
+  });
+
+  it("shows attached filename and Detach button when a file is attached", () => {
+    const node = { ...argyris, notes_file: "/Users/me/notes/argyris.md" };
+    render(<NotesPane node={node} edges={[]} {...defaultNotesProps} />);
+    expect(screen.getByText("argyris.md")).toBeInTheDocument();
+    expect(screen.getByText("Detach")).toBeInTheDocument();
+    expect(screen.queryByText(/Attach \.md/)).not.toBeInTheDocument();
+  });
+
+  it("detaching keeps inline content but clears the file reference", async () => {
+    const user = userEvent.setup();
+    const onNodeUpdate = vi.fn();
+    const node = { ...argyris, notes: "Loaded body.", notes_file: "/abs/path/notes.md" };
+    render(<NotesPane node={node} edges={[]} {...defaultNotesProps} onNodeUpdate={onNodeUpdate} />);
+    await user.click(screen.getByText("Detach"));
+    expect(onNodeUpdate).toHaveBeenCalledWith(node.id, { notes_file: undefined });
+    // Inline body remains in preview after detach
+    expect(document.querySelector(".notes-preview")?.textContent).toContain("Loaded body");
   });
 
   it("shows edge relationship context when edges have notes", () => {

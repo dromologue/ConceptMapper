@@ -622,6 +622,18 @@ When a map is loaded, its data is validated against the template. Mismatches are
 **AC-109-04**: Warnings appear in a dismissible banner above the canvas with amber styling.
 **AC-109-05**: Validation does not block loading — the map is always displayed, warnings are informational.
 
+### REQ-111: Notes Pane — Markdown Rendering + File Attachment
+The Notes pane is a wrapping markdown editor with an attachable external `.md` file as the source of truth.
+
+**AC-111-01**: The pane opens in **Preview** mode showing the node's notes rendered as CommonMark via `react-markdown`. An **Edit** button switches to a wrapping `<textarea>` (raw markdown source); a **Preview** button switches back.
+**AC-111-02**: The textarea wraps text (`white-space: pre-wrap`, `word-wrap: break-word`) — long lines do not overflow horizontally.
+**AC-111-03**: An **Attach .md** button opens an `NSOpenPanel` restricted to `.md` / `.markdown` / plain text. On selection, the absolute path is stored as `node.notes_file` and the file's content replaces the in-pane notes.
+**AC-111-04**: Every time the pane opens with `notes_file` set, the Swift bridge re-reads the file from disk and the editor is repopulated from that content — the file is the source of truth.
+**AC-111-05**: Edits in the editor are saved (debounced 500ms): when a file is attached, they are written to the file via the Swift bridge; either way they are also stored on `node.notes`.
+**AC-111-06**: A **Detach** button clears `node.notes_file` but leaves the loaded text on `node.notes` so no work is lost. The user can re-attach later.
+**AC-111-07**: The .cm file round-trips `notes_file:` as a key inside the node fence. The Rust parser already treats unknown keys as generic fields; `migrateFromParser` lifts `notes_file` from `properties` to the dedicated `GraphNode.notes_file` field so it does not pollute the Properties panel.
+**AC-111-08**: The exporter (`exportToMarkdown`) writes `notes_file: <abs path>` immediately after `notes:` on any node that has the field set.
+
 ### REQ-110: Depth-Based Colour Lightness
 Node colours are layered with a depth ramp so deeper nodes appear paler than roots, preserving hue and varying the visual field on large maps.
 

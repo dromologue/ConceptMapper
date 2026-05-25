@@ -416,23 +416,21 @@ Classifiers are structural (defined in the template); tags are emergent (added f
     id: "notes-editor",
     title: "The Notes Editor",
     tags: ["notes", "markdown", "editor", "write", "text", "format"],
-    content: `Each node can have rich-text notes attached. The Notes pane is a live inline markdown editor that opens below the canvas.
+    content: `Each node can have rich-text notes attached. The Notes pane renders standard markdown and lets you attach an external .md file as the source of truth.
 
 **To open:** Select a node, then click "Edit Notes" in the Properties panel header.
 
-**Supported markdown:**
-- # Heading, ## Subheading, ### etc.
-- **bold text** using double asterisks
-- *italic text* using single asterisks
-- \`inline code\` using backticks
-- - list items using dashes
-- > blockquotes using greater-than
+**Edit vs. Preview:** The pane opens in Preview by default — rendered markdown with wrapping. Click **Edit** to switch to a wrapping textarea showing the raw markdown source; click **Preview** to switch back.
 
-Formatting renders live as you type -- syntax markers stay visible but styled dimly so you can see the structure.
+**Supported markdown:** Standard CommonMark — headings (\`#\` through \`####\`), \`**bold**\`, \`*italic*\`, \`\`inline code\`\`, fenced code blocks, lists, [links](url), > blockquotes, --- rules.
 
-**Relationship context:** If the selected node has edges with notes, these appear at the top of the notes pane as "Relationship Context" -- read-only summaries of edge annotations.
+**Attach a markdown file:** Click **Attach .md** in the pane header to pick a file. The absolute path is stored on the node and round-tripped through the .cm file as \`notes_file: /absolute/path/to/file.md\`. The file's contents are loaded into the editor every time the pane opens — the file is the source of truth.
 
-**Auto-save:** Notes save automatically after 500ms of idle typing.
+**Edits save back:** Any change in the editor writes back to the attached file after 500ms idle. If no file is attached, changes are stored inline on the node and round-tripped via the .cm as before.
+
+**Detach:** Click **Detach** to drop the file reference. The currently-loaded text stays in the pane and persists inline on the node — nothing is lost. You can re-attach the same file (or another) at any time.
+
+**Relationship context:** If the selected node has edges with notes, they appear at the top of the pane as "Relationship Context" — read-only summaries of edge annotations.
 
 **Resizing:** Drag the border between the canvas and the notes pane to adjust height.`,
   },

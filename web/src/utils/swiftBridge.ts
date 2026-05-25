@@ -193,6 +193,26 @@ export function registerSwiftBridge(deps: SwiftBridgeDeps): () => void {
     }
   };
 
+  // REQ-111: notes file attach / read callbacks. Re-emitted as CustomEvents so
+  // the NotesPane can subscribe without a tight coupling through the bridge.
+  win.notesFileAttached = (json: string) => {
+    try {
+      const detail = JSON.parse(json) as { nodeId: string; path: string; content: string };
+      window.dispatchEvent(new CustomEvent("notesFileAttached", { detail }));
+    } catch (err) {
+      console.error("notesFileAttached parse error:", err);
+    }
+  };
+
+  win.notesFileRead = (json: string) => {
+    try {
+      const detail = JSON.parse(json) as { nodeId: string; path: string; content: string; exists: boolean };
+      window.dispatchEvent(new CustomEvent("notesFileRead", { detail }));
+    } catch (err) {
+      console.error("notesFileRead parse error:", err);
+    }
+  };
+
   // Cleanup: remove all bridge functions from window
   return () => {
     delete win.loadFileContentBase64;
@@ -205,5 +225,7 @@ export function registerSwiftBridge(deps: SwiftBridgeDeps): () => void {
     delete win.templatesLoaded;
     delete win.templateLoaded;
     delete win.mapsLoaded;
+    delete win.notesFileAttached;
+    delete win.notesFileRead;
   };
 }

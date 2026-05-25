@@ -80,6 +80,9 @@ export interface DataNode {
   classifiers?: Record<string, string>;
   properties: Record<string, string | string[] | number | undefined>;
   notes?: string;
+  /** Absolute path to an external markdown file backing this node's notes.
+   *  When set, the notes pane loads from / saves to this file. REQ-111. */
+  notes_file?: string;
 }
 
 // --- Runtime types ---
@@ -116,6 +119,9 @@ export interface GraphNode {
   classifiers?: Record<string, string>;
   properties?: Record<string, string | string[] | number | undefined>;
   notes?: string;
+  /** Absolute path to an external markdown file backing this node's notes.
+   *  When set, the notes pane loads from / saves to this file. REQ-111. */
+  notes_file?: string;
 }
 
 export interface GraphEdge {

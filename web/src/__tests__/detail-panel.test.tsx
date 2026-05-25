@@ -120,25 +120,19 @@ describe("NotesPane", () => {
     expect(screen.getByText(/Notes: Chris Argyris/)).toBeInTheDocument();
   });
 
-  it("shows outline editor with input fields", () => {
+  it("shows a markdown preview area in default mode", () => {
     render(<NotesPane node={argyris} edges={[]} {...defaultNotesProps} />);
-    const editor = document.querySelector(".outline-editor");
-    expect(editor).toBeInTheDocument();
-    const inputs = document.querySelectorAll(".outline-input");
-    expect(inputs.length).toBeGreaterThanOrEqual(1);
+    expect(document.querySelector(".notes-preview")).toBeInTheDocument();
   });
 
-  it("renders notes content as outline items", () => {
+  it("renders notes content as rendered markdown bullets", () => {
     const nodeWithNotes = { ...argyris, notes: "- First point\n  - Sub point\n- Second point" };
     render(<NotesPane node={nodeWithNotes} edges={[]} {...defaultNotesProps} />);
-    expect(screen.getByDisplayValue("First point")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Sub point")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Second point")).toBeInTheDocument();
-  });
-
-  it("shows indent hint text", () => {
-    render(<NotesPane node={argyris} edges={[]} {...defaultNotesProps} />);
-    expect(screen.getByText(/Tab to indent/)).toBeInTheDocument();
+    const preview = document.querySelector(".notes-preview")!;
+    expect(preview.textContent).toContain("First point");
+    expect(preview.textContent).toContain("Sub point");
+    expect(preview.textContent).toContain("Second point");
+    expect(preview.querySelector("ul")).toBeInTheDocument();
   });
 
   it("shows edge relationship context when edges have notes", () => {

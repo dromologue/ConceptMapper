@@ -205,7 +205,7 @@ struct WebView: NSViewRepresentable {
         let userContentController = WKUserContentController()
 
         // Register JS → Swift message handlers
-        for handler in ["openFile", "exportImage", "exportMarkdown", "saveToPath", "saveToDownloads", "saveNewTaxonomy", "listTemplates", "listMaps", "loadMap", "loadTemplate", "saveTemplate", "openURL", "jsLog"] {
+        for handler in ["openFile", "exportImage", "exportMarkdown", "saveToPath", "saveToDownloads", "saveNewTaxonomy", "listTemplates", "listMaps", "loadMap", "loadTemplate", "saveTemplate", "openURL", "jsLog", "attachNotesFile", "readNotesFile", "writeNotesFile"] {
             userContentController.add(bridge, name: handler)
         }
 

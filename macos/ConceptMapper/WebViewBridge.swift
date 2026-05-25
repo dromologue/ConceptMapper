@@ -198,6 +198,67 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
                 NSWorkspace.shared.open(url)
             }
 
+        case "attachNotesFile":
+            // JS sends JSON with { nodeId }. Opens NSOpenPanel restricted to .md;
+            // returns absolute path + content via window.notesFileAttached.
+            if let data = body.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+               let nodeId = json["nodeId"] {
+                let panel = NSOpenPanel()
+                panel.allowedContentTypes = [.init(filenameExtension: "md")!, .init(filenameExtension: "markdown")!, .text]
+                panel.allowsMultipleSelection = false
+                panel.canChooseDirectories = false
+                panel.canChooseFiles = true
+                panel.title = "Attach Markdown File"
+                panel.begin { [weak self] response in
+                    guard let self = self else { return }
+                    guard response == .OK, let url = panel.url else { return }
+                    let path = url.path
+                    let content = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+                    let payload: [String: String] = ["nodeId": nodeId, "path": path, "content": content]
+                    if let jsonData = try? JSONSerialization.data(withJSONObject: payload),
+                       let jsonString = String(data: jsonData, encoding: .utf8) {
+                        self.webView?.evaluateJavaScript(
+                            "window.notesFileAttached?.(\(self.safeJSString(jsonString)));"
+                        ) { _, _ in }
+                    }
+                }
+            }
+
+        case "readNotesFile":
+            // JS sends JSON with { nodeId, path }. Reads file synchronously,
+            // returns content via window.notesFileRead.
+            if let data = body.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+               let nodeId = json["nodeId"],
+               let path = json["path"] {
+                let url = URL(fileURLWithPath: path)
+                let content = (try? String(contentsOf: url, encoding: .utf8))
+                let payload: [String: Any] = [
+                    "nodeId": nodeId,
+                    "path": path,
+                    "content": content ?? "",
+                    "exists": content != nil
+                ]
+                if let jsonData = try? JSONSerialization.data(withJSONObject: payload),
+                   let jsonString = String(data: jsonData, encoding: .utf8) {
+                    self.webView?.evaluateJavaScript(
+                        "window.notesFileRead?.(\(self.safeJSString(jsonString)));"
+                    ) { _, _ in }
+                }
+            }
+
+        case "writeNotesFile":
+            // JS sends JSON with { path, content }. Writes content to the
+            // absolute path (best-effort, silent on error).
+            if let data = body.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+               let path = json["path"],
+               let content = json["content"] {
+                let url = URL(fileURLWithPath: path)
+                try? content.write(to: url, atomically: true, encoding: .utf8)
+            }
+
         default:
             break
         }
