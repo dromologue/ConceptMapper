@@ -8,7 +8,8 @@ import { isNodeFilterVisible } from "../utils/filters";
 import { getNodeTypeConfig, getConfigNodeRadius } from "../migration";
 import { computeCollapseState } from "./collapse-utils";
 import { EDGE_LABELS } from "../utils/edge-labels";
-import { getNodeColor } from "./node-color";
+import { getNodeColor, applyDepthLightness } from "./node-color";
+import { computeHierarchy, type HierarchyInfo } from "./hierarchy";
 import { communityColor } from "../ui/AnalysisPanel";
 import { computeFlowDepths, computeFlowPositions, computeRadialTargets } from "./layout-presets";
 import { truncateLabel, LABEL_TRUNCATE_LENGTH } from "../utils/label";
@@ -383,6 +384,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown> | null>(null);
   const onSelectNodeRef = useRef(onSelectNode);
   const dataRef = useRef(data);
+  // BFS depths for the depth-lightness ramp on node colours. Recomputed on
+  // every data change; cheap (linear in nodes + edges).
+  const hierarchyRef = useRef<HierarchyInfo>(computeHierarchy(data.nodes, data.edges));
   const tooltipRef = useRef<HTMLDivElement>(null);
   const marqueeRef = useRef<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
   const isMarqueeRef = useRef(false);
@@ -426,6 +430,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { onToggleCollapseRef.current = onToggleCollapse; }, [onToggleCollapse]);
   useEffect(() => {
     dataRef.current = data;
+    hierarchyRef.current = computeHierarchy(data.nodes, data.edges);
     // Re-apply forces when classifiers change (e.g. layout mode switched in sidebar)
     const newCls = data.metadata.classifiers ?? [];
     const oldCls = classifiersRef.current;
@@ -1518,6 +1523,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       } else {
         const classifiers = currentData.metadata.classifiers ?? [];
         color = getNodeColor(node, classifiers, th.streamColorOverrides);
+        // Layer BFS depth as a lightness ramp on top of the classifier colour
+        // so deeper nodes appear paler — preserves hue, varies the visual field.
+        const hier = hierarchyRef.current;
+        const depth = hier.depths.get(node.id) ?? 0;
+        color = applyDepthLightness(color, depth, hier.maxDepth);
       }
       const isPrimary = isAdding || isNodePrimary(node, mode, configs);
       const isRevealed = !isPrimary && revealed.has(node.id);

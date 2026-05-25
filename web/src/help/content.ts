@@ -322,7 +322,7 @@ from: node_c to: node_d type: rivalry
 - In People or Concepts view, clicking a node reveals its cross-type connections.
 
 **Visual indicators:**
-- **Node colour:** Determined by the node's stream (category).
+- **Node colour:** Base colour comes from the node's classifier value (e.g. pillar, stream). On top of that, the colour is progressively lightened by **BFS depth** — roots keep their full colour, deeper nodes are paler. On large maps this varies the visual field without changing hue, so you can still read classifier membership while seeing hierarchy at a glance.
 - **Node shape:** Circle = thinker/person types; Rectangle = concept types. Custom types use whichever shape is configured in the taxonomy.
 - **Node size:** Can be driven by a field value (e.g. eminence controls circle radius).
 - **+/- indicator:** Small circle in upper-right of a node. Means it has children. Click to collapse/expand.

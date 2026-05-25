@@ -621,3 +621,12 @@ When a map is loaded, its data is validated against the template. Mismatches are
 **AC-109-03**: Warnings are deduplicated by property name (e.g. "5 node(s) have property X not in template" rather than one per node).
 **AC-109-04**: Warnings appear in a dismissible banner above the canvas with amber styling.
 **AC-109-05**: Validation does not block loading — the map is always displayed, warnings are informational.
+
+### REQ-110: Depth-Based Colour Lightness
+Node colours are layered with a depth ramp so deeper nodes appear paler than roots, preserving hue and varying the visual field on large maps.
+
+**AC-110-01**: Each node's base colour comes from its classifier value (existing behaviour). On top, `applyDepthLightness(hex, depth, maxDepth)` mixes the colour with white by `(depth / maxDepth) * 0.6`, capping lightening at 60% so the deepest leaves remain recognisably coloured.
+**AC-110-02**: Roots (depth 0) and nodes in cycles / disconnected (depth fallback 0) keep their base colour unchanged.
+**AC-110-03**: The depth used is BFS distance from any root along directed edges — the same `computeHierarchy` already used for REQ-088.
+**AC-110-04**: The ramp is always on (no toggle) and applies in formal and mindmap looks. It is suppressed when the community-overlay colour scheme is active, since those colours are categorical.
+**AC-110-05**: Hue is preserved — only lightness changes. Relative channel ordering of the base RGB is maintained.
