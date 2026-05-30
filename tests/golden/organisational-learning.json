@@ -1,0 +1,1820 @@
+{
+  "edges": [
+    {
+      "directed": true,
+      "edge_type": "teacher_pupil",
+      "from": "argyris",
+      "note": "Edmondson extends Argyris's work on defensive routines into psychological safety",
+      "to": "edmondson",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": false,
+      "edge_type": "alliance",
+      "from": "argyris",
+      "note": "Co-developed reflective practice and theory of action",
+      "to": "schon",
+      "visual": {
+        "color": "#999999",
+        "show_arrow": false,
+        "style": "dotted"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": false,
+      "edge_type": "rivalry",
+      "from": "bourdieu",
+      "note": "Both address structure-agency; different mechanisms (habitus vs structuration)",
+      "to": "giddens",
+      "visual": {
+        "color": "#D94A4A",
+        "show_arrow": false,
+        "style": "dashed"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "chain",
+      "from": "bateson",
+      "note": "Double bind theory directly informs Argyris's work on defensive routines",
+      "to": "argyris",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": false,
+      "edge_type": "alliance",
+      "from": "bateson",
+      "note": "Both study interaction patterns; Goffman operationalises micro-mechanisms of the double bind",
+      "to": "goffman",
+      "visual": {
+        "color": "#999999",
+        "show_arrow": false,
+        "style": "dotted"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": false,
+      "edge_type": "alliance",
+      "from": "illich",
+      "note": "Both critique institutional education; Freire from pedagogy, Illich from institutional analysis",
+      "to": "freire",
+      "visual": {
+        "color": "#999999",
+        "show_arrow": false,
+        "style": "dotted"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "chain",
+      "from": "taylor",
+      "note": "Drucker responds to and transcends Taylor's separation of thinking from doing",
+      "to": "drucker",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "chain",
+      "from": "taylor",
+      "note": "Deming's systems view is a direct response to Taylor's reductionism",
+      "to": "deming",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "chain",
+      "from": "weber",
+      "note": "Illich's institutional critique extends Weber's iron cage to education and learning",
+      "to": "illich",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "chain",
+      "from": "weber",
+      "note": "March's exploitation/exploration extends Weber's analysis of bureaucratic rationality",
+      "to": "march",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "chain",
+      "from": "deming",
+      "note": "Westrum extends Deming's systems thinking to organisational information flow",
+      "to": "westrum",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": false,
+      "edge_type": "alliance",
+      "from": "seligman",
+      "note": "Both study resilience; Seligman diagnoses helplessness, Bandura prescribes mastery experience",
+      "to": "bandura",
+      "visual": {
+        "color": "#999999",
+        "show_arrow": false,
+        "style": "dotted"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "chain",
+      "from": "seligman",
+      "note": "Dweck extends Seligman's explanatory style into growth/fixed mindset distinction",
+      "to": "dweck",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "chain",
+      "from": "follett",
+      "note": "- Heifetz's adaptive leadership builds on Follett's integration concept - test 2 -",
+      "to": "heifetz",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "chain",
+      "from": "goffman",
+      "note": "Edmondson's safety concept operationalises conditions for bypassing Goffman's face-work",
+      "to": "edmondson",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "chain",
+      "from": "drucker",
+      "note": "Nonaka extends Drucker's knowledge worker concept with the SECI model",
+      "to": "nonaka",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": false,
+      "edge_type": "alliance",
+      "from": "kahneman",
+      "note": "Both inform understanding of resistance; Kahneman explains loss aversion, Weick prescribes small wins",
+      "to": "weick",
+      "visual": {
+        "color": "#999999",
+        "show_arrow": false,
+        "style": "dotted"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": false,
+      "edge_type": "alliance",
+      "from": "stacey",
+      "note": "Both critique institutional control; Stacey from complexity, Illich from social criticism",
+      "to": "illich",
+      "visual": {
+        "color": "#999999",
+        "show_arrow": false,
+        "style": "dotted"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "bourdieu",
+      "note": "Core concept: durable dispositions acquired through lived experience",
+      "to": "habitus",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "bourdieu",
+      "note": "Forms of capital determine position in the field",
+      "to": "capital",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "bourdieu",
+      "note": "The lag between changed field and unchanged habitus",
+      "to": "hysteresis",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "bateson",
+      "note": "Contradictory messages at different logical levels",
+      "to": "double_bind",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "illich",
+      "note": "Lessons taught by the institutional form itself",
+      "to": "hidden_curriculum",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "illich",
+      "note": "Monopoly over the conditions of the activity",
+      "to": "radical_monopoly",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "illich",
+      "note": "When the cure causes the disease at clinical, social, cultural levels",
+      "to": "iatrogenesis",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "illich",
+      "note": "Convivial vs manipulative institutions",
+      "to": "conviviality",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "goffman",
+      "note": "Managed performance vs dropped performance",
+      "to": "front_back_stage",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "goffman",
+      "note": "Mutual face protection maintaining double binds",
+      "to": "face_work",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "goffman",
+      "note": "- Transformation creates stigma; communicated through expressions given off - test -",
+      "to": "stigma",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "giddens",
+      "note": "Routines provide existential continuity",
+      "to": "ontological_security",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "giddens",
+      "note": "Signification, domination, legitimation must move together",
+      "to": "structuration",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "kahneman",
+      "note": "Losses loom twice as large as gains",
+      "to": "loss_aversion",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "argyris",
+      "note": "Organisational patterns preventing double-loop learning",
+      "to": "defensive_routines",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "argyris",
+      "note": "What people say vs what they do",
+      "to": "espoused_vs_inuse",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "schon",
+      "note": "Undiscussables are frames, not hidden facts",
+      "to": "frame_reflection",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "edmondson",
+      "note": "The floor for learning",
+      "to": "psychological_safety",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "heifetz",
+      "note": "Distinguishing technical from adaptive work",
+      "to": "adaptive_leadership",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "freire",
+      "note": "Depositing knowledge vs active construction",
+      "to": "banking_education",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "wenger",
+      "note": "Learning through genuine participation at edges of practice",
+      "to": "legitimate_peripheral_participation",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "nonaka",
+      "note": "Knowledge creation through socialisation, externalisation, combination, internalisation",
+      "to": "seci_model",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "seligman",
+      "note": "Sedimented disposition from repeated failure of effort",
+      "to": "learned_helplessness",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "bandura",
+      "note": "Most powerful recovery from helplessness",
+      "to": "mastery_experience",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "dweck",
+      "note": "Celebrate effort over talent",
+      "to": "growth_mindset",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "weick",
+      "note": "Demonstrate through action not argument",
+      "to": "small_wins",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "westrum",
+      "note": "Pathological, bureaucratic, generative",
+      "to": "org_typology",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "deming",
+      "note": "Most variation is system, not individual",
+      "to": "common_cause_variation",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "drucker",
+      "note": "Knowledge worker must define the task",
+      "to": "knowledge_worker",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "march",
+      "note": "Balance between exploitation and exploration",
+      "to": "exploitation_exploration",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "weber",
+      "note": "Rational systems become prisons",
+      "to": "iron_cage",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "follett",
+      "note": "Beyond domination and compromise",
+      "to": "integration",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "originates",
+      "from": "taylor",
+      "note": "The separation of thinking from doing",
+      "to": "scientific_management",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "develops",
+      "from": "heifetz",
+      "note": "Holding environment concept; regulate the temperature",
+      "to": "adaptive_leadership",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 0.7
+    },
+    {
+      "directed": true,
+      "edge_type": "develops",
+      "from": "goffman",
+      "note": "Operationalises the micro-mechanisms that maintain the double bind",
+      "to": "double_bind",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "develops",
+      "from": "giddens",
+      "note": "Structural double bind: when signification, domination, legitimation contradict",
+      "to": "double_bind",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 0.7
+    },
+    {
+      "directed": true,
+      "edge_type": "develops",
+      "from": "illich",
+      "note": "Hidden curriculum concept extends Freire's banking education critique",
+      "to": "banking_education",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "extends",
+      "from": "double_bind",
+      "note": "Defensive routines are the organisational form of the double bind",
+      "to": "defensive_routines",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "extends",
+      "from": "double_bind",
+      "note": "Front/back stage is the interaction mechanism that maintains the double bind",
+      "to": "front_back_stage",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "extends",
+      "from": "habitus",
+      "note": "Learned helplessness is helplessness sedimented into habitus",
+      "to": "learned_helplessness",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "enables",
+      "from": "habitus",
+      "note": "Hysteresis is habitus under field change — the mechanism of resistance",
+      "to": "hysteresis",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "enables",
+      "from": "loss_aversion",
+      "note": "Loss aversion amplifies hysteresis; resistance fiercest at beginning",
+      "to": "hysteresis",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": false,
+      "edge_type": "opposes",
+      "from": "learned_helplessness",
+      "note": "Mastery experience is the direct antidote to learned helplessness",
+      "to": "mastery_experience",
+      "visual": {
+        "color": "#D94A4A",
+        "show_arrow": false,
+        "style": "dashed"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": false,
+      "edge_type": "opposes",
+      "from": "banking_education",
+      "note": "Banking deposits knowledge; LPP generates knowledge through participation",
+      "to": "legitimate_peripheral_participation",
+      "visual": {
+        "color": "#D94A4A",
+        "show_arrow": false,
+        "style": "dashed"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "extends",
+      "from": "hidden_curriculum",
+      "note": "Hidden curriculum is what the institutional form teaches beyond content",
+      "to": "banking_education",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "enables",
+      "from": "radical_monopoly",
+      "note": "Radical monopoly creates the conditions for institutional iatrogenesis",
+      "to": "iatrogenesis",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": false,
+      "edge_type": "opposes",
+      "from": "conviviality",
+      "note": "Convivial institutions are the antidote to radical monopoly",
+      "to": "radical_monopoly",
+      "visual": {
+        "color": "#D94A4A",
+        "show_arrow": false,
+        "style": "dashed"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "enables",
+      "from": "iron_cage",
+      "note": "Weber's iron cage is the structural precondition for Illich's radical monopoly",
+      "to": "radical_monopoly",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": false,
+      "edge_type": "opposes",
+      "from": "scientific_management",
+      "note": "Taylor separates thinking from doing; Drucker reunites them",
+      "to": "knowledge_worker",
+      "visual": {
+        "color": "#D94A4A",
+        "show_arrow": false,
+        "style": "dashed"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": false,
+      "edge_type": "opposes",
+      "from": "defensive_routines",
+      "note": "Psychological safety is the condition under which defensive routines dissolve",
+      "to": "psychological_safety",
+      "visual": {
+        "color": "#D94A4A",
+        "show_arrow": false,
+        "style": "dashed"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "extends",
+      "from": "espoused_vs_inuse",
+      "note": "Front/back stage is the interaction mechanism; espoused/in-use is the knowledge structure",
+      "to": "front_back_stage",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "extends",
+      "from": "exploitation_exploration",
+      "note": "Convivial institutions enable exploration; manipulative ones enforce exploitation",
+      "to": "conviviality",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "extends",
+      "from": "small_wins",
+      "note": "Small wins create mastery experiences at organisational scale",
+      "to": "mastery_experience",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "extends",
+      "from": "growth_mindset",
+      "note": "Growth mindset is the disposition that enables mastery experience",
+      "to": "mastery_experience",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "extends",
+      "from": "frame_reflection",
+      "note": "Frame reflection reveals the frames behind the espoused/in-use gap",
+      "to": "espoused_vs_inuse",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "extends",
+      "from": "adaptive_leadership",
+      "note": "Adaptive leadership extends Follett's integration into the holding environment concept",
+      "to": "integration",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "extends",
+      "from": "org_typology",
+      "note": "Generative culture (Westrum) is the organisational context for psychological safety",
+      "to": "psychological_safety",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "reframes",
+      "from": "structuration",
+      "note": "Giddens reframes double bind as structural: signification, domination, legitimation contradicting",
+      "to": "double_bind",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "enables",
+      "from": "common_cause_variation",
+      "note": "Blaming individuals (ignoring common cause) creates defensive routines",
+      "to": "defensive_routines",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    }
+  ],
+  "metadata": {
+    "network_stats": {
+      "edge_count": 77,
+      "node_count": 61
+    },
+    "notes": [
+      "**Central thesis**: Learning is a condition, not a process; three conditions (identity, information, institution) must be present",
+      "**Dominant thinkers**: Bourdieu (identity), Bateson (information), Illich (institution) provide the foundational mechanisms",
+      "**Key chain**: Bateson → Argyris → Edmondson traces the information condition from theory to operational practice",
+      "**Critical rivalry**: Convivial vs manipulative institutions (Illich) maps onto exploitation/exploration (March)",
+      "**Cross-condition links**: Double bind (information) connects to habitus (identity) through structuration (Giddens); hidden curriculum (institution) undermines identity condition",
+      "**Attention space**: 4–5 active positions per generation; contemporary generation dominated by Edmondson, Heifetz, Wenger, Dweck, Stacey",
+      "**Practical synthesis**: The nine probes operationalise the three conditions as diagnostic instruments for leaders",
+      "1990s: The learning organisation movement (Senge, Fifth Discipline) creates institutional demand for organisational learning programmes — the very institutionalisation Illich warned against",
+      "2020s: AI transformation programmes replicate the same pattern: process mistaken for condition, institutional learning programmes degrading the conditions they claim to create"
+    ],
+    "title": "Organisational Learning — Three Levers and Nine Probes"
+  },
+  "nodes": [
+    {
+      "fields": {
+        "condition": "identity",
+        "dates": "1930–2002",
+        "eminence": "dominant",
+        "generation": "3",
+        "institutional_base": "Collège de France"
+      },
+      "id": "bourdieu",
+      "name": "Pierre Bourdieu",
+      "node_type": "thinker",
+      "notes": "Habitus, capital, hysteresis — the mechanisms of identity reproduction and resistance to change"
+    },
+    {
+      "fields": {
+        "condition": "information",
+        "dates": "1904–1980",
+        "eminence": "dominant",
+        "generation": "2",
+        "institutional_base": "Palo Alto"
+      },
+      "id": "bateson",
+      "name": "Gregory Bateson",
+      "node_type": "thinker",
+      "notes": "Double bind theory — contradictory messages at different logical levels with no permission to name the contradiction"
+    },
+    {
+      "fields": {
+        "condition": "institution",
+        "dates": "1926–2002",
+        "eminence": "dominant",
+        "generation": "3",
+        "institutional_base": "CIDOC, Cuernavaca"
+      },
+      "id": "illich",
+      "name": "Ivan Illich",
+      "node_type": "thinker",
+      "notes": "Radical critique of institutions: hidden curriculum, iatrogenesis, radical monopoly, conviviality"
+    },
+    {
+      "fields": {
+        "condition": "information",
+        "dates": "1922–1982",
+        "eminence": "dominant",
+        "generation": "2",
+        "institutional_base": "University of Pennsylvania"
+      },
+      "id": "goffman",
+      "name": "Erving Goffman",
+      "node_type": "thinker",
+      "notes": "Front stage/back stage, face-work, stigma, interaction order — the micro-mechanisms that maintain double binds"
+    },
+    {
+      "fields": {
+        "condition": "identity",
+        "dates": "b. 1938",
+        "eminence": "major",
+        "generation": "3",
+        "institutional_base": "Cambridge, LSE"
+      },
+      "id": "giddens",
+      "name": "Anthony Giddens",
+      "node_type": "thinker",
+      "notes": "Ontological security; structuration theory — signification, domination, legitimation must move together"
+    },
+    {
+      "fields": {
+        "condition": "psychology",
+        "dates": "1934–2024",
+        "eminence": "major",
+        "generation": "3",
+        "institutional_base": "Princeton"
+      },
+      "id": "kahneman",
+      "name": "Daniel Kahneman",
+      "node_type": "thinker",
+      "notes": "Losses loom twice as large as gains; resistance fiercest at the beginning"
+    },
+    {
+      "fields": {
+        "condition": "information",
+        "dates": "1923–2013",
+        "eminence": "major",
+        "generation": "2",
+        "institutional_base": "Harvard Business School"
+      },
+      "id": "argyris",
+      "name": "Chris Argyris",
+      "node_type": "thinker",
+      "notes": "Defensive routines, Model II, espoused theory vs theory-in-use"
+    },
+    {
+      "fields": {
+        "condition": "institution",
+        "dates": "b. 1951",
+        "eminence": "major",
+        "generation": "4",
+        "institutional_base": "Harvard Kennedy School"
+      },
+      "id": "heifetz",
+      "name": "Ronald Heifetz",
+      "node_type": "thinker",
+      "notes": "Adaptive leadership; the holding environment; distinguish technical from adaptive work"
+    },
+    {
+      "fields": {
+        "condition": "identity",
+        "dates": "1921–1997",
+        "eminence": "major",
+        "generation": "3",
+        "institutional_base": "University of Recife"
+      },
+      "id": "freire",
+      "name": "Paulo Freire",
+      "node_type": "thinker",
+      "notes": "Banking education vs problem-posing education; pedagogy of the oppressed"
+    },
+    {
+      "fields": {
+        "condition": "information",
+        "dates": "b. 1959",
+        "eminence": "major",
+        "generation": "4",
+        "institutional_base": "Harvard Business School"
+      },
+      "id": "edmondson",
+      "name": "Amy Edmondson",
+      "node_type": "thinker",
+      "notes": "Psychological safety is the floor; safety without high standards produces comfort, not learning"
+    },
+    {
+      "fields": {
+        "condition": "identity",
+        "dates": "b. 1952",
+        "eminence": "major",
+        "generation": "4",
+        "institutional_base": "Institute for Research on Learning"
+      },
+      "id": "wenger",
+      "name": "Etienne Wenger",
+      "node_type": "thinker",
+      "notes": "Legitimate peripheral participation; communities of practice; learning IS participation"
+    },
+    {
+      "fields": {
+        "condition": "management",
+        "dates": "b. 1935",
+        "eminence": "major",
+        "generation": "3",
+        "institutional_base": "Hitotsubashi University"
+      },
+      "id": "nonaka",
+      "name": "Ikujiro Nonaka",
+      "node_type": "thinker",
+      "notes": "SECI model; the critical step is externalisation (tacit to explicit through dialogue)"
+    },
+    {
+      "fields": {
+        "condition": "management",
+        "dates": "1909–2005",
+        "eminence": "major",
+        "generation": "2",
+        "institutional_base": "Claremont Graduate University"
+      },
+      "id": "drucker",
+      "name": "Peter Drucker",
+      "node_type": "thinker",
+      "notes": "The knowledge worker must define the task; abandonment review — would we start now?"
+    },
+    {
+      "fields": {
+        "condition": "psychology",
+        "dates": "b. 1942",
+        "eminence": "secondary",
+        "generation": "3",
+        "institutional_base": "University of Pennsylvania"
+      },
+      "id": "seligman",
+      "name": "Martin Seligman",
+      "node_type": "thinker",
+      "notes": "Learned helplessness; explanatory style — permanent, pervasive, personal predicts helplessness"
+    },
+    {
+      "fields": {
+        "condition": "psychology",
+        "dates": "1925–2021",
+        "eminence": "secondary",
+        "generation": "3",
+        "institutional_base": "Stanford"
+      },
+      "id": "bandura",
+      "name": "Albert Bandura",
+      "node_type": "thinker",
+      "notes": "Mastery experience is the most powerful recovery path; self-efficacy"
+    },
+    {
+      "fields": {
+        "condition": "psychology",
+        "dates": "b. 1946",
+        "eminence": "secondary",
+        "generation": "4",
+        "institutional_base": "Stanford"
+      },
+      "id": "dweck",
+      "name": "Carol Dweck",
+      "node_type": "thinker",
+      "notes": "Organisations that celebrate talent reinforce fixed mindset; those that celebrate effort reinforce growth"
+    },
+    {
+      "fields": {
+        "condition": "management",
+        "dates": "b. 1936",
+        "eminence": "secondary",
+        "generation": "3",
+        "institutional_base": "University of Michigan"
+      },
+      "id": "weick",
+      "name": "Karl Weick",
+      "node_type": "thinker",
+      "notes": "Small wins — demonstrate through action not argument; sensemaking"
+    },
+    {
+      "fields": {
+        "condition": "information",
+        "dates": "1930–1997",
+        "eminence": "secondary",
+        "generation": "3",
+        "institutional_base": "MIT"
+      },
+      "id": "schon",
+      "name": "Donald Schön",
+      "node_type": "thinker",
+      "notes": "Frame reflection; most undiscussables are not facts people are hiding but frames they do not realise they hold"
+    },
+    {
+      "fields": {
+        "condition": "information",
+        "dates": "b. 1939",
+        "eminence": "secondary",
+        "generation": "3",
+        "institutional_base": "Eastern Michigan University"
+      },
+      "id": "westrum",
+      "name": "Ron Westrum",
+      "node_type": "thinker",
+      "notes": "Organisational typology: pathological (messengers punished), bureaucratic (messengers slowed), generative (information flows)"
+    },
+    {
+      "fields": {
+        "condition": "management",
+        "dates": "1900–1993",
+        "eminence": "major",
+        "generation": "2",
+        "institutional_base": "New York University"
+      },
+      "id": "deming",
+      "name": "W. Edwards Deming",
+      "node_type": "thinker",
+      "notes": "Most variation is common cause (system); blaming individuals teaches them to hide system information"
+    },
+    {
+      "fields": {
+        "condition": "management",
+        "dates": "b. 1942",
+        "eminence": "secondary",
+        "generation": "3",
+        "institutional_base": "McKinsey, independent"
+      },
+      "id": "peters",
+      "name": "Tom Peters",
+      "node_type": "thinker",
+      "notes": "Close to the customer, close to the work; MBWA is an epistemological commitment"
+    },
+    {
+      "fields": {
+        "condition": "management",
+        "dates": "1943–2003",
+        "eminence": "secondary",
+        "generation": "3",
+        "institutional_base": "SMG, Stockholm"
+      },
+      "id": "normann",
+      "name": "Richard Normann",
+      "node_type": "thinker",
+      "notes": "- The map is not just incomplete;  - it actively misleads by providing a sense of understanding that prevents seeking real understanding"
+    },
+    {
+      "fields": {
+        "condition": "management",
+        "dates": "1856–1915",
+        "eminence": "major",
+        "generation": "1",
+        "institutional_base": "Bethlehem Steel"
+      },
+      "id": "taylor",
+      "name": "Frederick Taylor",
+      "node_type": "thinker",
+      "notes": "Scientific management; the separation of thinking from doing"
+    },
+    {
+      "fields": {
+        "condition": "institution",
+        "dates": "1864–1920",
+        "eminence": "major",
+        "generation": "1",
+        "institutional_base": "University of Munich"
+      },
+      "id": "weber",
+      "name": "Max Weber",
+      "node_type": "thinker",
+      "notes": "Bureaucratic rationality; the iron cage — the system built for rational purposes becomes a prison"
+    },
+    {
+      "fields": {
+        "condition": "institution",
+        "dates": "b. 1942",
+        "eminence": "secondary",
+        "generation": "4",
+        "institutional_base": "University of Hertfordshire"
+      },
+      "id": "stacey",
+      "name": "Ralph Stacey",
+      "node_type": "thinker",
+      "notes": "Complex responsive processes; in a convivial institution people make gestures and attend to responses"
+    },
+    {
+      "fields": {
+        "condition": "institution",
+        "dates": "1928–2018",
+        "eminence": "secondary",
+        "generation": "3",
+        "institutional_base": "Stanford"
+      },
+      "id": "march",
+      "name": "James March",
+      "node_type": "thinker",
+      "notes": "Exploitation/exploration balance; the manipulative institution is an exploitation machine"
+    },
+    {
+      "fields": {
+        "condition": "institution",
+        "dates": "b. 1960",
+        "eminence": "secondary",
+        "generation": "4",
+        "institutional_base": "NYU Tandon"
+      },
+      "id": "taleb",
+      "name": "Nassim Nicholas Taleb",
+      "node_type": "thinker",
+      "notes": "Inability to abandon creates fragility; hidden liabilities shatter rather than degrade"
+    },
+    {
+      "fields": {
+        "condition": "institution",
+        "dates": "1868–1933",
+        "eminence": "secondary",
+        "generation": "1",
+        "institutional_base": "Independent"
+      },
+      "id": "follett",
+      "name": "Mary Parker Follett",
+      "node_type": "thinker",
+      "notes": "Integration over domination or compromise; joint study — parties study the situation together, not negotiate from fixed positions"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "mechanism",
+        "condition": "identity",
+        "date_introduced": "1972",
+        "generation": "3",
+        "originator_id": "bourdieu",
+        "status": "active"
+      },
+      "id": "habitus",
+      "name": "Habitus",
+      "node_type": "concept",
+      "notes": "Durable, transposable dispositions acquired through lived experience; operates below conscious awareness"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "framework",
+        "condition": "identity",
+        "date_introduced": "1979",
+        "generation": "3",
+        "originator_id": "bourdieu",
+        "status": "active"
+      },
+      "id": "capital",
+      "name": "Capital (Forms)",
+      "node_type": "concept",
+      "notes": "What you are worth in the field; economic, cultural, social, symbolic; transformation threatens capital devaluation"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "mechanism",
+        "condition": "identity",
+        "date_introduced": "1977",
+        "generation": "3",
+        "originator_id": "bourdieu",
+        "status": "active"
+      },
+      "id": "hysteresis",
+      "name": "Hysteresis",
+      "node_type": "concept",
+      "notes": "The lag between a changed field and an unchanged habitus; the mechanism of resistance; entirely rational"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "mechanism",
+        "condition": "information",
+        "date_introduced": "1956",
+        "generation": "2",
+        "originator_id": "bateson",
+        "status": "active"
+      },
+      "id": "double_bind",
+      "name": "Double Bind",
+      "node_type": "concept",
+      "notes": "Contradictory messages at different logical levels with no permission to name the contradiction"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "mechanism",
+        "condition": "institution",
+        "date_introduced": "1971",
+        "generation": "3",
+        "originator_id": "illich",
+        "status": "active"
+      },
+      "id": "hidden_curriculum",
+      "name": "Hidden Curriculum",
+      "node_type": "concept",
+      "notes": "Lessons taught by the institutional form itself: learning requires experts; capability is certified by completion; the organisation does not trust you"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "mechanism",
+        "condition": "institution",
+        "date_introduced": "1973",
+        "generation": "3",
+        "originator_id": "illich",
+        "status": "active"
+      },
+      "id": "radical_monopoly",
+      "name": "Radical Monopoly",
+      "node_type": "concept",
+      "notes": "Not a monopoly over competing products but over the conditions of the activity itself"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "framework",
+        "condition": "institution",
+        "date_introduced": "1975",
+        "generation": "3",
+        "originator_id": "illich",
+        "status": "active"
+      },
+      "id": "iatrogenesis",
+      "name": "Iatrogenesis",
+      "node_type": "concept",
+      "notes": "When the cure causes the disease — clinical, social, and cultural levels; each deepens the next"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "distinction",
+        "condition": "institution",
+        "date_introduced": "1973",
+        "generation": "3",
+        "originator_id": "illich",
+        "status": "active"
+      },
+      "id": "conviviality",
+      "name": "Conviviality",
+      "node_type": "concept",
+      "notes": "Convivial institutions provide resources people use for their own purposes; manipulative institutions prescribe, control, and credential"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "distinction",
+        "condition": "information",
+        "date_introduced": "1959",
+        "generation": "2",
+        "originator_id": "goffman",
+        "status": "active"
+      },
+      "id": "front_back_stage",
+      "name": "Front Stage / Back Stage",
+      "node_type": "concept",
+      "notes": "Managed performance vs dropped performance; the gap between formal meetings and hallway conversations"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "mechanism",
+        "condition": "information",
+        "date_introduced": "1967",
+        "generation": "2",
+        "originator_id": "goffman",
+        "status": "active"
+      },
+      "id": "face_work",
+      "name": "Face-Work",
+      "node_type": "concept",
+      "notes": "Mutual face protection; both parties benefit from the silence; interventions fail because face-work overrides training"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "mechanism",
+        "condition": "identity",
+        "date_introduced": "1963",
+        "generation": "2",
+        "originator_id": "goffman",
+        "status": "active"
+      },
+      "id": "stigma",
+      "name": "Stigma",
+      "node_type": "concept",
+      "notes": "- Transformation creates stigma; communicated through expressions given off;  - the stigmatised are excluded from needed conversations."
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "principle",
+        "condition": "identity",
+        "date_introduced": "1984",
+        "generation": "3",
+        "originator_id": "giddens",
+        "status": "active"
+      },
+      "id": "ontological_security",
+      "name": "Ontological Security",
+      "node_type": "concept",
+      "notes": "Routines provide existential continuity; disruption produces anxiety disproportionate to rational threat"
+    },
+    {
+      "fields": {
+        "abstraction_level": "meta-theoretical",
+        "concept_type": "framework",
+        "condition": "identity",
+        "date_introduced": "1984",
+        "generation": "3",
+        "originator_id": "giddens",
+        "status": "active"
+      },
+      "id": "structuration",
+      "name": "Structuration",
+      "node_type": "concept",
+      "notes": "Signification, domination, and legitimation must move together; when they don't, the organisation IS a double bind"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "mechanism",
+        "condition": "psychology",
+        "date_introduced": "1979",
+        "generation": "3",
+        "originator_id": "kahneman",
+        "status": "active"
+      },
+      "id": "loss_aversion",
+      "name": "Loss Aversion",
+      "node_type": "concept",
+      "notes": "Losses loom twice as large as gains; resistance fiercest at the beginning"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "mechanism",
+        "condition": "information",
+        "date_introduced": "1985",
+        "generation": "2",
+        "originator_id": "argyris",
+        "status": "active"
+      },
+      "id": "defensive_routines",
+      "name": "Defensive Routines",
+      "node_type": "concept",
+      "notes": "The gap between espoused theory and theory-in-use; organisational patterns that prevent double-loop learning"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "distinction",
+        "condition": "information",
+        "date_introduced": "1974",
+        "generation": "2",
+        "originator_id": "argyris",
+        "status": "active"
+      },
+      "id": "espoused_vs_inuse",
+      "name": "Espoused Theory vs Theory-in-Use",
+      "node_type": "concept",
+      "notes": "What people say they do vs what they actually do; the core diagnostic distinction"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "mechanism",
+        "condition": "information",
+        "date_introduced": "1983",
+        "generation": "3",
+        "originator_id": "schon",
+        "status": "active"
+      },
+      "id": "frame_reflection",
+      "name": "Frame Reflection",
+      "node_type": "concept",
+      "notes": "Most undiscussables are not facts people are hiding but frames they do not realise they hold"
+    },
+    {
+      "fields": {
+        "abstraction_level": "operational",
+        "concept_type": "principle",
+        "condition": "information",
+        "date_introduced": "1999",
+        "generation": "4",
+        "originator_id": "edmondson",
+        "status": "active"
+      },
+      "id": "psychological_safety",
+      "name": "Psychological Safety",
+      "node_type": "concept",
+      "notes": "The floor for learning; safety without high standards produces comfort, not learning"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "framework",
+        "condition": "institution",
+        "date_introduced": "1994",
+        "generation": "4",
+        "originator_id": "heifetz",
+        "status": "active"
+      },
+      "id": "adaptive_leadership",
+      "name": "Adaptive Leadership",
+      "node_type": "concept",
+      "notes": "Distinguish technical from adaptive work; the holding environment; regulate the temperature"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "distinction",
+        "condition": "identity",
+        "date_introduced": "1968",
+        "generation": "3",
+        "originator_id": "freire",
+        "status": "active"
+      },
+      "id": "banking_education",
+      "name": "Banking Education",
+      "node_type": "concept",
+      "notes": "Depositing knowledge vs problem-posing education; positions people as recipients rather than agents"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "mechanism",
+        "condition": "identity",
+        "date_introduced": "1991",
+        "generation": "4",
+        "originator_id": "wenger",
+        "status": "active"
+      },
+      "id": "legitimate_peripheral_participation",
+      "name": "Legitimate Peripheral Participation",
+      "node_type": "concept",
+      "notes": "Newcomers learn by doing genuine tasks at the edges of practice; learning IS participation"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "framework",
+        "condition": "management",
+        "date_introduced": "1995",
+        "generation": "3",
+        "originator_id": "nonaka",
+        "status": "active"
+      },
+      "id": "seci_model",
+      "name": "SECI Model",
+      "node_type": "concept",
+      "notes": "Socialisation, Externalisation, Combination, Internalisation; the critical step is externalisation through dialogue"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "mechanism",
+        "condition": "psychology",
+        "date_introduced": "1967",
+        "generation": "3",
+        "originator_id": "seligman",
+        "status": "active"
+      },
+      "id": "learned_helplessness",
+      "name": "Learned Helplessness",
+      "node_type": "concept",
+      "notes": "Not a mood but a sedimented disposition formed through repeated experience that effort does not produce results"
+    },
+    {
+      "fields": {
+        "abstraction_level": "operational",
+        "concept_type": "mechanism",
+        "condition": "psychology",
+        "date_introduced": "1977",
+        "generation": "3",
+        "originator_id": "bandura",
+        "status": "active"
+      },
+      "id": "mastery_experience",
+      "name": "Mastery Experience",
+      "node_type": "concept",
+      "notes": "The most powerful recovery path from learned helplessness; actually doing the thing and succeeding"
+    },
+    {
+      "fields": {
+        "abstraction_level": "operational",
+        "concept_type": "distinction",
+        "condition": "psychology",
+        "date_introduced": "2006",
+        "generation": "4",
+        "originator_id": "dweck",
+        "status": "active"
+      },
+      "id": "growth_mindset",
+      "name": "Growth Mindset",
+      "node_type": "concept",
+      "notes": "Organisations that celebrate talent reinforce fixed mindset; those that celebrate effort reinforce growth"
+    },
+    {
+      "fields": {
+        "abstraction_level": "operational",
+        "concept_type": "prescription",
+        "condition": "management",
+        "date_introduced": "1984",
+        "generation": "3",
+        "originator_id": "weick",
+        "status": "active"
+      },
+      "id": "small_wins",
+      "name": "Small Wins",
+      "node_type": "concept",
+      "notes": "Demonstrate through action not argument; make learning visible before it produces measurable output"
+    },
+    {
+      "fields": {
+        "abstraction_level": "operational",
+        "concept_type": "framework",
+        "condition": "information",
+        "date_introduced": "2004",
+        "generation": "3",
+        "originator_id": "westrum",
+        "status": "active"
+      },
+      "id": "org_typology",
+      "name": "Organisational Typology",
+      "node_type": "concept",
+      "notes": "Pathological (messengers punished), bureaucratic (messengers slowed), generative (information flows regardless of hierarchy)"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "principle",
+        "condition": "management",
+        "date_introduced": "1950",
+        "generation": "2",
+        "originator_id": "deming",
+        "status": "active"
+      },
+      "id": "common_cause_variation",
+      "name": "Common Cause Variation",
+      "node_type": "concept",
+      "notes": "Most variation is system; blaming individuals teaches them to hide system information"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "principle",
+        "condition": "management",
+        "date_introduced": "1959",
+        "generation": "2",
+        "originator_id": "drucker",
+        "status": "active"
+      },
+      "id": "knowledge_worker",
+      "name": "Knowledge Worker",
+      "node_type": "concept",
+      "notes": "The knowledge worker must define the task; definition requires intimacy with the domain"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "distinction",
+        "condition": "institution",
+        "date_introduced": "1991",
+        "generation": "3",
+        "originator_id": "march",
+        "status": "active"
+      },
+      "id": "exploitation_exploration",
+      "name": "Exploitation / Exploration",
+      "node_type": "concept",
+      "notes": "The manipulative institution is an exploitation machine; exploration is structurally prevented"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "mechanism",
+        "condition": "institution",
+        "date_introduced": "1905",
+        "generation": "1",
+        "originator_id": "weber",
+        "status": "active"
+      },
+      "id": "iron_cage",
+      "name": "Iron Cage",
+      "node_type": "concept",
+      "notes": "The system built for rational purposes becomes a prison preventing purposes from evolving"
+    },
+    {
+      "fields": {
+        "abstraction_level": "theoretical",
+        "concept_type": "distinction",
+        "condition": "institution",
+        "date_introduced": "1924",
+        "generation": "1",
+        "originator_id": "follett",
+        "status": "active"
+      },
+      "id": "integration",
+      "name": "Integration",
+      "node_type": "concept",
+      "notes": "Domination (one side wins), compromise (both give up), integration (discover a solution neither had imagined)"
+    },
+    {
+      "fields": {
+        "abstraction_level": "operational",
+        "concept_type": "framework",
+        "condition": "management",
+        "date_introduced": "1911",
+        "generation": "1",
+        "originator_id": "taylor",
+        "status": "contested"
+      },
+      "id": "scientific_management",
+      "name": "Scientific Management",
+      "node_type": "concept",
+      "notes": "The separation of thinking from doing; hierarchical layers systematically remove decision-makers from reality"
+    }
+  ],
+  "version": "1.0"
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import type { GraphIR, GraphNode, GraphEdge, NodeTypeConfig, TaxonomyTemplate } from "./types/graph-ir";
+import type { GraphIR, GraphNode, NodeTypeConfig, TaxonomyTemplate } from "./types/graph-ir";
 import { GraphCanvas } from "./graph/GraphCanvas";
 import { DetailPanel } from "./ui/DetailPanel";
 import { NotesPane } from "./ui/NotesPane";
@@ -29,32 +29,92 @@ import { ThemeProvider, useTheme } from "./theme/ThemeContext";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData, getTemplateClassifiers } from "./migration";
 import { createEmptyFilterState } from "./utils/filters";
-import type { FilterState } from "./utils/filters";
 import { normalizeFencedKV } from "./utils/normalize";
 import { escapeKVValue } from "./utils/kv-escape";
 import { useFileLoader } from "./hooks/useFileLoader";
-import { registerSwiftBridge } from "./utils/swiftBridge";
+import { isNativeApp as detectNativeApp, postToSwift } from "./utils/swiftBridge";
+import { useSwiftBridge } from "./hooks/useSwiftBridge";
+import { useGraphStore } from "./stores/useGraphStore";
+import { useUIStore } from "./stores/useUIStore";
 import "./App.css";
 
 export type ViewMode = string; // "full" or a node type id
 export type { InteractionMode } from "./stores/useGraphStore";
 
-function mergeNodeUpdate(node: GraphNode, updates: Partial<GraphNode>): GraphNode {
-  const merged = { ...node, ...updates };
-  if (updates.properties && node.properties) {
-    merged.properties = { ...node.properties, ...updates.properties };
-  }
-  return merged;
-}
-
 function AppInner() {
   const { theme, look, edgeColorOverrides, setEdgeColorOverrides } = useTheme();
-  const [graphData, setGraphDataRaw] = useState<GraphIR | null>(null);
-  const undoStack = useRef<GraphIR[]>([]);
-  const redoStack = useRef<GraphIR[]>([]);
-  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
-  const [viewMode, setViewMode] = useState("full");
-  const [revealedNodes, setRevealedNodes] = useState<Set<string>>(new Set());
+
+  // ── Graph state (Zustand) ────────────────────────────────────────────────
+  const graphData = useGraphStore((s) => s.graphData);
+  const setGraphDataStore = useGraphStore((s) => s.setGraphData);
+  const selectedNode = useGraphStore((s) => s.selectedNode);
+  const setSelectedNode = useGraphStore((s) => s.setSelectedNode);
+  const selectedEdge = useGraphStore((s) => s.selectedEdge);
+  const setSelectedEdge = useGraphStore((s) => s.setSelectedEdge);
+  const edgePopoverPos = useGraphStore((s) => s.edgePopoverPos);
+  const setEdgePopoverPos = useGraphStore((s) => s.setEdgePopoverPos);
+  const viewMode = useGraphStore((s) => s.viewMode);
+  const setViewModeStore = useGraphStore((s) => s.setViewMode);
+  const revealedNodes = useGraphStore((s) => s.revealedNodes);
+  const setRevealedNodes = useGraphStore((s) => s.setRevealedNodes);
+  const interactionMode = useGraphStore((s) => s.interactionMode);
+  const setInteractionMode = useGraphStore((s) => s.setInteractionMode);
+  const edgeSource = useGraphStore((s) => s.edgeSource);
+  const setEdgeSource = useGraphStore((s) => s.setEdgeSource);
+  const edgeTarget = useGraphStore((s) => s.edgeTarget);
+  const setEdgeTarget = useGraphStore((s) => s.setEdgeTarget);
+  const filters = useGraphStore((s) => s.filters);
+  const setFiltersStore = useGraphStore((s) => s.setFilters);
+  const centerOnNode = useGraphStore((s) => s.centerOnNode);
+  const setCenterOnNode = useGraphStore((s) => s.setCenterOnNode);
+  const storeLoadGraphFresh = useGraphStore((s) => s.loadGraphFresh);
+
+  // ── UI state (Zustand) ───────────────────────────────────────────────────
+  const activeModal = useUIStore((s) => s.activeModal);
+  const modalData = useUIStore((s) => s.modalData);
+  const openModal = useUIStore((s) => s.openModal);
+  const closeModal = useUIStore((s) => s.closeModal);
+  const notesOpen = useUIStore((s) => s.notesOpen);
+  const setNotesOpen = useUIStore((s) => s.setNotesOpen);
+  const sidebarOpen = useUIStore((s) => s.sidebarOpen);
+  const toggleSidebar = useUIStore((s) => s.toggleSidebar);
+  const analysisOpen = useUIStore((s) => s.analysisOpen);
+  const toggleAnalysis = useUIStore((s) => s.toggleAnalysis);
+  const labelMenuOpen = useUIStore((s) => s.labelMenuOpen);
+  const toggleLabelMenu = useUIStore((s) => s.toggleLabelMenu);
+  const searchQuery = useUIStore((s) => s.searchQuery);
+  const setSearchQueryStore = useUIStore((s) => s.setSearchQuery);
+  const searchFocused = useUIStore((s) => s.searchFocused);
+  const setSearchFocused = useUIStore((s) => s.setSearchFocused);
+  const searchHighlight = useUIStore((s) => s.searchHighlight);
+  const setSearchHighlight = useUIStore((s) => s.setSearchHighlight);
+  const auxPanelWidth = useUIStore((s) => s.auxPanelWidth);
+  const setAuxPanelWidth = useUIStore((s) => s.setAuxPanelWidth);
+  const notesHeight = useUIStore((s) => s.notesHeight);
+  const setNotesHeight = useUIStore((s) => s.setNotesHeight);
+  const hiddenLabelTypes = useUIStore((s) => s.hiddenLabelTypes);
+  const setHiddenLabelTypes = useUIStore((s) => s.setHiddenLabelTypes);
+
+  // Search query wrapper — also resets highlight as before.
+  const setSearchQuery = useCallback((q: string) => {
+    setSearchQueryStore(q);
+    setSearchHighlight(-1);
+  }, [setSearchQueryStore, setSearchHighlight]);
+
+  // setGraphData with undo bookkeeping — pushes the previous state onto the
+  // store's history before swapping in the new one. Mirrors the original
+  // wrapper but routes everything through the Zustand store.
+  const setGraphData = useCallback((data: GraphIR | null | ((prev: GraphIR | null) => GraphIR | null)) => {
+    const prev = useGraphStore.getState().graphData;
+    const next = typeof data === 'function'
+      ? (data as (p: GraphIR | null) => GraphIR | null)(prev)
+      : data;
+    if (prev && next && prev !== next) {
+      useGraphStore.getState().pushState();
+    }
+    setGraphDataStore(next);
+  }, [setGraphDataStore]);
+
   // REQ-088: expand-to-level. Default on map load is fully expanded
   // (maxDepth) so users see the full graph and its links; they can step the
   // level down to collapse. Manual +/- clicks populate userCollapsed /
@@ -63,37 +123,16 @@ function AppInner() {
   const [userCollapsed, setUserCollapsed] = useState<Set<string>>(new Set());
   const [userExpanded, setUserExpanded] = useState<Set<string>>(new Set());
 
-  // Wrapper that pushes to undo history before mutating. Preserves the
-  // current view state (expand level, manual collapses) — mutations like
-  // "add node" should not re-collapse the graph.
-  const setGraphData = useCallback((data: GraphIR | null | ((prev: GraphIR | null) => GraphIR | null)) => {
-    setGraphDataRaw((prev) => {
-      const next = typeof data === 'function' ? data(prev) : data;
-      if (prev && next && prev !== next) {
-        undoStack.current = [...undoStack.current.slice(-49), prev];
-        redoStack.current = [];
-      }
-      return next;
-    });
-  }, []);
-
   // Distinct from setGraphData: called when a fresh map is *loaded* (from disk,
   // a new wizard-created map, or a Swift bridge load). Seeds the view to
-  // "fully expanded" — REQ-088 — so the user sees the whole graph and its
-  // links on first paint; they can step the level down to collapse.
+  // "fully expanded" — REQ-088 — and clears the undo stack via the store.
   const loadGraphFresh = useCallback((next: GraphIR | null) => {
-    setGraphDataRaw((prev) => {
-      if (prev && next && prev !== next) {
-        undoStack.current = [...undoStack.current.slice(-49), prev];
-        redoStack.current = [];
-      }
-      return next;
-    });
+    storeLoadGraphFresh(next);
     const maxDepth = next ? computeHierarchy(next.nodes, next.edges).maxDepth : 0;
     setExpandLevel(maxDepth);
     setUserCollapsed(new Set());
     setUserExpanded(new Set());
-  }, []);
+  }, [storeLoadGraphFresh]);
 
   const hierarchy = useMemo(() => {
     if (!graphData) return null;
@@ -121,43 +160,43 @@ function AppInner() {
   const handleExpandLevelChange = useCallback((level: number) => {
     setExpandLevel(level);
   }, []);
-  const [showAddNode, setShowAddNode] = useState<string | null>(null); // node type id or null
-  const [interactionMode, setInteractionMode] = useState<import("./stores/useGraphStore").InteractionMode>("normal");
-  const [edgeSource, setEdgeSource] = useState<string | null>(null);
-  const [edgeTarget, setEdgeTarget] = useState<string | null>(null);
-  const [showAddEdgeModal, setShowAddEdgeModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+
+  // ── Local orchestration state ────────────────────────────────────────────
+  // Modals are tracked in useUIStore via activeModal; addNode's "data" (the
+  // node-type id seed) lives in modalData.
+  const showAddNode: string | null = activeModal === 'addNode' ? (modalData as string | null) : null;
+  const showAddEdgeModal = activeModal === 'addEdge';
+  const showSettings = activeModal === 'settings';
+  const showHelp = activeModal === 'help';
+  const showTaxonomyWizard = activeModal === 'taxonomyWizard';
+  const showExportImage = activeModal === 'exportImage';
+
   const [exploded, setExploded] = useState(false);
   const [layoutPreset, setLayoutPreset] = useState<import("./types/graph-ir").LayoutPreset>("force");
   const [fontScale, setFontScale] = useState(1);
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [searchHighlight, setSearchHighlight] = useState(-1);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [auxPanelWidth, setAuxPanelWidth] = useState(340);
-  const [notesHeight, setNotesHeight] = useState(250);
-  const [notesOpen, setNotesOpen] = useState(false);
   const [propertiesOpen, setPropertiesOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [focusMode, setFocusMode] = useState(true);
-  const [filters, setFilters] = useState<FilterState>(createEmptyFilterState());
-  const [showSettings, setShowSettings] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-  const [showTaxonomyWizard, setShowTaxonomyWizard] = useState(false);
+
+  // Wizard "initial data" — transient and tied to the wizard launch flow,
+  // so it stays local. Setters wrap openModal/closeModal for the wizard.
   const [taxonomyEditData, setTaxonomyEditData] = useState<TaxonomyWizardInitial | undefined>(undefined);
+  const openTaxonomyWizard = useCallback((edit?: TaxonomyWizardInitial) => {
+    setTaxonomyEditData(edit);
+    openModal('taxonomyWizard');
+  }, [openModal]);
+  const closeTaxonomyWizard = useCallback(() => {
+    setTaxonomyEditData(undefined);
+    closeModal();
+  }, [closeModal]);
+
   const [sourceFilePath, setSourceFilePath] = useState<string | null>(null);
   const [saveIndicator, setSaveIndicator] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [template, setTemplate] = useState<TaxonomyTemplate | null>(null);
-  const [templateFilePath] = useState<string | null>(null);
-  const [centerOnNode, setCenterOnNode] = useState<{ id: string; ts: number } | null>(null);
   const fitToViewRef = useRef<(() => void) | null>(null);
   const zoomFnsRef = useRef<{ zoomIn: () => void; zoomOut: () => void } | null>(null);
-  const [showExportImage, setShowExportImage] = useState(false);
-  const [analysisOpen, setAnalysisOpen] = useState(false);
-  const [hiddenLabelTypes, setHiddenLabelTypes] = useState<Set<string>>(new Set());
-  const [labelMenuOpen, setLabelMenuOpen] = useState(false);
-  // analysis is computed via useMemo above
   const [analysisNodeTypes, setAnalysisNodeTypes] = useState<Set<string> | null>(null);
   const [pathResult, setPathResult] = useState<PathResult | null>(null);
   const [pathFrom, setPathFrom] = useState<string | null>(null);
@@ -165,17 +204,25 @@ function AppInner() {
   const [highlightedCommunity, setHighlightedCommunity] = useState<number | null>(null);
   const [communityOverlay, setCommunityOverlay] = useState(false);
   const [highlightedPath, setHighlightedPath] = useState<string[] | null>(null);
-  const [selectedEdge, setSelectedEdge] = useState<import("./types/graph-ir").GraphEdge | null>(null);
-  const [edgePopoverPos, setEdgePopoverPos] = useState<{ x: number; y: number } | null>(null);
   const [loadedNativeTemplates, setLoadedNativeTemplates] = useState<Map<string, TaxonomyWizardInitial>>(new Map());
   const [nativeMaps, setNativeMaps] = useState<{ name: string; path: string }[]>([]);
+
+  // Compatibility shim: useSwiftBridge expects an updater-style
+  // setLoadedNativeTemplates; expose it as such while leaving the canonical
+  // useState setter available locally.
+  const setLoadedNativeTemplatesUpdater = useCallback(
+    (updater: (prev: Map<string, TaxonomyWizardInitial>) => Map<string, TaxonomyWizardInitial>) => {
+      setLoadedNativeTemplates(updater);
+    },
+    [],
+  );
 
   // File loading: WASM parser init + file content loading
   const resetUI = useCallback(() => {
     setSelectedNode(null);
     setRevealedNodes(new Set());
-    setFilters(createEmptyFilterState());
-  }, []);
+    setFiltersStore(createEmptyFilterState());
+  }, [setSelectedNode, setRevealedNodes, setFiltersStore]);
   // File loader uses loadGraphFresh so newly-opened maps start fully expanded
   // (REQ-088). In-app mutations go through setGraphData and keep the user's view.
   const { parserReady, error, setError, loadFileContent, loadWarnings, setLoadWarnings } = useFileLoader(
@@ -213,38 +260,38 @@ function AppInner() {
     setHighlightedPath(null);
   }, []);
 
-  // Expose bridge functions for Swift WKWebView
-  useEffect(() => {
-    return registerSwiftBridge({
-      loadFileContent,
-      parseMarkdown,
-      migrateFromParser,
-      graphIRFromData,
-      normalizeFencedKV,
-      setGraphData,
-      loadGraphFresh,
-      setTemplate,
-      setSelectedNode: () => setSelectedNode(null),
-      setRevealedNodes: () => setRevealedNodes(new Set()),
-      setFilters: (f) => setFilters(f),
-      setError,
-      setSourceFilePath,
-      setEdgeColorOverrides,
-      setShowTaxonomyWizard,
-      setNativeMaps,
-      setLoadedNativeTemplates,
-      getGraphData: () => graphData,
-      getNodeTypeConfigs: () => nodeTypeConfigs,
-      getEdgeColorOverrides: () => edgeColorOverrides,
-      exportToMarkdown,
-      createEmptyFilterState,
-    });
-  }, [loadFileContent, graphData, nodeTypeConfigs, templateFilePath, setGraphData, loadGraphFresh, edgeColorOverrides, setEdgeColorOverrides, setError]);
+  // Wire the typed Swift bridge. The hook installs the inbound receiver, sync
+  // getters, and event subscribers once; the deps ref keeps closures fresh.
+  useSwiftBridge({
+    loadFileContent,
+    parseMarkdown,
+    migrateFromParser,
+    graphIRFromData,
+    normalizeFencedKV,
+    setEdgeColorOverrides,
+    loadGraphFresh,
+    setTemplate,
+    setSelectedNodeNull: () => useGraphStore.getState().setSelectedNode(null),
+    setRevealedNodesEmpty: () => useGraphStore.setState({ revealedNodes: new Set() }),
+    setFilters: (f) => useGraphStore.getState().setFilters(f),
+    setError,
+    setSourceFilePath,
+    setShowTaxonomyWizard: (v) => {
+      if (v) useUIStore.getState().openModal('taxonomyWizard');
+      else useUIStore.getState().closeModal();
+    },
+    setNativeMaps,
+    setLoadedNativeTemplates: setLoadedNativeTemplatesUpdater,
+    getGraphData: () => useGraphStore.getState().graphData,
+    getNodeTypeConfigs: () => nodeTypeConfigs,
+    getEdgeColorOverrides: () => edgeColorOverrides,
+    exportToMarkdown,
+    createEmptyFilterState,
+  });
 
   const handleViewModeChange = useCallback((mode: string) => {
-    setViewMode(mode);
-    setRevealedNodes(new Set());
-  }, []);
+    setViewModeStore(mode); // store clears revealedNodes too
+  }, [setViewModeStore]);
 
   const handleSelectNode = useCallback(
     (node: GraphNode | null) => {
@@ -256,7 +303,7 @@ function AppInner() {
       if (interactionMode === "add-edge-target" && node) {
         setEdgeTarget(node.id);
         setInteractionMode("normal");
-        setShowAddEdgeModal(true);
+        openModal('addEdge');
         return;
       }
 
@@ -275,88 +322,38 @@ function AppInner() {
         });
       }
     },
-    [interactionMode, viewMode, graphData]
+    [interactionMode, viewMode, graphData, setEdgeSource, setEdgeTarget, setInteractionMode, openModal, setSelectedNode, setRevealedNodes]
   );
 
   const handleNodeUpdate = useCallback(
     (nodeId: string, updates: Partial<GraphNode>) => {
-      if (!graphData) return;
-      setGraphData({
-        ...graphData,
-        nodes: graphData.nodes.map((n) =>
-          n.id === nodeId ? mergeNodeUpdate(n, updates) : n
-        ),
-      });
-      setSelectedNode((prev) =>
-        prev?.id === nodeId ? mergeNodeUpdate(prev, updates) : prev
-      );
+      // Store handler does undo bookkeeping + selectedNode sync internally.
+      useGraphStore.getState().handleNodeUpdate(nodeId, updates);
     },
-    [graphData, setGraphData]
+    []
   );
 
   const handleNavigateToNode = useCallback(
     (nodeId: string) => {
-      if (!graphData) return;
-      const node = graphData.nodes.find((n) => n.id === nodeId);
-      if (node) {
-        setSelectedNode(node);
-        setRevealedNodes((prev) => new Set(prev).add(nodeId));
-      }
+      useGraphStore.getState().handleNavigateToNode(nodeId);
     },
-    [graphData]
+    []
   );
 
-  // Unified add node handler
+  // Unified add node handler — store handles graphData mutation, undo push,
+  // selectedNode update, and modal close.
   const handleAddNode = useCallback(
     (nodeType: string, name: string, classifierValues: Record<string, string>, tags: string[], properties: Record<string, string | undefined>) => {
-      if (!graphData) return;
-      const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-
-      const newNode: GraphNode = {
-        id,
-        node_type: nodeType,
-        name,
-        classifiers: classifierValues,
-        tags: tags.length > 0 ? tags : undefined,
-        properties: { ...properties },
-      };
-
-      setGraphData({ ...graphData, nodes: [...graphData.nodes, newNode] });
-      setShowAddNode(null);
-      setSelectedNode(newNode);
+      useGraphStore.getState().handleAddNode(nodeType, name, classifierValues, tags, properties);
     },
-    [graphData, setGraphData]
+    []
   );
 
   const handleAddEdge = useCallback(
     (edgeType: string, weight: number = 1.0) => {
-      if (!graphData || !edgeSource || !edgeTarget) return;
-      const fromNode = graphData.nodes.find((n) => n.id === edgeSource);
-      const toNode = graphData.nodes.find((n) => n.id === edgeTarget);
-      if (!fromNode || !toNode) return;
-
-      // Use template edge type config for visual if available
-      const edgeTypeConfig = template?.edge_types?.find((e) => e.id === edgeType);
-      const directed = edgeTypeConfig ? edgeTypeConfig.directed : !["rivalry", "alliance", "institutional", "opposes"].includes(edgeType);
-      const visual = edgeTypeConfig
-        ? { style: edgeTypeConfig.style ?? "solid", color: edgeTypeConfig.color, show_arrow: edgeTypeConfig.directed }
-        : getEdgeVisual(edgeType);
-
-      const newEdge: GraphEdge = {
-        from: edgeSource,
-        to: edgeTarget,
-        edge_type: edgeType,
-        directed,
-        weight,
-        visual,
-      };
-
-      setGraphData({ ...graphData, edges: [...graphData.edges, newEdge] });
-      setShowAddEdgeModal(false);
-      setEdgeSource(null);
-      setEdgeTarget(null);
+      useGraphStore.getState().handleAddEdge(edgeType, weight, template ?? null);
     },
-    [graphData, setGraphData, edgeSource, edgeTarget, template?.edge_types]
+    [template]
   );
 
   const handleStartAddEdge = useCallback(() => {
@@ -369,41 +366,29 @@ function AppInner() {
       setEdgeSource(null);
       setInteractionMode("add-edge-source");
     }
-  }, [selectedNode]);
+  }, [selectedNode, setEdgeTarget, setEdgeSource, setInteractionMode]);
 
   const handleCancelAddEdge = useCallback(() => {
     setInteractionMode("normal");
     setEdgeSource(null);
     setEdgeTarget(null);
-    setShowAddEdgeModal(false);
-  }, []);
+    closeModal();
+  }, [setInteractionMode, setEdgeSource, setEdgeTarget, closeModal]);
 
   const handleDeleteNode = useCallback((nodeId: string) => {
-    if (!graphData) return;
-    setGraphData({
-      ...graphData,
-      nodes: graphData.nodes.filter((n) => n.id !== nodeId),
-      edges: graphData.edges.filter((e) => e.from !== nodeId && e.to !== nodeId),
-    });
-    setSelectedNode(null);
-    setNotesOpen(false);
-  }, [graphData, setGraphData]);
+    useGraphStore.getState().handleDeleteNode(nodeId);
+    // store also closes the notes pane via useUIStore.setNotesOpen(false)
+  }, []);
 
   const handleDeleteEdge = useCallback((fromId: string, toId: string) => {
-    if (!graphData) return;
-    setGraphData({
-      ...graphData,
-      edges: graphData.edges.filter((e) => !(e.from === fromId && e.to === toId)),
-    });
-    setSelectedEdge(null);
-    setEdgePopoverPos(null);
-  }, [graphData, setGraphData]);
+    useGraphStore.getState().handleDeleteEdge(fromId, toId);
+  }, []);
 
   // Export image handler — captures current canvas to PNG or PDF
   const handleExportImage = useCallback((options: ExportImageOptions) => {
     const canvas = document.querySelector("canvas");
     if (!canvas) return;
-    setShowExportImage(false);
+    closeModal();
 
     // Create an off-screen canvas at the desired scale
     const w = canvas.width;
@@ -427,37 +412,29 @@ function AppInner() {
     const title = graphData?.metadata.title ?? "concept-map";
     const filename = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
-    const sendToSwift = (handler: string, payload: string) => {
-      const webkit = (window as unknown as Record<string, unknown>).webkit as
-        | { messageHandlers?: Record<string, { postMessage: (msg: unknown) => void }> }
-        | undefined;
-      webkit?.messageHandlers?.[handler]?.postMessage(payload);
-    };
-    const isNativeApp = !!(window as unknown as Record<string, unknown>).webkit;
+    const native = detectNativeApp();
 
     if (options.format === "png") {
       const dataURL = offscreen.toDataURL("image/png");
       const base64 = dataURL.split(",")[1];
-      if (isNativeApp) {
-        sendToSwift("saveToDownloads", JSON.stringify({ data: base64, filename: `${filename}.png` }));
+      if (native) {
+        postToSwift("saveToDownloads", { data: base64, filename: `${filename}.png` });
       } else {
-        // Browser fallback
         const a = document.createElement("a");
         a.href = dataURL;
         a.download = `${filename}.png`;
         a.click();
       }
     } else {
-      // PDF using jsPDF
       const imgData = offscreen.toDataURL("image/png");
       const pxToMm = 0.264583;
       const pdfW = offscreen.width * pxToMm;
       const pdfH = offscreen.height * pxToMm;
       const pdf = new jsPDF({ orientation: pdfW > pdfH ? "landscape" : "portrait", unit: "mm", format: [pdfW, pdfH] });
       pdf.addImage(imgData, "PNG", 0, 0, pdfW, pdfH);
-      if (isNativeApp) {
+      if (native) {
         const pdfBase64 = pdf.output("datauristring").split(",")[1];
-        sendToSwift("saveToDownloads", JSON.stringify({ data: pdfBase64, filename: `${filename}.pdf` }));
+        postToSwift("saveToDownloads", { data: pdfBase64, filename: `${filename}.pdf` });
       } else {
         pdf.save(`${filename}.pdf`);
       }
@@ -471,30 +448,14 @@ function AppInner() {
         const tag = (e.target as HTMLElement)?.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
         e.preventDefault();
-        if (undoStack.current.length > 0) {
-          const prev = undoStack.current[undoStack.current.length - 1];
-          undoStack.current = undoStack.current.slice(0, -1);
-          setGraphDataRaw((current) => {
-            if (current) redoStack.current = [current, ...redoStack.current];
-            return prev;
-          });
-          setSelectedNode(null);
-        }
+        useGraphStore.getState().undo();
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key === "z" && e.shiftKey) {
         const tag = (e.target as HTMLElement)?.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
         e.preventDefault();
-        if (redoStack.current.length > 0) {
-          const next = redoStack.current[0];
-          redoStack.current = redoStack.current.slice(1);
-          setGraphDataRaw((current) => {
-            if (current) undoStack.current = [...undoStack.current, current];
-            return next;
-          });
-          setSelectedNode(null);
-        }
+        useGraphStore.getState().redo();
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -525,23 +486,16 @@ function AppInner() {
     return () => window.removeEventListener("keydown", handler);
   }, [interactionMode, handleCancelAddEdge, selectedNode, selectedEdge, handleDeleteNode, handleDeleteEdge]);
 
-  const isNativeApp = !!(window as unknown as Record<string, unknown>).webkit;
-
-  const sendToSwift = useCallback((handler: string, payload?: unknown) => {
-    const webkit = (window as unknown as Record<string, unknown>).webkit as
-      | { messageHandlers?: Record<string, { postMessage: (msg: unknown) => void }> }
-      | undefined;
-    webkit?.messageHandlers?.[handler]?.postMessage(payload ?? {});
-  }, []);
+  const isNativeApp = detectNativeApp();
 
   // Request native templates and maps on mount; clear stale localStorage cache
   useEffect(() => {
     if (isNativeApp) {
       localStorage.removeItem("cm-templates");
-      sendToSwift("listTemplates");
-      sendToSwift("listMaps");
+      postToSwift("listTemplates", undefined as never);
+      postToSwift("listMaps", undefined as never);
     }
-  }, [isNativeApp, sendToSwift]);
+  }, [isNativeApp]);
 
   // Auto-save to source file path (debounced) — saves markdown
   const autoSave = useCallback(() => {
@@ -549,11 +503,11 @@ function AppInner() {
     clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       const md = exportToMarkdown(graphData, nodeTypeConfigs, edgeColorOverrides);
-      sendToSwift("saveToPath", JSON.stringify({ path: sourceFilePath, content: md }));
+      postToSwift("saveToPath", { path: sourceFilePath, content: md });
       setSaveIndicator(true);
       setTimeout(() => setSaveIndicator(false), 2000);
     }, 2000);
-  }, [graphData, sourceFilePath, isNativeApp, sendToSwift, nodeTypeConfigs, edgeColorOverrides]);
+  }, [graphData, sourceFilePath, isNativeApp, nodeTypeConfigs, edgeColorOverrides]);
 
   // Trigger auto-save when graph data or edge colors change
   const graphDataRef = useRef(graphData);
@@ -623,13 +577,13 @@ function AppInner() {
           node_types: data.node_types,
           edge_types: data.edge_types,
         }, null, 2);
-        sendToSwift("saveTemplate", JSON.stringify({
+        postToSwift("saveTemplate", {
           content: templateJson,
           title: data.title,
-          sourceTemplate: graphData.metadata.source_template ?? null,
-          sourceMapPath: sourceFilePath ?? null,
+          sourceTemplate: graphData.metadata.source_template ?? undefined,
+          sourceMapPath: sourceFilePath ?? undefined,
           silent: !!graphData.metadata.source_template,
-        }));
+        });
       }
     } else {
       // Create mode: new empty graph
@@ -651,7 +605,7 @@ function AppInner() {
       const md = exportToMarkdown(newGraph, newTemplate.node_types);
 
       if (isNativeApp) {
-        sendToSwift("saveNewTaxonomy", JSON.stringify({ content: md, title: data.title }));
+        postToSwift("saveNewTaxonomy", { content: md, title: data.title });
         loadGraphFresh(newGraph);
       } else {
         const blob = new Blob([md], { type: "text/markdown" });
@@ -668,9 +622,8 @@ function AppInner() {
       setError(null);
     }
 
-    setShowTaxonomyWizard(false);
-    setTaxonomyEditData(undefined);
-  }, [isNativeApp, sendToSwift, graphData, setGraphData, loadGraphFresh, taxonomyEditData, setError, sourceFilePath]);
+    closeTaxonomyWizard();
+  }, [isNativeApp, graphData, setGraphData, loadGraphFresh, taxonomyEditData, setError, sourceFilePath, setSelectedNode, closeTaxonomyWizard]);
 
   // Create a new empty map using an existing template's structure (no wizard)
   const handleNewFileFromTemplate = useCallback((tmplData: TaxonomyWizardInitial) => {
@@ -704,22 +657,21 @@ function AppInner() {
     // Save to disk
     const md = exportToMarkdown(newGraph, newTemplate.node_types);
     if (isNativeApp) {
-      sendToSwift("saveNewTaxonomy", JSON.stringify({ content: md, title: mapTitle }));
+      postToSwift("saveNewTaxonomy", { content: md, title: mapTitle });
     }
-  }, [isNativeApp, sendToSwift, loadGraphFresh, setError]);
+  }, [isNativeApp, loadGraphFresh, setError, setSelectedNode]);
 
   // Open wizard in edit mode with current taxonomy data
   const handleEditTaxonomy = useCallback(() => {
     if (!graphData) return;
-    setTaxonomyEditData({
+    openTaxonomyWizard({
       title: graphData.metadata.title ?? "",
       description: graphData.metadata.notes?.[0] ?? undefined,
       classifiers: graphData.metadata.classifiers,
       node_types: nodeTypeConfigs,
       edge_types: template?.edge_types,
     });
-    setShowTaxonomyWizard(true);
-  }, [graphData, nodeTypeConfigs, template]);
+  }, [graphData, nodeTypeConfigs, template, openTaxonomyWizard]);
 
   // Save taxonomy as a reusable template
   const handleSaveTemplate = useCallback((data: TaxonomyWizardResult) => {
@@ -740,14 +692,14 @@ function AppInner() {
         node_types: data.node_types,
         edge_types: data.edge_types,
       }, null, 2);
-      sendToSwift("saveTemplate", JSON.stringify({ content: templateJson, title: data.title }));
+      postToSwift("saveTemplate", { content: templateJson, title: data.title });
     }
 
     // Also store in localStorage
     const stored = JSON.parse(localStorage.getItem("cm-templates") || "[]");
     stored.push(tmpl);
     localStorage.setItem("cm-templates", JSON.stringify(stored));
-  }, [isNativeApp, sendToSwift]);
+  }, [isNativeApp]);
 
   const getSavedTemplates = useCallback((): TaxonomyWizardInitial[] => {
     // In native app, templates come exclusively from the file system
@@ -761,34 +713,22 @@ function AppInner() {
 
   const handleImportFile = useCallback(() => {
     if (isNativeApp) {
-      sendToSwift("openFile");
+      postToSwift("openFile", undefined as never);
     } else {
       fileInputRef.current?.click();
     }
-  }, [isNativeApp, sendToSwift]);
+  }, [isNativeApp]);
 
   const handleSelectEdge = useCallback((edge: import("./types/graph-ir").GraphEdge | null, pos?: { x: number; y: number }) => {
-    setSelectedEdge(edge);
-    setEdgePopoverPos(pos ?? null);
-    if (edge) { setSelectedNode(null); setNotesOpen(true); }
+    useGraphStore.getState().handleSelectEdge(edge, pos);
   }, []);
 
   const handleEdgeUpdate = useCallback((fromId: string, toId: string, updates: Partial<import("./types/graph-ir").GraphEdge>) => {
-    if (!graphData) return;
-    setGraphData({
-      ...graphData,
-      edges: graphData.edges.map((e) =>
-        e.from === fromId && e.to === toId ? { ...e, ...updates } : e
-      ),
-    });
-    // Keep selectedEdge in sync
-    setSelectedEdge((prev) =>
-      prev && prev.from === fromId && prev.to === toId ? { ...prev, ...updates } : prev
-    );
-  }, [graphData, setGraphData]);
+    useGraphStore.getState().handleEdgeUpdate(fromId, toId, updates);
+  }, []);
 
   const makeResizeHandler = useCallback(
-    (setter: React.Dispatch<React.SetStateAction<number>>, currentWidth: number) =>
+    (setter: (n: number) => void, currentWidth: number) =>
       (e: React.MouseEvent) => {
         e.preventDefault();
         const startX = e.clientX;
@@ -808,7 +748,7 @@ function AppInner() {
   );
 
   const makeVerticalResizeHandler = useCallback(
-    (setter: React.Dispatch<React.SetStateAction<number>>, currentHeight: number) =>
+    (setter: (n: number) => void, currentHeight: number) =>
       (e: React.MouseEvent) => {
         e.preventDefault();
         const startY = e.clientY;
@@ -828,7 +768,7 @@ function AppInner() {
   );
 
   const handleAttributeToggle = (nodeType: string, field: string, value: string, allValues: string[]) => {
-    setFilters((prev) => {
+    setFiltersStore((prev) => {
       const attrs = [...prev.attributes];
       const idx = attrs.findIndex((a) => a.nodeType === nodeType && a.field === field);
       if (idx < 0) {
@@ -863,7 +803,7 @@ function AppInner() {
   };
 
   const handleDateRangeChange = (nodeType: string, fromField: string, toField: string | undefined, bound: "from" | "to", value: string) => {
-    setFilters((prev) => {
+    setFiltersStore((prev) => {
       const ranges = [...prev.dateRanges];
       const idx = ranges.findIndex((d) => d.nodeType === nodeType && d.fromField === fromField && d.toField === (toField ?? undefined));
       const current = idx >= 0 ? ranges[idx].range : { from: null, to: null };
@@ -880,11 +820,11 @@ function AppInner() {
   };
 
   const handleShowAllFilters = () => {
-    setFilters(createEmptyFilterState());
+    setFiltersStore(createEmptyFilterState());
   };
 
   const handleClassifierToggle = (classifierId: string, valueId: string, allValueIds: string[]) => {
-    setFilters((prev) => {
+    setFiltersStore((prev) => {
       const cfs = [...prev.classifiers];
       const idx = cfs.findIndex((c) => c.classifierId === classifierId);
       if (idx < 0) {
@@ -1002,7 +942,7 @@ function AppInner() {
   }, [graphData, template, setGraphData]);
 
   const handleTagToggle = (tag: string, allTags: string[]) => {
-    setFilters((prev) => {
+    setFiltersStore((prev) => {
       const tags = prev.tags;
       if (!tags) {
         const next = new Set(allTags);
@@ -1036,7 +976,7 @@ function AppInner() {
         setRevealedNodes((prev) => new Set(prev).add(node.id));
       }
     },
-    [viewMode]
+    [viewMode, setSelectedNode, setSearchQuery, setSearchFocused, setCenterOnNode, setRevealedNodes]
   );
 
 
@@ -1063,7 +1003,7 @@ function AppInner() {
                   <div key={`t-${i}`} className="start-item-row">
                     <button
                       className="start-item"
-                      onClick={() => { setTaxonomyEditData(t); setShowTaxonomyWizard(true); }}
+                      onClick={() => openTaxonomyWizard(t)}
                       title="Edit template in wizard"
                     >
                       <span className="start-item-name">{t.title}</span>
@@ -1085,7 +1025,7 @@ function AppInner() {
                   <div className="start-empty">No templates yet</div>
                 )}
               </div>
-              <button className="start-action" onClick={() => { setTaxonomyEditData(undefined); setShowTaxonomyWizard(true); }}>
+              <button className="start-action" onClick={() => openTaxonomyWizard(undefined)}>
                 + New Taxonomy
               </button>
             </div>
@@ -1098,7 +1038,7 @@ function AppInner() {
                   <button
                     key={`m-${i}`}
                     className="start-item"
-                    onClick={() => sendToSwift("loadMap", JSON.stringify({ path: m.path }))}
+                    onClick={() => postToSwift("loadMap", { path: m.path })}
                   >
                     <span className="start-item-name">{m.name}</span>
                   </button>
@@ -1116,7 +1056,7 @@ function AppInner() {
         {showTaxonomyWizard && (
           <TaxonomyWizard
             onComplete={handleTaxonomyCreate}
-            onCancel={() => { setShowTaxonomyWizard(false); setTaxonomyEditData(undefined); }}
+            onCancel={closeTaxonomyWizard}
             initialData={taxonomyEditData}
           />
         )}
@@ -1148,23 +1088,22 @@ function AppInner() {
             type="text"
             placeholder="Search nodes... (\u2318K)"
             value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setSearchHighlight(-1); }}
+            onChange={(e) => { setSearchQuery(e.target.value); }}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
             onKeyDown={(e) => {
               if (e.key === "ArrowDown") {
                 e.preventDefault();
-                setSearchHighlight((h) => Math.min(h + 1, searchResults.length - 1));
+                setSearchHighlight(Math.min(searchHighlight + 1, searchResults.length - 1));
               } else if (e.key === "ArrowUp") {
                 e.preventDefault();
-                setSearchHighlight((h) => Math.max(h - 1, 0));
+                setSearchHighlight(Math.max(searchHighlight - 1, 0));
               } else if (e.key === "Enter" && searchHighlight >= 0 && searchResults[searchHighlight]) {
                 e.preventDefault();
                 handleSearchSelect(searchResults[searchHighlight]);
                 setSearchHighlight(-1);
               } else if (e.key === "Escape") {
                 setSearchQuery("");
-                setSearchHighlight(-1);
                 searchInputRef.current?.blur();
               }
             }}
@@ -1197,13 +1136,13 @@ function AppInner() {
           viewMode={viewMode}
           onViewModeChange={handleViewModeChange}
           sidebarOpen={sidebarOpen}
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          onOpenSettings={() => setShowSettings(true)}
+          onToggleSidebar={toggleSidebar}
+          onOpenSettings={() => openModal('settings')}
           onEditTaxonomy={handleEditTaxonomy}
-          onOpenHelp={() => setShowHelp(true)}
+          onOpenHelp={() => openModal('help')}
           onFitToView={() => fitToViewRef.current?.()}
-          onExportImage={() => setShowExportImage(true)}
-          onToggleAnalysis={() => setAnalysisOpen(!analysisOpen)}
+          onExportImage={() => openModal('exportImage')}
+          onToggleAnalysis={toggleAnalysis}
           analysisOpen={analysisOpen}
           nodeTypeConfigs={nodeTypeConfigs}
           onExplode={() => setExploded((v) => !v)}
@@ -1235,7 +1174,7 @@ function AppInner() {
             onShowAll={handleShowAllFilters}
             onSelectNode={(node) => { setSelectedNode(node); setCenterOnNode({ id: node.id, ts: Date.now() }); }}
             selectedNodeId={selectedNode?.id ?? null}
-            onAddNode={(nodeType) => setShowAddNode(nodeType)}
+            onAddNode={(nodeType) => openModal('addNode', nodeType)}
             onAddEdge={handleStartAddEdge}
             interactionMode={interactionMode}
             onCancelAddEdge={handleCancelAddEdge}
@@ -1245,7 +1184,7 @@ function AppInner() {
               setSelectedNode(null);
               setSelectedEdge(null);
               setEdgePopoverPos(null);
-              setFilters(createEmptyFilterState());
+              setFiltersStore(createEmptyFilterState());
               setRevealedNodes(new Set());
               setPropertiesOpen(false);
               setTimeout(() => fitToViewRef.current?.(), 50);
@@ -1334,7 +1273,7 @@ function AppInner() {
               {fontScale !== 1 && <button className="zoom-btn zoom-btn-fit" onClick={() => setFontScale(1)} title="Reset font size">A0</button>}
               <button
                 className={`zoom-btn zoom-btn-fit ${hiddenLabelTypes.size > 0 ? "zoom-btn-off" : ""}`}
-                onClick={() => setLabelMenuOpen(!labelMenuOpen)}
+                onClick={toggleLabelMenu}
                 title="Label visibility"
               >Aa</button>
               {labelMenuOpen && (
@@ -1386,8 +1325,8 @@ function AppInner() {
                 onClose={() => { setSelectedEdge(null); setEdgePopoverPos(null); }}
                 onDelete={handleDeleteEdge}
                 edgeTypeLabel={
-                  template?.edge_types?.find((et) => et.id === selectedEdge.edge_type)?.label
-                  ?? selectedEdge.edge_type
+                  (template?.edge_types?.find((et) => et.id === selectedEdge!.edge_type)?.label
+                    ?? selectedEdge!.edge_type)
                 }
               />
             )}
@@ -1506,7 +1445,7 @@ function AppInner() {
           classifiers={graphData.metadata.classifiers ?? []}
           existingTags={collectAllTags(graphData.nodes)}
           onAdd={handleAddNode}
-          onCancel={() => setShowAddNode(null)}
+          onCancel={closeModal}
           initialNodeType={showAddNode}
         />
       )}
@@ -1523,24 +1462,24 @@ function AppInner() {
         <SettingsModal
           edgeTypes={[...new Set(graphData.edges.map((e) => e.edge_type))]}
           classifiers={graphData.metadata.classifiers ?? []}
-          onClose={() => setShowSettings(false)}
+          onClose={closeModal}
         />
       )}
       {showTaxonomyWizard && (
         <TaxonomyWizard
           onComplete={handleTaxonomyCreate}
-          onCancel={() => { setShowTaxonomyWizard(false); setTaxonomyEditData(undefined); }}
+          onCancel={closeTaxonomyWizard}
           initialData={taxonomyEditData}
           onSaveTemplate={handleSaveTemplate}
         />
       )}
       {showHelp && (
-        <HelpPanel onClose={() => setShowHelp(false)} />
+        <HelpPanel onClose={closeModal} />
       )}
       {showExportImage && (
         <ExportImageModal
           onExport={handleExportImage}
-          onCancel={() => setShowExportImage(false)}
+          onCancel={closeModal}
           currentBgColor={theme.canvasBg}
         />
       )}
@@ -1553,16 +1492,6 @@ function AppInner() {
       />
     </div>
   );
-}
-
-function getEdgeVisual(edgeType: string) {
-  if (edgeType === "rivalry" || edgeType === "opposes") {
-    return { style: "dashed", color: "#D94A4A", show_arrow: false };
-  }
-  if (edgeType === "alliance" || edgeType === "institutional") {
-    return { style: "dotted", color: "#999999", show_arrow: false };
-  }
-  return { style: "solid", show_arrow: true };
 }
 
 function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[], edgeColorOverrides?: Record<string, string>): string {

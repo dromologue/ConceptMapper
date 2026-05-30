@@ -15,7 +15,7 @@ The app is a sandboxed macOS application distributed via the App Store. Architec
 - **SwiftUI shell**: Window management, native menu bar (File > Open/Save/Export), NSOpenPanel/NSSavePanel
 - **WKWebView**: Hosts the React SPA loaded from bundled static assets (`file://`)
 - **Rust WASM parser**: Compiled via `wasm-pack`, loaded by the React app in-browser
-- **Swift ↔ JS bridge**: `WKScriptMessageHandler` (JS→Swift) and `evaluateJavaScript` (Swift→JS)
+- **Swift ↔ JS bridge**: typed message protocol — see principle 14 — over a single `bridge` WKScriptMessageHandler and a single `window.__bridge_receive` callback
 - **Sandbox entitlements**: `files.user-selected.read-write` only — no network access needed
 - The `web/` directory is a build-time dependency producing static assets, not a runtime server
 
@@ -122,6 +122,48 @@ LLM communication is abstracted behind a polymorphic `LLMClient` interface:
 - **ErrorBoundary** wraps the app root to catch rendering errors and display recovery UI
 - **Undo/redo** system (50-entry history) allows recovery from unintended graph mutations
 - **CI/CD pipeline** (GitHub Actions) catches regressions on every push/PR
+
+### 14. Typed JS↔Swift Bridge Protocol
+All JS↔Swift communication rides a single versioned envelope on one transport per direction (`bridge` WKScriptMessageHandler for JS→Swift; `window.__bridge_receive` for Swift→JS). The protocol is defined twice — once in `macos/ConceptMapper/BridgeProtocol.swift` and once in `web/src/types/bridge-protocol.ts` — and the two files are kept in sync by hand.
+
+Envelope shape:
+
+```jsonc
+{
+  "id": "<uuid or null>",        // correlates requests to responses
+  "version": 1,                  // BRIDGE_PROTOCOL_VERSION; mismatch → .error
+  "kind": "request" | "response" | "event" | "error",
+  "method": "openFile" | "saveToDownloads" | …,  // discriminator
+  "payload": { … } | "result": { … } | "error": { code, message }
+}
+```
+
+Rules:
+
+- Every method has a typed payload (`BridgeRequestMap[M]` in TS, payload struct in Swift). Adding a method touches both files.
+- JS→Swift calls use `sendToSwift(method, payload)` (promise) or `postToSwift(method, payload)` (fire-and-forget). The transport is owned by `web/src/utils/swiftBridge.ts`.
+- Swift→JS events use `bridge.sendEvent(method:payload:)`. Subscribers register via `subscribe(method, handler)` and receive a typed payload.
+- Errors are structured (`BridgeErrorCode` enum) and flow back to the originating promise as a `BridgeRejection`. No NSAlert-only failures.
+- Protocol-version mismatches are surfaced as `.error` envelopes — never silent failures.
+
+This eliminates the "stringly typed handlers with hardcoded `window.foo` callbacks" pattern that preceded it. Any drift between the two protocol files is a compile-time error on the next build.
+
+### 15. Async-First Swift IO
+Swift file operations in `macos/ConceptMapper/FileHandler.swift` are `async`/`async throws`. Completion handlers are not used for new code. NSOpenPanel / NSSavePanel are wrapped via `withCheckedContinuation`. Errors propagate as `BridgeError` so the bridge can route them to JS instead of presenting an NSAlert from inside the IO layer.
+
+### 16. Layered GraphCanvas
+The graph canvas decomposes into independently testable units:
+
+- `web/src/graph/layout/regions.ts` — pure functions producing initial node positions
+- `web/src/graph/useGraphSimulation.ts` — D3 force configuration and tick state
+- `web/src/graph/hit-testing.ts` — pure functions over rendered geometry
+- `web/src/graph/useZoomController.ts` — D3 zoom behaviour + transform ref
+- `web/src/graph/GraphCanvas.tsx` — coordinator: composes the hooks, owns the canvas ref
+
+Layout, simulation, hit-testing and zoom are each unit-testable. GraphCanvas itself becomes a thin orchestrator.
+
+### 17. Rust Public API Facade
+The `concept-mapper-core` crate exposes a curated public surface in `src/lib.rs`: `parse_document` as the single entry point plus the `ParseOutput` / `GraphIR` / `Node` / `Edge` / error types needed to consume it. Internal modules (`parser`, `graph`, `wasm`) are `#[doc(hidden)] pub mod` so integration tests can reach them while consumers cannot. The CLI and WASM entry points are thin re-exports of the same facade.
 
 ## Patterns to Follow
 - Pass data across the Rust/React boundary as typed JSON matching a shared schema

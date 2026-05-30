@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import type { GraphNode, GraphEdge } from "../types/graph-ir";
 import { EDGE_LABELS } from "../utils/edge-labels";
-import { postToSwift } from "../utils/swiftBridge";
+import { postToSwift, subscribe } from "../utils/swiftBridge";
 
 interface Props {
   node: GraphNode;
@@ -36,7 +36,7 @@ function NotesPaneInner({ node, edges, nodes, onNodeUpdate }: Props) {
       saveTimerRef.current = setTimeout(() => {
         onNodeUpdate(node.id, { notes: newContent || undefined });
         if (path) {
-          postToSwift("writeNotesFile", JSON.stringify({ path, content: newContent }));
+          postToSwift("writeNotesFile", { path, content: newContent });
         }
       }, 500);
     },
@@ -48,30 +48,26 @@ function NotesPaneInner({ node, edges, nodes, onNodeUpdate }: Props) {
   // any time the pane opens.
   useEffect(() => {
     if (!attachedPath) return;
-    const onRead = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { nodeId: string; path: string; content: string; exists: boolean };
+    const unsubscribe = subscribe("notesFileRead", (detail) => {
       if (detail.nodeId !== node.id) return;
       if (detail.exists) {
         setContent(detail.content);
         onNodeUpdate(node.id, { notes: detail.content || undefined });
       }
-    };
-    window.addEventListener("notesFileRead", onRead);
-    postToSwift("readNotesFile", JSON.stringify({ nodeId: node.id, path: attachedPath }));
-    return () => window.removeEventListener("notesFileRead", onRead);
+    });
+    postToSwift("readNotesFile", { nodeId: node.id, path: attachedPath });
+    return unsubscribe;
   }, [attachedPath, node.id, onNodeUpdate]);
 
   // Handle attach-completion (Swift fires this after the file picker returns).
   useEffect(() => {
-    const onAttached = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { nodeId: string; path: string; content: string };
+    const unsubscribe = subscribe("notesFileAttached", (detail) => {
       if (detail.nodeId !== node.id) return;
       setAttachedPath(detail.path);
       setContent(detail.content);
       onNodeUpdate(node.id, { notes_file: detail.path, notes: detail.content || undefined });
-    };
-    window.addEventListener("notesFileAttached", onAttached);
-    return () => window.removeEventListener("notesFileAttached", onAttached);
+    });
+    return unsubscribe;
   }, [node.id, onNodeUpdate]);
 
   const onContentChange = (val: string) => {
@@ -80,7 +76,7 @@ function NotesPaneInner({ node, edges, nodes, onNodeUpdate }: Props) {
   };
 
   const onAttachClick = () => {
-    postToSwift("attachNotesFile", JSON.stringify({ nodeId: node.id }));
+    postToSwift("attachNotesFile", { nodeId: node.id });
   };
 
   // Detach: drop the file reference but KEEP the loaded text inline. The user

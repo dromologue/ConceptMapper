@@ -2,7 +2,7 @@ use std::env;
 use std::fs;
 use std::process;
 
-use concept_mapper_core::graph::assemble;
+use concept_mapper_core::parse_document;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -22,7 +22,7 @@ fn main() {
         }
     };
 
-    match assemble::parse_document(&input, Some(input_path)) {
+    match parse_document(&input, Some(input_path)) {
         Ok(result) => {
             // Print warnings to stderr
             for warning in &result.warnings {

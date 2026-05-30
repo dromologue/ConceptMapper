@@ -5,13 +5,261 @@ import os.log
 
 private let logger = Logger(subsystem: "com.dromologue.ConceptMapper", category: "Bridge")
 
-/// Handles bidirectional communication between Swift and the React SPA in WKWebView.
+/// Bidirectional communication between Swift and the React SPA over a single
+/// typed transport (`bridge` JS→Swift handler / `window.__bridge_receive`
+/// Swift→JS callback). All messages ride a `BridgeEnvelope` carrying a
+/// version field, a kind discriminator, a method, and a typed payload.
 @MainActor
 class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
     weak var webView: WKWebView?
 
-    /// Produce a safe JS string literal (double-quoted, properly escaped) using JSON serialization.
-    /// Returns a quoted string safe for interpolation into evaluateJavaScript calls.
+    // MARK: - JS → Swift
+
+    nonisolated func userContentController(
+        _ userContentController: WKUserContentController,
+        didReceive message: WKScriptMessage
+    ) {
+        // jsLog stays a separate handler for early-boot error reporting before
+        // the bridge is established. Everything else rides the bridge channel.
+        if message.name == "jsLog" {
+            logger.warning("[JS] \("\(message.body)")")
+            return
+        }
+        guard message.name == "bridge" else {
+            logger.error("[Bridge] unknown channel: \(message.name)")
+            return
+        }
+        let body = "\(message.body)"
+        Task { @MainActor in
+            await self.dispatchEnvelope(body: body)
+        }
+    }
+
+    private func dispatchEnvelope(body: String) async {
+        let envelope: BridgeEnvelope
+        do {
+            envelope = try BridgeEnvelope.decode(from: body)
+        } catch let err as BridgeError {
+            logger.error("[Bridge] decode failure: \(err.message)")
+            sendError(id: nil, method: .jsLog, error: err)
+            return
+        } catch {
+            logger.error("[Bridge] decode failure: \(error.localizedDescription)")
+            return
+        }
+
+        guard envelope.kind == .request else {
+            // We currently only receive requests from JS. Responses/events
+            // travel Swift→JS only.
+            logger.error("[Bridge] unexpected kind: \(envelope.kind.rawValue)")
+            return
+        }
+
+        do {
+            try await handleRequest(envelope)
+        } catch let err as BridgeError {
+            sendError(id: envelope.id, method: envelope.method, error: err)
+        } catch {
+            sendError(id: envelope.id, method: envelope.method,
+                      error: .init(code: .internalError, message: error.localizedDescription))
+        }
+    }
+
+    private func handleRequest(_ env: BridgeEnvelope) async throws {
+        switch env.method {
+        case .jsLog:
+            let p = try env.decodePayload(as: JSLogPayload.self)
+            logger.warning("[JS] \(p.message)")
+
+        case .openFile:
+            let (content, filename, filePath) = try await FileHandler.openFile()
+            sendEvent(method: .fileLoaded, payload: FileLoadedPayload(
+                content: content.data(using: .utf8)?.base64EncodedString() ?? "",
+                filename: filename,
+                filePath: filePath
+            ))
+
+        case .exportImage:
+            let dataURL = await requestCanvasImage()
+            try await FileHandler.saveImageFromDataURL(dataURL)
+
+        case .exportMarkdown:
+            let md = await requestGraphMarkdown()
+            try await FileHandler.saveFile(content: md, type: "md", title: "Export Markdown")
+
+        case .saveToDownloads:
+            let p = try env.decodePayload(as: SaveToDownloadsPayload.self)
+            try await FileHandler.saveExport(base64Data: p.data, filename: p.filename)
+
+        case .saveToPath:
+            let p = try env.decodePayload(as: SaveToPathPayload.self)
+            try await FileHandler.saveToPath(content: p.content, path: p.path)
+
+        case .saveNewTaxonomy:
+            let p = try env.decodePayload(as: SaveNewTaxonomyPayload.self)
+            let slug = p.title.lowercased()
+                .replacingOccurrences(of: "[^a-z0-9]+", with: "_", options: .regularExpression)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+            let savedPath = try await FileHandler.saveNewFile(content: p.content, defaultName: "\(slug).cm")
+            sendEvent(method: .taxonomySaved, payload: TaxonomySavedPayload(path: savedPath))
+
+        case .listTemplates:
+            FileHandler.copyBundledTemplates()
+            let list = try await FileHandler.listTemplates().map { TemplateListItem(name: $0.name, path: $0.path) }
+            sendEvent(method: .templatesAvailable, payload: TemplatesAvailablePayload(templates: list))
+
+        case .listMaps:
+            let list = try await FileHandler.listMaps().map { MapListItem(name: $0.name, path: $0.path) }
+            sendEvent(method: .mapsAvailable, payload: MapsAvailablePayload(maps: list))
+
+        case .loadMap:
+            let p = try env.decodePayload(as: LoadMapPayload.self)
+            let url = URL(fileURLWithPath: p.path)
+            guard let content = try? String(contentsOf: url, encoding: .utf8) else {
+                throw BridgeError.io("cannot read map: \(p.path)")
+            }
+            var templateContent = ""
+            if let range = content.range(of: #"<!--\s*template:\s*(.+?)\s*-->"#, options: .regularExpression) {
+                let comment = String(content[range])
+                let tmplName = comment
+                    .replacingOccurrences(of: #"<!--\s*template:\s*"#, with: "", options: .regularExpression)
+                    .replacingOccurrences(of: #"\s*-->"#, with: "", options: .regularExpression)
+                    .trimmingCharacters(in: .whitespaces)
+                let cmtName = tmplName.hasSuffix(".cmt") ? tmplName : "\(tmplName).cmt"
+                let bundleURL = Bundle.main.url(forResource: cmtName.replacingOccurrences(of: ".cmt", with: ""),
+                                                withExtension: "cmt", subdirectory: "templates")
+                let candidate = bundleURL ?? FileHandler.getTemplatesFolder().appendingPathComponent(cmtName)
+                if let tmpl = try? String(contentsOf: candidate, encoding: .utf8) {
+                    templateContent = tmpl
+                }
+            }
+            sendEvent(method: .mapLoaded, payload: MapLoadedPayload(
+                mapContent: content.data(using: .utf8)?.base64EncodedString() ?? "",
+                templateContent: templateContent.data(using: .utf8)?.base64EncodedString() ?? "",
+                filename: url.lastPathComponent,
+                filePath: p.path
+            ))
+
+        case .loadTemplate:
+            let p = try env.decodePayload(as: LoadTemplatePayload.self)
+            let content = try await FileHandler.loadTemplateFile(path: p.path)
+            sendEvent(method: .templateAvailable, payload: TemplateAvailablePayload(content: content))
+
+        case .saveTemplate:
+            let p = try env.decodePayload(as: SaveTemplatePayload.self)
+            let defaultName: String
+            if let src = p.sourceTemplate, !src.isEmpty {
+                defaultName = src.hasSuffix(".cmt") ? src : "\(src).cmt"
+            } else {
+                let slug = p.title.lowercased()
+                    .replacingOccurrences(of: "[^a-z0-9]+", with: "_", options: .regularExpression)
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+                defaultName = "\(slug).cmt"
+            }
+            if (p.silent ?? false), p.sourceTemplate != nil {
+                try await FileHandler.overwriteTemplateForMap(
+                    content: p.content,
+                    templateFilename: defaultName,
+                    sourceMapPath: p.sourceMapPath
+                )
+            } else {
+                _ = try await FileHandler.saveTemplateFile(content: p.content, defaultName: defaultName)
+            }
+
+        case .openURL:
+            let p = try env.decodePayload(as: OpenURLPayload.self)
+            guard let url = URL(string: p.url) else {
+                throw BridgeError.malformedPayload("invalid URL: \(p.url)")
+            }
+            NSWorkspace.shared.open(url)
+
+        case .attachNotesFile:
+            let p = try env.decodePayload(as: AttachNotesFilePayload.self)
+            guard let (path, content) = try await FileHandler.attachMarkdownFile() else {
+                return // user cancelled — silent no-op
+            }
+            sendEvent(method: .notesFileAttached, payload: NotesFileAttachedPayload(
+                nodeId: p.nodeId, path: path, content: content
+            ))
+
+        case .readNotesFile:
+            let p = try env.decodePayload(as: ReadNotesFilePayload.self)
+            let url = URL(fileURLWithPath: p.path)
+            let content = try? String(contentsOf: url, encoding: .utf8)
+            sendEvent(method: .notesFileRead, payload: NotesFileReadPayload(
+                nodeId: p.nodeId, path: p.path, content: content ?? "", exists: content != nil
+            ))
+
+        case .writeNotesFile:
+            let p = try env.decodePayload(as: WriteNotesFilePayload.self)
+            try await FileHandler.writeText(content: p.content, toPath: p.path)
+
+        // Event-only methods should never appear as requests
+        case .fileLoaded, .mapLoaded, .templatesAvailable, .templateAvailable,
+             .mapsAvailable, .taxonomySaved, .showTaxonomyWizard,
+             .notesFileAttached, .notesFileRead:
+            throw BridgeError.unknownMethod(env.method.rawValue)
+        }
+    }
+
+    // MARK: - Swift → JS
+
+    /// Send an event envelope. Events are fire-and-forget — no response is
+    /// awaited.
+    func sendEvent<P: Encodable>(method: BridgeMethod, payload: P) {
+        sendEnvelope(kind: .event, id: nil, method: method, payload: payload)
+    }
+
+    /// Send a request rejection. Used when a JS request fails on the Swift
+    /// side — the JS bridge resolves the pending promise to an error.
+    func sendError(id: String?, method: BridgeMethod, error: BridgeError) {
+        let envelope: [String: Any] = [
+            "version": BridgeProtocolVersion,
+            "kind": BridgeKind.error.rawValue,
+            "method": method.rawValue,
+            "id": id as Any,
+            "error": [
+                "code": error.code.rawValue,
+                "message": error.message
+            ]
+        ]
+        emit(envelope)
+    }
+
+    /// Bare event used by ContentView for command-driven flows (menu items).
+    func emitShowTaxonomyWizard() {
+        sendEnvelope(kind: .event, id: nil, method: .showTaxonomyWizard, payload: EmptyPayload())
+    }
+
+    private func sendEnvelope<P: Encodable>(kind: BridgeKind, id: String?, method: BridgeMethod, payload: P) {
+        let encoder = JSONEncoder()
+        guard let payloadData = try? encoder.encode(payload),
+              let payloadAny = try? JSONSerialization.jsonObject(with: payloadData, options: [.fragmentsAllowed]) else {
+            logger.error("[Bridge] cannot encode payload for \(method.rawValue)")
+            return
+        }
+        let envelope: [String: Any] = [
+            "version": BridgeProtocolVersion,
+            "kind": kind.rawValue,
+            "method": method.rawValue,
+            "id": id as Any,
+            (kind == .response ? "result" : "payload"): payloadAny
+        ]
+        emit(envelope)
+    }
+
+    private func emit(_ envelope: [String: Any]) {
+        guard let json = try? JSONSerialization.data(withJSONObject: envelope, options: [.fragmentsAllowed]),
+              let str = String(data: json, encoding: .utf8) else {
+            logger.error("[Bridge] cannot serialise envelope")
+            return
+        }
+        let safeJSON = safeJSString(str)
+        webView?.evaluateJavaScript("window.__bridge_receive?.(\(safeJSON));") { _, error in
+            if let error = error { logger.error("Bridge emit error: \(error)") }
+        }
+    }
+
     private func safeJSString(_ str: String) -> String {
         guard let data = try? JSONSerialization.data(withJSONObject: str, options: .fragmentsAllowed),
               let json = String(data: data, encoding: .utf8) else {
@@ -20,280 +268,35 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
         return json
     }
 
-    // MARK: - JS → Swift (message handlers)
+    // MARK: - JS → Swift synchronous getters (used by menu-driven exports)
 
-    nonisolated func userContentController(
-        _ userContentController: WKUserContentController,
-        didReceive message: WKScriptMessage
-    ) {
-        let name = message.name
-        let body = "\(message.body)"
-        Task { @MainActor in
-            handleMessage(name, body: body)
-        }
-    }
-
-    private func handleMessage(_ name: String, body: String) {
-        switch name {
-        case "jsLog":
-            logger.warning("[JS] \(body)")
-            return
-        case "openFile":
-            logger.info("[Bridge] openFile handler called")
-            FileHandler.openFile { [weak self] content, filename, filePath in
-                logger.info("[Bridge] FileHandler returned: \(filename), \(content.count) bytes")
-                self?.loadFileContent(content, filename: filename, filePath: filePath)
-            }
-        case "exportImage":
-            requestCanvasImage { dataURL in
-                FileHandler.saveImageFromDataURL(dataURL)
-            }
-        case "exportMarkdown":
-            requestGraphMarkdown { md in
-                FileHandler.saveFile(content: md, type: "md", title: "Export Markdown")
-            }
-        case "saveToDownloads":
-            // JS sends JSON with { data (base64), filename }
-            if let msgData = body.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: msgData) as? [String: String],
-               let base64 = json["data"],
-               let filename = json["filename"] {
-                if let savedPath = FileHandler.saveExportToDownloads(base64Data: base64, filename: filename) {
-                    self.webView?.evaluateJavaScript(
-                        "window.exportSaved?.(\(self.safeJSString(savedPath)));"
-                    ) { _, _ in }
-                }
-            }
-        case "saveToPath":
-            // Auto-save: JS sends JSON with { path, content }
-            if let data = body.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-               let path = json["path"],
-               let content = json["content"] {
-                FileHandler.saveToPath(content: content, path: path)
-            }
-        case "saveNewTaxonomy":
-            // Taxonomy wizard: save new .cm file into Maps folder and callback with path
-            if let data = body.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-               let content = json["content"],
-               let title = json["title"] {
-                let filename = title.lowercased()
-                    .replacingOccurrences(of: "[^a-z0-9]+", with: "_", options: .regularExpression)
-                    .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
-                FileHandler.saveNewFile(content: content, defaultName: "\(filename).cm") { [weak self] savedPath in
-                    guard let self = self else { return }
-                    self.webView?.evaluateJavaScript(
-                        "window.taxonomySaved?.(\(self.safeJSString(savedPath)));"
-                    ) { _, _ in }
-                }
-            }
-        case "listTemplates":
-            // Copy bundled templates on first call
-            FileHandler.copyBundledTemplates()
-            FileHandler.listTemplates { [weak self] results in
-                guard let self = self else { return }
-                if let jsonData = try? JSONSerialization.data(withJSONObject: results),
-                   let jsonString = String(data: jsonData, encoding: .utf8) {
-                    self.webView?.evaluateJavaScript(
-                        "window.templatesLoaded?.(\(self.safeJSString(jsonString)));"
-                    ) { _, _ in }
-                }
-            }
-        case "listMaps":
-            FileHandler.listMaps { [weak self] results in
-                guard let self = self else { return }
-                if let jsonData = try? JSONSerialization.data(withJSONObject: results),
-                   let jsonString = String(data: jsonData, encoding: .utf8) {
-                    self.webView?.evaluateJavaScript(
-                        "window.mapsLoaded?.(\(self.safeJSString(jsonString)));"
-                    ) { _, _ in }
-                }
-            }
-        case "loadMap":
-            // JS sends JSON with { path } — load .cm file and its referenced .cmt template
-            if let data = body.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-               let path = json["path"] {
-                let url = URL(fileURLWithPath: path)
-                do {
-                    let content = try String(contentsOf: url, encoding: .utf8)
-                    // Extract template reference: <!-- template: filename.cmt -->
-                    var templateJSON = "null"
-                    if let range = content.range(of: #"<!--\s*template:\s*(.+?)\s*-->"#, options: .regularExpression) {
-                        let comment = String(content[range])
-                        let tmplName = comment
-                            .replacingOccurrences(of: #"<!--\s*template:\s*"#, with: "", options: .regularExpression)
-                            .replacingOccurrences(of: #"\s*-->"#, with: "", options: .regularExpression)
-                            .trimmingCharacters(in: .whitespaces)
-                        let cmtName = tmplName.hasSuffix(".cmt") ? tmplName : "\(tmplName).cmt"
-                        let templateURL = Bundle.main.url(forResource: cmtName.replacingOccurrences(of: ".cmt", with: ""),
-                                                          withExtension: "cmt", subdirectory: "templates")
-                            ?? FileHandler.getTemplatesFolder().appendingPathComponent(cmtName)
-                        if let tmplContent = try? String(contentsOf: templateURL, encoding: .utf8) {
-                            templateJSON = tmplContent
-                        }
-                    }
-                    // Send both template and map content in one JS call (base64-encode both to avoid escaping issues)
-                    guard let mapData = content.data(using: .utf8) else { return }
-                    let base64 = mapData.base64EncodedString()
-                    let tmplBase64 = templateJSON.data(using: .utf8)?.base64EncodedString() ?? ""
-                    let filename = url.lastPathComponent
-                    let js = "window.loadMapWithTemplate?.('\(base64)', '\(filename)', '\(path)', '\(tmplBase64)');"
-                    webView?.evaluateJavaScript(js) { _, error in
-                        if let error = error { logger.error("loadMap error: \(error)") }
-                    }
-                } catch {
-                    logger.error("loadMap file error: \(error)")
-                }
-            }
-        case "loadTemplate":
-            // JS sends JSON with { path }
-            if let data = body.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-               let path = json["path"] {
-                FileHandler.loadTemplateFile(path: path) { [weak self] content in
-                    guard let self = self else { return }
-                    self.webView?.evaluateJavaScript(
-                        "window.templateLoaded?.(\(self.safeJSString(content)));"
-                    ) { _, _ in }
-                }
-            }
-        case "saveTemplate":
-            // JS sends JSON with { content, title, sourceTemplate?, sourceMapPath?, silent? }
-            // Resolution order for the .cmt write target (REQ-090):
-            //   1. <dirname(sourceMapPath)>/<sourceTemplate>   — the template lives next to its map
-            //      (this is how generators like cmap_gen organise per-domain bundles).
-            //   2. <userTemplatesFolder>/<sourceTemplate>      — the app's shared templates folder.
-            //   3. NSSavePanel                                 — last-resort if no source info or silent=false.
-            if let data = body.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let content = json["content"] as? String,
-               let title = json["title"] as? String {
-                let sourceTemplate = json["sourceTemplate"] as? String
-                let sourceMapPath = json["sourceMapPath"] as? String
-                let silent = (json["silent"] as? Bool) ?? false
-                let defaultName: String
-                if let src = sourceTemplate, !src.isEmpty {
-                    defaultName = src.hasSuffix(".cmt") ? src : "\(src).cmt"
-                } else {
-                    let slug = title.lowercased()
-                        .replacingOccurrences(of: "[^a-z0-9]+", with: "_", options: .regularExpression)
-                        .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
-                    defaultName = "\(slug).cmt"
-                }
-                if silent, sourceTemplate != nil {
-                    FileHandler.overwriteTemplateForMap(
-                        content: content,
-                        templateFilename: defaultName,
-                        sourceMapPath: sourceMapPath
-                    ) { _ in }
-                } else {
-                    FileHandler.saveTemplateFile(content: content, defaultName: defaultName) { _ in }
-                }
-            }
-
-        case "openURL":
-            if let url = URL(string: body) {
-                NSWorkspace.shared.open(url)
-            }
-
-        case "attachNotesFile":
-            // JS sends JSON with { nodeId }. Opens NSOpenPanel restricted to .md;
-            // returns absolute path + content via window.notesFileAttached.
-            if let data = body.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-               let nodeId = json["nodeId"] {
-                let panel = NSOpenPanel()
-                panel.allowedContentTypes = [.init(filenameExtension: "md")!, .init(filenameExtension: "markdown")!, .text]
-                panel.allowsMultipleSelection = false
-                panel.canChooseDirectories = false
-                panel.canChooseFiles = true
-                panel.title = "Attach Markdown File"
-                panel.begin { [weak self] response in
-                    guard let self = self else { return }
-                    guard response == .OK, let url = panel.url else { return }
-                    let path = url.path
-                    let content = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
-                    let payload: [String: String] = ["nodeId": nodeId, "path": path, "content": content]
-                    if let jsonData = try? JSONSerialization.data(withJSONObject: payload),
-                       let jsonString = String(data: jsonData, encoding: .utf8) {
-                        self.webView?.evaluateJavaScript(
-                            "window.notesFileAttached?.(\(self.safeJSString(jsonString)));"
-                        ) { _, _ in }
-                    }
-                }
-            }
-
-        case "readNotesFile":
-            // JS sends JSON with { nodeId, path }. Reads file synchronously,
-            // returns content via window.notesFileRead.
-            if let data = body.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-               let nodeId = json["nodeId"],
-               let path = json["path"] {
-                let url = URL(fileURLWithPath: path)
-                let content = (try? String(contentsOf: url, encoding: .utf8))
-                let payload: [String: Any] = [
-                    "nodeId": nodeId,
-                    "path": path,
-                    "content": content ?? "",
-                    "exists": content != nil
-                ]
-                if let jsonData = try? JSONSerialization.data(withJSONObject: payload),
-                   let jsonString = String(data: jsonData, encoding: .utf8) {
-                    self.webView?.evaluateJavaScript(
-                        "window.notesFileRead?.(\(self.safeJSString(jsonString)));"
-                    ) { _, _ in }
-                }
-            }
-
-        case "writeNotesFile":
-            // JS sends JSON with { path, content }. Writes content to the
-            // absolute path (best-effort, silent on error).
-            if let data = body.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-               let path = json["path"],
-               let content = json["content"] {
-                let url = URL(fileURLWithPath: path)
-                try? content.write(to: url, atomically: true, encoding: .utf8)
-            }
-
-        default:
-            break
-        }
-    }
-
-    // MARK: - Swift → JS
-
-    /// Send file content to the React app for parsing and rendering.
-    func loadFileContent(_ content: String, filename: String, filePath: String? = nil) {
-        guard let data = content.data(using: .utf8) else { return }
-        let base64 = data.base64EncodedString()
-        let pathArg = filePath.map { safeJSString($0) } ?? "undefined"
-        let js = "window.loadFileContentBase64('\(base64)', \(safeJSString(filename)), \(pathArg));"
-        webView?.evaluateJavaScript(js) { _, error in
-            if let error = error {
-                logger.error("Bridge error: \(error)")
-            }
-        }
-    }
-
-    /// Request the canvas as a data URL from the React app.
-    func requestCanvasImage(completion: @escaping @MainActor (String) -> Void) {
-        webView?.evaluateJavaScript("window.getCanvasImage();") { result, _ in
-            if let dataURL = result as? String {
-                completion(dataURL)
+    /// Request the canvas as a data URL from the React app. JS owns the
+    /// canvas so this still uses evaluateJavaScript.
+    func requestCanvasImage() async -> String {
+        await withCheckedContinuation { (cont: CheckedContinuation<String, Never>) in
+            webView?.evaluateJavaScript("window.__bridge_getCanvasImage?.() ?? '';") { result, _ in
+                cont.resume(returning: (result as? String) ?? "")
             }
         }
     }
 
     /// Request the graph as markdown from the React app.
-    func requestGraphMarkdown(completion: @escaping @MainActor (String) -> Void) {
-        webView?.evaluateJavaScript("window.getGraphMarkdown();") { result, _ in
-            if let md = result as? String {
-                completion(md)
+    func requestGraphMarkdown() async -> String {
+        await withCheckedContinuation { (cont: CheckedContinuation<String, Never>) in
+            webView?.evaluateJavaScript("window.__bridge_getGraphMarkdown?.() ?? '';") { result, _ in
+                cont.resume(returning: (result as? String) ?? "")
             }
         }
+    }
+
+    // MARK: - Legacy completion-handler shims (transitional — used by ContentView)
+
+    /// Bridge entry from native menu command. Mirrors a JS-initiated openFile.
+    func loadFileContent(_ content: String, filename: String, filePath: String? = nil) {
+        sendEvent(method: .fileLoaded, payload: FileLoadedPayload(
+            content: content.data(using: .utf8)?.base64EncodedString() ?? "",
+            filename: filename,
+            filePath: filePath
+        ))
     }
 }

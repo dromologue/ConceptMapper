@@ -1,231 +1,219 @@
 /**
- * Typed bridge between the React SPA and the Swift WKWebView host.
+ * Typed JS↔Swift bridge.
  *
- * All window-level functions that Swift calls are registered here,
- * keeping App.tsx free of raw window mutations.
+ * One transport (`webkit.messageHandlers.bridge`) handles every JS→Swift
+ * request; one window callback (`window.__bridge_receive`) handles every
+ * Swift→JS response/event. Requests correlate to responses via a UUID. Events
+ * fan out to subscribers registered via `subscribe()`. Errors reject pending
+ * promises with a structured `BridgeRejection`.
+ *
+ * Mirror file: macos/ConceptMapper/BridgeProtocol.swift. Keep in sync.
  */
 
-import type { GraphIR, ConceptMapData, TaxonomyTemplate, NodeTypeConfig } from "../types/graph-ir";
-import type { FilterState } from "./filters";
-import type { TaxonomyWizardInitial } from "../ui/TaxonomyWizard";
+import {
+  BRIDGE_PROTOCOL_VERSION,
+  type BridgeErrorPayload,
+  type BridgeEventMap,
+  type BridgeEventMethod,
+  type BridgeRequestMap,
+  type BridgeRequestMethod,
+  type IncomingEnvelope,
+} from "../types/bridge-protocol";
 
 // ---------------------------------------------------------------------------
-// Types
+// Public API
 // ---------------------------------------------------------------------------
 
-/** Callbacks and state that the bridge needs from the React app. */
-export interface SwiftBridgeDeps {
-  // Loaders
-  loadFileContent: (content: string, filename: string, filePath?: string) => void;
-  parseMarkdown: (input: string) => { graph: GraphIR };
-  migrateFromParser: (data: GraphIR, tmpl?: TaxonomyTemplate | null) => { template: TaxonomyTemplate; data: ConceptMapData };
-  graphIRFromData: (template: TaxonomyTemplate, data: ConceptMapData) => GraphIR;
-  normalizeFencedKV: (input: string) => string;
-
-  // Setters
-  setGraphData: (ir: GraphIR) => void;
-  /** Fresh-load entry point — seeds the expand-level to maxDepth (REQ-088). */
-  loadGraphFresh: (ir: GraphIR | null) => void;
-  setTemplate: (t: TaxonomyTemplate | null) => void;
-  setSelectedNode: (n: null) => void;
-  setRevealedNodes: (s: Set<string>) => void;
-  setFilters: (f: FilterState) => void;
-  setError: (e: string | null) => void;
-  setSourceFilePath: (p: string | null) => void;
-  setEdgeColorOverrides: (c: Record<string, string>) => void;
-  setShowTaxonomyWizard: (v: boolean) => void;
-  setNativeMaps: (maps: { name: string; path: string }[]) => void;
-  setLoadedNativeTemplates: (updater: (prev: Map<string, TaxonomyWizardInitial>) => Map<string, TaxonomyWizardInitial>) => void;
-
-  // Getters (called synchronously by Swift)
-  getGraphData: () => GraphIR | null;
-  getNodeTypeConfigs: () => NodeTypeConfig[];
-  getEdgeColorOverrides: () => Record<string, string>;
-  exportToMarkdown: (data: GraphIR, configs: NodeTypeConfig[], overrides?: Record<string, string>) => string;
-
-  // Factory
-  createEmptyFilterState: () => FilterState;
+export class BridgeRejection extends Error {
+  readonly payload: BridgeErrorPayload;
+  constructor(payload: BridgeErrorPayload) {
+    super(`${payload.code}: ${payload.message}`);
+    this.name = "BridgeRejection";
+    this.payload = payload;
+  }
 }
-
-/** Post a message to the Swift WKWebView bridge (no-op outside macOS app). */
-export function postToSwift(handler: string, message: unknown): void {
-  const webkit = (window as unknown as Record<string, unknown>).webkit as
-    | { messageHandlers?: Record<string, { postMessage: (msg: unknown) => void }> }
-    | undefined;
-  webkit?.messageHandlers?.[handler]?.postMessage(message);
-}
-
-// ---------------------------------------------------------------------------
-// Registration
-// ---------------------------------------------------------------------------
 
 /**
- * Register all bridge functions on the window object so that Swift can call
- * them via evaluateJavaScript. Returns a cleanup function that removes them.
+ * Send a typed request to Swift. Returns a promise that resolves on the
+ * matching response or rejects with `BridgeRejection` on a matching error.
+ *
+ * Methods without a meaningful response (saveToPath, writeNotesFile, jsLog
+ * etc.) still settle the promise once Swift acknowledges; for fire-and-forget
+ * calls use `postToSwift`.
  */
-export function registerSwiftBridge(deps: SwiftBridgeDeps): () => void {
-  const win = window as unknown as Record<string, unknown>;
+export function sendToSwift<M extends BridgeRequestMethod>(
+  method: M,
+  payload: BridgeRequestMap[M],
+): Promise<unknown> {
+  const handler = getMessageHandler();
+  if (!handler) {
+    return Promise.reject(new BridgeRejection({
+      code: "internalError",
+      message: "bridge unavailable (not running inside native app)",
+    }));
+  }
+  const id = makeRequestId();
+  return new Promise<unknown>((resolve, reject) => {
+    pending.set(id, { resolve, reject });
+    handler.postMessage(JSON.stringify({
+      id,
+      version: BRIDGE_PROTOCOL_VERSION,
+      kind: "request",
+      method,
+      payload: payload ?? null,
+    }));
+  });
+}
 
-  win.loadFileContentBase64 = (base64: string, filename: string, filePath?: string) => {
-    try {
-      const content = atob(base64);
-      const bytes = Uint8Array.from(content, (c) => c.charCodeAt(0));
-      const decoded = new TextDecoder().decode(bytes);
-      // Restore edge colors from .cm header
-      const ecMatch = decoded.match(/<!--\s*edge-colors:\s*(\{.+?\})\s*-->/);
-      if (ecMatch) {
-        try { deps.setEdgeColorOverrides(JSON.parse(ecMatch[1])); } catch { /* ignore */ }
-      } else {
-        deps.setEdgeColorOverrides({});
-      }
-      deps.loadFileContent(decoded, filename, filePath);
-    } catch (err) {
-      console.error("[Bridge] decode error:", err);
-    }
-  };
+/**
+ * Fire-and-forget variant. Use for one-way notifications (jsLog, autosave)
+ * where the caller does not care about completion.
+ */
+export function postToSwift<M extends BridgeRequestMethod>(
+  method: M,
+  payload: BridgeRequestMap[M],
+): void {
+  const handler = getMessageHandler();
+  if (!handler) return;
+  handler.postMessage(JSON.stringify({
+    id: makeRequestId(),
+    version: BRIDGE_PROTOCOL_VERSION,
+    kind: "request",
+    method,
+    payload: payload ?? null,
+  }));
+}
 
-  win.loadMapWithTemplate = (mapBase64: string, _filename: string, filePath: string, tmplBase64: string) => {
-    try {
-      const mapBytes = Uint8Array.from(atob(mapBase64), (c) => c.charCodeAt(0));
-      const decoded = new TextDecoder().decode(mapBytes);
-      let tmpl: TaxonomyTemplate | null = null;
-      if (tmplBase64) {
-        try {
-          const tmplBytes = Uint8Array.from(atob(tmplBase64), (c) => c.charCodeAt(0));
-          const tmplStr = new TextDecoder().decode(tmplBytes);
-          if (tmplStr !== "null") tmpl = JSON.parse(tmplStr) as TaxonomyTemplate;
-        } catch { /* ignore */ }
-      }
-      const normalized = deps.normalizeFencedKV(decoded);
-      const result = deps.parseMarkdown(normalized);
-      const data = result.graph;
-      if (data.nodes.length > 0) {
-        const { template: migratedTemplate, data: migratedData } = deps.migrateFromParser(data, tmpl);
-        const ir = deps.graphIRFromData(migratedTemplate, migratedData);
-        const tmplMatch = decoded.match(/<!--\s*template:\s*(.+?)\s*-->/i);
-        const tmplRef = tmplMatch?.[1]?.trim();
-        if (tmplRef) ir.metadata.source_template = tmplRef.endsWith(".cmt") ? tmplRef : `${tmplRef}.cmt`;
-        const edgeColorsMatch = decoded.match(/<!--\s*edge-colors:\s*(\{.+?\})\s*-->/);
-        if (edgeColorsMatch) {
-          try { deps.setEdgeColorOverrides(JSON.parse(edgeColorsMatch[1]) as Record<string, string>); } catch { /* ignore */ }
-        } else {
-          deps.setEdgeColorOverrides({});
-        }
-        // Fresh load from the Swift bridge → seed level=0 so the map opens collapsed.
-        deps.loadGraphFresh(ir);
-        deps.setTemplate(migratedTemplate);
-        deps.setSelectedNode(null);
-        deps.setRevealedNodes(new Set());
-        deps.setFilters(deps.createEmptyFilterState());
-        deps.setError(null);
-        deps.setSourceFilePath(filePath ?? null);
-      }
-    } catch (err) {
-      console.error("[Bridge] loadMapWithTemplate error:", err);
-    }
-  };
+let idCounter = 0;
+function makeRequestId(): string {
+  // crypto.randomUUID requires a secure context; file:// URLs in WKWebView
+  // don't always qualify. Fall back to a process-local counter, which is fine
+  // because IDs only need to be unique within this app lifetime.
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    try { return crypto.randomUUID(); } catch { /* fall through */ }
+  }
+  idCounter += 1;
+  return `req-${idCounter}`;
+}
 
-  win.getGraphJSON = (): string => {
-    const graphData = deps.getGraphData();
-    if (!graphData) return "";
-    return deps.exportToMarkdown(graphData, deps.getNodeTypeConfigs(), deps.getEdgeColorOverrides());
-  };
+export type EventHandler<M extends BridgeEventMethod> = (payload: BridgeEventMap[M]) => void;
 
-  win.getGraphMarkdown = (): string => {
-    const graphData = deps.getGraphData();
-    if (!graphData) return "";
-    return deps.exportToMarkdown(graphData, deps.getNodeTypeConfigs(), deps.getEdgeColorOverrides());
-  };
-
-  win.getCanvasImage = (): string => {
-    const canvas = document.querySelector("canvas");
-    if (!canvas) return "";
-    return canvas.toDataURL("image/png");
-  };
-
-  win.taxonomySaved = (filePath: string) => {
-    deps.setSourceFilePath(filePath);
-  };
-
-  win.showTaxonomyWizard = () => {
-    deps.setShowTaxonomyWizard(true);
-  };
-
-  win.templatesLoaded = (json: string) => {
-    try {
-      const list = JSON.parse(json) as { name: string; path: string }[];
-      for (const t of list) {
-        postToSwift("loadTemplate", JSON.stringify({ path: t.path }));
-      }
-    } catch (err) {
-      console.error("Templates load error:", err);
-    }
-  };
-
-  win.templateLoaded = (json: string) => {
-    try {
-      const tmpl = JSON.parse(json) as TaxonomyTemplate;
-      if (deps.getGraphData()) {
-        deps.setTemplate(tmpl);
-      }
-      deps.setLoadedNativeTemplates((prev) => {
-        const next = new Map(prev);
-        next.set(tmpl.title, {
-          title: tmpl.title,
-          description: tmpl.description,
-          classifiers: tmpl.classifiers,
-          node_types: tmpl.node_types,
-          edge_types: tmpl.edge_types,
-        });
-        return next;
-      });
-    } catch (err) {
-      console.error("Template load error:", err);
-    }
-  };
-
-  win.mapsLoaded = (json: string) => {
-    try {
-      const list = JSON.parse(json) as { name: string; path: string }[];
-      deps.setNativeMaps(list);
-    } catch (err) {
-      console.error("Maps load error:", err);
-    }
-  };
-
-  // REQ-111: notes file attach / read callbacks. Re-emitted as CustomEvents so
-  // the NotesPane can subscribe without a tight coupling through the bridge.
-  win.notesFileAttached = (json: string) => {
-    try {
-      const detail = JSON.parse(json) as { nodeId: string; path: string; content: string };
-      window.dispatchEvent(new CustomEvent("notesFileAttached", { detail }));
-    } catch (err) {
-      console.error("notesFileAttached parse error:", err);
-    }
-  };
-
-  win.notesFileRead = (json: string) => {
-    try {
-      const detail = JSON.parse(json) as { nodeId: string; path: string; content: string; exists: boolean };
-      window.dispatchEvent(new CustomEvent("notesFileRead", { detail }));
-    } catch (err) {
-      console.error("notesFileRead parse error:", err);
-    }
-  };
-
-  // Cleanup: remove all bridge functions from window
+/**
+ * Subscribe to a Swift→JS event. Returns an unsubscribe function.
+ */
+export function subscribe<M extends BridgeEventMethod>(
+  method: M,
+  handler: EventHandler<M>,
+): () => void {
+  let bucket = subscribers.get(method);
+  if (!bucket) {
+    bucket = new Set();
+    subscribers.set(method, bucket);
+  }
+  bucket.add(handler as EventHandler<BridgeEventMethod>);
   return () => {
-    delete win.loadFileContentBase64;
-    delete win.loadMapWithTemplate;
-    delete win.getGraphJSON;
-    delete win.getGraphMarkdown;
-    delete win.getCanvasImage;
-    delete win.taxonomySaved;
-    delete win.showTaxonomyWizard;
-    delete win.templatesLoaded;
-    delete win.templateLoaded;
-    delete win.mapsLoaded;
-    delete win.notesFileAttached;
-    delete win.notesFileRead;
+    bucket?.delete(handler as EventHandler<BridgeEventMethod>);
   };
+}
+
+/**
+ * Register canvas/markdown sync getters that Swift invokes via
+ * `evaluateJavaScript`. They stay on the window object because Swift calls
+ * them directly to get a return value; the bridge can't intermediate that.
+ */
+export interface SyncGetters {
+  getGraphMarkdown: () => string;
+  getCanvasImage: () => string;
+}
+
+export function registerSyncGetters(getters: SyncGetters): () => void {
+  const win = window as unknown as Record<string, unknown>;
+  win.__bridge_getGraphMarkdown = () => getters.getGraphMarkdown();
+  win.__bridge_getCanvasImage = () => getters.getCanvasImage();
+  return () => {
+    delete win.__bridge_getGraphMarkdown;
+    delete win.__bridge_getCanvasImage;
+  };
+}
+
+/**
+ * Install the inbound receiver. Call once during app boot. Returns an
+ * uninstaller.
+ */
+export function installBridgeReceiver(): () => void {
+  const win = window as unknown as Record<string, unknown>;
+  win.__bridge_receive = (json: string) => {
+    let env: IncomingEnvelope;
+    try {
+      env = JSON.parse(json) as IncomingEnvelope;
+    } catch (err) {
+      console.error("[Bridge] failed to parse envelope:", err);
+      return;
+    }
+    if (env.version !== BRIDGE_PROTOCOL_VERSION) {
+      console.error(`[Bridge] version mismatch: expected ${BRIDGE_PROTOCOL_VERSION}, got ${env.version}`);
+      return;
+    }
+    switch (env.kind) {
+      case "response": {
+        const slot = pending.get(env.id);
+        if (slot) {
+          pending.delete(env.id);
+          slot.resolve(env.result);
+        }
+        return;
+      }
+      case "error": {
+        if (env.id) {
+          const slot = pending.get(env.id);
+          if (slot) {
+            pending.delete(env.id);
+            slot.reject(new BridgeRejection(env.error));
+            return;
+          }
+        }
+        console.error("[Bridge] unsolicited error:", env.error);
+        return;
+      }
+      case "event": {
+        const bucket = subscribers.get(env.method);
+        if (!bucket) return;
+        for (const h of bucket) {
+          try {
+            h(env.payload);
+          } catch (err) {
+            console.error(`[Bridge] subscriber for ${env.method} threw:`, err);
+          }
+        }
+        return;
+      }
+    }
+  };
+  return () => {
+    delete win.__bridge_receive;
+  };
+}
+
+/** True when running inside the WKWebView host. */
+export function isNativeApp(): boolean {
+  return !!getMessageHandler();
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+type PendingResolver = {
+  resolve: (value: unknown) => void;
+  reject: (err: BridgeRejection) => void;
+};
+
+const pending = new Map<string, PendingResolver>();
+const subscribers = new Map<BridgeEventMethod, Set<EventHandler<BridgeEventMethod>>>();
+
+function getMessageHandler(): { postMessage: (msg: string) => void } | undefined {
+  const webkit = (window as unknown as Record<string, unknown>).webkit as
+    | { messageHandlers?: Record<string, { postMessage: (msg: string) => void }> }
+    | undefined;
+  return webkit?.messageHandlers?.bridge;
 }

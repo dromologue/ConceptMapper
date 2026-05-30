@@ -32,9 +32,21 @@ interface GraphState {
   // Core setters
   setGraphData: (data: GraphIR | null) => void;
   setSelectedNode: (node: GraphNode | null) => void;
+  setSelectedEdge: (edge: GraphEdge | null) => void;
+  setEdgePopoverPos: (pos: { x: number; y: number } | null) => void;
+  setRevealedNodes: (s: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
+  setInteractionMode: (mode: InteractionMode) => void;
+  setEdgeSource: (id: string | null) => void;
+  setEdgeTarget: (id: string | null) => void;
   setViewMode: (mode: string) => void;
   setFilters: (fn: FilterState | ((prev: FilterState) => FilterState)) => void;
   setCenterOnNode: (v: { id: string; ts: number } | null) => void;
+  /**
+   * Load a brand-new graph from disk / a new wizard / Swift bridge. Clears
+   * undo/redo history and view selections. Does NOT push onto the undo stack
+   * (a fresh load is not an undoable mutation).
+   */
+  loadGraphFresh: (data: GraphIR | null) => void;
 
   // Node operations
   handleSelectNode: (node: GraphNode | null) => void;
@@ -94,11 +106,31 @@ export const useGraphStore = create<GraphState>((set, get) => ({
 
   setGraphData: (data) => set({ graphData: data }),
   setSelectedNode: (node) => set({ selectedNode: node }),
+  setSelectedEdge: (edge) => set({ selectedEdge: edge }),
+  setEdgePopoverPos: (pos) => set({ edgePopoverPos: pos }),
+  setRevealedNodes: (s) => set((prev) => ({
+    revealedNodes: typeof s === 'function' ? s(prev.revealedNodes) : s,
+  })),
+  setInteractionMode: (mode) => set({ interactionMode: mode }),
+  setEdgeSource: (id) => set({ edgeSource: id }),
+  setEdgeTarget: (id) => set({ edgeTarget: id }),
   setViewMode: (mode) => set({ viewMode: mode, revealedNodes: new Set() }),
   setFilters: (fn) => set((s) => ({
     filters: typeof fn === 'function' ? fn(s.filters) : fn,
   })),
   setCenterOnNode: (v) => set({ centerOnNode: v }),
+  loadGraphFresh: (data) => set({
+    graphData: data,
+    history: [],
+    future: [],
+    selectedNode: null,
+    selectedEdge: null,
+    edgePopoverPos: null,
+    revealedNodes: new Set(),
+    edgeSource: null,
+    edgeTarget: null,
+    interactionMode: 'normal',
+  }),
 
   handleSelectNode: (node) => {
     const s = get();

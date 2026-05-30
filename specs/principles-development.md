@@ -64,6 +64,25 @@ LLM communication uses a polymorphic `LLMClient` interface (`web/src/llm/client.
 - `OllamaLLMClient`: Direct HTTP to local Ollama API (browser)
 - `createLLMClient()` factory selects the right implementation
 
+### 11. Typed Bridge Contract
+The JS↔Swift bridge protocol is the load-bearing contract between the React SPA and the macOS shell. Discipline:
+
+- One transport per direction. `webkit.messageHandlers.bridge` carries every JS→Swift message; `window.__bridge_receive` carries every Swift→JS message. Adding a new named handler is not allowed — extend the method enum.
+- Protocol files are mirrored: `macos/ConceptMapper/BridgeProtocol.swift` and `web/src/types/bridge-protocol.ts`. Adding or changing a method touches both.
+- Every method has a typed payload. Untyped `[String: Any]` payloads on the Swift side or `any` on the TS side are anti-patterns.
+- Requests correlate to responses via a UUID `id`. Events have `id: null`. Errors echo the originating `id` where applicable.
+- Errors are structured (`BridgeError` / `BridgeErrorCode`). NSAlert from inside IO code is forbidden — IO throws, the dispatcher emits an error envelope, the JS promise rejects with `BridgeRejection`.
+- `BRIDGE_PROTOCOL_VERSION` increments when the wire format changes. Mismatched versions return a `versionMismatch` error rather than silently dropping the message.
+
+### 12. Async-First Swift IO
+File operations in `FileHandler.swift` are `async`/`async throws`. NSOpenPanel/NSSavePanel are wrapped with `withCheckedContinuation` helpers (`runSavePanel`, `runOpenPanel`). New IO code must not use completion handlers. UI side-effects (NSAlert, etc.) live at the call site, not inside the IO function.
+
+### 13. Single State-Management Discipline
+Zustand is the single state-management strategy for the React SPA. App.tsx may not maintain shadow copies of state that lives in `useGraphStore`, `useUIStore`, etc. New cross-cutting state goes into an appropriate store; local UI state (DOM refs, transient input values) stays in `useState`/`useRef`. Stores are testable in isolation via `getState()`/`setState()` without React rendering.
+
+### 14. Public API Facade
+The `concept-mapper-core` Rust crate exposes a curated public surface in `src/lib.rs`. Internal modules are `#[doc(hidden)] pub mod` so integration tests reach them while external consumers see only `parse_document`, the IR types, and the error types. Reaching into internals from production code is an anti-pattern.
+
 ## Patterns to Follow
 - `cargo test` for Rust, Vitest for React — both run in CI (GitHub Actions)
 - Serde for JSON serialization of the IR

@@ -18,30 +18,35 @@ struct ContentView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openFile)) { _ in
-            FileHandler.openFile { content, filename, filePath in
-                bridge.loadFileContent(content, filename: filename, filePath: filePath)
+            Task {
+                if let (content, filename, filePath) = try? await FileHandler.openFile() {
+                    bridge.loadFileContent(content, filename: filename, filePath: filePath)
+                }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .saveFile)) { _ in
-            bridge.requestGraphMarkdown { md in
-                FileHandler.saveFile(content: md, type: "cm", title: "Save Concept Map")
+            Task {
+                let md = await bridge.requestGraphMarkdown()
+                _ = try? await FileHandler.saveFile(content: md, type: "cm", title: "Save Concept Map")
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .exportImage)) { _ in
-            bridge.requestCanvasImage { dataURL in
-                FileHandler.saveImageFromDataURL(dataURL)
+            Task {
+                let dataURL = await bridge.requestCanvasImage()
+                try? await FileHandler.saveImageFromDataURL(dataURL)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .exportMarkdown)) { _ in
-            bridge.requestGraphMarkdown { md in
-                FileHandler.saveFile(content: md, type: "cm", title: "Export Concept Map")
+            Task {
+                let md = await bridge.requestGraphMarkdown()
+                _ = try? await FileHandler.saveFile(content: md, type: "cm", title: "Export Concept Map")
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .showHelp)) { _ in
             showHelp.toggle()
         }
         .onReceive(NotificationCenter.default.publisher(for: .newTaxonomy)) { _ in
-            bridge.webView?.evaluateJavaScript("window.showTaxonomyWizard?.();") { _, _ in }
+            bridge.emitShowTaxonomyWizard()
         }
     }
 }
@@ -204,12 +209,11 @@ struct WebView: NSViewRepresentable {
         let config = WKWebViewConfiguration()
         let userContentController = WKUserContentController()
 
-        // Register JS → Swift message handlers
-        for handler in ["openFile", "exportImage", "exportMarkdown", "saveToPath", "saveToDownloads", "saveNewTaxonomy", "listTemplates", "listMaps", "loadMap", "loadTemplate", "saveTemplate", "openURL", "jsLog", "attachNotesFile", "readNotesFile", "writeNotesFile"] {
-            userContentController.add(bridge, name: handler)
-        }
+        // Single typed transport plus a separate jsLog channel for early-boot
+        // error reporting (fires before the bridge is fully wired).
+        userContentController.add(bridge, name: "bridge")
+        userContentController.add(bridge, name: "jsLog")
 
-        // Inject JS error catcher that reports to Swift
         let errorScript = WKUserScript(
             source: """
             window.onerror = function(msg, url, line, col, error) {

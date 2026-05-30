@@ -11,23 +11,54 @@ import { EDGE_LABELS } from "../utils/edge-labels";
 import { getNodeColor, applyDepthLightness } from "./node-color";
 import { computeHierarchy, type HierarchyInfo } from "./hierarchy";
 import { communityColor } from "../ui/AnalysisPanel";
-import { computeFlowDepths, computeFlowPositions, computeRadialTargets } from "./layout-presets";
 import { truncateLabel, LABEL_TRUNCATE_LENGTH } from "../utils/label";
+import {
+  hashCode,
+  seededRandom,
+  initialNodePosition,
+  newNodeSpawnPosition,
+  regionClusterRadius,
+} from "./layout/regions";
+import {
+  findNodeAt as hitTestNode,
+  findEdgeAt as hitTestEdge,
+  pointerToWorld,
+  pointInCollapseIndicator,
+  marqueeToRect,
+  isMarqueeUsable,
+  EDGE_HIT_THRESHOLD,
+} from "./hit-testing";
+import {
+  applyLayoutForces as applyLayoutForcesImpl,
+  explodedFactor,
+  ALPHA_DECAY,
+  ALPHA_RESTART,
+  ALPHA_RESTART_MILD,
+  ALPHA_DRAG_TARGET,
+  COLLISION_PADDING_NORMAL,
+  COLLISION_PADDING_EXPLODED,
+  LINK_DISTANCE_BASE,
+  LINK_FORCE_STRENGTH,
+  useGraphSimulation,
+} from "./useGraphSimulation";
+import {
+  useZoomController,
+  fitTransform,
+  bboxOf,
+  zoomByCenterTransform,
+  centerOnNodeTransform,
+  marqueeZoomTransform,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  ZOOM_IN_FACTOR,
+  ZOOM_OUT_FACTOR,
+  CENTER_ON_NODE_SCALE,
+  FIT_TO_VIEW_DURATION,
+  TRANSITION_DURATION,
+  ZOOM_BUTTON_DURATION,
+} from "./useZoomController";
 
 // --- Organic rendering helpers ---
-
-/** Deterministic hash from a string, for stable jitter per node */
-function hashCode(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  return h;
-}
-
-/** Deterministic pseudo-random from seed, returns -1 to 1 */
-function seededRandom(seed: number, index: number): number {
-  const x = Math.sin(seed * 9301 + index * 49297 + 233280) * 43758.5453;
-  return (x - Math.floor(x)) * 2 - 1;
-}
 
 /** Draw a jittered circle for region backgrounds */
 function drawOrganicCircle(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, seed: number) {
@@ -99,107 +130,10 @@ function drawMindmapBlob(
   ctx.closePath();
 }
 
-/** Compute centroid positions for region layout, arranged in a grid */
-function computeRegionCentroids(
-  regionCls: Classifier,
-  width: number,
-  height: number,
-): Map<string, { x: number; y: number }> {
-  const n = regionCls.values.length;
-  const cols = Math.ceil(Math.sqrt(n));
-  const rows = Math.ceil(n / cols);
-  const result = new Map<string, { x: number; y: number }>();
-  regionCls.values.forEach((v, i) => {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const x = width * (X_LAYOUT_START + (X_LAYOUT_RANGE * col) / Math.max(cols - 1, 1));
-    const y = height * (Y_LAYOUT_START + (Y_LAYOUT_RANGE * row) / Math.max(rows - 1, 1));
-    result.set(v.id, { x, y });
-  });
-  return result;
-}
-
-/** Compute proportional column positions based on node counts per value.
- *  Columns with more nodes get more width. Minimum width ensures small groups are visible. */
-function computeRegionColumns(
-  regionCls: Classifier,
-  width: number,
-  nodeCounts?: Map<string, number>,
-): { positions: Map<string, number>; widths: Map<string, number>; leftEdges: Map<string, number> } {
-  const n = regionCls.values.length;
-  if (n === 0) return { positions: new Map(), widths: new Map(), leftEdges: new Map() };
-
-  const minColFraction = 0.06; // minimum 6% of width for any column
-  const total = nodeCounts ? [...nodeCounts.values()].reduce((a, b) => a + b, 0) : 0;
-
-  // Compute raw proportions, then enforce minimums
-  const rawFractions = regionCls.values.map((v) => {
-    const count = nodeCounts?.get(v.id) ?? 0;
-    return total > 0 ? Math.max(minColFraction, count / total) : 1 / n;
-  });
-  const fractionSum = rawFractions.reduce((a, b) => a + b, 0);
-  const normalized = rawFractions.map((f) => f / fractionSum); // normalize to sum=1
-
-  const positions = new Map<string, number>();
-  const widths = new Map<string, number>();
-  const leftEdges = new Map<string, number>();
-  let x = 0;
-  regionCls.values.forEach((v, i) => {
-    const colW = width * normalized[i];
-    leftEdges.set(v.id, x);
-    widths.set(v.id, colW);
-    positions.set(v.id, x + colW / 2); // center of column
-    x += colW;
-  });
-  return { positions, widths, leftEdges };
-}
-
-// --- Configuration constants ---
-
-// D3 force simulation
-const CHARGE_STRENGTH_NORMAL = -400;
-const CHARGE_STRENGTH_EXPLODED = -1500;
-const CHARGE_DISTANCE_MAX_NORMAL = 800;
-const CHARGE_DISTANCE_MAX_EXPLODED = 3000;
-const COLLISION_PADDING_NORMAL = 12;
-const COLLISION_PADDING_EXPLODED = 40;
-const LINK_DISTANCE_BASE = 120;
-const LINK_FORCE_STRENGTH = 0.2;
-const ALPHA_DECAY = 0.015;
-const ALPHA_RESTART = 0.8;
-const ALPHA_RESTART_MILD = 0.3;
-const ALPHA_DRAG_TARGET = 0.3;
-
-// Layout axis force strengths
-const X_AXIS_CLASSIFIER_STRENGTH = 0.3;
-const X_AXIS_CENTER_STRENGTH = 0.05;
-const Y_AXIS_CLASSIFIER_STRENGTH = 0.5;
-const Y_AXIS_CENTER_STRENGTH = 0.05;
-// Region positioning is handled in the tick handler, not via D3 forces
-// (region centroid pull strength is hardcoded in tick handler as 0.15)
-
-// Layout positioning offsets (fraction of canvas dimension)
-const X_LAYOUT_START = 0.15;
-const X_LAYOUT_RANGE = 0.7;
-const Y_LAYOUT_START = 0.1;
-const Y_LAYOUT_RANGE = 0.8;
-const INITIAL_SPREAD_FACTOR = 0.6;
-const NEW_NODE_SPAWN_SPREAD = 200;
-
-// Fit-to-view and zoom
-const FIT_TO_VIEW_PADDING = 80;
-const FIT_TO_VIEW_MAX_SCALE = 1.2;
-const MARQUEE_ZOOM_SCALE = 0.9;
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 5;
-const ZOOM_IN_FACTOR = 1.5;
-const ZOOM_OUT_FACTOR = 0.67;
-const CENTER_ON_NODE_SCALE = 1.5;
+// --- Configuration constants (rendering-only; layout / zoom / simulation
+// constants live in their own modules) ---
 
 // Animation durations (ms)
-const FIT_TO_VIEW_DURATION = 400;
-const TRANSITION_DURATION = 500;
-const ZOOM_BUTTON_DURATION = 300;
 const COLLAPSE_FIT_DELAY = 600;
 const RESIZE_FIT_DELAY = 500;
 
@@ -207,10 +141,8 @@ const RESIZE_FIT_DELAY = 500;
 const DEFAULT_CANVAS_WIDTH = 800;
 const DEFAULT_CANVAS_HEIGHT = 600;
 
-// Visual: hit detection
-const NODE_HIT_PADDING = 4;
-const EDGE_HIT_THRESHOLD = 8;
-const MARQUEE_MIN_SIZE = 10;
+// Visual: hit detection (drag threshold lives here; node/edge/marquee constants
+// are imported from hit-testing.ts to keep them adjacent to the algorithms).
 const DRAG_THRESHOLD = 3;
 
 // Visual: legacy node radii
@@ -298,14 +230,6 @@ const PILL_WIDTH_SCALE = 2.4;
 const PILL_HEIGHT_SCALE = 1.2;
 const REVEALED_NODE_SCALE = 0.7;
 
-// Layout preset: flow (directed/hierarchical)
-const FLOW_Y_STRENGTH = 0.8;
-const FLOW_X_STRENGTH = 0.5;
-
-// Layout preset: radial (centrality-based)
-const RADIAL_POSITION_STRENGTH = 0.4;
-const RADIAL_CHARGE = -350;
-
 interface Props {
   data: GraphIR;
   onSelectNode: (node: GraphNode | null) => void;
@@ -368,8 +292,12 @@ function getNodeShape(node: SimNode, nodeTypeConfigs: NodeTypeConfig[]): NodeSha
 
 export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, revealedNodes, interactionMode, edgeSourceId, filters, theme, look, nodeTypeConfigs, collapsedNodes, hiddenIds, onToggleCollapse, onSelectEdge, selectedEdgeKey, centerOnNode, fitToViewTrigger, zoomAction, onRegisterFitToView, onRegisterZoom, hiddenLabelTypes, communityOverlay, highlightedPath, highlightedCommunity, exploded, layoutPreset, fontScale = 1, edgeTypeConfigs, focusMode = true }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
-  const transformRef = useRef(d3.zoomIdentity);
+  // Simulation lifecycle — owned by useGraphSimulation; the coordinator wires
+  // up the tick handler and pointer events that read the runtime refs below.
+  const { simRef, simInitializedRef, regionCachesRef } = useGraphSimulation();
+  // Zoom lifecycle — owned by useZoomController; the coordinator attaches the
+  // zoom behaviour to the canvas and reads the current transform when drawing.
+  const { zoomBehaviorRef, transformRef } = useZoomController();
   const nodesRef = useRef<SimNode[]>([]);
   const linksRef = useRef<SimLink[]>([]);
   const hoveredRef = useRef<string | null>(null);
@@ -381,7 +309,6 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const interactionRef = useRef(interactionMode);
   const edgeSourceRef = useRef(edgeSourceId);
   const filtersRef = useRef(filters);
-  const zoomBehaviorRef = useRef<d3.ZoomBehavior<HTMLCanvasElement, unknown> | null>(null);
   const onSelectNodeRef = useRef(onSelectNode);
   const dataRef = useRef(data);
   // BFS depths for the depth-lightness ramp on node colours. Recomputed on
@@ -392,12 +319,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   const isMarqueeRef = useRef(false);
   const canvasSizeRef = useRef({ width: DEFAULT_CANVAS_WIDTH, height: DEFAULT_CANVAS_HEIGHT });
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
-  const simInitializedRef = useRef(false);
   const classifiersRef = useRef<Classifier[]>([]);
-  const regionColumnWidthsRef = useRef<Map<string, number>>(new Map());
-  const regionColumnPositionsRef = useRef<Map<string, number>>(new Map());
-  const regionColumnLeftEdgesRef = useRef<Map<string, number>>(new Map());
-  const regionTargetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const explodedRef = useRef(exploded ?? false);
   const layoutPresetRef = useRef<LayoutPreset>(layoutPreset ?? "force");
   const fontScaleRef = useRef(fontScale);
@@ -455,7 +377,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const simulation = simRef.current;
 
       const isExploded = explodedRef.current;
-      const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
+      const factor = explodedFactor(isExploded, nodesRef.current.length);
       applyLayoutForces(simulation, width * factor, height * factor, newCls, isExploded, layoutPresetRef.current);
       simulation.alpha(ALPHA_RESTART).restart();
     }
@@ -498,105 +420,25 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
   useEffect(() => { selectedEdgeKeyRef.current = selectedEdgeKey; redraw(); }, [selectedEdgeKey]);
   /* eslint-enable react-hooks/exhaustive-deps */
 
-  /** Apply all layout forces to the simulation using given virtual dimensions */
+  /**
+   * Apply all layout forces to the simulation using given virtual dimensions.
+   * Thin wrapper over `applyLayoutForcesImpl` (useGraphSimulation.ts) that
+   * supplies the live node/edge data and the region cache slot.
+   */
   function applyLayoutForces(simulation: d3.Simulation<SimNode, SimLink>, vw: number, vh: number, cls: Classifier[], isExploded: boolean, preset: LayoutPreset = "force") {
-    const xCls = cls.find((c) => c.layout === "x");
-    const yCls = cls.find((c) => c.layout === "y");
-
-    // Pre-compute layout targets for presets when no classifier overrides
-    let radialTargets: Map<string, { x: number; y: number }> | null = null;
-    let flowPositions: Map<string, { x: number; y: number }> | null = null;
-    if (preset === "radial" && !xCls && !yCls) {
-      radialTargets = computeRadialTargets(nodesRef.current, dataRef.current.edges, vw / 2, vh / 2);
-    }
-    if (preset === "flow" && (!xCls || !yCls)) {
-      // Build edge-directedness map from the edge data itself
-      const edgeDirected = new Map<string, boolean>();
-      let hasAnyDirected = false;
-      for (const e of dataRef.current.edges) {
-        edgeDirected.set(e.from + "→" + e.to, e.directed);
-        if (e.directed) hasAnyDirected = true;
-      }
-      // If no edges are directed, treat all edges as directed for flow layout
-      if (!hasAnyDirected) {
-        for (const e of dataRef.current.edges) {
-          edgeDirected.set(e.from + "→" + e.to, true);
-        }
-      }
-      const depths = computeFlowDepths(nodesRef.current, dataRef.current.edges, edgeDirected);
-      flowPositions = computeFlowPositions(nodesRef.current, dataRef.current.edges, edgeDirected, depths);
-    }
-
-    // X-axis force
-    if (xCls) {
-      const sorted = [...xCls.values].sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
-      const xPos = new Map<string, number>();
-      sorted.forEach((v, i) => { xPos.set(v.id, vw * (X_LAYOUT_START + (X_LAYOUT_RANGE * i) / Math.max(sorted.length - 1, 1))); });
-      simulation.force("x", d3.forceX<SimNode>((d) => {
-        const val = d.classifiers?.[xCls.id];
-        return val ? xPos.get(String(val)) ?? vw / 2 : vw / 2;
-      }).strength(X_AXIS_CLASSIFIER_STRENGTH));
-    } else if (radialTargets) {
-      simulation.force("x", d3.forceX<SimNode>((d) => radialTargets!.get(d.id)?.x ?? vw / 2).strength(RADIAL_POSITION_STRENGTH));
-    } else if (flowPositions) {
-      simulation.force("x", d3.forceX<SimNode>((d) => flowPositions!.get(d.id)?.x ?? vw / 2).strength(FLOW_X_STRENGTH));
-    } else {
-      simulation.force("x", d3.forceX<SimNode>(vw / 2).strength(X_AXIS_CENTER_STRENGTH));
-    }
-
-    // Y-axis force
-    if (yCls) {
-      const sorted = [...yCls.values].sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
-      const yPos = new Map<string, number>();
-      sorted.forEach((v, i) => { yPos.set(v.id, vh * (Y_LAYOUT_START + (Y_LAYOUT_RANGE * i) / Math.max(sorted.length - 1, 1))); });
-      simulation.force("y", d3.forceY<SimNode>((d) => {
-        const val = d.classifiers?.[yCls.id];
-        return val ? yPos.get(String(val)) ?? vh / 2 : vh / 2;
-      }).strength(Y_AXIS_CLASSIFIER_STRENGTH));
-    } else if (flowPositions) {
-      simulation.force("y", d3.forceY<SimNode>((d) => flowPositions!.get(d.id)?.y ?? vh / 2).strength(FLOW_Y_STRENGTH));
-    } else if (radialTargets) {
-      simulation.force("y", d3.forceY<SimNode>((d) => radialTargets!.get(d.id)?.y ?? vh / 2).strength(RADIAL_POSITION_STRENGTH));
-    } else {
-      simulation.force("y", d3.forceY<SimNode>(vh / 2).strength(Y_AXIS_CENTER_STRENGTH));
-    }
-
-    // Charge and collision — stronger when exploded, weaker for radial
-    const chargeStrength = isExploded ? CHARGE_STRENGTH_EXPLODED
-      : (preset === "radial" && !xCls && !yCls) ? RADIAL_CHARGE
-      : CHARGE_STRENGTH_NORMAL;
-    const collideExtra = isExploded ? COLLISION_PADDING_EXPLODED : COLLISION_PADDING_NORMAL;
-    simulation.force("charge", d3.forceManyBody().strength(chargeStrength).distanceMax(isExploded ? CHARGE_DISTANCE_MAX_EXPLODED : CHARGE_DISTANCE_MAX_NORMAL));
-    const fontCollideExtra = (fontScaleRef.current - 1) * 20; // extra padding when font is scaled up
-    simulation.force("collide", d3.forceCollide<SimNode>((d) => getNodeRadius(d, "full", nodeTypeConfigsRef.current) + collideExtra + Math.max(0, fontCollideExtra)));
-
-    // Region/column positioning — computed here, applied in the tick handler.
-    // NO D3 forces are used for regions; the tick handler directly sets node positions.
-    const regionCls = cls.find((c) => c.layout === "region" || c.layout === "region-column");
-    simulation.force("regionX", null);
-    simulation.force("regionY", null);
-    if (regionCls) {
-      if (regionCls.layout === "region-column") {
-        const counts = new Map<string, number>();
-        for (const n of nodesRef.current) { const v = n.classifiers?.[regionCls.id]; if (v) counts.set(String(v), (counts.get(String(v)) ?? 0) + 1); }
-        const { positions, widths, leftEdges } = computeRegionColumns(regionCls, vw, counts);
-        regionColumnPositionsRef.current = positions;
-        regionColumnWidthsRef.current = widths;
-        regionColumnLeftEdgesRef.current = leftEdges;
-        regionTargetsRef.current = new Map();
-      } else {
-        const centroids = computeRegionCentroids(regionCls, vw, vh);
-        regionTargetsRef.current = centroids;
-        regionColumnPositionsRef.current = new Map();
-        regionColumnWidthsRef.current = new Map();
-        regionColumnLeftEdgesRef.current = new Map();
-      }
-    } else {
-      regionColumnPositionsRef.current = new Map();
-      regionColumnWidthsRef.current = new Map();
-      regionColumnLeftEdgesRef.current = new Map();
-      regionTargetsRef.current = new Map();
-    }
+    applyLayoutForcesImpl({
+      simulation,
+      vw,
+      vh,
+      classifiers: cls,
+      isExploded,
+      preset,
+      nodes: nodesRef.current,
+      edges: dataRef.current.edges,
+      nodeTypeConfigs: nodeTypeConfigsRef.current,
+      fontCollideExtra: (fontScaleRef.current - 1) * 20,
+      regionCaches: regionCachesRef.current,
+    });
   }
 
   // Explode/collapse: recalculate forces using a larger virtual canvas
@@ -607,7 +449,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const { width, height } = canvasSizeRef.current;
     const cls = classifiersRef.current;
     const isExploded = exploded ?? false;
-    const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
+    const factor = explodedFactor(isExploded, nodesRef.current.length);
     const vw = width * factor;
     const vh = height * factor;
     applyLayoutForces(simulation, vw, vh, cls, isExploded, layoutPresetRef.current);
@@ -650,26 +492,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       return isNodePrimary(n, mode, configs) || revealed.has(n.id);
     });
     const fitNodes = visible.length > 0 ? visible : ns;
-
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    for (const n of fitNodes) {
-      if (n.x < minX) minX = n.x;
-      if (n.x > maxX) maxX = n.x;
-      if (n.y < minY) minY = n.y;
-      if (n.y > maxY) maxY = n.y;
-    }
-    const padding = FIT_TO_VIEW_PADDING;
-    const gw = maxX - minX + padding * 2;
-    const gh = maxY - minY + padding * 2;
     const { width: cw, height: ch } = canvasSizeRef.current;
-    const scale = Math.min(cw / gw, ch / gh, FIT_TO_VIEW_MAX_SCALE);
-    const cx = (minX + maxX) / 2;
-    const cy = (minY + maxY) / 2;
-    const t = d3.zoomIdentity
-      .translate(cw / 2, ch / 2)
-      .scale(scale)
-      .translate(-cx, -cy);
-    if (zoomBehaviorRef.current) {
+    const t = fitTransform(bboxOf(fitNodes), cw, ch);
+    if (t && zoomBehaviorRef.current) {
       d3.select(canvas)
         .transition()
         .duration(FIT_TO_VIEW_DURATION)
@@ -698,7 +523,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     if (simulation && simInitializedRef.current) {
       const cls = classifiersRef.current;
       const isExploded = explodedRef.current;
-      const factor = isExploded ? Math.max(3, Math.ceil(Math.sqrt(nodesRef.current.length) / 3)) : 1;
+      const factor = explodedFactor(isExploded, nodesRef.current.length);
       applyLayoutForces(simulation, width * factor, height * factor, cls, isExploded, layoutPresetRef.current);
       simulation.alpha(ALPHA_RESTART_MILD).restart();
       setTimeout(() => fitToView(), RESIZE_FIT_DELAY);
@@ -725,10 +550,10 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     resizeCanvas();
     const { width, height } = canvasSizeRef.current;
 
-    const spread = Math.min(width, height) * INITIAL_SPREAD_FACTOR;
-    const nodes: SimNode[] = data.nodes.map((n) => ({
-      ...n, x: width / 2 + (Math.random() - 0.5) * spread, y: height / 2 + (Math.random() - 0.5) * spread,
-    }));
+    const nodes: SimNode[] = data.nodes.map((n) => {
+      const p = initialNodePosition(width, height);
+      return { ...n, x: p.x, y: p.y };
+    });
     const nodeMap = new Map(nodes.map((n) => [n.id, n]));
     const links: SimLink[] = data.edges
       .filter((e) => nodeMap.has(e.from) && nodeMap.has(e.to))
@@ -755,7 +580,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const rCls = classifiersRef.current.find((c) => c.layout === "region-column" || c.layout === "region");
       if (rCls?.layout === "region-column") {
         // Hard-pin nodes to their column center line
-        const colPositions = regionColumnPositionsRef.current;
+        const colPositions = regionCachesRef.current.columnPositions;
         for (const n of nodesRef.current) {
           const val = n.classifiers?.[rCls.id];
           if (val) {
@@ -766,7 +591,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       } else if (rCls?.layout === "region") {
         // Hard-constrain nodes to stay within their region centroid area.
         // Each tick: snap node toward centroid, allow only small offset from collision.
-        const targets = regionTargetsRef.current;
+        const targets = regionCachesRef.current.centroids;
         const maxDrift = 120; // max distance a node can drift from centroid (collision spreads them)
         for (const n of nodesRef.current) {
           const val = n.classifiers?.[rCls.id];
@@ -894,15 +719,12 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       let hoverIndicator = false;
       if (!hitNode) {
         const t = transformRef.current;
-        const mx = (event.offsetX - t.x) / t.k;
-        const my = (event.offsetY - t.y) / t.k;
+        const { x: mx, y: my } = pointerToWorld(event.offsetX, event.offsetY, t);
         const configs = nodeTypeConfigsRef.current;
         for (const node of nodesRef.current) {
           const r = getNodeRadius(node, viewModeRef.current, configs);
           const indicatorR = Math.max(COLLAPSE_INDICATOR_MIN_R, COLLAPSE_INDICATOR_BASE_R / t.k);
-          const ix = node.x + r + indicatorR + COLLAPSE_INDICATOR_OFFSET;
-          const iy = node.y - r;
-          if (Math.sqrt((mx - ix) ** 2 + (my - iy) ** 2) <= indicatorR * COLLAPSE_INDICATOR_HIT_SCALE) {
+          if (pointInCollapseIndicator(mx, my, node, r, indicatorR, COLLAPSE_INDICATOR_OFFSET, COLLAPSE_INDICATOR_HIT_SCALE)) {
             hoverIndicator = true;
             break;
           }
@@ -971,20 +793,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         marqueeRef.current = null;
         canvas.releasePointerCapture(event.pointerId);
 
-        const mw = Math.abs(m.endX - m.startX);
-        const mh = Math.abs(m.endY - m.startY);
-        if (mw > MARQUEE_MIN_SIZE && mh > MARQUEE_MIN_SIZE) {
-          const mx = Math.min(m.startX, m.endX);
-          const my = Math.min(m.startY, m.endY);
+        if (isMarqueeUsable(m)) {
           const size = canvasSizeRef.current;
-          const scale = Math.min(size.width / mw, size.height / mh) * MARQUEE_ZOOM_SCALE;
-          const cx = mx + mw / 2;
-          const cy = my + mh / 2;
-          const newTransform = d3.zoomIdentity
-            .translate(size.width / 2, size.height / 2)
-            .scale(scale)
-            .translate(-cx, -cy);
-
+          const newTransform = marqueeZoomTransform(marqueeToRect(m), size.width, size.height);
           if (zoomBehaviorRef.current) {
             d3.select(canvas)
               .transition()
@@ -1013,15 +824,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           let hitIndicator = false;
           if (clickedNode && onToggleCollapseRef.current && hasChildrenRef.current.has(clickedNode.id)) {
             const t = transformRef.current;
-            const mx = (event.offsetX - t.x) / t.k;
-            const my = (event.offsetY - t.y) / t.k;
+            const { x: mx, y: my } = pointerToWorld(event.offsetX, event.offsetY, t);
             const configs = nodeTypeConfigsRef.current;
             const r = getNodeRadius(clickedNode as SimNode, viewModeRef.current, configs);
             const indicatorR = Math.max(COLLAPSE_INDICATOR_MIN_R, COLLAPSE_INDICATOR_BASE_R / t.k);
-            const ix = clickedNode.x + r + indicatorR + COLLAPSE_INDICATOR_OFFSET;
-            const iy = clickedNode.y - r;
-            const dist = Math.sqrt((mx - ix) ** 2 + (my - iy) ** 2);
-            if (dist <= indicatorR * COLLAPSE_INDICATOR_CLICK_SCALE) {
+            if (pointInCollapseIndicator(mx, my, clickedNode, r, indicatorR, COLLAPSE_INDICATOR_OFFSET, COLLAPSE_INDICATOR_CLICK_SCALE)) {
               onToggleCollapseRef.current(clickedNode.id);
               hitIndicator = true;
             }
@@ -1044,8 +851,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       if (!isDraggingRef.current && !pointerDownNode) {
         // Check if the click was on a +/- collapse indicator (outside node radius)
         const t = transformRef.current;
-        const mx = (event.offsetX - t.x) / t.k;
-        const my = (event.offsetY - t.y) / t.k;
+        const { x: mx, y: my } = pointerToWorld(event.offsetX, event.offsetY, t);
         let hitIndicator = false;
         if (onToggleCollapseRef.current) {
           const configs = nodeTypeConfigsRef.current;
@@ -1053,10 +859,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
             if (!hasChildrenRef.current.has(node.id)) continue;
             const r = getNodeRadius(node, viewModeRef.current, configs);
             const indicatorR = Math.max(COLLAPSE_INDICATOR_MIN_R, COLLAPSE_INDICATOR_BASE_R / t.k);
-            const ix = node.x + r + indicatorR + COLLAPSE_INDICATOR_OFFSET;
-            const iy = node.y - r;
-            const dist = Math.sqrt((mx - ix) ** 2 + (my - iy) ** 2);
-            if (dist <= indicatorR * COLLAPSE_INDICATOR_CLICK_SCALE) {
+            if (pointInCollapseIndicator(mx, my, node, r, indicatorR, COLLAPSE_INDICATOR_OFFSET, COLLAPSE_INDICATOR_CLICK_SCALE)) {
               onToggleCollapseRef.current(node.id);
               hitIndicator = true;
               break;
@@ -1105,11 +908,10 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const { width, height } = canvasSizeRef.current;
     const addedNodes: SimNode[] = data.nodes
       .filter((n) => !existingNodeIds.has(n.id))
-      .map((n) => ({
-        ...n,
-        x: width / 2 + (Math.random() - 0.5) * NEW_NODE_SPAWN_SPREAD,
-        y: height / 2 + (Math.random() - 0.5) * NEW_NODE_SPAWN_SPREAD,
-      }));
+      .map((n) => {
+        const p = newNodeSpawnPosition(width, height);
+        return { ...n, x: p.x, y: p.y };
+      });
 
     const updatedNodes = nodesRef.current.filter((n) => newNodeIds.has(n.id)).concat(addedNodes);
     nodesRef.current = updatedNodes;
@@ -1133,47 +935,29 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
 
   function findNodeAt(canvasX: number, canvasY: number): SimNode | null {
     const t = transformRef.current;
-    const x = (canvasX - t.x) / t.k;
-    const y = (canvasY - t.y) / t.k;
+    const { x, y } = pointerToWorld(canvasX, canvasY, t);
     const mode = viewModeRef.current;
     const revealed = revealedRef.current;
     const isAdding = interactionRef.current !== "normal";
     const configs = nodeTypeConfigsRef.current;
     const currentFilters = filtersRef.current;
-
-    for (let i = nodesRef.current.length - 1; i >= 0; i--) {
-      const node = nodesRef.current[i];
-      if (!isNodeFilterVisible(node, currentFilters)) continue;
-      if (!isAdding && !isNodePrimary(node, mode, configs) && !revealed.has(node.id)) continue;
-      const r = getNodeRadius(node, mode, configs);
-      const dx = x - node.x;
-      const dy = y - node.y;
-      if (dx * dx + dy * dy < (r + NODE_HIT_PADDING) * (r + NODE_HIT_PADDING)) return node;
-    }
-    return null;
+    return hitTestNode<SimNode>(
+      x,
+      y,
+      nodesRef.current,
+      (n) => getNodeRadius(n, mode, configs),
+      (n) => {
+        if (!isNodeFilterVisible(n, currentFilters)) return false;
+        if (!isAdding && !isNodePrimary(n, mode, configs) && !revealed.has(n.id)) return false;
+        return true;
+      },
+    );
   }
 
   function findEdgeAt(canvasX: number, canvasY: number): SimLink | null {
     const t = transformRef.current;
-    const x = (canvasX - t.x) / t.k;
-    const y = (canvasY - t.y) / t.k;
-    const threshold = EDGE_HIT_THRESHOLD / t.k;
-
-    for (const l of linksRef.current) {
-      const source = l.source as SimNode;
-      const target = l.target as SimNode;
-      const dx = target.x - source.x;
-      const dy = target.y - source.y;
-      const lenSq = dx * dx + dy * dy;
-      if (lenSq === 0) continue;
-      let param = ((x - source.x) * dx + (y - source.y) * dy) / lenSq;
-      param = Math.max(0, Math.min(1, param));
-      const projX = source.x + param * dx;
-      const projY = source.y + param * dy;
-      const distSq = (x - projX) * (x - projX) + (y - projY) * (y - projY);
-      if (distSq < threshold * threshold) return l;
-    }
-    return null;
+    const { x, y } = pointerToWorld(canvasX, canvasY, t);
+    return hitTestEdge(x, y, linksRef.current, EDGE_HIT_THRESHOLD / t.k);
   }
 
   function draw(ctx: CanvasRenderingContext2D, width: number, height: number) {
@@ -1239,9 +1023,9 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
         const color = th.classifierColorOverrides?.[rv.id] ?? rv.color ?? "#666";
 
         if (isColumn) {
-          const cachedPositions = regionColumnPositionsRef.current;
-          const cachedWidths = regionColumnWidthsRef.current;
-          const cachedLeftEdges = regionColumnLeftEdgesRef.current;
+          const cachedPositions = regionCachesRef.current.columnPositions;
+          const cachedWidths = regionCachesRef.current.columnWidths;
+          const cachedLeftEdges = regionCachesRef.current.columnLeftEdges;
           if (cachedPositions.size === 0) continue;
           const colX = cachedPositions.get(rv.id) ?? width / 2;
           const colLeft = cachedLeftEdges.get(rv.id) ?? 0;
@@ -1280,20 +1064,12 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           ctx.globalAlpha = 1;
         } else {
           // Circle layout: draw circle at region centroid, sized to contain all members
-          const targets = regionTargetsRef.current;
+          const targets = regionCachesRef.current.centroids;
           const target = targets.get(rv.id);
           if (!target) continue;
           const cx = target.x;
           const cy = target.y;
-          let radius = REGION_CIRCLE_PADDING; // minimum radius
-          if (members.length > 0) {
-            let maxDist = 0;
-            for (const m of members) {
-              const dx = m.x - cx, dy = m.y - cy;
-              maxDist = Math.max(maxDist, Math.sqrt(dx * dx + dy * dy));
-            }
-            radius = Math.max(radius, maxDist + 40); // ensure circle contains all nodes + padding
-          }
+          const radius = regionClusterRadius(target, members, REGION_CIRCLE_PADDING, 40);
 
           // Filled background
           ctx.globalAlpha = REGION_CIRCLE_BG_ALPHA;
@@ -1769,10 +1545,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const t = transformRef.current;
       const cx = canvas.width / (2 * (window.devicePixelRatio || 1));
       const cy = canvas.height / (2 * (window.devicePixelRatio || 1));
-      const newK = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, t.k * factor));
-      const newT = d3.zoomIdentity
-        .translate(cx - (cx - t.x) * (newK / t.k), cy - (cy - t.y) * (newK / t.k))
-        .scale(newK);
+      const newT = zoomByCenterTransform(t, cx, cy, factor);
       d3.select(canvas).transition().duration(ZOOM_BUTTON_DURATION)
         .call(zoomBehaviorRef.current!.transform, newT);
     };
@@ -1796,10 +1569,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const t = transformRef.current;
     const cx = canvas.width / (2 * (window.devicePixelRatio || 1));
     const cy = canvas.height / (2 * (window.devicePixelRatio || 1));
-    const newK = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, t.k * factor));
-    const newT = d3.zoomIdentity
-      .translate(cx - (cx - t.x) * (newK / t.k), cy - (cy - t.y) * (newK / t.k))
-      .scale(newK);
+    const newT = zoomByCenterTransform(t, cx, cy, factor);
     d3.select(canvas).transition().duration(ZOOM_BUTTON_DURATION)
       .call(zoomBehaviorRef.current!.transform, newT);
   }, [zoomAction]);
@@ -1812,10 +1582,7 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const node = nodesRef.current.find((n) => n.id === centerOnNode.id);
     if (!node) return;
     const { width: cw, height: ch } = canvasSizeRef.current;
-    const t = d3.zoomIdentity
-      .translate(cw / 2, ch / 2)
-      .scale(CENTER_ON_NODE_SCALE)
-      .translate(-node.x, -node.y);
+    const t = centerOnNodeTransform(node.x, node.y, cw, ch, CENTER_ON_NODE_SCALE);
     d3.select(canvas)
       .transition()
       .duration(TRANSITION_DURATION)

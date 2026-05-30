@@ -223,3 +223,14 @@
 | REQ-021 | View modes filter IR, no re-parse; React-only (P1) | View toggle tested per mode | No hidden data exposure |
 | REQ-022 | Edge labels from taxonomy enum set (P2 contract) | Label mapping tested | Labels escaped for canvas |
 | REQ-023 | Toolbar is React-only; actions dispatch to existing REQs | Toolbar integration tests | Export buttons validate state |
+
+## 2026 Modernisation REQs
+
+| Spec | Criteria | Test File | Test Name | Status |
+|------|----------|-----------|-----------|--------|
+| REQ-112 | AC-112-01..06 | `macos/ConceptMapper/BridgeProtocol.swift` + `web/src/types/bridge-protocol.ts` | Type-check (Swift + tsc) | passing |
+| REQ-113 | AC-113-01..04 | `web/src/__tests__/stores/useGraphStore.test.ts`, `useUIStore.test.ts` | 48 store tests | passing |
+| REQ-114 | AC-114-01..05 | `web/src/graph/layout/*.test.ts`, `hit-testing.test.ts` | (added during decomposition) | pending |
+| REQ-115 | AC-115-01..04 | `tests/*` (all integration tests) | All consume `concept_mapper_core::*` via the facade | passing |
+| REQ-116 | AC-116-01..04 | `macos/ConceptMapper/FileHandler.swift` | Compile-time: no `completion:` parameters remain | passing |
+| REQ-117 | AC-117-01..04 | `tests/error_paths_tests.rs`, `tests/golden_tests.rs` | 16 error + 3 golden | passing |

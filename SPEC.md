@@ -1796,3 +1796,177 @@ The .cm file references its template via the `<!-- template: foo.cmt -->` header
 - [x] AC-090-03: No `NSSavePanel` is displayed during silent save; the user is not interrupted.
 - [x] AC-090-04: After silent save, reopening the same map shows the edited classifiers / node types / edge types without re-edit.
 - [x] AC-090-05: The "Save as New Template" button in the wizard's Review step continues to surface `NSSavePanel` (this flow is non-silent).
+
+---
+
+## REQ-112: Typed JS↔Swift Bridge Protocol
+
+The bridge between the React SPA and the Swift host carries every message on a single versioned envelope. The protocol is mirrored between `macos/ConceptMapper/BridgeProtocol.swift` and `web/src/types/bridge-protocol.ts`.
+
+**Preconditions:**
+
+- App runs inside WKWebView with the `bridge` and `jsLog` script-message handlers registered.
+- `installBridgeReceiver()` has installed `window.__bridge_receive` on the JS side.
+
+**Trigger:**
+
+- JS calls `sendToSwift(method, payload)` or `postToSwift(method, payload)`; Swift calls `bridge.sendEvent(method:payload:)` or `bridge.sendError(...)`.
+
+**Expected Behavior:**
+
+- Every envelope carries `id`, `version` (`BRIDGE_PROTOCOL_VERSION` = 1), `kind` (`request|response|event|error`), `method`, and a `payload`/`result`/`error` field.
+- Requests with `kind: "request"` are dispatched server-side via `dispatchEnvelope` → `handleRequest`; the dispatcher decodes the typed payload against the method's struct.
+- Responses correlate to requests via `id`. The JS `pending` map resolves the corresponding promise.
+- Events are fire-and-forget. Subscribers register via `subscribe(method, handler)` and receive the typed payload.
+- Errors flow back through the same channel with a `BridgeErrorCode` discriminator (`versionMismatch`, `unknownMethod`, `malformedPayload`, `ioFailure`, `userCancelled`, `internalError`).
+- Version mismatch produces a structured error envelope; the message is not silently dropped.
+
+**Acceptance Criteria:**
+
+- [x] AC-112-01: Adding a new method requires a Swift case + payload struct AND a TS map entry; missing either is a compile error.
+- [x] AC-112-02: A JS `sendToSwift("openFile", undefined)` produces a `request` envelope with a fresh UUID.
+- [x] AC-112-03: Swift `bridge.sendEvent(method: .templatesAvailable, payload: …)` reaches all JS subscribers registered for `templatesAvailable`.
+- [x] AC-112-04: A payload that fails to decode against its declared type emits an `error` envelope with code `malformedPayload`.
+- [x] AC-112-05: An envelope with `version: 99` emits an `error` envelope with code `versionMismatch` and is otherwise ignored.
+- [x] AC-112-06: Errors from `FileHandler` throw `BridgeError` and are routed via `sendError`; no NSAlert is presented from inside IO code.
+
+---
+
+## REQ-113: Single State-Management Discipline (Zustand)
+
+The React SPA holds cross-cutting state in Zustand stores. App.tsx may not maintain shadow copies of state that lives in a store.
+
+**Preconditions:**
+
+- `useGraphStore` (`web/src/stores/useGraphStore.ts`) and `useUIStore` (`web/src/stores/useUIStore.ts`) define the canonical shape of graph + UI state.
+
+**Trigger:**
+
+- Any state mutation in App.tsx or a child component.
+
+**Expected Behavior:**
+
+- Graph data, selection, interaction mode, filters, undo/redo history live exclusively in `useGraphStore`.
+- Modals, panel visibility, search, panel dimensions, label visibility live exclusively in `useUIStore`.
+- DOM refs and transient input values may stay in `useState`/`useRef` at the component level.
+- Mutation actions (`handleNodeUpdate`, `handleAddNode`, etc.) live in the store and call `pushState` internally for undo bookkeeping.
+- `useGraphStore.loadGraphFresh(ir)` resets history/future and selections on fresh map loads (REQ-088 expand-to-max-depth seeding handled in App.tsx, where the hierarchy memo lives).
+
+**Acceptance Criteria:**
+
+- [x] AC-113-01: App.tsx contains no `useState` for `graphData`, `selectedNode`, `selectedEdge`, modals, filters, or undo refs.
+- [x] AC-113-02: Cmd+Z calls `useGraphStore.getState().undo()`; Shift+Cmd+Z calls `redo()`.
+- [x] AC-113-03: Modals open via `useUIStore.openModal('name', data?)` and close via `closeModal()`; no boolean `show*` state in App.tsx.
+- [x] AC-113-04: Stores are testable via `getState()` / `setState()` without React rendering (existing tests in `web/src/__tests__/stores/`).
+
+---
+
+## REQ-114: Layered GraphCanvas Architecture
+
+The graph canvas decomposes into independently testable modules.
+
+**Preconditions:**
+
+- React app is mounted; `GraphCanvas` component receives `nodes`, `edges`, layout configuration.
+
+**Trigger:**
+
+- The component renders or its props change.
+
+**Expected Behavior:**
+
+- Layout (`web/src/graph/layout/regions.ts`): pure functions producing initial node positions from classifiers; no D3, no React, fully unit-testable.
+- Simulation (`web/src/graph/useGraphSimulation.ts`): D3 force configuration and tick state behind a custom hook.
+- Hit-testing (`web/src/graph/hit-testing.ts`): pure functions over rendered geometry.
+- Zoom controller (`web/src/graph/useZoomController.ts`): D3 zoom behaviour and transform ref behind a custom hook.
+- `GraphCanvas.tsx` becomes a coordinator: owns the canvas DOM ref, composes the hooks, dispatches events.
+
+**Acceptance Criteria:**
+
+- [ ] AC-114-01: `regions.ts` exports pure functions covered by unit tests (no DOM, no D3 simulation).
+- [ ] AC-114-02: `hit-testing.ts` exports pure functions covered by unit tests.
+- [ ] AC-114-03: `useGraphSimulation` is a custom hook taking nodes/edges/config and returning simulation state.
+- [ ] AC-114-04: `useZoomController` is a custom hook returning zoom transform and zoom-in/out/fit functions.
+- [ ] AC-114-05: `GraphCanvas.tsx` is below 800 lines; its responsibilities are confined to composition + canvas-ref management.
+
+---
+
+## REQ-115: Parser Public API Facade
+
+The `concept-mapper-core` Rust crate exposes a curated public surface in `src/lib.rs`.
+
+**Preconditions:**
+
+- External code (CLI, WASM bindings, integration tests) consumes the crate.
+
+**Trigger:**
+
+- Importing from `concept_mapper_core`.
+
+**Expected Behavior:**
+
+- The public root re-exports: `parse_document`, `ParseOutput`, `GraphIR`, `Node`, `Edge`, `EdgeVisual`, `Metadata`, `NetworkStats`, `ParseError`, `ParseWarning`, `ParseResult`, and (under `wasm` feature) `parse_markdown_to_json`.
+- Internal modules (`graph`, `parser`, `wasm`) are `#[doc(hidden)] pub mod` — reachable for integration tests but absent from generated documentation.
+- The crate-root module doc comment shows a working example.
+
+**Acceptance Criteria:**
+
+- [x] AC-115-01: `cargo doc --no-deps` produces public docs only for the curated surface; internal modules are not in the sidebar.
+- [x] AC-115-02: The doc-test example in `lib.rs` compiles and runs as part of `cargo test`.
+- [x] AC-115-03: The CLI imports `parse_document` from the crate root, not from `graph::assemble`.
+- [x] AC-115-04: All existing integration tests continue to pass.
+
+---
+
+## REQ-116: Async-First Swift IO
+
+Swift file operations expose `async`/`async throws` APIs. Completion handlers are not used.
+
+**Preconditions:**
+
+- Code inside `macos/ConceptMapper/FileHandler.swift`.
+
+**Trigger:**
+
+- New IO code is written or existing code modified.
+
+**Expected Behavior:**
+
+- All public methods that perform IO are `async` (or `async throws` for fallible operations).
+- NSOpenPanel / NSSavePanel are awaited via `runOpenPanel(_:)` / `runSavePanel(_:)` helpers that wrap `panel.begin` in `withCheckedContinuation`.
+- IO functions throw `BridgeError` on failure; UI side-effects (NSAlert) belong at the call site, not inside the IO function.
+- User cancellation is signalled with `BridgeError(code: .userCancelled, ...)` for callers that need to distinguish it from IO failure.
+
+**Acceptance Criteria:**
+
+- [x] AC-116-01: `FileHandler.swift` contains no `completion: @escaping` parameters.
+- [x] AC-116-02: NSOpenPanel/NSSavePanel calls are wrapped by `runOpenPanel`/`runSavePanel` helpers.
+- [x] AC-116-03: WebViewBridge dispatcher uses `Task { try await ... }` for IO calls; errors propagate to `sendError`.
+- [x] AC-116-04: NSAlert is not invoked from inside any `FileHandler` method.
+
+---
+
+## REQ-117: Parser Error-Path and Golden-File Coverage
+
+The Rust parser test suite covers error paths and uses golden-file snapshots for regression protection.
+
+**Preconditions:**
+
+- The parser exposes `parse_document` and the `GraphIR` shape.
+
+**Trigger:**
+
+- `cargo test --all` runs the test suite.
+
+**Expected Behavior:**
+
+- Error-path tests cover: missing required fields, duplicate IDs, malformed tables, empty input, headers-only input, unclosed fences, empty values, edge weight clamping, missing edge types, edges referencing unknown nodes.
+- Golden-file tests parse `examples/*.cm` files and compare the IR against committed JSON snapshots in `tests/golden/`.
+- Golden files may be regenerated by setting the env var `UPDATE_GOLDEN=1`.
+
+**Acceptance Criteria:**
+
+- [x] AC-117-01: `tests/error_paths_tests.rs` contains tests for each error class above (16 tests total).
+- [x] AC-117-02: `tests/golden_tests.rs` parses at least two .cm files and asserts structural equality with stored golden JSON.
+- [x] AC-117-03: Volatile fields (`parsed_at`, `source_file`) are stripped before snapshot comparison.
+- [x] AC-117-04: The suite runs deterministically — no time-based or random behaviour.

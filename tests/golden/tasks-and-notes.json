@@ -1,0 +1,589 @@
+{
+  "edges": [
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "task_pg_backup",
+      "to": "grp_db_migration",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "task_pg_test_migration",
+      "to": "grp_db_migration",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "task_pg_extension_audit",
+      "to": "grp_db_migration",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "task_api_versioning",
+      "to": "grp_api_redesign",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "task_deprecation_policy",
+      "to": "grp_api_redesign",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "task_grafana_dashboards",
+      "to": "grp_monitoring",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "task_alert_runbooks",
+      "to": "grp_monitoring",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "task_k8s_poc",
+      "to": "grp_vendor_eval",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "task_write_blogpost",
+      "to": "grp_launch_comms",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "task_internal_announce",
+      "to": "grp_launch_comms",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "note_pg16_perf",
+      "to": "grp_db_migration",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "note_timescale_risk",
+      "to": "grp_db_migration",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "note_api_consumers",
+      "to": "grp_api_redesign",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "note_nagios_debt",
+      "to": "grp_monitoring",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "note_vendor_pricing",
+      "to": "grp_vendor_eval",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "belongs_to",
+      "from": "note_launch_timing",
+      "to": "grp_launch_comms",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "depends_on",
+      "from": "task_pg_test_migration",
+      "note": "Can't run dry-run migration without verified backups",
+      "to": "task_pg_backup",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "depends_on",
+      "from": "task_pg_test_migration",
+      "note": "Migration will fail if incompatible extensions are loaded",
+      "to": "task_pg_extension_audit",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "depends_on",
+      "from": "task_deprecation_policy",
+      "note": "Deprecation timelines depend on the versioning scheme chosen",
+      "to": "task_api_versioning",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "depends_on",
+      "from": "task_alert_runbooks",
+      "note": "Runbooks reference dashboard panels for triage steps",
+      "to": "task_grafana_dashboards",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "blocks",
+      "from": "note_timescale_risk",
+      "note": "If TimescaleDB doesn't support PG16, migration scope changes significantly",
+      "to": "task_pg_test_migration",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "informs",
+      "from": "note_pg16_perf",
+      "note": "Performance benchmarks are the headline for the blog post",
+      "to": "task_write_blogpost",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "informs",
+      "from": "note_api_consumers",
+      "note": "Contract renewal dates constrain how aggressive deprecation can be",
+      "to": "task_deprecation_policy",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "informs",
+      "from": "note_vendor_pricing",
+      "note": "Pricing model shapes which workloads to test in the PoC",
+      "to": "task_k8s_poc",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "informs",
+      "from": "note_launch_timing",
+      "note": "Conference date sets the deadline for internal comms",
+      "to": "task_internal_announce",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "related",
+      "from": "grp_db_migration",
+      "note": "API v2 depends on new PG16 features — JSON path queries, improved partitioning",
+      "to": "grp_api_redesign",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    },
+    {
+      "directed": true,
+      "edge_type": "related",
+      "from": "grp_monitoring",
+      "note": "New dashboards need to cover the migrated database clusters",
+      "to": "grp_db_migration",
+      "visual": {
+        "show_arrow": true,
+        "style": "solid"
+      },
+      "weight": 1.0
+    }
+  ],
+  "metadata": {
+    "network_stats": {
+      "edge_count": 27,
+      "node_count": 21
+    },
+    "notes": [
+      "**Bottleneck**: The database migration group is the critical path — most other work flows from or depends on it completing successfully",
+      "**Risk**: TimescaleDB compatibility is the single biggest uncertainty; the fallback plan (native partitioning) needs a spike if no GA date by mid-April",
+      "**Pattern**: Notes in the \"forged\" phase are feeding directly into tasks that are still \"raw\" — knowledge is ahead of action in several areas",
+      "**Cross-cutting concern**: The launch communications group depends on outcomes from every other group, making it the natural integration point",
+      "**Tag distribution**: Infrastructure and operations dominate the active work; design and communication are queued behind decisions"
+    ],
+    "title": "Tasks & Notes — Project Quarry"
+  },
+  "nodes": [
+    {
+      "fields": {
+        "owner": "Platform team",
+        "phase": "refining",
+        "scope": "broad",
+        "tag": "infrastructure"
+      },
+      "id": "grp_db_migration",
+      "name": "Database Migration",
+      "node_type": "group",
+      "notes": "All tasks and notes related to migrating from Postgres 14 to 16 across three clusters"
+    },
+    {
+      "fields": {
+        "owner": "Backend guild",
+        "phase": "raw",
+        "scope": "focused",
+        "tag": "design"
+      },
+      "id": "grp_api_redesign",
+      "name": "API Redesign",
+      "node_type": "group",
+      "notes": "Rethinking the public API surface — versioning strategy, deprecation policy, schema evolution"
+    },
+    {
+      "fields": {
+        "owner": "SRE",
+        "phase": "refining",
+        "scope": "focused",
+        "tag": "operations"
+      },
+      "id": "grp_monitoring",
+      "name": "Monitoring Overhaul",
+      "node_type": "group",
+      "notes": "Replacing legacy Nagios checks with structured observability: metrics, traces, logs"
+    },
+    {
+      "fields": {
+        "phase": "raw",
+        "scope": "narrow",
+        "tag": "research"
+      },
+      "id": "grp_vendor_eval",
+      "name": "Vendor Evaluation",
+      "node_type": "group",
+      "notes": "Evaluating three vendors for managed Kubernetes — cost, support, migration path"
+    },
+    {
+      "fields": {
+        "owner": "Product",
+        "phase": "raw",
+        "scope": "focused",
+        "tag": "communication"
+      },
+      "id": "grp_launch_comms",
+      "name": "Launch Communications",
+      "node_type": "group",
+      "notes": "Internal and external messaging for the v2 platform launch"
+    },
+    {
+      "fields": {
+        "phase": "forged",
+        "priority": "critical",
+        "status": "done",
+        "tag": "infrastructure"
+      },
+      "id": "task_pg_backup",
+      "name": "Set up continuous WAL archiving",
+      "node_type": "task",
+      "notes": "Configured pgBackRest with S3 target, 7-day retention, verified restore on staging"
+    },
+    {
+      "fields": {
+        "assignee": "Chen",
+        "due": "2026-04-10",
+        "phase": "refining",
+        "priority": "high",
+        "status": "in_progress",
+        "tag": "infrastructure"
+      },
+      "id": "task_pg_test_migration",
+      "name": "Run migration dry-run on staging",
+      "node_type": "task",
+      "notes": "pg_upgrade --check passed; full dry-run with data validation pending"
+    },
+    {
+      "fields": {
+        "assignee": "Priya",
+        "phase": "refining",
+        "priority": "high",
+        "status": "in_progress",
+        "tag": "infrastructure"
+      },
+      "id": "task_pg_extension_audit",
+      "name": "Audit extensions for PG16 compatibility",
+      "node_type": "task",
+      "notes": "PostGIS and pg_trgm confirmed compatible; waiting on timescaledb maintainer response"
+    },
+    {
+      "fields": {
+        "phase": "raw",
+        "priority": "high",
+        "status": "pending",
+        "tag": "design"
+      },
+      "id": "task_api_versioning",
+      "name": "Define API versioning strategy",
+      "node_type": "task",
+      "notes": "Header-based vs URL-based vs content negotiation — need to decide before endpoint work starts"
+    },
+    {
+      "fields": {
+        "phase": "raw",
+        "priority": "medium",
+        "status": "pending",
+        "tag": "design"
+      },
+      "id": "task_deprecation_policy",
+      "name": "Draft deprecation policy",
+      "node_type": "task",
+      "notes": "How long do we support old versions? What does the sunset header look like?"
+    },
+    {
+      "fields": {
+        "assignee": "Ravi",
+        "phase": "refining",
+        "priority": "medium",
+        "status": "in_progress",
+        "tag": "operations"
+      },
+      "id": "task_grafana_dashboards",
+      "name": "Build Grafana dashboards for core services",
+      "node_type": "task",
+      "notes": "Payment service dashboard done; auth and gateway dashboards in progress"
+    },
+    {
+      "fields": {
+        "phase": "raw",
+        "priority": "medium",
+        "status": "pending",
+        "tag": "operations"
+      },
+      "id": "task_alert_runbooks",
+      "name": "Write alert runbooks",
+      "node_type": "task",
+      "notes": "Each critical alert needs a runbook: what fired, why, how to triage, who to escalate to"
+    },
+    {
+      "fields": {
+        "assignee": "Jordan",
+        "phase": "refining",
+        "priority": "high",
+        "status": "in_progress",
+        "tag": "research"
+      },
+      "id": "task_k8s_poc",
+      "name": "Run Kubernetes PoC with top vendor",
+      "node_type": "task",
+      "notes": "Deploying canary workload to evaluate networking model, node autoscaling, and cost"
+    },
+    {
+      "fields": {
+        "phase": "raw",
+        "priority": "low",
+        "status": "pending",
+        "tag": "communication"
+      },
+      "id": "task_write_blogpost",
+      "name": "Write v2 migration blog post",
+      "node_type": "task",
+      "notes": "Technical audience — explain why we migrated, what we learned, performance numbers"
+    },
+    {
+      "fields": {
+        "assignee": "Mika",
+        "phase": "raw",
+        "priority": "medium",
+        "status": "pending",
+        "tag": "communication"
+      },
+      "id": "task_internal_announce",
+      "name": "Draft internal launch announcement",
+      "node_type": "task",
+      "notes": "Slack post + wiki page — timeline, what changes for teams, migration guide links"
+    },
+    {
+      "fields": {
+        "confidence": "solid",
+        "phase": "forged",
+        "source": "Benchmarks on staging (2026-03-28)",
+        "tag": "research",
+        "weight": "heavy"
+      },
+      "id": "note_pg16_perf",
+      "name": "PG16 performance gains are real",
+      "node_type": "note",
+      "notes": "Query planner improvements gave 12-18% speedup on our heaviest analytic queries; COPY is 2x faster with new binary format"
+    },
+    {
+      "fields": {
+        "confidence": "provisional",
+        "phase": "refining",
+        "tag": "infrastructure",
+        "weight": "heavy"
+      },
+      "id": "note_timescale_risk",
+      "name": "TimescaleDB may not support PG16 in time",
+      "node_type": "note",
+      "notes": "Community edition lagging behind; enterprise fork has a beta but no GA date. Fallback: native partitioning + pg_cron"
+    },
+    {
+      "fields": {
+        "confidence": "solid",
+        "phase": "forged",
+        "source": "API gateway logs, March 2026",
+        "tag": "design",
+        "weight": "medium"
+      },
+      "id": "note_api_consumers",
+      "name": "Only three external consumers use v1",
+      "node_type": "note",
+      "notes": "PartnerA (80% of traffic), PartnerB (15%), PartnerC (5%). All on annual contracts renewing Q3."
+    },
+    {
+      "fields": {
+        "confidence": "solid",
+        "phase": "forged",
+        "source": "SRE audit, February 2026",
+        "tag": "operations",
+        "weight": "medium"
+      },
+      "id": "note_nagios_debt",
+      "name": "Nagios config is 4000 lines of undocumented checks",
+      "node_type": "note",
+      "notes": "60% of checks are for decommissioned services. No one knows who wrote the rest. Rewriting from scratch is faster than untangling."
+    },
+    {
+      "fields": {
+        "confidence": "provisional",
+        "phase": "refining",
+        "tag": "research",
+        "weight": "medium"
+      },
+      "id": "note_vendor_pricing",
+      "name": "Vendor B pricing model penalises burst traffic",
+      "node_type": "note",
+      "notes": "Per-node-hour billing with no burst credits. Our Black Friday traffic pattern would cost 3x normal month. Vendor A has committed-use discounts."
+    },
+    {
+      "fields": {
+        "confidence": "speculative",
+        "phase": "raw",
+        "tag": "communication",
+        "weight": "light"
+      },
+      "id": "note_launch_timing",
+      "name": "Marketing wants launch tied to conference",
+      "node_type": "note",
+      "notes": "KubeCon EU in mid-April suggested as launch moment. Tight but possible if migration completes on schedule."
+    }
+  ],
+  "version": "1.0"
+}

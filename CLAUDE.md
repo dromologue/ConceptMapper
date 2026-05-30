@@ -7,14 +7,24 @@
 - **Testing**: `cargo test` (Rust), Vitest (web), GitHub Actions CI
 
 ## Architecture
-- `src/` — Rust parser: lexer → node/edge/table/metadata parsers → graph IR assembler
-- `web/` — React SPA: components, state (Zustand), D3 visualization, WASM bridge
-- `macos/` — SwiftUI shell: WebViewBridge, LLMService, FileHandler
+- `src/` — Rust parser: lexer → node/edge/table/metadata parsers → graph IR assembler. Public surface in `src/lib.rs`; internal modules `#[doc(hidden)] pub mod`. Entry point: `parse_document` (REQ-115).
+- `web/` — React SPA: Zustand stores (`useGraphStore`, `useUIStore`) are the canonical state (REQ-113); D3 layered modules under `web/src/graph/` (REQ-114); typed bridge in `web/src/utils/swiftBridge.ts` + `web/src/types/bridge-protocol.ts`.
+- `macos/` — SwiftUI shell: `BridgeProtocol.swift` (typed envelope + method enum + payload structs, REQ-112), `WebViewBridge.swift` (single `bridge` channel + dispatcher), `FileHandler.swift` (async/await IO, REQ-116), `ContentView.swift` (notification-driven menu commands).
 - `templates/` — .cmt taxonomy template files (JSON)
 - `Maps/` — .cm concept map files (structured markdown)
 - `examples/` — Example .cmt/.cm pairs
-- `specs/` — Specification files
-- `tests/` — Rust integration tests
+- `specs/` — Specification files; principles in `specs/principles-architecture.md` and `specs/principles-development.md`
+- `tests/` — Rust integration tests: unit (`lexer`, `sections`, `node_parser`, `edge_parser`, `serialization`, `integration`), error paths (`error_paths_tests.rs`), golden snapshots (`golden_tests.rs`)
+
+## Bridge Discipline (REQ-112)
+- One transport per direction: `webkit.messageHandlers.bridge` (JS→Swift) and `window.__bridge_receive` (Swift→JS).
+- Adding a new bridge method requires changes in BOTH `BridgeProtocol.swift` AND `bridge-protocol.ts`. Untyped payloads are an anti-pattern.
+- JS uses `sendToSwift(method, payload)` for awaited requests or `postToSwift` for fire-and-forget. Swift uses `bridge.sendEvent(method:payload:)` for events and `bridge.sendError(...)` for failures. No `evaluateJavaScript` with hardcoded `window.foo` callbacks.
+
+## State Discipline (REQ-113)
+- Cross-cutting state lives in Zustand stores. App.tsx may not shadow store state with `useState`.
+- Mutations go through store handlers (`handleNodeUpdate`, etc.) which call `pushState` internally for undo bookkeeping.
+- Local component state (DOM refs, transient input values) stays in `useState`/`useRef`.
 
 ## File Formats
 - `.cmt` — Taxonomy templates (JSON): classifiers, node_types, edge_types
