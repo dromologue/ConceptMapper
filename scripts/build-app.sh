@@ -14,6 +14,8 @@ cd "$ROOT"
 
 CONFIGURATION="Release"
 SKIP_TESTS=false
+SKIP_WEB=false
+VERIFY=false
 DO_ARCHIVE=false
 DO_OPEN=false
 BUILD_DIR="$ROOT/macos/build"
@@ -26,10 +28,15 @@ for arg in "$@"; do
     --skip-tests) SKIP_TESTS=true ;;
     --archive) DO_ARCHIVE=true; CONFIGURATION="Release" ;;
     --open) DO_OPEN=true ;;
+    # Fast build-only gate: skip tests and the web/WASM rebuild, build the
+    # macOS app with signing disabled. Proves the Xcode project compiles and
+    # links (use before any release-bearing merge). Reuses existing Resources/web.
+    --verify) VERIFY=true; SKIP_TESTS=true; SKIP_WEB=true; CONFIGURATION="Debug" ;;
     --help|-h)
       echo "Usage: scripts/build-app.sh [options]"
       echo "  --debug       Build Debug configuration"
       echo "  --skip-tests  Skip cargo test and npm test"
+      echo "  --verify      Build-only check: no tests, no web rebuild, no signing"
       echo "  --archive     Produce .xcarchive for App Store submission"
       echo "  --open        Open the app after building"
       echo "  -h, --help    Show this help"
@@ -41,7 +48,12 @@ done
 
 # --- Prerequisites ---
 echo "=== Checking prerequisites ==="
-for cmd in cargo wasm-pack npm xcodebuild xcodegen; do
+if [ "$SKIP_WEB" = true ]; then
+  REQUIRED_CMDS="xcodebuild xcodegen"
+else
+  REQUIRED_CMDS="cargo wasm-pack npm xcodebuild xcodegen"
+fi
+for cmd in $REQUIRED_CMDS; do
   if ! command -v "$cmd" &>/dev/null; then
     echo "ERROR: $cmd not found. Install it first."
     exit 1
@@ -67,6 +79,10 @@ else
   echo "=== Skipping tests (--skip-tests) ==="
 fi
 
+if [ "$SKIP_WEB" = true ]; then
+  echo ""
+  echo "=== Skipping web/WASM build (--verify); using existing macos/Resources/web ==="
+else
 # --- Step 2: Build WASM ---
 echo ""
 echo "=== Step 2: Build WASM parser ==="
@@ -98,6 +114,7 @@ mkdir -p macos/Resources/web/maps macos/Resources/maps
 [ -d Maps ] && cp Maps/*.cm macos/Resources/web/maps/ 2>/dev/null || true
 [ -d Maps ] && cp Maps/*.cm macos/Resources/maps/ 2>/dev/null || true
 echo "Web assets, templates, and maps copied."
+fi
 
 # --- Step 5: Regenerate Xcode project ---
 echo ""
@@ -110,14 +127,23 @@ echo "Xcode project generated."
 # --- Step 6: Build macOS app ---
 echo ""
 echo "=== Step 6: Build macOS app ($CONFIGURATION) ==="
+SIGN_FLAGS=""
+[ "$VERIFY" = true ] && SIGN_FLAGS="CODE_SIGNING_ALLOWED=NO"
 cd macos
 xcodebuild \
   -scheme ConceptMapper \
   -configuration "$CONFIGURATION" \
   -derivedDataPath build \
+  $SIGN_FLAGS \
   build \
   | tail -5
 cd "$ROOT"
+
+if [ "$VERIFY" = true ]; then
+  echo ""
+  echo "=== Verify build OK ($CONFIGURATION, unsigned) ==="
+  exit 0
+fi
 
 APP_PATH="$BUILD_DIR/Build/Products/$CONFIGURATION/ConceptMapper.app"
 echo "App built: $APP_PATH"

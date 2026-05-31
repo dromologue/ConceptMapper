@@ -1,6 +1,5 @@
 import Foundation
 import WebKit
-import AppKit
 import os.log
 
 private let logger = Logger(subsystem: "com.dromologue.ConceptMapper", category: "Bridge")
@@ -12,6 +11,10 @@ private let logger = Logger(subsystem: "com.dromologue.ConceptMapper", category:
 @MainActor
 class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
     weak var webView: WKWebView?
+
+    /// Platform handler for opening external URLs. Injected by the shell so the
+    /// bridge itself stays free of AppKit/UIKit. Defaults to the macOS opener.
+    var urlOpener: PlatformURLOpener = AppKitURLOpener()
 
     // MARK: - JS → Swift
 
@@ -177,7 +180,7 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
             guard let url = URL(string: p.url) else {
                 throw BridgeError.malformedPayload("invalid URL: \(p.url)")
             }
-            NSWorkspace.shared.open(url)
+            urlOpener.open(url)
 
         case .attachNotesFile:
             let p = try env.decodePayload(as: AttachNotesFilePayload.self)
