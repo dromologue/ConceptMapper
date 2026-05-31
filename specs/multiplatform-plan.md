@@ -293,6 +293,20 @@ in CI; the parity test in the web suite.
   appear in the in-app help once added to `web/src/help/content.ts`), and
   iOS screenshots.
 
+### Release-time docs checklist (textmap on Mac)
+
+When this branch ships, before/with the release:
+
+- [ ] **In-app help** (`web/src/help/content.ts`): expand the existing
+  "Textmap: The Outline View" section to cover the inline **editable notes**
+  (read preview + per-node editor saving to the map / attached `.md`) and the
+  **layout-preset persistence** (the chosen view now saves with the map). The
+  section predates these.
+- [ ] **Public support site**: regenerate (`scripts/gen-support-site.mjs`) and
+  push to `dromologue/conceptmapper-support` so the textmap help — and a
+  marketing mention of the outline view on Mac/iPad/iPhone — go live. Held back
+  during development because the public site mirrors the released app.
+
 ## 11. Risks & mitigations
 
 | Risk | Mitigation |
