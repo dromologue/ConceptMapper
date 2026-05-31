@@ -15,19 +15,15 @@ persistence, add-node). macOS app builds/ships. The universal iOS app builds and
 runs on iPhone 17 + iPad (A16) simulators (start screen, bridge, bundled content
 verified). Remaining work is sessioned below.
 
-## Session 1 — Verification harness + build pipeline  ← IN PROGRESS
+## Session 2 — Responsive mobile UX (iPhone)  ← NEXT
 
-- [ ] `scripts/build-app.sh`: add `--platform mac|ios|all` (generate + build,
-      optionally run, the iOS target).
-- [ ] XCUITest UI-test target (`ios/project.yml`): launch → open a bundled map →
-      capture screenshots of the **textmap on iPhone** and the **visual map on
-      iPad**. Run on both sims. (Gives interactive on-device verification.)
-- [ ] Commit regenerated `ios/*.xcodeproj` + refreshed `ios/Resources/web`.
+The XCUITest screenshots show the explorer sidebar takes most of the iPhone
+width, squeezing the textmap. Fix the phone layout:
 
-## Session 2 — Responsive mobile UX (iPhone)
-
-- [ ] Phone layout: collapse the sidebar into a drawer/sheet, Properties + Notes
-      as bottom sheets, touch-sized targets, safe-area handling.
+- [ ] On phone: collapse the sidebar behind a toggle/drawer so the textmap (or
+      canvas) gets full width by default.
+- [ ] Properties + Notes as bottom sheets (not side panels) on phone.
+- [ ] Touch-sized targets, safe-area insets, no horizontal overflow.
 - [ ] Verify each at iPhone size via the XCUITest screenshots; no desktop regress.
 
 ## Session 3 — iOS file features on device
