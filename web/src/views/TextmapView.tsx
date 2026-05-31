@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import type { GraphIR, GraphNode, NodeTypeConfig, EdgeTypeConfig } from "../types/graph-ir";
+import ReactMarkdown from "react-markdown";
 import { postToSwift, subscribe } from "../utils/swiftBridge";
 import { IconNotes } from "../ui/Icons";
 import {
@@ -242,17 +243,22 @@ function TextmapRow({
         <button
           className="textmap-notes-preview"
           onClick={() => onToggleNotes(pathKey)}
-          title="Read / edit notes"
+          title="Expand notes"
         >
           <IconNotes size={12} className="textmap-notes-preview-icon" />
           <span className="textmap-notes-preview-text">
             {notePreview || `Attached: ${node.notes_file?.split("/").pop() ?? "notes"}`}
           </span>
+          <span className="textmap-notes-preview-expand">Expand ▸</span>
         </button>
       )}
 
       {notesShown && onNodeUpdate && (
-        <TextmapNotes node={node} onNodeUpdate={onNodeUpdate} />
+        <TextmapNotes
+          node={node}
+          onNodeUpdate={onNodeUpdate}
+          onCollapse={() => onToggleNotes(pathKey)}
+        />
       )}
 
       {isOpen && canExpand && (
@@ -305,29 +311,38 @@ function TextmapRow({
   );
 }
 
+type NotesMode = "preview" | "edit";
+
 /**
- * Inline notes editor for a node inside the outline. Mirrors NotesPane's
- * persistence: edits save to the map (via onNodeUpdate → the app's auto-save)
- * and, when an external markdown file is attached, write through to that file.
+ * Expanded notes view for a node inside the outline. Opens in a rendered
+ * (read) view; offers Edit (toggle to a textarea) and Attach .md. Mirrors the
+ * canvas NotesPane's persistence: edits save to the map (via onNodeUpdate, the
+ * app's auto-save) and write through to an attached markdown file when present.
  * If a file is attached, its contents are the source of truth on open.
  */
 function TextmapNotes({
   node,
   onNodeUpdate,
+  onCollapse,
 }: {
   node: GraphNode;
   onNodeUpdate: (nodeId: string, updates: Partial<GraphNode>) => void;
+  onCollapse: () => void;
 }) {
   const [content, setContent] = useState<string>(node.notes ?? "");
-  const attachedPath = node.notes_file;
+  const [attachedPath, setAttachedPath] = useState<string | undefined>(node.notes_file);
+  const [mode, setMode] = useState<NotesMode>(
+    node.notes?.trim() || node.notes_file ? "preview" : "edit",
+  );
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Re-seed when switching to a different node instance.
+  // Re-seed when the node instance changes.
   useEffect(() => {
     setContent(node.notes ?? "");
-  }, [node.id, node.notes]);
+    setAttachedPath(node.notes_file);
+  }, [node.id]);
 
-  // File is the source of truth: pull its contents when the editor opens.
+  // File is the source of truth: pull its contents when opened / path changes.
   useEffect(() => {
     if (!attachedPath) return;
     const unsubscribe = subscribe("notesFileRead", (detail) => {
@@ -341,31 +356,85 @@ function TextmapNotes({
     return unsubscribe;
   }, [attachedPath, node.id, onNodeUpdate]);
 
-  const onChange = (val: string) => {
-    setContent(val);
+  // Attach-completion from the native file picker.
+  useEffect(() => {
+    const unsubscribe = subscribe("notesFileAttached", (detail) => {
+      if (detail.nodeId !== node.id) return;
+      setAttachedPath(detail.path);
+      setContent(detail.content);
+      onNodeUpdate(node.id, { notes_file: detail.path, notes: detail.content || undefined });
+      setMode("preview");
+    });
+    return unsubscribe;
+  }, [node.id, onNodeUpdate]);
+
+  const save = (val: string, path: string | undefined) => {
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       onNodeUpdate(node.id, { notes: val || undefined });
-      if (attachedPath) {
-        postToSwift("writeNotesFile", { path: attachedPath, content: val });
-      }
+      if (path) postToSwift("writeNotesFile", { path, content: val });
     }, 500);
   };
+  const onChange = (val: string) => {
+    setContent(val);
+    save(val, attachedPath);
+  };
+
+  const onAttach = () => postToSwift("attachNotesFile", { nodeId: node.id });
+  const onDetach = () => {
+    setAttachedPath(undefined);
+    onNodeUpdate(node.id, { notes_file: undefined });
+  };
+
+  const filename = attachedPath?.split("/").pop();
 
   return (
     <div className="textmap-notes">
-      <textarea
-        className="textmap-notes-editor"
-        value={content}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Notes…"
-        spellCheck={false}
-      />
-      {attachedPath && (
-        <div className="textmap-notes-file" title={attachedPath}>
-          ↪ {attachedPath.split("/").pop()}
+      <div className="textmap-notes-header">
+        <span className="textmap-notes-title">Notes</span>
+        <div className="textmap-notes-actions">
+          {attachedPath ? (
+            <>
+              <span className="textmap-notes-filename" title={attachedPath}>{filename}</span>
+              <button className="textmap-notes-btn" onClick={onDetach} title="Detach file (keep content)">
+                Detach
+              </button>
+            </>
+          ) : (
+            <button className="textmap-notes-btn" onClick={onAttach} title="Attach a markdown file">
+              Attach .md
+            </button>
+          )}
+          <button
+            className="textmap-notes-btn"
+            onClick={() => setMode((m) => (m === "edit" ? "preview" : "edit"))}
+            title={mode === "edit" ? "Show rendered notes" : "Edit notes"}
+          >
+            {mode === "edit" ? "Preview" : "Edit"}
+          </button>
+          <button className="textmap-notes-btn" onClick={onCollapse} title="Collapse" aria-label="Collapse notes">
+            ▾
+          </button>
         </div>
-      )}
+      </div>
+      <div className="textmap-notes-body">
+        {mode === "edit" ? (
+          <textarea
+            className="textmap-notes-editor"
+            value={content}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={attachedPath ? `Editing ${filename}…` : "Write markdown notes…"}
+            spellCheck={false}
+            autoFocus
+          />
+        ) : content.trim() ? (
+          <div className="textmap-notes-rendered">
+            <ReactMarkdown>{content}</ReactMarkdown>
+          </div>
+        ) : (
+          <em className="textmap-notes-empty">No notes yet. Click Edit to add some.</em>
+        )}
+      </div>
     </div>
   );
 }

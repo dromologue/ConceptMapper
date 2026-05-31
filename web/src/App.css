@@ -3442,6 +3442,67 @@ select.settings-input {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.textmap-notes-preview-expand {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--accent, #0b6bcb);
+  opacity: 0;
+}
+.textmap-notes-preview:hover .textmap-notes-preview-expand { opacity: 0.9; }
+
+/* Expanded notes view (read / edit / attach) */
+.textmap-notes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.textmap-notes-title {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted, #8a8a8f);
+}
+.textmap-notes-actions { display: flex; align-items: center; gap: 6px; }
+.textmap-notes-filename {
+  font-size: 11px;
+  color: var(--text-muted, #8a8a8f);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.textmap-notes-btn {
+  border: 1px solid var(--bg-hover, rgba(127,127,127,0.25));
+  background: var(--bg-panel, var(--bg-body, #fff));
+  color: var(--text-primary, #1d1d1f);
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+.textmap-notes-btn:hover { border-color: var(--accent, #0b6bcb); color: var(--accent, #0b6bcb); }
+.textmap-notes-body { }
+.textmap-notes-rendered {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-primary, #1d1d1f);
+  padding: 4px 2px;
+  overflow-wrap: anywhere;
+}
+.textmap-notes-rendered > :first-child { margin-top: 0; }
+.textmap-notes-rendered > :last-child { margin-bottom: 0; }
+.textmap-notes-rendered h1, .textmap-notes-rendered h2, .textmap-notes-rendered h3 { font-size: 15px; margin: 10px 0 4px; }
+.textmap-notes-rendered code {
+  background: var(--bg-hover, rgba(127,127,127,0.16));
+  padding: 1px 5px; border-radius: 4px; font-size: 12px;
+}
+.textmap-notes-rendered pre {
+  background: var(--bg-hover, rgba(127,127,127,0.16));
+  padding: 8px 10px; border-radius: 8px; overflow: auto;
+}
+.textmap-notes-empty { color: var(--text-muted, #8a8a8f); font-size: 13px; }
 
 .textmap-notes { margin: 2px 0 6px 30px; }
 .textmap-notes-editor {
