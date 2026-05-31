@@ -32,6 +32,7 @@ import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData, getTemplateClassifiers } from "./migration";
 import { createEmptyFilterState } from "./utils/filters";
 import { normalizeFencedKV } from "./utils/normalize";
+import { serializeViewComment } from "./utils/viewOptions";
 import { escapeKVValue } from "./utils/kv-escape";
 import { useFileLoader } from "./hooks/useFileLoader";
 import { isNativeApp as detectNativeApp, postToSwift } from "./utils/swiftBridge";
@@ -1543,11 +1544,10 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[], edge
   if (edgeColorOverrides && Object.keys(edgeColorOverrides).length > 0) {
     lines.push(`<!-- edge-colors: ${JSON.stringify(edgeColorOverrides)} -->`);
   }
-  // Persist the view options (layout preset) so the chosen view travels with
-  // the map file. Default "force" is omitted to keep clean diffs.
-  if (layoutPreset && layoutPreset !== "force") {
-    lines.push(`<!-- view: ${JSON.stringify({ layout: layoutPreset })} -->`);
-  }
+  // Persist view options (layout preset + per-attribute classifier layouts) so
+  // the chosen view travels with the map file. See utils/viewOptions.
+  const viewComment = serializeViewComment({ layoutPreset, classifiers: data.metadata.classifiers });
+  if (viewComment) lines.push(viewComment);
   lines.push(`<!-- Exported from concept-mapper, ${new Date().toISOString().split("T")[0]}. -->\n`);
 
   // Structure (classifiers, node types, edge types) lives in the .cmt template.

@@ -11,7 +11,8 @@
 
 import { useEffect, useRef } from "react";
 import { installBridgeReceiver, postToSwift, registerSyncGetters, subscribe } from "../utils/swiftBridge";
-import type { ConceptMapData, GraphIR, LayoutPreset, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
+import { parseViewComment } from "../utils/viewOptions";
+import type { Classifier, ConceptMapData, GraphIR, LayoutPreset, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
 import type { FilterState } from "../utils/filters";
 import type { TaxonomyWizardInitial } from "../ui/TaxonomyWizard";
 
@@ -110,18 +111,21 @@ export function useSwiftBridge(deps: SwiftBridgeDeps): void {
         } else {
           d.setEdgeColorOverrides({});
         }
-        // Restore the saved view option (layout preset); default to force.
-        const viewMatch = decoded.match(/<!--\s*view:\s*(\{.+?\})\s*-->/);
-        let restoredLayout: LayoutPreset = "force";
-        if (viewMatch) {
-          try {
-            const v = JSON.parse(viewMatch[1]) as { layout?: LayoutPreset };
-            if (v.layout === "force" || v.layout === "flow" || v.layout === "radial") {
-              restoredLayout = v.layout;
-            }
-          } catch { /* ignore */ }
+        // Restore saved view options: layout preset + per-attribute classifier
+        // layouts (see utils/viewOptions).
+        const view = parseViewComment(decoded);
+        d.setLayoutPreset(view?.layout ?? "force");
+        // When a view was saved it is authoritative for classifier layouts:
+        // apply to the IR (which drives rendering) and the template.
+        if (view) {
+          const layouts = view.classifierLayouts ?? {};
+          const applyTo = (cs?: Classifier[]) =>
+            cs?.map((c) => ({ ...c, layout: layouts[c.id] as Classifier["layout"] }));
+          const reIr = applyTo(ir.metadata.classifiers);
+          if (reIr) ir.metadata.classifiers = reIr;
+          const reTmpl = applyTo(migratedTemplate.classifiers);
+          if (reTmpl) migratedTemplate.classifiers = reTmpl;
         }
-        d.setLayoutPreset(restoredLayout);
         d.loadGraphFresh(ir);
         d.setTemplate(migratedTemplate);
         d.setSelectedNodeNull();
