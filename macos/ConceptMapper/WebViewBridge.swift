@@ -19,19 +19,25 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
         _ userContentController: WKUserContentController,
         didReceive message: WKScriptMessage
     ) {
-        // jsLog stays a separate handler for early-boot error reporting before
-        // the bridge is established. Everything else rides the bridge channel.
-        if message.name == "jsLog" {
-            logger.warning("[JS] \("\(message.body)")")
-            return
-        }
-        guard message.name == "bridge" else {
-            logger.error("[Bridge] unknown channel: \(message.name)")
-            return
-        }
-        let body = "\(message.body)"
-        Task { @MainActor in
-            await self.dispatchEnvelope(body: body)
+        // WebKit always delivers script messages on the main thread, but the
+        // protocol requirement is nonisolated. `WKScriptMessage.name`/`.body`
+        // are main-actor-isolated, so assert the known isolation to read them.
+        MainActor.assumeIsolated {
+            // jsLog stays a separate handler for early-boot error reporting
+            // before the bridge is established. Everything else rides the
+            // bridge channel.
+            if message.name == "jsLog" {
+                logger.warning("[JS] \("\(message.body)")")
+                return
+            }
+            guard message.name == "bridge" else {
+                logger.error("[Bridge] unknown channel: \(message.name)")
+                return
+            }
+            let body = "\(message.body)"
+            Task { @MainActor in
+                await self.dispatchEnvelope(body: body)
+            }
         }
     }
 
