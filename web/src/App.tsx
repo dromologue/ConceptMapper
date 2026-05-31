@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import type { GraphIR, GraphNode, NodeTypeConfig, TaxonomyTemplate } from "./types/graph-ir";
 import { GraphCanvas } from "./graph/GraphCanvas";
 import { TextmapView } from "./views/TextmapView";
+import { useViewport } from "./hooks/useViewport";
 import { DetailPanel } from "./ui/DetailPanel";
 import { NotesPane } from "./ui/NotesPane";
 import { ActivityBar } from "./ui/ActivityBar";
@@ -293,6 +294,19 @@ function AppInner() {
   const handleViewModeChange = useCallback((mode: string) => {
     setViewModeStore(mode); // store clears revealedNodes too
   }, [setViewModeStore]);
+
+  // Responsive default: on a phone-class viewport the visual canvas is too
+  // small to be useful, so default to the textmap. Fires once (the first time
+  // the viewport is phone-class); the user can still switch to any view after.
+  const viewport = useViewport();
+  const didPhoneDefaultRef = useRef(false);
+  useEffect(() => {
+    if (didPhoneDefaultRef.current) return;
+    if (viewport.kind === "phone") {
+      didPhoneDefaultRef.current = true;
+      setViewModeStore("textmap");
+    }
+  }, [viewport.kind, setViewModeStore]);
 
   const handleSelectNode = useCallback(
     (node: GraphNode | null) => {
