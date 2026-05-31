@@ -208,14 +208,14 @@ on desktop — desktop rules are the default; phone/tablet are overrides.
 - `ios/Resources/web`, `ios/Resources/templates`, `ios/Resources/maps` — the
   bundled SPA + assets (committed, like macOS, for Xcode Cloud).
 
-### 6.3 Bundle ID & universal purchase (DECIDED)
+### 6.3 Bundle ID & pricing (REVISED 2026-05-31)
 
-The iOS app uses the **same** bundle id as macOS
-(`com.dromologue.ConceptMapper`) → **universal purchase**, one buy spanning
-Mac + iPhone + iPad. In App Store Connect the iOS build is added as a **new
-platform on the existing app record**, not a separate record — one listing, one
-set of metadata, shared reviews. The macOS auto-bump versioning scheme
-(`MAJOR.MINOR.CI_BUILD_NUMBER`) applies per-platform.
+The macOS app is **free**; the iOS app is **paid**. That rules out a universal
+purchase (which needs one shared price), so the iOS app is a **separate App Store
+product** with a **distinct bundle id** `com.dromologue.ConceptMapper.ios` and
+its own App Store Connect record, price tier, metadata, and Xcode Cloud workflow.
+The auto-bump versioning scheme (`MAJOR.MINOR.CI_BUILD_NUMBER`) applies to each
+app independently.
 
 ## 7. Build, CI, versioning & release safety
 

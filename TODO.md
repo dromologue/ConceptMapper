@@ -1,32 +1,55 @@
 # TODO
 
-Live list of remaining work. Completed tasks are deleted, not checked off.
-Branch: `feature/multiplatform` (nothing merges to `master` until build-verified —
-`master` auto-ships to the App Store).
+Live plan to a testable, shippable build. Completed tasks are deleted, not
+checked off. Branch: `feature/multiplatform` — nothing merges to `master` until
+build-verified (`master` auto-ships the **free** macOS app to the App Store).
 
-## Phase 2 — iOS app (iPhone + iPad, universal, iOS 16, shared bundle id)
+**Pricing:** macOS app is **free**; iOS app is a **separate, paid** App Store
+product (distinct bundle id `com.dromologue.ConceptMapper.ios` — not a universal
+purchase).
 
-iOS 26.5 platform installed. The universal app **builds and runs on iPhone 17
-and iPad (A16) simulators**; the SPA loads, the bridge populates Templates/Maps,
-and bundled content hydrates. `scripts/build-app.sh` now mirrors web assets into
-`ios/Resources`.
+## Status
 
-### Remaining
-- [ ] Extend `scripts/build-app.sh` with `--platform mac|ios|all` to also
-      generate + build (and optionally run) the iOS target.
-- [ ] Interactive verification: open a bundled map on the iPhone sim → confirm it
-      defaults to the textmap; open on iPad → confirm the visual map. (Needs a tap
-      driver — fold into the XCUITest task below.)
+The shared React SPA carries every feature (map, textmap, notes, view
+persistence, add-node). macOS app builds/ships. The universal iOS app builds and
+runs on iPhone 17 + iPad (A16) simulators (start screen, bridge, bundled content
+verified). Remaining work is sessioned below.
 
-### iOS visual testing (XCUITest)
-- [ ] Add a UI test target; screenshot tests on iPhone + iPad sims that open a map
-      and capture the map + textmap (also serves the interactive verification above).
+## Session 1 — Verification harness + build pipeline  ← IN PROGRESS
 
-## Release (when Phase 2 verified)
-- [ ] Expand in-app help (`web/src/help/content.ts`) — textmap inline notes +
-      view-option persistence.
-- [ ] Regenerate + push public support site (`scripts/gen-support-site.mjs`) with
-      textmap + iOS details.
-- [ ] App Store Connect: add iOS platform to the existing app record; screenshots
-      (iPad map, iPhone textmap); universal purchase.
-- [ ] Merge `feature/multiplatform` → `master` after full build + smoke test.
+- [ ] `scripts/build-app.sh`: add `--platform mac|ios|all` (generate + build,
+      optionally run, the iOS target).
+- [ ] XCUITest UI-test target (`ios/project.yml`): launch → open a bundled map →
+      capture screenshots of the **textmap on iPhone** and the **visual map on
+      iPad**. Run on both sims. (Gives interactive on-device verification.)
+- [ ] Commit regenerated `ios/*.xcodeproj` + refreshed `ios/Resources/web`.
+
+## Session 2 — Responsive mobile UX (iPhone)
+
+- [ ] Phone layout: collapse the sidebar into a drawer/sheet, Properties + Notes
+      as bottom sheets, touch-sized targets, safe-area handling.
+- [ ] Verify each at iPhone size via the XCUITest screenshots; no desktop regress.
+
+## Session 3 — iOS file features on device
+
+- [ ] Verify `UIDocumentPicker` open/attach and share-sheet export end to end on
+      the simulator; fix any presentation/sandbox issues.
+
+## Session 4 — Signing + App Store Connect (paid iOS) + Xcode Cloud
+
+- [ ] Register the iOS App ID + a new (paid) App Store Connect app record; set a
+      price tier.
+- [ ] iOS `ci_pre_xcodebuild.sh` version stamping; a second Xcode Cloud workflow
+      (iOS archive → TestFlight → App Store).
+
+## Session 5 — Release docs + TestFlight
+
+- [ ] Expand in-app help (`web/src/help/content.ts`) for textmap inline notes +
+      view persistence + add-node.
+- [ ] Regenerate + push the public support site with textmap + iOS details.
+- [ ] Cut a TestFlight build; test on a real iPhone/iPad.  ← **testable version**
+
+## Session 6 — Ship
+
+- [ ] Merge `feature/multiplatform` → `master` (full build + smoke test first).
+- [ ] Submit the paid iOS app for review.

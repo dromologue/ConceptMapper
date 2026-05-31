@@ -45,7 +45,10 @@ targets:
         buildPhase: resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.dromologue.ConceptMapper
+        # Distinct bundle id: the iOS app is a SEPARATE, PAID App Store product
+        # (the macOS app stays free). Not a universal purchase — that would
+        # require one shared price across platforms.
+        PRODUCT_BUNDLE_IDENTIFIER: com.dromologue.ConceptMapper.ios
         INFOPLIST_FILE: ConceptMapper/Info.plist
         PRODUCT_NAME: ConceptMapper
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
