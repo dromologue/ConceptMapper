@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import type { GraphIR, GraphNode, NodeTypeConfig, TaxonomyTemplate } from "./types/graph-ir";
+import type { GraphIR, GraphNode, NodeTypeConfig, TaxonomyTemplate, LayoutPreset } from "./types/graph-ir";
 import { GraphCanvas } from "./graph/GraphCanvas";
 import { TextmapView } from "./views/TextmapView";
 import { useViewport } from "./hooks/useViewport";
@@ -174,7 +174,7 @@ function AppInner() {
   const showExportImage = activeModal === 'exportImage';
 
   const [exploded, setExploded] = useState(false);
-  const [layoutPreset, setLayoutPreset] = useState<import("./types/graph-ir").LayoutPreset>("force");
+  const [layoutPreset, setLayoutPreset] = useState<LayoutPreset>("force");
   const [fontScale, setFontScale] = useState(1);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -287,6 +287,8 @@ function AppInner() {
     getGraphData: () => useGraphStore.getState().graphData,
     getNodeTypeConfigs: () => nodeTypeConfigs,
     getEdgeColorOverrides: () => edgeColorOverrides,
+    getLayoutPreset: () => layoutPreset,
+    setLayoutPreset,
     exportToMarkdown,
     createEmptyFilterState,
   });
@@ -517,12 +519,12 @@ function AppInner() {
     if (!graphData || !sourceFilePath || !isNativeApp) return;
     clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      const md = exportToMarkdown(graphData, nodeTypeConfigs, edgeColorOverrides);
+      const md = exportToMarkdown(graphData, nodeTypeConfigs, edgeColorOverrides, layoutPreset);
       postToSwift("saveToPath", { path: sourceFilePath, content: md });
       setSaveIndicator(true);
       setTimeout(() => setSaveIndicator(false), 2000);
     }, 2000);
-  }, [graphData, sourceFilePath, isNativeApp, nodeTypeConfigs, edgeColorOverrides]);
+  }, [graphData, sourceFilePath, isNativeApp, nodeTypeConfigs, edgeColorOverrides, layoutPreset]);
 
   // Trigger auto-save when graph data or edge colors change
   const graphDataRef = useRef(graphData);
@@ -539,6 +541,14 @@ function AppInner() {
     }
     edgeColorsRef.current = edgeColorOverrides;
   }, [edgeColorOverrides, graphData, autoSave]);
+  // Persist the view option (layout preset) to the map file when it changes.
+  const layoutPresetRef = useRef(layoutPreset);
+  useEffect(() => {
+    if (graphData && layoutPresetRef.current !== layoutPreset) {
+      autoSave();
+    }
+    layoutPresetRef.current = layoutPreset;
+  }, [layoutPreset, graphData, autoSave]);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1223,6 +1233,7 @@ function AppInner() {
               data={graphData}
               selectedNodeId={selectedNode?.id ?? null}
               onSelectNode={handleSelectNode}
+              onNodeUpdate={handleNodeUpdate}
               nodeTypeConfigs={nodeTypeConfigs}
               edgeTypeConfigs={template?.edge_types}
             />
@@ -1521,7 +1532,7 @@ function AppInner() {
   );
 }
 
-function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[], edgeColorOverrides?: Record<string, string>): string {
+function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[], edgeColorOverrides?: Record<string, string>, layoutPreset?: LayoutPreset): string {
   const lines: string[] = [];
   const title = data.metadata.title || "Concept Map";
   lines.push(`# ${title}\n`);
@@ -1531,6 +1542,11 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[], edge
   // Persist edge color overrides as an HTML comment so they survive round-trips
   if (edgeColorOverrides && Object.keys(edgeColorOverrides).length > 0) {
     lines.push(`<!-- edge-colors: ${JSON.stringify(edgeColorOverrides)} -->`);
+  }
+  // Persist the view options (layout preset) so the chosen view travels with
+  // the map file. Default "force" is omitted to keep clean diffs.
+  if (layoutPreset && layoutPreset !== "force") {
+    lines.push(`<!-- view: ${JSON.stringify({ layout: layoutPreset })} -->`);
   }
   lines.push(`<!-- Exported from concept-mapper, ${new Date().toISOString().split("T")[0]}. -->\n`);
 

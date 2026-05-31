@@ -52,6 +52,23 @@ describe("TextmapView", () => {
     expect(screen.getAllByText("Alpha").length).toBeGreaterThanOrEqual(2);
   });
 
+  it("edits a node's notes inline and persists via onNodeUpdate (debounced)", () => {
+    vi.useFakeTimers();
+    try {
+      const g = graph([node("a", "Alpha")], []);
+      const onUpdate = vi.fn();
+      render(
+        <TextmapView data={g} selectedNodeId={null} onSelectNode={() => {}} onNodeUpdate={onUpdate} />,
+      );
+      fireEvent.click(screen.getByLabelText("Notes for Alpha"));
+      fireEvent.change(screen.getByPlaceholderText(/notes/i), { target: { value: "hello" } });
+      vi.advanceTimersByTime(600);
+      expect(onUpdate).toHaveBeenCalledWith("a", { notes: "hello" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("renders a loop marker for a cycle instead of recursing forever", () => {
     // Alpha → Beta → Gamma → Beta (cycle). Single root: Alpha.
     const g = graph(

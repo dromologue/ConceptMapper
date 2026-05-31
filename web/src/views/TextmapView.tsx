@@ -1,5 +1,6 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import type { GraphIR, GraphNode, NodeTypeConfig, EdgeTypeConfig } from "../types/graph-ir";
+import { postToSwift, subscribe } from "../utils/swiftBridge";
 import {
   indexNodes,
   connectionsOf,
@@ -12,6 +13,8 @@ interface Props {
   data: GraphIR;
   selectedNodeId: string | null;
   onSelectNode: (node: GraphNode | null) => void;
+  /** Persist node edits (notes). Same handler the canvas/NotesPane use. */
+  onNodeUpdate?: (nodeId: string, updates: Partial<GraphNode>) => void;
   nodeTypeConfigs?: NodeTypeConfig[];
   edgeTypeConfigs?: EdgeTypeConfig[];
 }
@@ -27,6 +30,7 @@ export function TextmapView({
   data,
   selectedNodeId,
   onSelectNode,
+  onNodeUpdate,
   nodeTypeConfigs,
   edgeTypeConfigs,
 }: Props) {
@@ -48,6 +52,16 @@ export function TextmapView({
 
   const toggle = useCallback((pathKey: string) => {
     setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(pathKey) ? next.delete(pathKey) : next.add(pathKey);
+      return next;
+    });
+  }, []);
+
+  // Rows whose inline notes editor is open, keyed by ancestor path.
+  const [notesOpen, setNotesOpen] = useState<Set<string>>(new Set());
+  const toggleNotes = useCallback((pathKey: string) => {
+    setNotesOpen((prev) => {
       const next = new Set(prev);
       next.has(pathKey) ? next.delete(pathKey) : next.add(pathKey);
       return next;
@@ -123,6 +137,9 @@ export function TextmapView({
               onToggle={toggle}
               onSelect={onSelectNode}
               onFocus={focus}
+              notesOpen={notesOpen}
+              onToggleNotes={toggleNotes}
+              onNodeUpdate={onNodeUpdate}
             />
           ))
         )}
@@ -144,6 +161,9 @@ interface RowProps {
   onToggle: (pathKey: string) => void;
   onSelect: (node: GraphNode) => void;
   onFocus: (node: GraphNode) => void;
+  notesOpen: Set<string>;
+  onToggleNotes: (pathKey: string) => void;
+  onNodeUpdate?: (nodeId: string, updates: Partial<GraphNode>) => void;
 }
 
 function TextmapRow({
@@ -159,9 +179,14 @@ function TextmapRow({
   onToggle,
   onSelect,
   onFocus,
+  notesOpen,
+  onToggleNotes,
+  onNodeUpdate,
 }: RowProps) {
   const pathKey = [...ancestors, node.id].join(">");
   const isOpen = expanded.has(pathKey);
+  const notesShown = notesOpen.has(pathKey);
+  const hasNotes = Boolean(node.notes?.trim() || node.notes_file);
   const ancestorSet = useMemo(() => new Set(ancestors), [ancestors]);
 
   const groups = useMemo(
@@ -189,6 +214,16 @@ function TextmapRow({
         <button className="textmap-name" onClick={() => onSelect(node)} title="Select">
           {node.name}
         </button>
+        {onNodeUpdate && (
+          <button
+            className={`textmap-note-btn ${hasNotes ? "has-notes" : ""} ${notesShown ? "active" : ""}`}
+            onClick={() => onToggleNotes(pathKey)}
+            title={hasNotes ? "Edit notes" : "Add notes"}
+            aria-label={`Notes for ${node.name}`}
+          >
+            {hasNotes ? "●" : "○"}
+          </button>
+        )}
         <button
           className="textmap-focus"
           onClick={() => onFocus(node)}
@@ -198,6 +233,10 @@ function TextmapRow({
           ⤢
         </button>
       </div>
+
+      {notesShown && onNodeUpdate && (
+        <TextmapNotes node={node} onNodeUpdate={onNodeUpdate} />
+      )}
 
       {isOpen && canExpand && (
         <div className="textmap-children">
@@ -235,11 +274,79 @@ function TextmapRow({
                     onToggle={onToggle}
                     onSelect={onSelect}
                     onFocus={onFocus}
+                    notesOpen={notesOpen}
+                    onToggleNotes={onToggleNotes}
+                    onNodeUpdate={onNodeUpdate}
                   />
                 );
               })}
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Inline notes editor for a node inside the outline. Mirrors NotesPane's
+ * persistence: edits save to the map (via onNodeUpdate → the app's auto-save)
+ * and, when an external markdown file is attached, write through to that file.
+ * If a file is attached, its contents are the source of truth on open.
+ */
+function TextmapNotes({
+  node,
+  onNodeUpdate,
+}: {
+  node: GraphNode;
+  onNodeUpdate: (nodeId: string, updates: Partial<GraphNode>) => void;
+}) {
+  const [content, setContent] = useState<string>(node.notes ?? "");
+  const attachedPath = node.notes_file;
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Re-seed when switching to a different node instance.
+  useEffect(() => {
+    setContent(node.notes ?? "");
+  }, [node.id, node.notes]);
+
+  // File is the source of truth: pull its contents when the editor opens.
+  useEffect(() => {
+    if (!attachedPath) return;
+    const unsubscribe = subscribe("notesFileRead", (detail) => {
+      if (detail.nodeId !== node.id) return;
+      if (detail.exists) {
+        setContent(detail.content);
+        onNodeUpdate(node.id, { notes: detail.content || undefined });
+      }
+    });
+    postToSwift("readNotesFile", { nodeId: node.id, path: attachedPath });
+    return unsubscribe;
+  }, [attachedPath, node.id, onNodeUpdate]);
+
+  const onChange = (val: string) => {
+    setContent(val);
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      onNodeUpdate(node.id, { notes: val || undefined });
+      if (attachedPath) {
+        postToSwift("writeNotesFile", { path: attachedPath, content: val });
+      }
+    }, 500);
+  };
+
+  return (
+    <div className="textmap-notes">
+      <textarea
+        className="textmap-notes-editor"
+        value={content}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Notes…"
+        spellCheck={false}
+      />
+      {attachedPath && (
+        <div className="textmap-notes-file" title={attachedPath}>
+          ↪ {attachedPath.split("/").pop()}
         </div>
       )}
     </div>

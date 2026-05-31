@@ -11,7 +11,7 @@
 
 import { useEffect, useRef } from "react";
 import { installBridgeReceiver, postToSwift, registerSyncGetters, subscribe } from "../utils/swiftBridge";
-import type { ConceptMapData, GraphIR, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
+import type { ConceptMapData, GraphIR, LayoutPreset, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
 import type { FilterState } from "../utils/filters";
 import type { TaxonomyWizardInitial } from "../ui/TaxonomyWizard";
 
@@ -32,6 +32,7 @@ export interface SwiftBridgeDeps {
   setFilters: (f: FilterState) => void;
   setError: (e: string | null) => void;
   setSourceFilePath: (p: string | null) => void;
+  setLayoutPreset: (p: LayoutPreset) => void;
   setShowTaxonomyWizard: (v: boolean) => void;
   setNativeMaps: (maps: { name: string; path: string }[]) => void;
   setLoadedNativeTemplates: (updater: (prev: Map<string, TaxonomyWizardInitial>) => Map<string, TaxonomyWizardInitial>) => void;
@@ -40,7 +41,8 @@ export interface SwiftBridgeDeps {
   getGraphData: () => GraphIR | null;
   getNodeTypeConfigs: () => NodeTypeConfig[];
   getEdgeColorOverrides: () => Record<string, string>;
-  exportToMarkdown: (data: GraphIR, configs: NodeTypeConfig[], overrides?: Record<string, string>) => string;
+  getLayoutPreset: () => LayoutPreset;
+  exportToMarkdown: (data: GraphIR, configs: NodeTypeConfig[], overrides?: Record<string, string>, layoutPreset?: LayoutPreset) => string;
 
   // Factories
   createEmptyFilterState: () => FilterState;
@@ -64,7 +66,7 @@ export function useSwiftBridge(deps: SwiftBridgeDeps): void {
         const d = depsRef.current;
         const g = d.getGraphData();
         if (!g) return "";
-        return d.exportToMarkdown(g, d.getNodeTypeConfigs(), d.getEdgeColorOverrides());
+        return d.exportToMarkdown(g, d.getNodeTypeConfigs(), d.getEdgeColorOverrides(), d.getLayoutPreset());
       },
       getCanvasImage: () => {
         const canvas = document.querySelector("canvas");
@@ -108,6 +110,18 @@ export function useSwiftBridge(deps: SwiftBridgeDeps): void {
         } else {
           d.setEdgeColorOverrides({});
         }
+        // Restore the saved view option (layout preset); default to force.
+        const viewMatch = decoded.match(/<!--\s*view:\s*(\{.+?\})\s*-->/);
+        let restoredLayout: LayoutPreset = "force";
+        if (viewMatch) {
+          try {
+            const v = JSON.parse(viewMatch[1]) as { layout?: LayoutPreset };
+            if (v.layout === "force" || v.layout === "flow" || v.layout === "radial") {
+              restoredLayout = v.layout;
+            }
+          } catch { /* ignore */ }
+        }
+        d.setLayoutPreset(restoredLayout);
         d.loadGraphFresh(ir);
         d.setTemplate(migratedTemplate);
         d.setSelectedNodeNull();
