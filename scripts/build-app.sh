@@ -113,7 +113,18 @@ rm -rf macos/Resources/web/maps macos/Resources/maps
 mkdir -p macos/Resources/web/maps macos/Resources/maps
 [ -d Maps ] && cp Maps/*.cm macos/Resources/web/maps/ 2>/dev/null || true
 [ -d Maps ] && cp Maps/*.cm macos/Resources/maps/ 2>/dev/null || true
-echo "Web assets, templates, and maps copied."
+echo "Web assets, templates, and maps copied (macOS)."
+
+# Mirror the same bundled assets into the iOS target so the two shells can
+# never ship different SPA builds (committed-artifacts rule, both platforms).
+if [ -d ios ]; then
+  rm -rf ios/Resources/web ios/Resources/templates ios/Resources/maps
+  mkdir -p ios/Resources
+  cp -r macos/Resources/web ios/Resources/web
+  cp -r macos/Resources/templates ios/Resources/templates
+  cp -r macos/Resources/maps ios/Resources/maps
+  echo "Web assets, templates, and maps copied (iOS)."
+fi
 fi
 
 # --- Step 5: Regenerate Xcode project ---

@@ -6,30 +6,21 @@ Branch: `feature/multiplatform` (nothing merges to `master` until build-verified
 
 ## Phase 2 — iOS app (iPhone + iPad, universal, iOS 16, shared bundle id)
 
-### BLOCKED — install the iOS platform for Xcode
-The active Xcode ships the iOS 26.5 SDK but the iOS **platform/simulator runtime
-is not installed** (only an incompatible iOS 18.5 runtime from a prior Xcode).
-`xcodebuild` reports no eligible iOS destination, so the iOS app cannot be
-compiled or run here yet.
-- [ ] **USER ACTION:** Xcode → Settings → Components → install the iOS platform
-      (iOS 26.5 simulator runtime). Then the tasks below can proceed.
+iOS 26.5 platform installed. The universal app **builds and runs on iPhone 17
+and iPad (A16) simulators**; the SPA loads, the bridge populates Templates/Maps,
+and bundled content hydrates. `scripts/build-app.sh` now mirrors web assets into
+`ios/Resources`.
 
-### Done (created, not yet compiled — pending the platform install)
-iOS shell + project all written and the Xcode project generates:
-`ios/ConceptMapper/{ConceptMapperApp,ContentView,FileHandler}.swift`,
-`Info.plist`, `Assets.xcassets`, `ios/project.yml`, `ios/Resources/*`. Shared
-bridge gained an iOS URL opener (macOS build verified unaffected).
-
-### Build & test on simulators (after platform install)
-- [ ] Build for **iPhone 16** + **iPad Pro 11"** simulators; fix any compile errors.
-- [ ] Extend `scripts/build-app.sh` — copy web assets to `ios/Resources/web`;
-      add `--platform mac|ios|all`; generate + build ios.
-- [ ] Boot simulators, install, launch; verify SPA loads → open a bundled map →
-      map renders → switch to textmap. Capture screenshots.
-- [ ] Commit refreshed `ios/Resources/web` + generated `ios/*.xcodeproj`.
+### Remaining
+- [ ] Extend `scripts/build-app.sh` with `--platform mac|ios|all` to also
+      generate + build (and optionally run) the iOS target.
+- [ ] Interactive verification: open a bundled map on the iPhone sim → confirm it
+      defaults to the textmap; open on iPad → confirm the visual map. (Needs a tap
+      driver — fold into the XCUITest task below.)
 
 ### iOS visual testing (XCUITest)
-- [ ] Add a UI test target; screenshot tests on iPhone + iPad sims (map + textmap).
+- [ ] Add a UI test target; screenshot tests on iPhone + iPad sims that open a map
+      and capture the map + textmap (also serves the interactive verification above).
 
 ## Release (when Phase 2 verified)
 - [ ] Expand in-app help (`web/src/help/content.ts`) — textmap inline notes +
