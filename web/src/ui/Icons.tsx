@@ -7,6 +7,19 @@ interface IconProps {
 
 const defaults = { size: 16, className: "" };
 
+export function IconOutline({ size = defaults.size, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <circle cx="3" cy="3.5" r="1.2" fill="currentColor" />
+      <line x1="6" y1="3.5" x2="14" y2="3.5" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="5.5" cy="8" r="1.2" fill="currentColor" />
+      <line x1="8.5" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="5.5" cy="12.5" r="1.2" fill="currentColor" />
+      <line x1="8.5" y1="12.5" x2="14" y2="12.5" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
 export function IconNetwork({ size = defaults.size, className }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>

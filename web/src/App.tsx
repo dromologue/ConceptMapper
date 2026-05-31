@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import type { GraphIR, GraphNode, NodeTypeConfig, TaxonomyTemplate } from "./types/graph-ir";
 import { GraphCanvas } from "./graph/GraphCanvas";
+import { TextmapView } from "./views/TextmapView";
 import { DetailPanel } from "./ui/DetailPanel";
 import { NotesPane } from "./ui/NotesPane";
 import { ActivityBar } from "./ui/ActivityBar";
@@ -1203,6 +1204,15 @@ function AppInner() {
             </div>
           )}
           <div className="canvas-container">
+            {viewMode === "textmap" ? (
+            <TextmapView
+              data={graphData}
+              selectedNodeId={selectedNode?.id ?? null}
+              onSelectNode={handleSelectNode}
+              nodeTypeConfigs={nodeTypeConfigs}
+              edgeTypeConfigs={template?.edge_types}
+            />
+            ) : (
             <GraphCanvas
               data={graphData}
               onSelectNode={handleSelectNode}
@@ -1263,6 +1273,8 @@ function AppInner() {
               edgeTypeConfigs={template?.edge_types}
               focusMode={focusMode}
             />
+            )}
+            {viewMode !== "textmap" && (
             <div className="zoom-controls">
               <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomIn()} title="Zoom in">+</button>
               <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomOut()} title="Zoom out">-</button>
@@ -1317,6 +1329,7 @@ function AppInner() {
                 </div>
               )}
             </div>
+            )}
             {selectedEdge && edgePopoverPos && (
               <EdgePopover
                 edge={selectedEdge}

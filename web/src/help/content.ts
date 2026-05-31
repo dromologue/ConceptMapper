@@ -686,6 +686,35 @@ The k-core number indicates which "shell" of the network a node belongs to. It i
 *Practical use:* Filter your rankings by k-core to identify the structural foundation vs. the periphery. If a concept you consider important has a low k-core number, it may be under-connected in your taxonomy.`,
   },
 
+  // ── Textmap (Outline View) ───────────────────────────────────────
+  {
+    id: "textmap",
+    title: "Textmap: The Outline View",
+    tags: ["textmap", "outline", "list", "text", "navigate", "iphone", "mobile", "tree"],
+    content: `The **Textmap** is an alternative to the visual canvas: it renders the same concept map as a navigable nested **outline**. It is the default on small screens (iPhone), where the visual graph is hard to read, and it is available on every platform from the outline button in the Activity Bar.
+
+**What you see**
+Each node is a row. Expand a row (▸) to reveal that node's connections, grouped by relationship:
+- Outgoing directed relationships appear as "Label →".
+- Incoming directed relationships appear as "← Label".
+- Undirected relationships appear under their plain label.
+Each group shows a count, and every connected node is itself a row you can expand — so you can walk the entire graph by outline.
+
+**Navigating**
+- **Tap a node name** to select it — the Properties panel and Notes work exactly as they do on the canvas.
+- **Tap the disclosure arrow** to expand or collapse a node's connections in place.
+- **Tap the focus control (⤢)** to re-root the outline on that node. A breadcrumb trail at the top records your path; tap any crumb (or "All roots") to jump back.
+
+**Roots**
+The top level lists the map's natural roots — nodes with no incoming relationship. If the map has none (for example a fully cyclic or purely undirected map), every node is listed at the top level, and you focus into whichever one you want to explore from.
+
+**Loops**
+Concept maps contain cycles. If a connection points back to a node already above you in the current path, the Textmap shows it as a **loop link (↺)** rather than expanding it forever — tap it to jump to that node. This keeps navigation finite no matter how tangled the graph.
+
+**Why it exists**
+A large graph is unreadable on a phone and often busy even on a desktop. The Textmap trades spatial layout for precise, linear navigation: follow one thread of relationships at a time, with the structure always legible as indented text.`,
+  },
+
   // ── FAQ ──────────────────────────────────────────────────────────
   {
     id: "faq",

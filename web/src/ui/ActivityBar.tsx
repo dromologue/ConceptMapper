@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import type { NodeTypeConfig, LayoutPreset } from "../types/graph-ir";
-import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconHelp, IconFitView, IconExport, IconAnalysis, IconExplode, IconLayout, IconProperties, IconNotes } from "./Icons";
+import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconHelp, IconFitView, IconExport, IconAnalysis, IconExplode, IconLayout, IconProperties, IconNotes, IconOutline } from "./Icons";
 
 interface Props {
   viewMode: string; // "full" or a node type id
@@ -106,6 +106,13 @@ export function ActivityBar({
             <span className="activity-bar-icon-text">{nt.icon ?? nt.label[0]}</span>
           </button>
         ))}
+        <button
+          className={`activity-bar-btn ${viewMode === "textmap" ? "active" : ""}`}
+          onClick={() => onViewModeChange("textmap")}
+          title="Text Outline"
+        >
+          <IconOutline size={20} />
+        </button>
         <div className="activity-bar-separator" />
         <button
           className={`activity-bar-btn ${sidebarOpen ? "active" : ""}`}

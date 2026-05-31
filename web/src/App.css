@@ -3275,3 +3275,124 @@ select.settings-input {
 .expand-level-label:hover {
   color: var(--text-body, inherit);
 }
+
+/* ── Textmap (outline) view ───────────────────────────────────────────
+   A navigable outline projection of the graph. Shares the canvas-container
+   slot; scrolls independently. Touch-friendly row sizing for iPhone/iPad. */
+.textmap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-canvas, var(--bg-body, #fff));
+  color: var(--text-body, #1d1d1f);
+  overflow: hidden;
+}
+.textmap-breadcrumb {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border, #e3e3e8);
+  font-size: 13px;
+}
+.textmap-crumb {
+  background: none;
+  border: none;
+  color: var(--accent, #0b6bcb);
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 13px;
+}
+.textmap-crumb:hover { text-decoration: underline; }
+.textmap-crumb-sep { color: var(--text-muted, #888); margin: 0 2px; }
+
+.textmap-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 8px 10px 40px;
+}
+.textmap-empty { color: var(--text-muted, #888); padding: 24px; text-align: center; }
+
+.textmap-children {
+  margin-left: 18px;
+  border-left: 1px solid var(--border, #e3e3e8);
+  padding-left: 6px;
+}
+.textmap-group { margin: 2px 0; }
+.textmap-group-label {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted, #8a8a8f);
+  padding: 4px 6px 2px;
+}
+.textmap-count { opacity: 0.7; }
+
+.textmap-row,
+.textmap-loop {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px; /* touch target */
+  border-radius: 6px;
+  padding: 0 4px;
+}
+.textmap-row:hover { background: var(--bg-hover, rgba(127,127,127,0.08)); }
+.textmap-row.selected { background: var(--accent-subtle, rgba(11,107,203,0.14)); }
+
+.textmap-disclosure {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  color: var(--text-muted, #8a8a8f);
+  cursor: pointer;
+  font-size: 12px;
+  border-radius: 4px;
+}
+.textmap-disclosure:disabled { cursor: default; opacity: 0.5; }
+.textmap-disclosure:not(:disabled):hover { background: var(--bg-hover, rgba(127,127,127,0.12)); }
+
+.textmap-badge {
+  flex: 0 0 auto;
+  width: 20px;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.85;
+}
+.textmap-name {
+  flex: 1 1 auto;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 6px 2px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.textmap-name:hover { color: var(--accent, #0b6bcb); }
+.textmap-focus {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  color: var(--text-muted, #8a8a8f);
+  cursor: pointer;
+  font-size: 13px;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  opacity: 0;
+}
+.textmap-row:hover .textmap-focus { opacity: 1; }
+.textmap-focus:hover { background: var(--bg-hover, rgba(127,127,127,0.12)); color: var(--accent, #0b6bcb); }
+
+.textmap-loop { color: var(--text-muted, #8a8a8f); font-style: italic; }
+.textmap-loop-glyph { width: 24px; text-align: center; }
