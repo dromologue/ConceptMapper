@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		000499D6156FED349975DDA7 /* web in Resources */ = {isa = PBXBuildFile; fileRef = 5D23A438FC2C974DF67E4BDA /* web */; };
+		38E9AA9FBC67BF71E858CA0F /* ConceptMapperUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A05B4AA3DB9F961BD2071C7C /* ConceptMapperUITests.swift */; };
 		4338E2C9F95E7C64D79F5DBC /* BridgeProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66C15D423DF7F7BB34E065FE /* BridgeProtocol.swift */; };
 		6E342D2A9D206E15A9B2C26A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2C3567E674CDFED2E82AAB8E /* Assets.xcassets */; };
 		7F76235BAB5D97F019DBC04F /* maps in Resources */ = {isa = PBXBuildFile; fileRef = 392F07B8E1820E6E075DEA65 /* maps */; };
@@ -18,6 +19,16 @@
 		F29E818FA3CA5CC4E8ACCE93 /* FileHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 929C0401AA285ECA332553E0 /* FileHandler.swift */; };
 		F8040851C9ABDCB29BC09CE0 /* WebViewBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D78E94017116FC4875ED38 /* WebViewBridge.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		CE0994F7F391BFD7D16B0DA4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 30B30D85223A394DAAB439A6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 280B263EFB1E2887460CD68A;
+			remoteInfo = ConceptMapper;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		10D78E94017116FC4875ED38 /* WebViewBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewBridge.swift; sourceTree = "<group>"; };
@@ -31,6 +42,8 @@
 		8FBE0B67E12E0D0E6E68A04D /* ConceptMapperApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConceptMapperApp.swift; sourceTree = "<group>"; };
 		91FBB75EBFDDBAD158F62B4D /* PlatformURLOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformURLOpener.swift; sourceTree = "<group>"; };
 		929C0401AA285ECA332553E0 /* FileHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileHandler.swift; sourceTree = "<group>"; };
+		A05B4AA3DB9F961BD2071C7C /* ConceptMapperUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConceptMapperUITests.swift; sourceTree = "<group>"; };
+		C61C328693C9E8BBED52436E /* ConceptMapperUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ConceptMapperUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -53,8 +66,17 @@
 				5D23A438FC2C974DF67E4BDA /* web */,
 				1809F3D62ED689C709EC071D /* ConceptMapper */,
 				30D0EF87097CF20DEB04E52D /* ConceptMapper */,
+				29A95CED28B397DB311D5A32 /* ConceptMapperUITests */,
 				8D71358A068D477D1B27C537 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		29A95CED28B397DB311D5A32 /* ConceptMapperUITests */ = {
+			isa = PBXGroup;
+			children = (
+				A05B4AA3DB9F961BD2071C7C /* ConceptMapperUITests.swift */,
+			);
+			path = ConceptMapperUITests;
 			sourceTree = "<group>";
 		};
 		30D0EF87097CF20DEB04E52D /* ConceptMapper */ = {
@@ -72,6 +94,7 @@
 			isa = PBXGroup;
 			children = (
 				5B90E77E74A0608F9A066041 /* ConceptMapper.app */,
+				C61C328693C9E8BBED52436E /* ConceptMapperUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -79,6 +102,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		06B6555C8DAA0C029C411D6C /* ConceptMapperUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 37B6C2EC51AC2500236D930F /* Build configuration list for PBXNativeTarget "ConceptMapperUITests" */;
+			buildPhases = (
+				BC15EDFA7DECCE21515AC396 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				328EF9F81BD42CE43F75E99C /* PBXTargetDependency */,
+			);
+			name = ConceptMapperUITests;
+			packageProductDependencies = (
+			);
+			productName = ConceptMapperUITests;
+			productReference = C61C328693C9E8BBED52436E /* ConceptMapperUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		280B263EFB1E2887460CD68A /* ConceptMapper */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4A086E6A58EEACCAE4766BA1 /* Build configuration list for PBXNativeTarget "ConceptMapper" */;
@@ -106,6 +147,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
+					06B6555C8DAA0C029C411D6C = {
+						DevelopmentTeam = 4EDT4L4DYU;
+						TestTargetID = 280B263EFB1E2887460CD68A;
+					};
 					280B263EFB1E2887460CD68A = {
 						DevelopmentTeam = 4EDT4L4DYU;
 						ProvisioningStyle = Automatic;
@@ -127,6 +172,7 @@
 			projectRoot = "";
 			targets = (
 				280B263EFB1E2887460CD68A /* ConceptMapper */,
+				06B6555C8DAA0C029C411D6C /* ConceptMapperUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -159,7 +205,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BC15EDFA7DECCE21515AC396 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				38E9AA9FBC67BF71E858CA0F /* ConceptMapperUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		328EF9F81BD42CE43F75E99C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 280B263EFB1E2887460CD68A /* ConceptMapper */;
+			targetProxy = CE0994F7F391BFD7D16B0DA4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1E94F011EE22C2C48761436C /* Release */ = {
@@ -237,6 +299,23 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		60D84D943AB620F53825DA83 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = 4EDT4L4DYU;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dromologue.ConceptMapper.ios.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ConceptMapper;
 			};
 			name = Release;
 		};
@@ -325,6 +404,23 @@
 			};
 			name = Debug;
 		};
+		DE0928BEE7B16B0568EDA6F6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = 4EDT4L4DYU;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dromologue.ConceptMapper.ios.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ConceptMapper;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -333,6 +429,15 @@
 			buildConfigurations = (
 				7CBA491D37C963DD13342D8A /* Debug */,
 				405F43415D929185EC179360 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		37B6C2EC51AC2500236D930F /* Build configuration list for PBXNativeTarget "ConceptMapperUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DE0928BEE7B16B0568EDA6F6 /* Debug */,
+				60D84D943AB620F53825DA83 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

@@ -14,8 +14,13 @@ schemes:
     build:
       targets:
         ConceptMapper: all
+        ConceptMapperUITests: [test]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - ConceptMapperUITests
     archive:
       config: Release
 targets:
@@ -56,3 +61,15 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         DEVELOPMENT_TEAM: "4EDT4L4DYU"
         CODE_SIGN_STYLE: Automatic
+  ConceptMapperUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ConceptMapperUITests
+    dependencies:
+      - target: ConceptMapper
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dromologue.ConceptMapper.ios.uitests
+        DEVELOPMENT_TEAM: "4EDT4L4DYU"
+        TEST_TARGET_NAME: ConceptMapper
