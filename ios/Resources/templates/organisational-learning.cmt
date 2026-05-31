@@ -1,0 +1,70 @@
+{
+  "title": "Organisational Learning",
+  "description": "Map thinkers and concepts across the three conditions for organisational learning: Identity, Information, and Institution.",
+  "format_instructions": "When generating .cm files from this template: use markdown with fenced code blocks for nodes. Every property line MUST use 'key: value' format with a colon separator. Required node keys: id, name. Classifier values use the classifier id as the key. Tags use comma-separated format. Edges use 'from: [id] to: [id] type: [edge_type]' format.",
+  "classifiers": [
+    {
+      "id": "condition",
+      "label": "Conditions",
+      "layout": "x",
+      "values": [
+        { "id": "identity", "label": "Identity", "color": "#4A90D9", "description": "Identity must be safe enough to change (Bourdieu)" },
+        { "id": "information", "label": "Information", "color": "#50C878", "description": "Information must be clean enough to act on (Bateson)" },
+        { "id": "institution", "label": "Institution", "color": "#E67E22", "description": "Institutional form must be convivial enough to permit learning (Illich)" },
+        { "id": "management", "label": "Management", "color": "#9B59B6", "description": "Management theory and practice" },
+        { "id": "psychology", "label": "Psychology", "color": "#E74C3C", "description": "Individual cognition, learning, and behaviour" }
+      ]
+    },
+    {
+      "id": "generation",
+      "label": "Generations",
+      "layout": "y",
+      "values": [
+        { "id": "1", "label": "Founders", "description": "pre-1940" },
+        { "id": "2", "label": "Classical", "description": "1940-1970" },
+        { "id": "3", "label": "Modern", "description": "1970-1990" },
+        { "id": "4", "label": "Contemporary", "description": "1990-present" }
+      ]
+    }
+  ],
+  "node_types": [
+    {
+      "id": "thinker",
+      "label": "Thinker",
+      "shape": "circle",
+      "icon": "T",
+      "size_field": "eminence",
+      "size_map": { "dominant": 20, "major": 14, "secondary": 10, "minor": 6 },
+      "fields": [
+        { "key": "eminence", "label": "Eminence", "type": "select", "options": ["dominant", "major", "secondary", "minor"] },
+        { "key": "dates", "label": "Dates", "type": "text" },
+        { "key": "institutional_base", "label": "Institutional Base", "type": "text" },
+        { "key": "structural_roles", "label": "Structural Roles", "type": "text" }
+      ]
+    },
+    {
+      "id": "concept",
+      "label": "Concept",
+      "shape": "rectangle",
+      "icon": "C",
+      "size_field": "abstraction_level",
+      "size_map": { "meta-theoretical": 16, "theoretical": 13, "operational": 10, "concrete": 7 },
+      "fields": [
+        { "key": "concept_type", "label": "Type", "type": "select", "options": ["framework", "principle", "distinction", "mechanism", "prescription", "synthesis"] },
+        { "key": "abstraction_level", "label": "Abstraction", "type": "select", "options": ["meta-theoretical", "theoretical", "operational", "concrete"] },
+        { "key": "status", "label": "Status", "type": "select", "options": ["active", "absorbed", "contested", "dormant", "superseded"] },
+        { "key": "originator", "label": "Originator", "type": "text" },
+        { "key": "date_introduced", "label": "Date Introduced", "type": "text" }
+      ]
+    }
+  ],
+  "edge_types": [
+    { "id": "chain", "label": "Chain", "color": "#888888", "directed": true, "style": "solid" },
+    { "id": "teacher_pupil", "label": "Teacher-Pupil", "color": "#4A90D9", "directed": true, "style": "solid" },
+    { "id": "rivalry", "label": "Rivalry", "color": "#D94A4A", "directed": false, "style": "dashed" },
+    { "id": "alliance", "label": "Alliance", "color": "#999999", "directed": false, "style": "dotted" },
+    { "id": "originates", "label": "Originates", "color": "#50C878", "directed": true, "style": "solid" },
+    { "id": "develops", "label": "Develops", "color": "#1ABC9C", "directed": true, "style": "solid" },
+    { "id": "critiques", "label": "Critiques", "color": "#E74C3C", "directed": true, "style": "dashed" }
+  ]
+}

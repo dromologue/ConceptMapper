@@ -13,8 +13,13 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
     weak var webView: WKWebView?
 
     /// Platform handler for opening external URLs. Injected by the shell so the
-    /// bridge itself stays free of AppKit/UIKit. Defaults to the macOS opener.
+    /// bridge itself stays free of AppKit/UIKit. Defaults to the per-platform
+    /// opener (macOS: NSWorkspace; iOS: UIApplication).
+    #if canImport(AppKit)
     var urlOpener: PlatformURLOpener = AppKitURLOpener()
+    #elseif canImport(UIKit)
+    var urlOpener: PlatformURLOpener = UIKitURLOpener()
+    #endif
 
     // MARK: - JS → Swift
 

@@ -21,4 +21,13 @@ struct AppKitURLOpener: PlatformURLOpener {
         NSWorkspace.shared.open(url)
     }
 }
+#elseif canImport(UIKit)
+import UIKit
+
+/// iOS implementation backed by `UIApplication`.
+struct UIKitURLOpener: PlatformURLOpener {
+    func open(_ url: URL) {
+        UIApplication.shared.open(url)
+    }
+}
 #endif
