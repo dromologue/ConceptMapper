@@ -42,3 +42,12 @@ targets:
         DEVELOPMENT_TEAM: "4EDT4L4DYU"
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: "YES"
+schemes:
+  ConceptMapper:
+    build:
+      targets:
+        ConceptMapper: all
+    run:
+      config: Debug
+    archive:
+      config: Release
