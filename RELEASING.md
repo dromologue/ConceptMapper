@@ -6,18 +6,16 @@ app, signs it, and uploads it to App Store Connect with no local steps.
 ## What "every push releases" means (and its limits)
 
 The configured intent is: every push to `master` builds to TestFlight **and**
-submits the build for App Store review. Two hard constraints from Apple that no
-automation can remove:
+submits the build for App Store review. Versions auto-bump (see "Versioning"),
+so each push is a distinct, monotonically increasing release with no manual
+edits. The one constraint no automation can remove:
 
-1. **Apple review is mandatory** for every *public* App Store release (minutes
-   to ~a day). TestFlight *internal* builds skip review and appear in minutes.
-2. **Each public App Store version needs a unique marketing version**
-   (`CFBundleShortVersionString`). Build-number bumps alone let you upload many
-   builds, but App Store Connect will not accept a *second public release* under
-   a version string (e.g. `1.0`) that is already released. See "Versioning".
+- **Apple review is mandatory** for every *public* App Store release (minutes
+  to ~a day). TestFlight *internal* builds skip review and appear in minutes.
 
-So in practice: pushes flow to TestFlight automatically and continuously; a
-public release still needs a version bump and an approval.
+So in practice: pushes flow to TestFlight automatically and continuously, and
+each is queued for App Store review automatically; the only gate left is
+Apple's approval.
 
 ## One-time setup in App Store Connect / Xcode
 
@@ -41,15 +39,16 @@ The build number is set automatically by `ci_pre_xcodebuild.sh` from
 
 ## Versioning
 
-- **`CFBundleVersion` (build number)** — stamped automatically per build. Ignore.
-- **`CFBundleShortVersionString` (marketing version)** — currently `1.0`, set in
-  [`macos/project.yml`](macos/project.yml) and `macos/ConceptMapper/Info.plist`.
-  Bump this (e.g. `1.0.1`, `1.1`) **before the push that should become a new
-  public App Store release**, then run `scripts/build-app.sh` to regenerate the
-  committed project, and commit. Until you bump it, repeated pushes keep landing
-  on TestFlight under the same version rather than spawning new store releases.
+`ci_scripts/ci_pre_xcodebuild.sh` stamps both fields on every Xcode Cloud build:
 
-> If you would rather every push auto-produce a distinct store version without
-> manual bumps, the build-number script can also stamp the marketing version as
-> `1.0.$CI_BUILD_NUMBER`. That is monotonic and valid, but produces fast-moving
-> version numbers; it is left off by default in favour of intentional bumps.
+- **`CFBundleVersion` (build number)** = `CI_BUILD_NUMBER`. Automatic, monotonic.
+- **`CFBundleShortVersionString` (marketing version)** = `MAJOR.MINOR.CI_BUILD_NUMBER`.
+  The `MAJOR.MINOR` part is read from the plist's current value; the patch is the
+  CI build number, so every public release is strictly greater than the last
+  with no manual bump.
+
+You only touch versioning to start a new **major/minor line**: edit
+`CFBundleShortVersionString` in [`macos/project.yml`](macos/project.yml) and
+`macos/ConceptMapper/Info.plist` (e.g. `1.0` → `1.1`), run `scripts/build-app.sh`
+to regenerate the committed project, and commit. From then on pushes produce
+`1.1.<build>`. Do not hand-edit build numbers — CI owns them.
