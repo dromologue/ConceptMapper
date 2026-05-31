@@ -1970,3 +1970,138 @@ The Rust parser test suite covers error paths and uses golden-file snapshots for
 - [x] AC-117-02: `tests/golden_tests.rs` parses at least two .cm files and asserts structural equality with stored golden JSON.
 - [x] AC-117-03: Volatile fields (`parsed_at`, `source_file`) are stripped before snapshot comparison.
 - [x] AC-117-04: The suite runs deterministically — no time-based or random behaviour.
+
+---
+
+## REQ-118: Textmap (Outline) View
+
+The concept graph can be viewed as a navigable nested outline ("textmap") as an alternative to the visual canvas, available on every platform (the view lives in the shared SPA).
+
+**Preconditions:**
+
+- A graph (`GraphIR`) is loaded.
+
+**Trigger:**
+
+- The user selects the outline view mode (Activity Bar), or a small viewport defaults to it (REQ-119).
+
+**Expected Behavior:**
+
+- The graph is projected to a tree: each node lists its connected nodes grouped by relationship and direction (outgoing "Label →", incoming "← Label", undirected by label) with per-group counts.
+- Each connection is itself expandable, enabling navigation across the whole graph.
+- Selecting a node name uses the same selection handler as the canvas (Properties/Notes behave identically).
+- A node can be focused to re-root the outline; a breadcrumb trail records the path and walks back ("All roots › …").
+- Roots are nodes with no incoming directed edge; if none exist (fully cyclic / undirected) every node is a root.
+- Cycles are finite: a connection back to an ancestor renders as a loop link (↺), never expanding; a depth cap is a backstop.
+
+**Acceptance Criteria:**
+
+- [x] AC-118-01: `web/src/views/textmap.ts` provides pure projection logic (connection grouping by direction/type, root detection, revisit/loop classification) with unit tests.
+- [x] AC-118-02: `TextmapView` renders the outline and is dispatched from `App.tsx` when `viewMode === "textmap"`.
+- [x] AC-118-03: A cyclic graph renders a loop marker and does not recurse infinitely (component test).
+- [x] AC-118-04: The outline reuses the existing node-selection handler.
+
+---
+
+## REQ-119: Responsive Shell — Phone Defaults to Textmap
+
+The SPA is viewport-aware; on a phone-class screen (where the visual canvas is unusable) the textmap is the default view.
+
+**Preconditions:**
+
+- The SPA is running in any host (browser, macOS/iOS WKWebView).
+
+**Trigger:**
+
+- The viewport is measured at mount and on resize.
+
+**Expected Behavior:**
+
+- `useViewport` classifies width into phone (`< 700px`), tablet (`< 1024px`), desktop.
+- On the first phone-class viewport, the view defaults to `textmap` once; the user can still switch.
+- Tablet/desktop keep the visual map default with the textmap as an option.
+
+**Acceptance Criteria:**
+
+- [x] AC-119-01: `web/src/hooks/useViewport.ts` exposes `{ width, height, kind }` and `classifyWidth`.
+- [x] AC-119-02: A phone-class viewport sets `viewMode` to `textmap` exactly once on mount.
+- [x] AC-119-03: Desktop behaviour is unchanged (no forced view switch).
+
+---
+
+## REQ-120: Inline Editable Notes in the Textmap
+
+A node's notes can be read and edited inline within the outline, with the same persistence semantics as the canvas Notes pane.
+
+**Preconditions:**
+
+- The outline is shown and an `onNodeUpdate` handler is supplied.
+
+**Trigger:**
+
+- The user opens a node's notes from the outline.
+
+**Expected Behavior:**
+
+- A node with notes shows a clear note icon (accent when present) and a one-line read preview; expanding opens a full view that renders the notes markdown.
+- The expanded view offers Edit (textarea), Attach .md / Detach, and Collapse.
+- Edits save to the map (via `onNodeUpdate` → auto-save) and write through to an attached `.md` file when present; an attached file is the source of truth on open.
+
+**Acceptance Criteria:**
+
+- [x] AC-120-01: Opening notes for a node renders an editor; edits invoke `onNodeUpdate` (debounced) — component test.
+- [x] AC-120-02: Notes edits persist to the map file via the standard auto-save path.
+- [x] AC-120-03: When a `notes_file` is attached, edits also write through via the `writeNotesFile` bridge method.
+
+---
+
+## REQ-121: Map-File Persistence of View Options
+
+The chosen view options travel with the map file (the `.cm`) and are restored on load.
+
+**Preconditions:**
+
+- A map is open with a source file path (native host).
+
+**Trigger:**
+
+- The user changes the layout preset or an attribute (classifier) layout; the map auto-saves.
+
+**Expected Behavior:**
+
+- View options are stored in the `.cm` as a single-line `<!-- view: {...} -->` HTML comment (same parser-safe approach as `edge-colors`), holding the non-default layout preset and any per-attribute classifier layouts (`{classifierId: "region"|"x"|"y"|"region-column"}`).
+- On load the saved view is authoritative for classifier layouts: applied to both the IR (which drives rendering) and the template.
+- The default ("force" preset, no classifier layouts) writes no comment.
+
+**Acceptance Criteria:**
+
+- [x] AC-121-01: `web/src/utils/viewOptions.ts` provides `serializeViewComment` / `parseViewComment` with round-trip tests, including nested objects (greedy match).
+- [x] AC-121-02: `exportToMarkdown` emits the view comment; `useSwiftBridge` restores it on `mapLoaded`.
+- [x] AC-121-03: Changing an attribute layout auto-saves and the map reopens in that layout.
+
+---
+
+## REQ-122: Template-Driven Add-Node with Node Links
+
+Adding a node presents template-driven fields and an option to link the new node to existing nodes, on every surface (canvas and textmap).
+
+**Preconditions:**
+
+- A graph and template are loaded.
+
+**Trigger:**
+
+- The user opens the Add Node dialog (sidebar `+ Type`, or the textmap `+ Node` button).
+
+**Expected Behavior:**
+
+- The dialog presents the node type's required and select fields, classifiers, and tags from the template.
+- A "Link to" section lets the user add one or more links to existing nodes, each choosing a target node, an edge type (from the template's `edge_types`), and a direction (→ to / ← from).
+- Submitting creates the node and the linked edges in one undoable action; edge `directed`/visual are resolved from the template's edge-type config.
+- The same dialog is reachable from the textmap, so the capability exists on all platforms (shared SPA).
+
+**Acceptance Criteria:**
+
+- [x] AC-122-01: `handleAddNode` accepts optional `links` + `template` and creates the corresponding edges (out/in), ignoring links to non-existent targets — store tests.
+- [x] AC-122-02: `AddNodeModal` renders the "Link to" rows when nodes and edge types exist and passes the links to `onAdd`.
+- [x] AC-122-03: The textmap `+ Node` button opens the same dialog (modal render gated on `activeModal === 'addNode'`).

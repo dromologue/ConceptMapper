@@ -234,3 +234,8 @@
 | REQ-115 | AC-115-01..04 | `tests/*` (all integration tests) | All consume `concept_mapper_core::*` via the facade | passing |
 | REQ-116 | AC-116-01..04 | `macos/ConceptMapper/FileHandler.swift` | Compile-time: no `completion:` parameters remain | passing |
 | REQ-117 | AC-117-01..04 | `tests/error_paths_tests.rs`, `tests/golden_tests.rs` | 16 error + 3 golden | passing |
+| REQ-118 | AC-118-01..04 | `web/src/__tests__/textmap.test.ts`, `textmap-view.test.tsx` | 12 projection + 4 component | passing |
+| REQ-119 | AC-119-01..03 | `web/src/hooks/useViewport.ts`, `web/src/App.tsx` | viewport classify + phone default | passing |
+| REQ-120 | AC-120-01..03 | `web/src/__tests__/textmap-view.test.tsx` | inline notes edit → onNodeUpdate | passing |
+| REQ-121 | AC-121-01..03 | `web/src/__tests__/viewOptions.test.ts` | 8 serialize/parse round-trip | passing |
+| REQ-122 | AC-122-01..03 | `web/src/__tests__/stores/useGraphStore.test.ts`, `add-node-modal.test.tsx` | add-node links + modal | passing |
