@@ -63,8 +63,6 @@ width, squeezing the textmap. Fix the phone layout:
 
 - [ ] Bridge parity test: assert Swift `BridgeMethod` and TS
       `BridgeRequestMap`/event methods enumerate the same set (REQ-112 follow-up).
-- [ ] Remove the legacy native `HelpOverlay` from macOS `ContentView.swift` so
-      help lives only in the SPA (matches iOS; macOS change → verify build).
 - [ ] CI (Xcode Cloud / branch check): build **both** apps so a change that breaks
       either platform fails before merge (`build-app.sh --platform all`).
 - [ ] When adding a bridge method: edit `BridgeProtocol.swift` + `bridge-protocol.ts`
