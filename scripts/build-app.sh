@@ -16,6 +16,7 @@ CONFIGURATION="Release"
 SKIP_TESTS=false
 SKIP_WEB=false
 VERIFY=false
+PLATFORM="mac"   # mac | ios | all
 DO_ARCHIVE=false
 DO_OPEN=false
 BUILD_DIR="$ROOT/macos/build"
@@ -32,11 +33,13 @@ for arg in "$@"; do
     # macOS app with signing disabled. Proves the Xcode project compiles and
     # links (use before any release-bearing merge). Reuses existing Resources/web.
     --verify) VERIFY=true; SKIP_TESTS=true; SKIP_WEB=true; CONFIGURATION="Debug" ;;
+    --platform=*) PLATFORM="${arg#*=}" ;;
     --help|-h)
       echo "Usage: scripts/build-app.sh [options]"
-      echo "  --debug       Build Debug configuration"
-      echo "  --skip-tests  Skip cargo test and npm test"
-      echo "  --verify      Build-only check: no tests, no web rebuild, no signing"
+      echo "  --debug          Build Debug configuration"
+      echo "  --skip-tests     Skip cargo test and npm test"
+      echo "  --verify         Build-only check: no tests, no web rebuild, no signing"
+      echo "  --platform=P     mac (default) | ios | all — which app(s) to build"
       echo "  --archive     Produce .xcarchive for App Store submission"
       echo "  --open        Open the app after building"
       echo "  -h, --help    Show this help"
@@ -127,32 +130,62 @@ if [ -d ios ]; then
 fi
 fi
 
-# --- Step 5: Regenerate Xcode project ---
-echo ""
-echo "=== Step 5: Regenerate Xcode project ==="
-cd macos
-xcodegen generate
-cd "$ROOT"
-echo "Xcode project generated."
-
-# --- Step 6: Build macOS app ---
-echo ""
-echo "=== Step 6: Build macOS app ($CONFIGURATION) ==="
+# --- Which platforms to build ---
+BUILD_MAC=false; BUILD_IOS=false
+case "$PLATFORM" in
+  mac) BUILD_MAC=true ;;
+  ios) BUILD_IOS=true ;;
+  all) BUILD_MAC=true; BUILD_IOS=true ;;
+  *) echo "ERROR: --platform must be mac | ios | all (got '$PLATFORM')"; exit 1 ;;
+esac
 SIGN_FLAGS=""
 [ "$VERIFY" = true ] && SIGN_FLAGS="CODE_SIGNING_ALLOWED=NO"
-cd macos
-xcodebuild \
-  -scheme ConceptMapper \
-  -configuration "$CONFIGURATION" \
-  -derivedDataPath build \
-  $SIGN_FLAGS \
-  build \
-  | tail -5
-cd "$ROOT"
+
+# --- Step 5/6: macOS app ---
+if [ "$BUILD_MAC" = true ]; then
+  echo ""
+  echo "=== Step 5: Regenerate macOS Xcode project ==="
+  (cd macos && xcodegen generate)
+  echo "Xcode project generated."
+  echo ""
+  echo "=== Step 6: Build macOS app ($CONFIGURATION) ==="
+  (cd macos && xcodebuild \
+    -scheme ConceptMapper \
+    -configuration "$CONFIGURATION" \
+    -derivedDataPath build \
+    $SIGN_FLAGS \
+    build \
+    | tail -5)
+fi
+
+# --- Step 5/6: iOS app (simulator) ---
+if [ "$BUILD_IOS" = true ]; then
+  echo ""
+  echo "=== Step 5: Regenerate iOS Xcode project ==="
+  (cd ios && xcodegen generate)
+  echo "Xcode project generated."
+  echo ""
+  echo "=== Step 6: Build iOS app ($CONFIGURATION, simulator) ==="
+  (cd ios && xcodebuild \
+    -scheme ConceptMapper \
+    -configuration "$CONFIGURATION" \
+    -destination 'generic/platform=iOS Simulator' \
+    -derivedDataPath build \
+    CODE_SIGNING_ALLOWED=NO \
+    build \
+    | tail -5)
+fi
 
 if [ "$VERIFY" = true ]; then
   echo ""
   echo "=== Verify build OK ($CONFIGURATION, unsigned) ==="
+  exit 0
+fi
+
+# Archive / open / signature checks below are macOS-only.
+if [ "$BUILD_MAC" != true ]; then
+  echo ""
+  echo "=== Build complete (iOS) ==="
   exit 0
 fi
 
