@@ -3400,20 +3400,48 @@ select.settings-input {
 /* Textmap inline notes */
 .textmap-note-btn {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: none;
   color: var(--text-muted, #8a8a8f);
   cursor: pointer;
-  font-size: 11px;
   width: 26px;
   height: 26px;
   border-radius: 4px;
-  opacity: 0.55;
+  opacity: 0.4; /* faint when no notes — an "add" affordance */
 }
-.textmap-row:hover .textmap-note-btn { opacity: 1; }
-.textmap-note-btn.has-notes { color: var(--accent, #0b6bcb); opacity: 1; }
-.textmap-note-btn.active { background: var(--bg-hover, rgba(127,127,127,0.18)); color: var(--accent, #0b6bcb); }
-.textmap-note-btn:hover { background: var(--bg-hover, rgba(127,127,127,0.18)); }
+.textmap-row:hover .textmap-note-btn { opacity: 0.85; }
+.textmap-note-btn.has-notes { color: var(--accent, #0b6bcb); opacity: 1; } /* clearly marked when notes exist */
+.textmap-note-btn.active { background: var(--bg-hover, rgba(127,127,127,0.18)); color: var(--accent, #0b6bcb); opacity: 1; }
+.textmap-note-btn:hover { background: var(--bg-hover, rgba(127,127,127,0.18)); opacity: 1; }
+
+/* Read-at-a-glance preview of a node's notes, shown under the row. */
+.textmap-notes-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  margin: -2px 0 4px 30px;
+  padding: 3px 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-muted, #8a8a8f);
+  border-radius: 6px;
+}
+.textmap-notes-preview:hover { background: var(--bg-hover, rgba(127,127,127,0.1)); color: var(--text-primary, #1d1d1f); }
+.textmap-notes-preview-icon { flex: 0 0 auto; color: var(--accent, #0b6bcb); opacity: 0.85; }
+.textmap-notes-preview-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .textmap-notes { margin: 2px 0 6px 30px; }
 .textmap-notes-editor {

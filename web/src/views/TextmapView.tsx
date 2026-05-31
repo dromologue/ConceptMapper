@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import type { GraphIR, GraphNode, NodeTypeConfig, EdgeTypeConfig } from "../types/graph-ir";
 import { postToSwift, subscribe } from "../utils/swiftBridge";
+import { IconNotes } from "../ui/Icons";
 import {
   indexNodes,
   connectionsOf,
@@ -187,6 +188,9 @@ function TextmapRow({
   const isOpen = expanded.has(pathKey);
   const notesShown = notesOpen.has(pathKey);
   const hasNotes = Boolean(node.notes?.trim() || node.notes_file);
+  // First non-empty line of the notes, for the read-at-a-glance preview.
+  const notePreview =
+    node.notes?.split("\n").find((l) => l.trim())?.trim().slice(0, 140) ?? "";
   const ancestorSet = useMemo(() => new Set(ancestors), [ancestors]);
 
   const groups = useMemo(
@@ -218,10 +222,10 @@ function TextmapRow({
           <button
             className={`textmap-note-btn ${hasNotes ? "has-notes" : ""} ${notesShown ? "active" : ""}`}
             onClick={() => onToggleNotes(pathKey)}
-            title={hasNotes ? "Edit notes" : "Add notes"}
+            title={hasNotes ? "Read / edit notes" : "Add notes"}
             aria-label={`Notes for ${node.name}`}
           >
-            {hasNotes ? "●" : "○"}
+            <IconNotes size={14} />
           </button>
         )}
         <button
@@ -233,6 +237,19 @@ function TextmapRow({
           ⤢
         </button>
       </div>
+
+      {onNodeUpdate && hasNotes && !notesShown && (
+        <button
+          className="textmap-notes-preview"
+          onClick={() => onToggleNotes(pathKey)}
+          title="Read / edit notes"
+        >
+          <IconNotes size={12} className="textmap-notes-preview-icon" />
+          <span className="textmap-notes-preview-text">
+            {notePreview || `Attached: ${node.notes_file?.split("/").pop() ?? "notes"}`}
+          </span>
+        </button>
+      )}
 
       {notesShown && onNodeUpdate && (
         <TextmapNotes node={node} onNodeUpdate={onNodeUpdate} />
