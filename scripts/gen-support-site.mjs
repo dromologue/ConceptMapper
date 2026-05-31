@@ -23,6 +23,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const OUT = resolve(ROOT, process.argv[2] || "support-site");
 const PREVIEWS = resolve(ROOT, "Previews");
+const APP_ICON = resolve(
+  ROOT,
+  "macos/ConceptMapper/Assets.xcassets/AppIcon.appiconset/icon_512x512.png"
+);
 
 const META = {
   appName: "Concept Mapper",
@@ -114,6 +118,13 @@ async function processImages() {
       "--setProperty", "formatOptions", "80",
       src, "--out", dest,
     ]);
+  }
+  // App icon → marketing mark + favicon (keeps the baked-in squircle alpha).
+  try {
+    await access(APP_ICON);
+    execFileSync("sips", ["-Z", "256", APP_ICON, "--out", resolve(imgDir, "icon.png")]);
+  } catch {
+    throw new Error(`App icon not found at ${APP_ICON}.`);
   }
 }
 
@@ -234,7 +245,7 @@ function page({ title, body, active, wide }) {
   const nav = `
     <header class="site-header">
       <div class="wrap">
-        <a class="brand" href="index.html">${META.appName}</a>
+        <a class="brand" href="index.html"><img class="brand-icon" src="images/icon.png" alt=""> ${META.appName}</a>
         <nav>
           ${link("index.html", "Overview", "home")}
           ${link("help.html", "Help &amp; Support", "help")}
@@ -256,6 +267,8 @@ function page({ title, body, active, wide }) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${title}</title>
 <meta name="description" content="${META.appName} — build, edit, and reason over typed concept maps on macOS. Plain-text maps, a separate schema, and graph analysis built in.">
+<link rel="icon" type="image/png" href="images/icon.png">
+<link rel="apple-touch-icon" href="images/icon.png">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -277,6 +290,7 @@ function buildHome() {
   const hero = `
     <section class="hero">
       <div class="wrap hero-inner">
+        <img class="hero-icon" src="images/icon.png" alt="${META.appName} app icon" width="112" height="112">
         <h1>Think in typed graphs.</h1>
         <p class="lede">${META.appName} is a macOS tool for building, editing, and reasoning over concept maps where every node and edge has a type. Maps are plain-text Markdown; the schema they obey lives in a separate template. Your thinking stays portable, greppable, and yours.</p>
         <div class="cta-row">${cta}<span class="req">Requires ${META.minOS} or later.</span></div>
@@ -424,7 +438,8 @@ img{max-width:100%;height:auto;display:block}
 
 .site-header{background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
 .site-header .wrap{display:flex;align-items:center;justify-content:space-between;height:56px}
-.brand{font-weight:600;color:var(--ink);font-size:17px}
+.brand{font-weight:600;color:var(--ink);font-size:17px;display:inline-flex;align-items:center;gap:9px}
+.brand-icon{width:24px;height:24px;display:block}
 .site-header nav a{margin-left:20px;color:var(--muted);font-size:15px}
 .site-header nav a.on{color:var(--ink);font-weight:600}
 
@@ -432,6 +447,8 @@ img{max-width:100%;height:auto;display:block}
 .hero{background:radial-gradient(1200px 500px at 50% -10%,#1b2a4a 0%,var(--ink-deep) 60%);color:#fff;
   padding:64px 0 0;overflow:hidden}
 .hero-inner{text-align:center}
+.hero-icon{width:112px;height:112px;margin:0 auto 22px;display:block;
+  filter:drop-shadow(0 14px 28px rgba(0,0,0,.5))}
 .hero h1{font-size:52px;line-height:1.05;margin:0 0 18px;letter-spacing:-.02em}
 .hero .lede{max-width:64ch;margin:0 auto 26px;font-size:19px;color:#c9d2e3}
 .cta-row{display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:40px}
