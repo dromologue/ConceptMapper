@@ -8,12 +8,21 @@ build-verified (`master` auto-ships the **free** macOS app to the App Store).
 product (distinct bundle id `com.dromologue.ConceptMapper.ios` — not a universal
 purchase).
 
+**No-drift invariant.** One codebase; the two apps differ **only** in (a) bundle
+id + price, and (b) the thin native shell (`ContentView`/`FileHandler`/app entry/
+`Info.plist`/`project.yml`/assets). The React SPA (`web/`), Rust core (`src/`),
+and Swift bridge core (`BridgeProtocol`/`WebViewBridge`/`PlatformURLOpener`, shared
+into iOS via `ios/project.yml`) are single-source-of-truth — a feature or bridge
+change lands in one place and reaches both. Anything else diverging is a bug.
+Full drift surface in `specs/multiplatform-plan.md` §3.1.
+
 ## Status
 
 The shared React SPA carries every feature (map, textmap, notes, view
-persistence, add-node). macOS app builds/ships. The universal iOS app builds and
-runs on iPhone 17 + iPad (A16) simulators (start screen, bridge, bundled content
-verified). Remaining work is sessioned below.
+persistence, add-node). macOS app builds/ships. The iPhone+iPad app builds and
+runs on iPhone 17 + iPad (A16) simulators — XCUITest confirms a map opens with
+the textmap on iPhone and the visual (region-layout) map on iPad. Remaining work
+is sessioned below.
 
 ## Session 2 — Responsive mobile UX (iPhone)  ← NEXT
 
@@ -49,3 +58,15 @@ width, squeezing the textmap. Fix the phone layout:
 
 - [ ] Merge `feature/multiplatform` → `master` (full build + smoke test first).
 - [ ] Submit the paid iOS app for review.
+
+## Drift guards (ongoing — protect the no-drift invariant)
+
+- [ ] Bridge parity test: assert Swift `BridgeMethod` and TS
+      `BridgeRequestMap`/event methods enumerate the same set (REQ-112 follow-up).
+- [ ] Remove the legacy native `HelpOverlay` from macOS `ContentView.swift` so
+      help lives only in the SPA (matches iOS; macOS change → verify build).
+- [ ] CI (Xcode Cloud / branch check): build **both** apps so a change that breaks
+      either platform fails before merge (`build-app.sh --platform all`).
+- [ ] When adding a bridge method: edit `BridgeProtocol.swift` + `bridge-protocol.ts`
+      together; the shared dispatcher compiling into both targets enforces the
+      `FileHandler` contract automatically.

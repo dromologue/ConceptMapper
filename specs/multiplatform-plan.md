@@ -66,13 +66,38 @@ all three platforms simultaneously, by construction.
 | Single React SPA bundled into every shell | One implementation of every feature; no native re-build |
 | Shared `BridgeCore` Swift sources compiled into both targets | macOS and iOS speak an identical bridge; divergence fails to compile |
 | One web/WASM build, copied to **both** `macos/Resources/web` and `ios/Resources/web` in the same build step | The two shells can never bundle different SPA versions |
-| `bridge-protocol.ts` ↔ `BridgeProtocol.swift` parity (already REQ-112) | Adding a bridge method forces both sides; we add a parity test (§8) |
-| CI builds **all three** platforms on the branch | A change that breaks any platform fails fast, before merge |
-| Textmap is a *view mode in the SPA*, not a platform feature | "Add textmap to mac and ipad too" is automatic — same code path |
+| `bridge-protocol.ts` ↔ `BridgeProtocol.swift` parity (REQ-112) | Adding a bridge method forces both sides; a parity test is queued (§8) |
+| The shared `WebViewBridge` dispatcher calls `FileHandler.*` and compiles into **both** targets | Each platform's `FileHandler` MUST expose the identical static API or it won't build — the bridge↔FileHandler contract is compile-enforced |
+| `build-app.sh` mirrors the web build into both `macos/Resources/web` and `ios/Resources/web` in one step | The two shells can never bundle different SPA versions |
+| `build-app.sh --platform all` builds **both apps** | A change that breaks either platform fails fast, before merge |
+| Textmap is a *view mode in the SPA*, not a platform feature | "Add it to mac and ipad too" is automatic — same code path |
 
-The only platform-specific surface is the shell: file dialogs, the web-view
-wrapper, app lifecycle/menus, signing/entitlements. Everything a user *sees and
-does* is shared.
+### 3.1 The entire drift surface (the only things that differ)
+
+Same codebase; the apps differ **only** in:
+
+1. **Bundle id & price (product-level).** macOS `com.dromologue.ConceptMapper`
+   (free); iOS `com.dromologue.ConceptMapper.ios` (paid). Separate App Store
+   records, metadata, and Xcode Cloud workflows. Nothing else about the product
+   should diverge.
+2. **The thin native shell**, per platform, and nothing more:
+   - `ContentView.swift` — `NSViewRepresentable` (macOS) vs `UIViewRepresentable`
+     (iOS) WKWebView host. Same config, same two bridge channels, same SPA load.
+   - `FileHandler.swift` — same static API; `NSOpenPanel`/`NSSavePanel` (macOS)
+     vs `UIDocumentPicker`/share-sheet/Documents (iOS). FileManager logic is
+     byte-identical.
+   - `ConceptMapperApp.swift` — `@main` entry + lifecycle (macOS menus vs iOS).
+   - `Info.plist`, entitlements, `project.yml`, `Assets.xcassets`.
+
+**Shared, single-source-of-truth (must never be forked):** the React SPA
+(`web/`), the Rust core (`src/`), and the Swift bridge core
+(`macos/ConceptMapper/{BridgeProtocol,WebViewBridge,PlatformURLOpener}.swift`,
+referenced into the iOS target by `ios/project.yml`). A feature or bridge change
+goes in exactly one place and reaches both apps.
+
+**Known drift to remove (S2/cleanup):** the macOS `ContentView.swift` carries a
+native `HelpOverlay` with hardcoded help text — legacy, and absent on iOS (both
+rely on the SPA's in-app help). Drop it so help lives only in the SPA.
 
 ## 4. The Textmap view — detailed spec
 
@@ -278,14 +303,15 @@ in CI; the parity test in the web suite.
   entitlements; extend build script; iOS simulator build; TestFlight (iOS).
   Iterate on phone layout against the textmap.
 - **Phase 3 — Release.** App Store record(s) for iOS (universal iPhone/iPad),
-  screenshots (map on iPad, textmap on iPhone), pricing / universal purchase.
+  screenshots (map on iPad, textmap on iPhone), and a paid price tier.
   macOS picks up textmap in the same release train.
 - **Phase 4 — Drift guards.** Bridge-parity test in CI; document the "one SPA,
   thin shells" rule in `CLAUDE.md`/architecture principles.
 
 ## 10. App Store & public-site updates
 
-- New iOS app record (or universal purchase under the existing id — §12).
+- New, separate iOS App Store record (paid) under bundle id
+  `com.dromologue.ConceptMapper.ios` — §6.3.
 - Screenshots: iPad showing the visual map; iPhone showing the textmap.
 - Per the standing rule, regenerate and push the **public support/marketing
   site** ([scripts/gen-support-site.mjs](../scripts/gen-support-site.mjs)): add
@@ -321,8 +347,9 @@ When this branch ships, before/with the release:
 
 ## 12. Decisions (resolved 2026-05-31)
 
-1. **Universal purchase — YES.** Same bundle id `com.dromologue.ConceptMapper`;
-   iOS added as a new platform on the existing App Store record (§6.3).
+1. **Separate paid iOS product (REVISED).** macOS free, iOS paid → NOT a
+   universal purchase. Distinct bundle id `com.dromologue.ConceptMapper.ios`;
+   its own App Store Connect record, price tier, and Xcode Cloud workflow (§6.3).
 2. **iPhone keeps the visual map**, reachable but **textmap is the default** on
    phone. iPad/Mac: map default + textmap option.
 3. **Minimum iOS version: iOS 16.**
