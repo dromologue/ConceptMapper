@@ -361,10 +361,10 @@ function AppInner() {
   // Unified add node handler — store handles graphData mutation, undo push,
   // selectedNode update, and modal close.
   const handleAddNode = useCallback(
-    (nodeType: string, name: string, classifierValues: Record<string, string>, tags: string[], properties: Record<string, string | undefined>) => {
-      useGraphStore.getState().handleAddNode(nodeType, name, classifierValues, tags, properties);
+    (nodeType: string, name: string, classifierValues: Record<string, string>, tags: string[], properties: Record<string, string | undefined>, links: import("./types/graph-ir").NodeLink[] = []) => {
+      useGraphStore.getState().handleAddNode(nodeType, name, classifierValues, tags, properties, links, template ?? null);
     },
-    []
+    [template]
   );
 
   const handleAddEdge = useCallback(
@@ -1235,6 +1235,7 @@ function AppInner() {
               selectedNodeId={selectedNode?.id ?? null}
               onSelectNode={handleSelectNode}
               onNodeUpdate={handleNodeUpdate}
+              onAddNode={() => openModal('addNode')}
               nodeTypeConfigs={nodeTypeConfigs}
               edgeTypeConfigs={template?.edge_types}
             />
@@ -1478,14 +1479,16 @@ function AppInner() {
         themeName={theme.name}
       />
 
-      {showAddNode && (
+      {activeModal === 'addNode' && (
         <AddNodeModal
           nodeTypeConfigs={nodeTypeConfigs}
           classifiers={graphData.metadata.classifiers ?? []}
           existingTags={collectAllTags(graphData.nodes)}
+          nodes={graphData.nodes}
+          edgeTypes={template?.edge_types}
           onAdd={handleAddNode}
           onCancel={closeModal}
-          initialNodeType={showAddNode}
+          initialNodeType={showAddNode ?? undefined}
         />
       )}
       {showAddEdgeModal && edgeSource && edgeTarget && (

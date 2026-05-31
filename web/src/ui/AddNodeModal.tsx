@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Classifier, NodeTypeConfig } from "../types/graph-ir";
+import type { Classifier, EdgeTypeConfig, GraphNode, NodeLink, NodeTypeConfig } from "../types/graph-ir";
 import { TagInput } from "./TagInput";
 
 interface Props {
@@ -7,13 +7,19 @@ interface Props {
   classifiers: Classifier[];
   /** Pool of tags already in the graph — used for autocomplete suggestions. */
   existingTags?: string[];
-  onAdd: (nodeType: string, name: string, classifierValues: Record<string, string>, tags: string[], properties: Record<string, string | undefined>) => void;
+  /** Existing nodes, for the "link to" dropdown. */
+  nodes?: GraphNode[];
+  /** Edge types defined in the template, for the "link to" dropdown. */
+  edgeTypes?: EdgeTypeConfig[];
+  /** Pre-select a link target (e.g. the focused node in the textmap). */
+  initialLinkTargetId?: string;
+  onAdd: (nodeType: string, name: string, classifierValues: Record<string, string>, tags: string[], properties: Record<string, string | undefined>, links: NodeLink[]) => void;
   onCancel: () => void;
   /** Pre-select a specific node type */
   initialNodeType?: string;
 }
 
-export function AddNodeModal({ nodeTypeConfigs, classifiers, existingTags = [], onAdd, onCancel, initialNodeType }: Props) {
+export function AddNodeModal({ nodeTypeConfigs, classifiers, existingTags = [], nodes = [], edgeTypes = [], initialLinkTargetId, onAdd, onCancel, initialNodeType }: Props) {
   const [selectedType, setSelectedType] = useState(initialNodeType ?? nodeTypeConfigs[0]?.id ?? "");
   const [name, setName] = useState("");
   const [classifierValues, setClassifierValues] = useState<Record<string, string>>(() => {
@@ -25,6 +31,20 @@ export function AddNodeModal({ nodeTypeConfigs, classifiers, existingTags = [], 
   });
   const [tags, setTags] = useState<string[]>([]);
   const config = nodeTypeConfigs.find((t) => t.id === selectedType);
+
+  // "Link to" rows: connect the new node to existing nodes as edges.
+  const defaultEdgeType = edgeTypes[0]?.id ?? "";
+  const [links, setLinks] = useState<NodeLink[]>(() =>
+    initialLinkTargetId && edgeTypes.length > 0
+      ? [{ targetId: initialLinkTargetId, edgeType: defaultEdgeType, direction: "out" }]
+      : [],
+  );
+  const addLink = () =>
+    setLinks((ls) => [...ls, { targetId: nodes[0]?.id ?? "", edgeType: defaultEdgeType, direction: "out" }]);
+  const updateLink = (i: number, patch: Partial<NodeLink>) =>
+    setLinks((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
+  const removeLink = (i: number) => setLinks((ls) => ls.filter((_, idx) => idx !== i));
+  const canLink = nodes.length > 0 && edgeTypes.length > 0;
 
   // Initialize properties with default values from select fields
   const [properties, setProperties] = useState<Record<string, string>>(() => {
@@ -46,7 +66,8 @@ export function AddNodeModal({ nodeTypeConfigs, classifiers, existingTags = [], 
       const val = properties[field.key];
       if (val) props[field.key] = val;
     }
-    onAdd(selectedType, name.trim(), classifierValues, tags, props);
+    const validLinks = links.filter((l) => l.targetId && l.edgeType);
+    onAdd(selectedType, name.trim(), classifierValues, tags, props, validLinks);
   };
 
   const updateProp = (key: string, value: string) => {
@@ -126,6 +147,43 @@ export function AddNodeModal({ nodeTypeConfigs, classifiers, existingTags = [], 
               )}
             </div>
           ))}
+          {/* Link to existing nodes — creates edges with the new node */}
+          {canLink && (
+            <div className="modal-field">
+              <label>Link to</label>
+              {links.map((link, i) => (
+                <div className="link-row" key={i}>
+                  <select
+                    className="link-dir"
+                    value={link.direction}
+                    onChange={(e) => updateLink(i, { direction: e.target.value as NodeLink["direction"] })}
+                    title="Direction"
+                  >
+                    <option value="out">→ to</option>
+                    <option value="in">← from</option>
+                  </select>
+                  <select
+                    className="link-target"
+                    value={link.targetId}
+                    onChange={(e) => updateLink(i, { targetId: e.target.value })}
+                  >
+                    <option value="">Select node…</option>
+                    {nodes.map((n) => <option key={n.id} value={n.id}>{n.name}</option>)}
+                  </select>
+                  <select
+                    className="link-type"
+                    value={link.edgeType}
+                    onChange={(e) => updateLink(i, { edgeType: e.target.value })}
+                    title="Relationship"
+                  >
+                    {edgeTypes.map((et) => <option key={et.id} value={et.id}>{et.label}</option>)}
+                  </select>
+                  <button type="button" className="link-remove" onClick={() => removeLink(i)} aria-label="Remove link">×</button>
+                </div>
+              ))}
+              <button type="button" className="link-add" onClick={addLink}>+ Add link</button>
+            </div>
+          )}
           <div className="modal-actions">
             <button type="button" className="toolbar-btn" onClick={onCancel}>Cancel</button>
             <button type="submit" className="toolbar-btn active" disabled={!name.trim()}>Add</button>

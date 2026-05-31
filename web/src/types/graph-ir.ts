@@ -134,6 +134,15 @@ export interface GraphEdge {
   visual: EdgeVisual;
 }
 
+/** A link from a node being created to an existing node, created in the same
+ *  action as the node itself. `direction` is relative to the new node:
+ *  "out" = new → target, "in" = target → new. */
+export interface NodeLink {
+  targetId: string;
+  edgeType: string;
+  direction: "out" | "in";
+}
+
 export interface EdgeVisual {
   style: string;
   color?: string;

@@ -52,7 +52,8 @@ describe("AddNodeModal — Default node type", () => {
       "Herbert Simon",   // name
       expect.any(Object), // classifierValues
       expect.any(Array),  // tags
-      expect.any(Object)  // properties
+      expect.any(Object), // properties
+      expect.any(Array)   // links
     );
   });
 

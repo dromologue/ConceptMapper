@@ -3522,3 +3522,47 @@ select.settings-input {
   font-size: 11px; color: var(--text-muted, #8a8a8f); margin-top: 3px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+
+/* Textmap: add-node button + AddNodeModal "link to" rows */
+.textmap-add-node {
+  margin-left: auto;
+  border: 1px solid var(--accent, #0b6bcb);
+  background: none;
+  color: var(--accent, #0b6bcb);
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.textmap-add-node:hover { background: var(--accent, #0b6bcb); color: #fff; }
+
+.link-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.link-row .link-dir { flex: 0 0 auto; width: 76px; }
+.link-row .link-target { flex: 1 1 auto; min-width: 0; }
+.link-row .link-type { flex: 0 0 auto; max-width: 40%; }
+.link-remove {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  color: var(--text-muted, #8a8a8f);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+}
+.link-remove:hover { color: var(--error-text, #e74c3c); }
+.link-add {
+  border: 1px dashed var(--bg-hover, rgba(127,127,127,0.4));
+  background: none;
+  color: var(--accent, #0b6bcb);
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.link-add:hover { border-color: var(--accent, #0b6bcb); }

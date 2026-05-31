@@ -17,6 +17,8 @@ interface Props {
   onSelectNode: (node: GraphNode | null) => void;
   /** Persist node edits (notes). Same handler the canvas/NotesPane use. */
   onNodeUpdate?: (nodeId: string, updates: Partial<GraphNode>) => void;
+  /** Open the Add Node dialog (template-driven fields + link dropdown). */
+  onAddNode?: () => void;
   nodeTypeConfigs?: NodeTypeConfig[];
   edgeTypeConfigs?: EdgeTypeConfig[];
 }
@@ -33,6 +35,7 @@ export function TextmapView({
   selectedNodeId,
   onSelectNode,
   onNodeUpdate,
+  onAddNode,
   nodeTypeConfigs,
   edgeTypeConfigs,
 }: Props) {
@@ -118,6 +121,11 @@ export function TextmapView({
             </button>
           </span>
         ))}
+        {onAddNode && (
+          <button className="textmap-add-node" onClick={onAddNode} title="Add a node">
+            + Node
+          </button>
+        )}
       </div>
 
       <div className="textmap-body">
