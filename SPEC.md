@@ -2113,3 +2113,53 @@ Adding a node presents template-driven fields and an option to link the new node
 - [x] AC-122-01: `handleAddNode` accepts optional `links` + `template` and creates the corresponding edges (out/in), ignoring links to non-existent targets — store tests.
 - [x] AC-122-02: `AddNodeModal` renders the "Link to" rows when nodes and edge types exist and passes the links to `onAdd`.
 - [x] AC-122-03: The textmap `+ Node` button opens the same dialog (modal render gated on `activeModal === 'addNode'`).
+
+## REQ-123: Shared iCloud Documents Container (cross-device sync)
+
+The macOS and iOS apps store Maps and Templates in one shared iCloud Documents container, so a map created on one device appears on the other and edits sync, with a graceful local fallback when iCloud is unavailable.
+
+**Preconditions:**
+
+- Both apps are signed into the same iCloud account and the iCloud container `iCloud.com.dromologue.ConceptMapper` is provisioned.
+
+**Trigger:**
+
+- The app resolves its base data directory on first file access (`FileHandler.getBaseFolder`).
+
+**Expected Behavior:**
+
+- `getBaseFolder()` prefers the shared ubiquity container's `Documents` folder (user-visible as "ConceptMapper" in iCloud Drive) via `url(forUbiquityContainerIdentifier:)`.
+- When iCloud is unavailable (not signed in, or the simulator), it falls back to the app's local Documents folder; the result is resolved once and cached (the ubiquity lookup performs IO).
+- Both platforms declare the same container in their entitlements (`com.apple.developer.icloud-*`, `ubiquity-container-identifiers`) and `NSUbiquitousContainers` Info.plist entry, so they read and write the same files.
+- Maps and Templates folders are created under the resolved base on demand; existing reads/writes (REQ-116) are unchanged.
+
+**Acceptance Criteria:**
+
+- [x] AC-123-01: `getBaseFolder()` returns the ubiquity container's `Documents` path when `url(forUbiquityContainerIdentifier:)` is non-nil, else the local Documents path — identical logic on iOS and macOS `FileHandler`.
+- [x] AC-123-02: The container id constant (`iCloudContainerID`) matches both entitlements files and both `NSUbiquitousContainers` Info.plist entries.
+- [x] AC-123-03: Both apps build with the iCloud entitlements (macOS + iOS, unsigned simulator/Debug build verified); the simulator falls back to local Documents.
+
+## REQ-124: Web E2E Verification of File-Feature Flows
+
+The file-feature flows that are triggered from web content — attaching a markdown note and exporting an image — are verified end-to-end against the production web build with a stubbed bridge, because XCUITest cannot reliably drive elements inside the WKWebView.
+
+**Preconditions:**
+
+- The web app is built (`vite build`); the e2e harness serves `web/dist`.
+
+**Trigger:**
+
+- `npm run test:e2e` (Playwright) at a phone viewport (< 700px → the compact iOS layout).
+
+**Expected Behavior:**
+
+- A fake Swift bridge (`web/e2e/bridge-stub.ts`) records every JS→Swift request and answers `listMaps`/`listTemplates`/`loadMap` so a real bundled map loads.
+- Selecting an outline node, opening its Notes tab, and clicking "Attach .md" posts an `attachNotesFile` request carrying the node id.
+- Exporting PNG and PDF from a network view posts `saveToDownloads` requests with the matching filenames.
+- The native presentation those requests reach (`UIDocumentPicker`, `UIActivityViewController`) is covered separately by the iOS `testOpenFilePresentsDocumentPicker` XCUITest (shared `present(...)` path).
+
+**Acceptance Criteria:**
+
+- [x] AC-124-01: `attach .md` e2e asserts an `attachNotesFile` bridge request with a non-empty `nodeId`.
+- [x] AC-124-02: `export image` e2e asserts `saveToDownloads` bridge requests for both a `.png` and a `.pdf` filename.
+- [x] AC-124-03: Vitest is scoped to `src/` so it does not collect the Playwright `*.spec.ts` files; `test:e2e` builds then runs Playwright.

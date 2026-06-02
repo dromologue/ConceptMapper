@@ -19,5 +19,8 @@ export default defineConfig({
     setupFiles: './src/__tests__/setup.ts',
     css: true,
     root: '.',
+    // Unit tests live under src/. The e2e/ suite is Playwright (browser), run
+    // via `npm run test:e2e`; keep Vitest from collecting its *.spec.ts files.
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
 })

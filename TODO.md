@@ -35,10 +35,24 @@ iPad A16 (walks all five tabs); Playwright at 390×844 confirms each tab swaps t
 full-screen surface; macOS still builds with the inline layout unchanged.
 Remaining work is sessioned below.
 
-## Session 3 — iOS file features on device  ← NEXT
+## Session 3 — iOS file features on device  ← DONE
 
-- [ ] Verify `UIDocumentPicker` open/attach and share-sheet export end to end on
-      the simulator; fix any presentation/sandbox issues.
+- [x] Verify `UIDocumentPicker` open/attach and share-sheet export end to end on
+      the simulator; fix any presentation/sandbox issues. **No presentation/sandbox
+      bug found.** `FileHandler.pickDocument` (open + attach) and `presentShareSheet`
+      (export) share one `topViewController().present(...)` path; the iOS
+      `testOpenFilePresentsDocumentPicker` XCUITest presents the picker with no crash.
+      Attach + export are *triggered from web content*, and XCUITest cannot reliably
+      tap inside the WKWebView (a synthesized tap lands as `:hover` without firing
+      React's onClick — confirmed via a Playwright browser repro where the same flow
+      works). So the web side is verified end-to-end in `web/e2e/file-flows.spec.ts`
+      (Playwright, production build) asserting the exact `attachNotesFile` /
+      `saveToDownloads` bridge calls. Split by tool, on purpose (REQ-124).
+- [x] Shared iCloud Documents container so Maps + Templates sync across the macOS
+      and iOS apps (`FileHandler.getBaseFolder` prefers the ubiquity container, falls
+      back to local Documents; entitlements + `NSUbiquitousContainers` on both;
+      `build-app.sh` gains `-allowProvisioningUpdates`). Both apps build unsigned;
+      live iCloud sync needs the provisioned container (Session 4 signing) (REQ-123).
 
 ## Session 4 — Signing + App Store Connect (paid iOS) + Xcode Cloud
 

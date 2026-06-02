@@ -88,4 +88,61 @@ final class ConceptMapperUITests: XCTestCase {
         app.buttons["Notes"].tap();    sleep(1); snapshot("07-tab-notes")
         app.buttons["Map"].tap();      sleep(1)
     }
+
+    /// True once the system document picker is on screen (Files UI). Its chrome
+    /// runs out-of-process, so look across the app and springboard.
+    private func documentPickerVisible(_ app: XCUIApplication, timeout: TimeInterval) -> Bool {
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let candidates = [
+            app.navigationBars.buttons["Cancel"],
+            app.buttons["Cancel"],
+            springboard.buttons["Cancel"],
+            app.otherElements["DOC.itemCollectionView"],
+            app.navigationBars["Recents"],
+        ]
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if candidates.contains(where: { $0.exists }) { return true }
+            usleep(200_000)
+        }
+        return false
+    }
+
+    private func dismissPicker(_ app: XCUIApplication) {
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        for btn in [app.navigationBars.buttons["Cancel"], app.buttons["Cancel"], springboard.buttons["Cancel"]] {
+            if btn.exists { btn.tap(); break }
+        }
+    }
+
+    /// Session 3 (iOS file features): "Open File…" must present the system
+    /// document picker without a sandbox/presentation crash.
+    func testOpenFilePresentsDocumentPicker() {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssertTrue(
+            app.staticTexts["Concept Mapper"].waitForExistence(timeout: 20),
+            "Start screen (SPA) did not load"
+        )
+        let openFile = element(app, label: "Open File")
+        XCTAssertTrue(openFile.waitForExistence(timeout: 10), "'Open File…' not found")
+        openFile.tap()
+        XCTAssertTrue(documentPickerVisible(app, timeout: 10), "Document picker did not present")
+        snapshot("08-open-file-picker")
+        dismissPicker(app)
+    }
+
+    // Session 3 — "Attach .md" and "Export image" are also file-feature flows,
+    // but both are triggered from *web content* (the outline node's Notes pane,
+    // the activity-bar export icon). Driving them requires selecting/clicking
+    // elements inside the WKWebView, and XCUITest's synthesized taps do not
+    // reliably fire those web handlers — a tap can register as :hover without
+    // delivering the click (see reference: phone web UI is verified via the
+    // browser, not XCUITest). The native presentation those flows reach is the
+    // same `UIDocumentPicker` / `UIActivityViewController` code exercised by
+    // testOpenFilePresentsDocumentPicker above (FileHandler.pickDocument /
+    // presentShareSheet share one present(...) path). The *web* side of attach
+    // and export is verified end-to-end in web/e2e/file-flows.spec.ts
+    // (Playwright, production build), which asserts the exact attachNotesFile /
+    // saveToDownloads bridge calls. Split by tool, on purpose (REQ-124).
 }

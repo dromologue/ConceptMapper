@@ -8,15 +8,32 @@ import UniformTypeIdentifiers
 @MainActor
 enum FileHandler {
 
-    // MARK: - Base directories (synchronous — pure path math)
+    // MARK: - Base directories
 
+    /// The iCloud container the macOS and iOS apps share so Maps + Templates are
+    /// the same files on both. Must match the macOS FileHandler and both
+    /// entitlements / `NSUbiquitousContainers` Info.plist entries.
+    static let iCloudContainerID = "iCloud.com.dromologue.ConceptMapper"
+    private static var cachedBaseFolder: URL?
+
+    /// Base data directory. Prefers the shared iCloud container's `Documents`
+    /// folder (user-visible as "ConceptMapper" in iCloud Drive); falls back to
+    /// the local Documents folder when iCloud is unavailable (not signed in /
+    /// simulator). Resolved once and cached — the ubiquity lookup does IO.
     static func getBaseFolder() -> URL {
-        let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("ConceptMapper")
-        if !FileManager.default.fileExists(atPath: folder.path) {
-            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        if let cached = cachedBaseFolder { return cached }
+        let base: URL
+        if let ubiquity = FileManager.default.url(forUbiquityContainerIdentifier: iCloudContainerID) {
+            base = ubiquity.appendingPathComponent("Documents")
+        } else {
+            base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                .appendingPathComponent("ConceptMapper")
         }
-        return folder
+        if !FileManager.default.fileExists(atPath: base.path) {
+            try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        }
+        cachedBaseFolder = base
+        return base
     }
 
     static func getMapsFolder() -> URL {

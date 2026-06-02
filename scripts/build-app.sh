@@ -149,10 +149,15 @@ if [ "$BUILD_MAC" = true ]; then
   echo "Xcode project generated."
   echo ""
   echo "=== Step 6: Build macOS app ($CONFIGURATION) ==="
+  # -allowProvisioningUpdates lets automatic signing register the shared iCloud
+  # container and refresh the provisioning profile (the iCloud entitlement adds a
+  # capability the cached profile lacks). Harmless when signing is disabled.
   (cd macos && xcodebuild \
     -scheme ConceptMapper \
     -configuration "$CONFIGURATION" \
     -derivedDataPath build \
+    -allowProvisioningUpdates \
+    -allowProvisioningDeviceRegistration \
     $SIGN_FLAGS \
     build \
     | tail -5)

@@ -239,3 +239,5 @@
 | REQ-120 | AC-120-01..03 | `web/src/__tests__/textmap-view.test.tsx` | inline notes edit → onNodeUpdate | passing |
 | REQ-121 | AC-121-01..03 | `web/src/__tests__/viewOptions.test.ts` | 8 serialize/parse round-trip | passing |
 | REQ-122 | AC-122-01..03 | `web/src/__tests__/stores/useGraphStore.test.ts`, `add-node-modal.test.tsx` | add-node links + modal | passing |
+| REQ-123 | AC-123-01..03 | `macos/ConceptMapper/FileHandler.swift`, `ios/ConceptMapper/FileHandler.swift`, `*/ConceptMapper.entitlements`, `*/Info.plist` | shared iCloud Documents container + local fallback; both apps build | passing |
+| REQ-124 | AC-124-01..03 | `web/e2e/file-flows.spec.ts`, `web/e2e/bridge-stub.ts`, `web/playwright.config.ts`, `ios/ConceptMapperUITests/ConceptMapperUITests.swift` | web attach/export bridge wiring (Playwright) + native picker presentation (XCUITest) | passing |

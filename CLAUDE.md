@@ -50,7 +50,8 @@ cd macos && xcodebuild -scheme ConceptMapper  # Build macOS app
 
 # Testing
 cargo test --all                           # Rust tests
-cd web && npm test                         # Frontend tests
+cd web && npm test                         # Frontend unit tests (Vitest, src/ only)
+cd web && npm run test:e2e                 # Web e2e (Playwright): file-feature bridge flows on the built SPA
 
 # WASM build
 wasm-pack build --target web --features wasm
