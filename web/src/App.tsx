@@ -7,6 +7,7 @@ import { DetailPanel } from "./ui/DetailPanel";
 import { NotesPane } from "./ui/NotesPane";
 import { ActivityBar } from "./ui/ActivityBar";
 import { Sidebar } from "./ui/Sidebar";
+import { PhoneTabBar } from "./ui/PhoneTabBar";
 import { StatusBar } from "./ui/StatusBar";
 import { AddNodeModal } from "./ui/AddNodeModal";
 import { collectAllTags } from "./utils/tags";
@@ -35,7 +36,7 @@ import { normalizeFencedKV } from "./utils/normalize";
 import { serializeViewComment } from "./utils/viewOptions";
 import { escapeKVValue } from "./utils/kv-escape";
 import { useFileLoader } from "./hooks/useFileLoader";
-import { isNativeApp as detectNativeApp, postToSwift } from "./utils/swiftBridge";
+import { isNativeApp as detectNativeApp, isIOSDevice, postToSwift } from "./utils/swiftBridge";
 import { useSwiftBridge } from "./hooks/useSwiftBridge";
 import { useGraphStore } from "./stores/useGraphStore";
 import { useUIStore } from "./stores/useUIStore";
@@ -82,6 +83,8 @@ function AppInner() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
+  const phoneTab = useUIStore((s) => s.phoneTab);
+  const setPhoneTab = useUIStore((s) => s.setPhoneTab);
   const analysisOpen = useUIStore((s) => s.analysisOpen);
   const toggleAnalysis = useUIStore((s) => s.toggleAnalysis);
   const labelMenuOpen = useUIStore((s) => s.labelMenuOpen);
@@ -299,22 +302,36 @@ function AppInner() {
     setViewModeStore(mode); // store clears revealedNodes too
   }, [setViewModeStore]);
 
-  // Responsive default: on a phone-class viewport the visual canvas is too
-  // small to be useful, so default to the textmap; and the 250px sidebar would
-  // swallow the screen, so it starts collapsed behind its drawer toggle. Fires
-  // once (the first time the viewport is phone-class); the user can still switch
-  // views and open the drawer after.
+  // `isPhone` drives the compact, single-surface, tab-bar UX. It applies to a
+  // phone-class browser viewport AND to every iOS device — iPhone *and* iPad
+  // share one iOS layout, so an iPad (which is tablet/desktop by width) still
+  // gets the tabbed shell. macOS and desktop browsers keep the inline panels.
   const viewport = useViewport();
-  const isPhone = viewport.kind === "phone";
+  const [iosDevice] = useState(isIOSDevice);
+  const isPhone = viewport.kind === "phone" || iosDevice;
+
+  // First time we enter the compact layout, default to the textmap (the visual
+  // canvas is cramped) and collapse the sidebar. Fires once; the user can still
+  // switch views afterwards.
   const didPhoneDefaultRef = useRef(false);
   useEffect(() => {
     if (didPhoneDefaultRef.current) return;
-    if (viewport.kind === "phone") {
+    if (isPhone) {
       didPhoneDefaultRef.current = true;
       setViewModeStore("textmap");
       setSidebarOpen(false);
     }
-  }, [viewport.kind, setViewModeStore, setSidebarOpen]);
+  }, [isPhone, setViewModeStore, setSidebarOpen]);
+
+  // Which workbench surface is visible. On tablet/desktop the panels dock
+  // inline (driven by their own open flags); on phone exactly one full-screen
+  // surface shows, chosen by the bottom tab bar (REQ-119).
+  const showMap = !isPhone || phoneTab === "map";
+  const showExplorer = isPhone ? phoneTab === "explorer" : sidebarOpen;
+  const showProperties = isPhone ? phoneTab === "properties" : (!!selectedNode && propertiesOpen);
+  const showAnalysis = isPhone ? phoneTab === "analysis" : analysisOpen;
+  // Notes render differently per platform (desktop bottom pane vs phone tab),
+  // so each path uses its own condition below rather than a shared flag.
 
   const handleSelectNode = useCallback(
     (node: GraphNode | null) => {
@@ -1107,7 +1124,7 @@ function AppInner() {
     : [];
 
   return (
-    <div className={`app ${viewport.kind}`}>
+    <div className={`app ${isPhone ? "phone" : viewport.kind}`}>
       {/* Titlebar */}
       <div className="titlebar">
         <span className="titlebar-title">{graphData.metadata.title || "Concept Map"}</span>
@@ -1163,7 +1180,9 @@ function AppInner() {
 
       {/* Workbench */}
       <div className="workbench">
+        {showMap && (
         <ActivityBar
+          isPhone={isPhone}
           viewMode={viewMode}
           onViewModeChange={handleViewModeChange}
           sidebarOpen={sidebarOpen}
@@ -1189,11 +1208,9 @@ function AppInner() {
           maxExpandLevel={hierarchy?.maxDepth ?? 0}
           onExpandLevelChange={handleExpandLevelChange}
         />
-
-        {sidebarOpen && isPhone && (
-          <div className="drawer-backdrop" onClick={toggleSidebar} />
         )}
-        {sidebarOpen && (
+
+        {showExplorer && (
           <Sidebar
             nodes={graphData.nodes}
             classifiers={graphData.metadata.classifiers ?? []}
@@ -1226,6 +1243,7 @@ function AppInner() {
           />
         )}
 
+        {showMap && (
         <div className="editor-area">
           {loadWarnings.length > 0 && (
             <div className="load-warnings-banner">
@@ -1379,13 +1397,12 @@ function AppInner() {
               />
             )}
           </div>
-          {isPhone && notesOpen && (
-            <div className="sheet-backdrop" onClick={() => setNotesOpen(false)} />
-          )}
-          {selectedNode && notesOpen && (
+          {/* Desktop docks Notes as a resizable bottom pane under the canvas;
+              on phone Notes is its own full-screen tab (rendered below). */}
+          {!isPhone && selectedNode && notesOpen && (
             <>
-              {!isPhone && <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />}
-              <div className="notes-bottom-pane" style={isPhone ? undefined : { height: notesHeight }}>
+              <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />
+              <div className="notes-bottom-pane" style={{ height: notesHeight }}>
                 <NotesPane
                   node={selectedNode}
                   edges={selectedEdges}
@@ -1395,10 +1412,10 @@ function AppInner() {
               </div>
             </>
           )}
-          {!selectedNode && selectedEdge && notesOpen && (
+          {!isPhone && !selectedNode && selectedEdge && notesOpen && (
             <>
-              {!isPhone && <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />}
-              <div className="notes-bottom-pane" style={isPhone ? undefined : { height: notesHeight }}>
+              <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />
+              <div className="notes-bottom-pane" style={{ height: notesHeight }}>
                 <EdgeNotesPane
                   edge={selectedEdge}
                   nodes={graphData.nodes}
@@ -1407,10 +1424,10 @@ function AppInner() {
               </div>
             </>
           )}
-          {!selectedNode && !selectedEdge && notesOpen && (
+          {!isPhone && !selectedNode && !selectedEdge && notesOpen && (
             <>
-              {!isPhone && <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />}
-              <div className="notes-bottom-pane" style={isPhone ? undefined : { height: notesHeight }}>
+              <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />
+              <div className="notes-bottom-pane" style={{ height: notesHeight }}>
                 <div style={{ padding: 16, color: "var(--text-dim)", fontSize: 12, fontStyle: "italic" }}>
                   Select a node or edge to see its notes.
                 </div>
@@ -1418,38 +1435,41 @@ function AppInner() {
             </>
           )}
         </div>
+        )}
 
-        {selectedNode && propertiesOpen && (
+        {showProperties && (
           <>
-            {isPhone ? (
-              <div className="sheet-backdrop" onClick={() => setPropertiesOpen(false)} />
-            ) : (
+            {!isPhone && (
               <div className="pane-resizer" onMouseDown={makeResizeHandler(setAuxPanelWidth, auxPanelWidth)} />
             )}
             <div className="auxiliary-panel" style={isPhone ? undefined : { width: auxPanelWidth }}>
               <div className="aux-panel-header">
                 <span className="aux-panel-title">Properties</span>
-                <button className="close-btn" onClick={() => setPropertiesOpen(false)}>&times;</button>
+                {!isPhone && <button className="close-btn" onClick={() => setPropertiesOpen(false)}>&times;</button>}
               </div>
-              <DetailPanel
-                node={selectedNode}
-                edges={selectedEdges}
-                nodes={graphData.nodes}
-                classifiers={graphData.metadata.classifiers ?? []}
-                nodeTypeConfigs={nodeTypeConfigs}
-                template={template}
-                onNodeUpdate={handleNodeUpdate}
-                onNavigateToNode={handleNavigateToNode}
-                onOpenNotes={() => setNotesOpen(!notesOpen)}
-                notesOpen={notesOpen}
-                onNodeDelete={handleDeleteNode}
-                analysis={analysis}
-              />
+              {selectedNode ? (
+                <DetailPanel
+                  node={selectedNode}
+                  edges={selectedEdges}
+                  nodes={graphData.nodes}
+                  classifiers={graphData.metadata.classifiers ?? []}
+                  nodeTypeConfigs={nodeTypeConfigs}
+                  template={template}
+                  onNodeUpdate={handleNodeUpdate}
+                  onNavigateToNode={handleNavigateToNode}
+                  onOpenNotes={() => (isPhone ? setPhoneTab("notes") : setNotesOpen(!notesOpen))}
+                  notesOpen={notesOpen}
+                  onNodeDelete={handleDeleteNode}
+                  analysis={analysis}
+                />
+              ) : (
+                <div className="panel-empty-hint">Select a node in the Map to see its properties.</div>
+              )}
             </div>
           </>
         )}
 
-        {analysisOpen && (
+        {showAnalysis && (
           <AnalysisPanel
             analysis={analysis}
             nodes={graphData.nodes}
@@ -1483,6 +1503,29 @@ function AppInner() {
             onSetPathTo={setPathTo}
           />
         )}
+
+        {/* Phone-only: Notes as its own full-screen tab. Desktop docks Notes
+            inside the editor area instead (above). */}
+        {isPhone && phoneTab === "notes" && (
+          <div className="notes-bottom-pane">
+            {selectedNode ? (
+              <NotesPane
+                node={selectedNode}
+                edges={selectedEdges}
+                nodes={graphData.nodes}
+                onNodeUpdate={handleNodeUpdate}
+              />
+            ) : selectedEdge ? (
+              <EdgeNotesPane
+                edge={selectedEdge}
+                nodes={graphData.nodes}
+                onEdgeUpdate={handleEdgeUpdate}
+              />
+            ) : (
+              <div className="panel-empty-hint">Select a node or edge in the Map to see its notes.</div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Status Bar */}
@@ -1493,6 +1536,10 @@ function AppInner() {
         interactionMode={interactionMode}
         themeName={theme.name}
       />
+
+      {/* Phone: bottom tab bar is the primary navigation (lives below the
+          status bar so it owns the home-indicator safe area). */}
+      {isPhone && <PhoneTabBar active={phoneTab} onChange={setPhoneTab} />}
 
       {activeModal === 'addNode' && (
         <AddNodeModal

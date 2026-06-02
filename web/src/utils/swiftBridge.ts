@@ -199,6 +199,20 @@ export function isNativeApp(): boolean {
   return !!getMessageHandler();
 }
 
+/**
+ * True on iOS / iPadOS (iPhone + iPad), false on macOS and desktop browsers.
+ * Both the macOS and iOS shells are WKWebView, so `isNativeApp` can't tell them
+ * apart; touch capability can. iPadOS 13+ may report a "Macintosh" UA, so we
+ * disambiguate it from a real Mac by its multi-touch support. Used to give both
+ * iOS form factors the single compact/tabbed UX (REQ-119).
+ */
+export function isIOSDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  if (/iPhone|iPod|iPad/.test(ua)) return true;
+  return /Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) > 1;
+}
+
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------

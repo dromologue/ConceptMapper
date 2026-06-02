@@ -20,18 +20,20 @@ Full drift surface in `specs/multiplatform-plan.md` §3.1.
 
 The shared React SPA carries every feature (map, textmap, notes, view
 persistence, add-node). macOS app builds/ships. The iPhone+iPad app builds and
-runs on iPhone 17 + iPad (A16) simulators — XCUITest confirms a map opens with
-the textmap on iPhone and the visual (region-layout) map on iPad.
+runs on iPhone 17 + iPad (A16) simulators.
 
-Session 2 (responsive iPhone UX) is done: on a phone-class viewport (`< 700px`)
-the sidebar collapses by default and opens as a left drawer over the outline;
-Properties and Notes render as full-width bottom sheets; resizers are dropped,
-touch targets bumped, safe-area insets respected, no horizontal overflow. Driven
-by a JS-set `app phone|tablet|desktop` root class + responsive CSS (REQ-119).
-Verified on iPhone 17: XCUITest (sidebar drawer + node selection) and a
-Playwright pass at 390×844 confirming both bottom sheets compute to
-`position: fixed; bottom: 0` at full viewport width. Remaining work is sessioned
-below.
+Session 2 (responsive mobile UX) is done, and iPhone + iPad now share **one iOS
+layout**: a compact, single-surface shell with a persistent bottom tab bar —
+Map, Explore (sidebar), Details (Properties), Analysis, Notes — each filling the
+screen. The compact layout is used on any iOS device (`isIOSDevice()`, so iPad
+gets it despite its width) or a phone-class browser viewport; macOS/desktop keep
+the inline panels. The Map-tab activity rail hides the sidebar/properties/notes/
+analysis toggles (they are tabs now); view defaults to textmap; touch targets
+≥40px; tab bar owns the home-indicator safe area; no horizontal overflow
+(REQ-119). Verified: XCUITest `testTabBarSurfaces` passes on iPhone 17 **and**
+iPad A16 (walks all five tabs); Playwright at 390×844 confirms each tab swaps the
+full-screen surface; macOS still builds with the inline layout unchanged.
+Remaining work is sessioned below.
 
 ## Session 3 — iOS file features on device  ← NEXT
 

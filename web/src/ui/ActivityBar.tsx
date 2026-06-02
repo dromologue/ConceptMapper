@@ -3,6 +3,9 @@ import type { NodeTypeConfig, LayoutPreset } from "../types/graph-ir";
 import { IconNetwork, IconSidebar, IconSettings, IconTaxonomy, IconHelp, IconFitView, IconExport, IconAnalysis, IconExplode, IconLayout, IconProperties, IconNotes, IconOutline } from "./Icons";
 
 interface Props {
+  /** On a phone the sidebar/properties/notes/analysis toggles are the bottom
+      tab bar's job, so the rail hides them and keeps only Map-tab tools. */
+  isPhone?: boolean;
   viewMode: string; // "full" or a node type id
   onViewModeChange: (mode: string) => void;
   sidebarOpen: boolean;
@@ -38,6 +41,7 @@ const LAYOUT_OPTIONS: { id: LayoutPreset; label: string; desc: string }[] = [
 ];
 
 export function ActivityBar({
+  isPhone,
   viewMode, onViewModeChange,
   sidebarOpen, onToggleSidebar,
   onOpenSettings,
@@ -113,7 +117,8 @@ export function ActivityBar({
         >
           <IconOutline size={20} />
         </button>
-        <div className="activity-bar-separator" />
+        {!isPhone && <div className="activity-bar-separator" />}
+        {!isPhone && (
         <button
           className={`activity-bar-btn ${sidebarOpen ? "active" : ""}`}
           onClick={onToggleSidebar}
@@ -121,7 +126,8 @@ export function ActivityBar({
         >
           <IconSidebar size={20} />
         </button>
-        {onToggleProperties && (
+        )}
+        {!isPhone && onToggleProperties && (
           <button
             className={`activity-bar-btn ${propertiesOpen ? "active" : ""}`}
             onClick={onToggleProperties}
@@ -130,7 +136,7 @@ export function ActivityBar({
             <IconProperties size={20} />
           </button>
         )}
-        {onToggleNotes && (
+        {!isPhone && onToggleNotes && (
           <button
             className={`activity-bar-btn ${notesOpen ? "active" : ""}`}
             onClick={onToggleNotes}
@@ -234,6 +240,7 @@ export function ActivityBar({
         )}
       </div>
       <div className="activity-bar-bottom">
+        {!isPhone && (
         <button
           className={`activity-bar-btn ${analysisOpen ? "active" : ""}`}
           onClick={onToggleAnalysis ?? (() => {})}
@@ -241,6 +248,7 @@ export function ActivityBar({
         >
           <IconAnalysis size={20} />
         </button>
+        )}
         <button
           className="activity-bar-btn"
           onClick={onEditTaxonomy}

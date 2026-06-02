@@ -2003,9 +2003,9 @@ The concept graph can be viewed as a navigable nested outline ("textmap") as an 
 
 ---
 
-## REQ-119: Responsive Shell — Phone Defaults + Overlay Panels
+## REQ-119: Responsive Shell — Compact iOS Tab Bar
 
-The SPA is viewport-aware. On a phone-class screen the default view is the textmap (the visual canvas is unusable at that width), the sidebar and the Properties/Notes panels — which sit inline on desktop and would otherwise swallow the screen — become overlays, and interactive chrome is sized for touch.
+The SPA adapts its shell to the device. On macOS/desktop it docks the panels inline side by side. On a compact device — any iOS device (iPhone **and** iPad, one shared iOS UX) or a phone-class browser viewport — there is no room for inline panels, so it shows exactly one full-screen surface at a time, switched by a persistent bottom tab bar.
 
 **Preconditions:**
 
@@ -2013,25 +2013,27 @@ The SPA is viewport-aware. On a phone-class screen the default view is the textm
 
 **Trigger:**
 
-- The viewport is measured at mount and on resize.
+- The viewport is measured at mount and on resize; the device class (iOS vs not) is detected once at mount.
 
 **Expected Behavior:**
 
 - `useViewport` classifies width into phone (`< 700px`), tablet (`< 1024px`), desktop.
-- On the first phone-class viewport, the view defaults to `textmap` and the sidebar collapses, once each; the user can still switch views and reopen the sidebar.
-- The root element carries its viewport class (`app phone | tablet | desktop`), which drives the responsive CSS.
-- On phone the sidebar is a left drawer over the content (with a scrim that dismisses it); Properties and Notes are bottom sheets (full width, scrim-dismissed) rather than side/inline panels; the desktop drag-resizers are hidden.
-- Phone overlays respect the bottom safe-area inset (`env(safe-area-inset-bottom)`), the page never scrolls horizontally, and touch targets (activity-bar, zoom, close buttons) are ≥ 40px.
+- The compact layout (`isPhone`) is used when the viewport is phone-class **or** the device is iOS (`isIOSDevice()` — iPhone/iPad, incl. iPadOS reporting a Mac UA, disambiguated by `maxTouchPoints`). macOS and desktop browsers keep the inline layout.
+- On first entering the compact layout, the view defaults to `textmap` and the sidebar collapses, once each; the user can still switch.
+- The root element carries `app phone` in the compact layout (else `app tablet | desktop`), which drives the responsive CSS.
+- The compact layout shows a bottom tab bar with five tabs — Map, Explore (sidebar), Details (Properties), Analysis, Notes — each filling the workbench. The activity-bar rail (on the Map tab) hides the sidebar/properties/notes/analysis toggles, since those are tabs. The tab bar owns the home-indicator safe area; the page never scrolls horizontally; touch targets are ≥ 40px.
+- Details/Notes show a "select a node" hint when nothing is selected.
 - Tablet/desktop keep the visual map default, inline panels, and drag-resizers — unchanged.
 
 **Acceptance Criteria:**
 
 - [x] AC-119-01: `web/src/hooks/useViewport.ts` exposes `{ width, height, kind }` and `classifyWidth`.
-- [x] AC-119-02: A phone-class viewport sets `viewMode` to `textmap` exactly once on mount.
+- [x] AC-119-02: Entering the compact layout sets `viewMode` to `textmap` exactly once on mount.
 - [x] AC-119-03: Desktop behaviour is unchanged (no forced view switch, inline panels, resizers present).
-- [x] AC-119-04: A phone-class viewport collapses the sidebar exactly once on mount; `useUIStore.setSidebarOpen` exists for this.
-- [x] AC-119-05: The root element class includes the viewport kind (`phone`/`tablet`/`desktop`).
-- [x] AC-119-06: On phone the sidebar, Properties, and Notes render as scrim-dismissed overlays and the drag-resizers are not rendered.
+- [x] AC-119-04: Entering the compact layout collapses the sidebar exactly once on mount; `useUIStore.setSidebarOpen` exists for this.
+- [x] AC-119-05: The root element class is `phone` in the compact layout (driving the responsive CSS) and the viewport kind otherwise.
+- [x] AC-119-06: The compact layout renders a five-tab bottom tab bar (`PhoneTabBar`); each tab swaps the single full-screen surface; the activity rail hides the redundant toggles.
+- [x] AC-119-07: `isIOSDevice()` is true on iPhone/iPad and false on macOS, so both iOS form factors share the compact layout (verified via XCUITest on iPhone 17 + iPad A16).
 
 ---
 

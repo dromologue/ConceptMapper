@@ -2,8 +2,9 @@ import XCTest
 
 /// Visual/smoke UI tests for the iOS app. The UI is the React SPA in a
 /// WKWebView, so these drive it through the web content's accessibility and
-/// capture full-screen screenshots (attached to the test result) of the start
-/// screen and an opened map (textmap on iPhone, visual map on iPad).
+/// capture full-screen screenshots (attached to the test result). iPhone and
+/// iPad share one iOS layout: a full-screen outline with a bottom tab bar
+/// (Map / Explore / Details / Analysis / Notes), REQ-119.
 final class ConceptMapperUITests: XCTestCase {
 
     override func setUp() {
@@ -48,23 +49,17 @@ final class ConceptMapperUITests: XCTestCase {
         XCTAssertTrue(map.waitForExistence(timeout: 10), "Map list item not found")
         map.tap()
 
-        // Give the canvas/textmap a moment to render, then capture it.
+        // Give the outline a moment to render, then capture it (iPhone + iPad
+        // share the same tabbed shell — see testTabBarSurfaces).
         sleep(4)
         snapshot("02-map-opened")
     }
 
-    /// Phone responsive overlays (REQ-119): on a phone-width screen the sidebar
-    /// is collapsed by default (the outline gets full width) and opens as a
-    /// drawer *over* the content rather than as an inline column that squeezes
-    /// the outline.
-    ///
-    /// Note: this only drives the sidebar drawer and node selection — both of
-    /// which sit on reliably-hittable web elements. The Properties/Notes bottom
-    /// sheets are toggled from icon-only activity-bar buttons, whose synthetic
-    /// taps the WKWebView does not reliably dispatch to the React handler; those
-    /// sheets are verified by computed-style/screenshot checks at the web layer
-    /// instead (see the responsive CSS in `web/src/App.css`, REQ-119).
-    func testPhoneSidebarDrawer() {
+    /// iOS tabbed shell (REQ-119): open a map, then walk the bottom tab bar.
+    /// Each tab swaps the full-screen surface. The tab buttons carry visible
+    /// text labels, so they are reliably hittable in the WKWebView (unlike the
+    /// icon-only activity-bar buttons). Runs identically on iPhone and iPad.
+    func testTabBarSurfaces() {
         let app = XCUIApplication()
         app.launch()
 
@@ -77,18 +72,20 @@ final class ConceptMapperUITests: XCTestCase {
         map.tap()
         sleep(3)
 
-        // Selecting an outline node highlights it (full-width textmap, no sidebar).
-        let node = app.buttons["Write alert runbooks"]
-        XCTAssertTrue(node.waitForExistence(timeout: 10), "Outline node not found")
-        node.tap()
-        sleep(1)
-        snapshot("03-node-selected")
+        // The bottom tab bar should be present with all five tabs.
+        for label in ["Map", "Explore", "Details", "Analysis", "Notes"] {
+            XCTAssertTrue(app.buttons[label].waitForExistence(timeout: 10), "Tab '\(label)' missing")
+        }
+        snapshot("03-tab-map")
 
-        // Sidebar drawer: opens over the outline (collapsed by default on phone).
-        let toggleSidebar = element(app, label: "Toggle Sidebar")
-        XCTAssertTrue(toggleSidebar.waitForExistence(timeout: 10), "Sidebar toggle not found")
-        toggleSidebar.tap()
-        sleep(1)
-        snapshot("04-sidebar-drawer")
+        // Select an outline node so Details/Notes have content.
+        let node = app.buttons["Write alert runbooks"]
+        if node.waitForExistence(timeout: 5) { node.tap(); sleep(1) }
+
+        app.buttons["Explore"].tap();  sleep(1); snapshot("04-tab-explore")
+        app.buttons["Details"].tap();  sleep(1); snapshot("05-tab-details")
+        app.buttons["Analysis"].tap(); sleep(1); snapshot("06-tab-analysis")
+        app.buttons["Notes"].tap();    sleep(1); snapshot("07-tab-notes")
+        app.buttons["Map"].tap();      sleep(1)
     }
 }

@@ -3569,83 +3569,74 @@ select.settings-input {
 
 /* =========================================================================
    Responsive — phone (REQ-119)
-   Class is JS-driven by useViewport(): `.app.phone` ⇔ width < 700px. The two
-   panel surfaces (Sidebar, Properties, Notes) that sit inline on desktop become
-   overlays on phone so the textmap/canvas always gets full width by default.
+   Class is JS-driven by useViewport(): `.app.phone` ⇔ width < 700px. There is
+   no room on a phone for the inline panels the desktop docks side by side, so
+   exactly one full-screen surface shows at a time, switched by a bottom tab bar
+   (Map / Explore / Details / Analysis / Notes — see PhoneTabBar).
    ========================================================================= */
-
-/* Overlay scrims — hidden unless a phone overlay is open. */
-.drawer-backdrop,
-.sheet-backdrop {
-  display: none;
-}
 
 .app.phone {
   /* Never allow a stray panel to push the layout wider than the screen. */
   overflow-x: hidden;
 }
 
-/* The editor column must be free to shrink to the viewport width on phone
-   (desktop pins a 300px floor so panels don't crush the canvas). */
-.app.phone .editor-area {
-  min-width: 0;
-}
-
-/* ----- Sidebar as a left drawer ----- */
-.app.phone .sidebar {
-  position: fixed;
-  top: 28px;            /* below the titlebar */
-  left: 48px;           /* right of the activity bar */
-  bottom: 0;
-  width: min(280px, 78vw);
-  z-index: 60;
-  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.45);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-.app.phone .drawer-backdrop {
-  display: block;
-  position: fixed;
-  inset: 28px 0 0 48px;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 55;
-}
-
-/* ----- Properties + Notes as bottom sheets ----- */
+/* Each active surface fills the workbench: drop the desktop fixed widths,
+   borders, and inline width/height so the single visible panel spans the
+   viewport. */
+.app.phone .editor-area,
+.app.phone .sidebar,
 .app.phone .auxiliary-panel,
+.app.phone .analysis-panel,
 .app.phone .notes-bottom-pane {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: auto !important;       /* override the desktop inline width */
-  height: auto !important;      /* override the desktop inline height */
-  max-height: 72vh;
-  z-index: 70;
+  flex: 1 1 auto;
+  width: auto !important;
+  min-width: 0;
+  height: auto !important;
+  max-height: none;
   border-left: none;
+  border-right: none;
+  border-top: none;
+  overflow-y: auto;
+}
+
+/* Hint shown when Details/Notes have no node selected yet. */
+.panel-empty-hint {
+  padding: 24px 16px;
+  color: var(--text-dim, #888);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ----- Bottom tab bar ----- */
+.phone-tab-bar {
+  display: flex;
+  flex-shrink: 0;
+  background: var(--activity-bar-bg, #111122);
   border-top: 1px solid var(--bg-hover, #2a2a4a);
-  border-radius: 14px 14px 0 0;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.45);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-
-.app.phone .notes-bottom-pane {
-  z-index: 72;                  /* notes sheet rides above the properties sheet */
-  min-height: 38vh;
+.phone-tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 0 6px;
+  background: none;
+  border: none;
+  border-top: 2px solid transparent;
+  color: var(--activity-bar-fg, #666688);
+  cursor: pointer;
+  min-height: 48px;
 }
-
-.app.phone .sheet-backdrop {
-  display: block;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 65;
+.phone-tab-btn .phone-tab-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
 }
-
-/* ----- No mouse-only resizers on phone ----- */
-.app.phone .pane-resizer,
-.app.phone .pane-resizer-h {
-  display: none;
+.phone-tab-btn.active {
+  color: var(--accent, #4A90D9);
+  border-top-color: var(--accent, #4A90D9);
 }
 
 /* ----- Touch-sized targets ----- */
@@ -3671,11 +3662,10 @@ select.settings-input {
   flex: 0 0 8px;
 }
 
-/* ----- Safe-area for the bottom status bar ----- */
+/* ----- Status bar safe-area (tab bar sits below it) ----- */
 .app.phone .status-bar {
   height: auto;
   min-height: 22px;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Start screen (no `.app` wrapper) — stack the columns under the phone width. */

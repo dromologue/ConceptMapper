@@ -2,6 +2,9 @@ import { create } from 'zustand';
 
 type ModalName = 'addNode' | 'addEdge' | 'settings' | 'help' | 'taxonomyWizard' | 'mapping' | 'exportImage' | null;
 
+/** Phone-only: which full-screen surface the bottom tab bar is showing (REQ-119). */
+export type PhoneTab = 'map' | 'explorer' | 'properties' | 'analysis' | 'notes';
+
 interface UIState {
   // Modal management (unified)
   activeModal: ModalName;
@@ -15,6 +18,11 @@ interface UIState {
   analysisOpen: boolean;
   sidebarOpen: boolean;
   labelMenuOpen: boolean;
+
+  // Phone-only: active full-screen tab (the bottom tab bar). Ignored on
+  // tablet/desktop, which show panels inline.
+  phoneTab: PhoneTab;
+  setPhoneTab: (tab: PhoneTab) => void;
 
   toggleChat: () => void;
   toggleNotes: () => void;
@@ -64,6 +72,9 @@ export const useUIStore = create<UIState>((set) => ({
   analysisOpen: false,
   sidebarOpen: true,
   labelMenuOpen: false,
+
+  phoneTab: 'map',
+  setPhoneTab: (tab) => set({ phoneTab: tab }),
 
   toggleChat: () => set((s) => ({ chatOpen: !s.chatOpen, ...(s.chatOpen ? {} : { notesOpen: false }) })),
   toggleNotes: () => set((s) => ({ notesOpen: !s.notesOpen })),
