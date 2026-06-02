@@ -37,6 +37,27 @@ repo. The workflow itself is created in the GUI:
 The build number is set automatically by `ci_pre_xcodebuild.sh` from
 `CI_BUILD_NUMBER` — do not hand-edit `CFBundleVersion`.
 
+## The iOS app — a second, separate workflow (paid product)
+
+The iOS app is a **separate App Store product** (paid; distinct bundle id
+`com.dromologue.ConceptMapper.ios`), so it gets its **own** App Store Connect
+record and its **own** Xcode Cloud workflow alongside the macOS one. Set it up
+the same way, with these differences:
+
+1. Create a new App Store Connect app record for `com.dromologue.ConceptMapper.ios`
+   and set a **price tier** (the macOS app stays free; this is why it can't be a
+   universal purchase).
+2. Xcode Cloud ▸ **Create Workflow**, pointed at `ios/ConceptMapper.xcodeproj`,
+   scheme **ConceptMapper** (the iOS scheme shares the name).
+3. **Start Condition**: *Branch Changes* on `master`.
+4. **Action**: *Archive*, platform **iOS**, Release.
+5. **Post-Actions**: *TestFlight* and, when ready, *TestFlight & App Store*.
+
+Both workflows run the same `ci_scripts/ci_pre_xcodebuild.sh`. The script picks
+the right `Info.plist` from `CI_PRODUCT_PLATFORM` (`macOS` vs `iOS`), so each
+product's version train advances independently — the macOS build never stamps
+the iOS plist and vice-versa.
+
 ## Versioning
 
 `ci_scripts/ci_pre_xcodebuild.sh` stamps both fields on every Xcode Cloud build:
@@ -46,6 +67,11 @@ The build number is set automatically by `ci_pre_xcodebuild.sh` from
   The `MAJOR.MINOR` part is read from the plist's current value; the patch is the
   CI build number, so every public release is strictly greater than the last
   with no manual bump.
+
+The script is platform-aware: it stamps `macos/ConceptMapper/Info.plist` for the
+macOS workflow and `ios/ConceptMapper/Info.plist` for the iOS workflow, selected
+by `CI_PRODUCT_PLATFORM` (falling back to the building project's path). The two
+apps therefore keep independent `MAJOR.MINOR` lines.
 
 You only touch versioning to start a new **major/minor line**: edit
 `CFBundleShortVersionString` in [`macos/project.yml`](macos/project.yml) and

@@ -57,9 +57,15 @@ Remaining work is sessioned below.
 ## Session 4 — Signing + App Store Connect (paid iOS) + Xcode Cloud
 
 - [ ] Register the iOS App ID + a new (paid) App Store Connect app record; set a
-      price tier.
-- [ ] iOS `ci_pre_xcodebuild.sh` version stamping; a second Xcode Cloud workflow
-      (iOS archive → TestFlight → App Store).
+      price tier. **(Portal work — yours to do; can't be scripted.)** Bundle id
+      `com.dromologue.ConceptMapper.ios`; then create the iOS Xcode Cloud workflow
+      per `RELEASING.md` → "The iOS app — a second, separate workflow".
+- [x] iOS `ci_pre_xcodebuild.sh` version stamping. The one shared CI script is now
+      platform-aware: it selects `macos/` vs `ios/ConceptMapper/Info.plist` from
+      `CI_PRODUCT_PLATFORM` (path-fallback otherwise), so the two products' version
+      trains advance independently — verified the iOS run leaves the macOS plist
+      untouched and vice-versa. The **second Xcode Cloud workflow** (iOS archive →
+      TestFlight → App Store) is GUI setup, now documented in `RELEASING.md`.
 
 ## Session 5 — Release docs + TestFlight
 
@@ -75,8 +81,11 @@ Remaining work is sessioned below.
 
 ## Drift guards (ongoing — protect the no-drift invariant)
 
-- [ ] Bridge parity test: assert Swift `BridgeMethod` and TS
-      `BridgeRequestMap`/event methods enumerate the same set (REQ-112 follow-up).
+- [x] Bridge parity test: `web/src/__tests__/bridge-parity.test.ts` parses the
+      Swift `BridgeMethod` enum and the TS `BridgeRequestMap`/`BridgeEventMap`
+      keys and asserts the sets are equal (+ request/event disjoint). A method
+      added on one side without the other now fails `npm test`. Since the Swift
+      file is shared verbatim into iOS, this covers both apps (REQ-112 follow-up).
 - [ ] CI (Xcode Cloud / branch check): build **both** apps so a change that breaks
       either platform fails before merge (`build-app.sh --platform all`).
 - [ ] When adding a bridge method: edit `BridgeProtocol.swift` + `bridge-protocol.ts`
