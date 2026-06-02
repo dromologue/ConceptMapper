@@ -711,6 +711,15 @@ The top level lists the map's natural roots — nodes with no incoming relations
 **Loops**
 Concept maps contain cycles. If a connection points back to a node already above you in the current path, the Textmap shows it as a **loop link (↺)** rather than expanding it forever — tap it to jump to that node. This keeps navigation finite no matter how tangled the graph.
 
+**Notes on a row**
+Every row has a notes button. Tap it to read and edit that node's notes inline, without leaving the outline. Notes open as rendered markdown when they already exist; tap **Edit** for a plain textarea and **Preview** to render it again. Edits save into the map automatically (debounced), exactly as the canvas Notes panel saves. Tap **Attach .md** to back the notes with an external markdown file — once attached, that file is the source of truth and your edits write straight through to it; **Detach** keeps the text but unlinks the file. When a row's notes are collapsed, a one-line preview of the first line sits beneath the row, so you can skim a whole branch without opening each note.
+
+**Adding nodes**
+The outline has an add-node button (＋) in its header, so you can build a map from the Textmap alone — useful on a phone, where the visual canvas isn't practical. It opens the same Add Node form as the canvas: choose a node type from the template, name it, set classifier values, tags, and any template fields, and optionally link it to existing nodes as you create it.
+
+**Your chosen layout is saved with the map**
+The layout you pick — the plain force arrangement, or one driven by a classifier's axis — is written into the .cm file itself as a small \`<!-- view: … -->\` line, alongside any per-classifier axis choices. Re-open the map, on any platform, and it returns to that arrangement instead of resetting to the default force layout. The map carries its preferred presentation with it, the same way it carries its nodes and notes.
+
 **Why it exists**
 A large graph is unreadable on a phone and often busy even on a desktop. The Textmap trades spatial layout for precise, linear navigation: follow one thread of relationships at a time, with the structure always legible as indented text.`,
   },

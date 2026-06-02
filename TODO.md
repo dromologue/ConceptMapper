@@ -69,8 +69,11 @@ Remaining work is sessioned below.
 
 ## Session 5 — Release docs + TestFlight
 
-- [ ] Expand in-app help (`web/src/help/content.ts`) for textmap inline notes +
-      view persistence + add-node.
+- [x] Expand in-app help (`web/src/help/content.ts`) for textmap inline notes +
+      view persistence + add-node. The "Textmap: The Outline View" section now
+      covers: inline notes (read/edit, Attach/Detach .md, one-line collapsed
+      preview), the add-node (＋) button for building a map from the outline, and
+      the layout preset persisting into the map's `<!-- view: … -->` line.
 - [ ] Regenerate + push the public support site with textmap + iOS details.
 - [ ] Cut a TestFlight build; test on a real iPhone/iPad.  ← **testable version**
 
