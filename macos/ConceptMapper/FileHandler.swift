@@ -67,21 +67,32 @@ enum FileHandler {
     // MARK: - Bundled-asset hydration (idempotent, no IO errors propagated)
 
     /// Copy bundled example .cm maps to the user Maps folder on first run.
+    /// One-time flag so we seed the example maps exactly once and never
+    /// resurrect an example the user has since deleted.
+    static let seededMapsKey = "cm.didSeedExampleMaps.v1"
+
     static func copyBundledMaps() {
         let folder = getMapsFolder()
         guard let resourceURL = Bundle.main.resourceURL else { return }
         let bundledDir = resourceURL.appendingPathComponent("maps")
         guard FileManager.default.fileExists(atPath: bundledDir.path) else { return }
-        let existing = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
-            .filter { $0.pathExtension == "cm" }) ?? []
-        guard existing.isEmpty else { return }
-        if let bundledFiles = try? FileManager.default.contentsOfDirectory(at: bundledDir, includingPropertiesForKeys: nil)
-            .filter({ $0.pathExtension == "cm" }) {
-            for file in bundledFiles {
-                let dest = folder.appendingPathComponent(file.lastPathComponent)
+        guard let bundledFiles = try? FileManager.default.contentsOfDirectory(at: bundledDir, includingPropertiesForKeys: nil)
+            .filter({ $0.pathExtension == "cm" }), !bundledFiles.isEmpty else { return }
+
+        // Seed each bundled example by name when it's missing — but only on the
+        // first launch that runs this code (gated by the flag). The earlier
+        // logic seeded only when the Maps folder was *entirely* empty, so a
+        // pre-existing or iCloud-synced Maps folder meant the examples never
+        // arrived. Seeding missing-by-name guarantees they ship through on first
+        // run regardless; the one-time flag means a later deletion sticks.
+        guard !UserDefaults.standard.bool(forKey: seededMapsKey) else { return }
+        for file in bundledFiles {
+            let dest = folder.appendingPathComponent(file.lastPathComponent)
+            if !FileManager.default.fileExists(atPath: dest.path) {
                 try? FileManager.default.copyItem(at: file, to: dest)
             }
         }
+        UserDefaults.standard.set(true, forKey: seededMapsKey)
     }
 
     /// Sync bundled .cmt templates to the user templates folder.
