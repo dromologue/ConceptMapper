@@ -21,21 +21,19 @@ Full drift surface in `specs/multiplatform-plan.md` §3.1.
 The shared React SPA carries every feature (map, textmap, notes, view
 persistence, add-node). macOS app builds/ships. The iPhone+iPad app builds and
 runs on iPhone 17 + iPad (A16) simulators — XCUITest confirms a map opens with
-the textmap on iPhone and the visual (region-layout) map on iPad. Remaining work
-is sessioned below.
+the textmap on iPhone and the visual (region-layout) map on iPad.
 
-## Session 2 — Responsive mobile UX (iPhone)  ← NEXT
+Session 2 (responsive iPhone UX) is done: on a phone-class viewport (`< 700px`)
+the sidebar collapses by default and opens as a left drawer over the outline;
+Properties and Notes render as full-width bottom sheets; resizers are dropped,
+touch targets bumped, safe-area insets respected, no horizontal overflow. Driven
+by a JS-set `app phone|tablet|desktop` root class + responsive CSS (REQ-119).
+Verified on iPhone 17: XCUITest (sidebar drawer + node selection) and a
+Playwright pass at 390×844 confirming both bottom sheets compute to
+`position: fixed; bottom: 0` at full viewport width. Remaining work is sessioned
+below.
 
-The XCUITest screenshots show the explorer sidebar takes most of the iPhone
-width, squeezing the textmap. Fix the phone layout:
-
-- [ ] On phone: collapse the sidebar behind a toggle/drawer so the textmap (or
-      canvas) gets full width by default.
-- [ ] Properties + Notes as bottom sheets (not side panels) on phone.
-- [ ] Touch-sized targets, safe-area insets, no horizontal overflow.
-- [ ] Verify each at iPhone size via the XCUITest screenshots; no desktop regress.
-
-## Session 3 — iOS file features on device
+## Session 3 — iOS file features on device  ← NEXT
 
 - [ ] Verify `UIDocumentPicker` open/attach and share-sheet export end to end on
       the simulator; fix any presentation/sandbox issues.

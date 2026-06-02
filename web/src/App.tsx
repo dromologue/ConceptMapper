@@ -81,6 +81,7 @@ function AppInner() {
   const setNotesOpen = useUIStore((s) => s.setNotesOpen);
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
+  const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
   const analysisOpen = useUIStore((s) => s.analysisOpen);
   const toggleAnalysis = useUIStore((s) => s.toggleAnalysis);
   const labelMenuOpen = useUIStore((s) => s.labelMenuOpen);
@@ -299,17 +300,21 @@ function AppInner() {
   }, [setViewModeStore]);
 
   // Responsive default: on a phone-class viewport the visual canvas is too
-  // small to be useful, so default to the textmap. Fires once (the first time
-  // the viewport is phone-class); the user can still switch to any view after.
+  // small to be useful, so default to the textmap; and the 250px sidebar would
+  // swallow the screen, so it starts collapsed behind its drawer toggle. Fires
+  // once (the first time the viewport is phone-class); the user can still switch
+  // views and open the drawer after.
   const viewport = useViewport();
+  const isPhone = viewport.kind === "phone";
   const didPhoneDefaultRef = useRef(false);
   useEffect(() => {
     if (didPhoneDefaultRef.current) return;
     if (viewport.kind === "phone") {
       didPhoneDefaultRef.current = true;
       setViewModeStore("textmap");
+      setSidebarOpen(false);
     }
-  }, [viewport.kind, setViewModeStore]);
+  }, [viewport.kind, setViewModeStore, setSidebarOpen]);
 
   const handleSelectNode = useCallback(
     (node: GraphNode | null) => {
@@ -1102,7 +1107,7 @@ function AppInner() {
     : [];
 
   return (
-    <div className="app">
+    <div className={`app ${viewport.kind}`}>
       {/* Titlebar */}
       <div className="titlebar">
         <span className="titlebar-title">{graphData.metadata.title || "Concept Map"}</span>
@@ -1185,6 +1190,9 @@ function AppInner() {
           onExpandLevelChange={handleExpandLevelChange}
         />
 
+        {sidebarOpen && isPhone && (
+          <div className="drawer-backdrop" onClick={toggleSidebar} />
+        )}
         {sidebarOpen && (
           <Sidebar
             nodes={graphData.nodes}
@@ -1371,10 +1379,13 @@ function AppInner() {
               />
             )}
           </div>
+          {isPhone && notesOpen && (
+            <div className="sheet-backdrop" onClick={() => setNotesOpen(false)} />
+          )}
           {selectedNode && notesOpen && (
             <>
-              <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />
-              <div className="notes-bottom-pane" style={{ height: notesHeight }}>
+              {!isPhone && <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />}
+              <div className="notes-bottom-pane" style={isPhone ? undefined : { height: notesHeight }}>
                 <NotesPane
                   node={selectedNode}
                   edges={selectedEdges}
@@ -1386,8 +1397,8 @@ function AppInner() {
           )}
           {!selectedNode && selectedEdge && notesOpen && (
             <>
-              <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />
-              <div className="notes-bottom-pane" style={{ height: notesHeight }}>
+              {!isPhone && <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />}
+              <div className="notes-bottom-pane" style={isPhone ? undefined : { height: notesHeight }}>
                 <EdgeNotesPane
                   edge={selectedEdge}
                   nodes={graphData.nodes}
@@ -1398,8 +1409,8 @@ function AppInner() {
           )}
           {!selectedNode && !selectedEdge && notesOpen && (
             <>
-              <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />
-              <div className="notes-bottom-pane" style={{ height: notesHeight }}>
+              {!isPhone && <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />}
+              <div className="notes-bottom-pane" style={isPhone ? undefined : { height: notesHeight }}>
                 <div style={{ padding: 16, color: "var(--text-dim)", fontSize: 12, fontStyle: "italic" }}>
                   Select a node or edge to see its notes.
                 </div>
@@ -1410,8 +1421,12 @@ function AppInner() {
 
         {selectedNode && propertiesOpen && (
           <>
-            <div className="pane-resizer" onMouseDown={makeResizeHandler(setAuxPanelWidth, auxPanelWidth)} />
-            <div className="auxiliary-panel" style={{ width: auxPanelWidth }}>
+            {isPhone ? (
+              <div className="sheet-backdrop" onClick={() => setPropertiesOpen(false)} />
+            ) : (
+              <div className="pane-resizer" onMouseDown={makeResizeHandler(setAuxPanelWidth, auxPanelWidth)} />
+            )}
+            <div className="auxiliary-panel" style={isPhone ? undefined : { width: auxPanelWidth }}>
               <div className="aux-panel-header">
                 <span className="aux-panel-title">Properties</span>
                 <button className="close-btn" onClick={() => setPropertiesOpen(false)}>&times;</button>

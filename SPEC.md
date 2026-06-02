@@ -2003,9 +2003,9 @@ The concept graph can be viewed as a navigable nested outline ("textmap") as an 
 
 ---
 
-## REQ-119: Responsive Shell — Phone Defaults to Textmap
+## REQ-119: Responsive Shell — Phone Defaults + Overlay Panels
 
-The SPA is viewport-aware; on a phone-class screen (where the visual canvas is unusable) the textmap is the default view.
+The SPA is viewport-aware. On a phone-class screen the default view is the textmap (the visual canvas is unusable at that width), the sidebar and the Properties/Notes panels — which sit inline on desktop and would otherwise swallow the screen — become overlays, and interactive chrome is sized for touch.
 
 **Preconditions:**
 
@@ -2018,14 +2018,20 @@ The SPA is viewport-aware; on a phone-class screen (where the visual canvas is u
 **Expected Behavior:**
 
 - `useViewport` classifies width into phone (`< 700px`), tablet (`< 1024px`), desktop.
-- On the first phone-class viewport, the view defaults to `textmap` once; the user can still switch.
-- Tablet/desktop keep the visual map default with the textmap as an option.
+- On the first phone-class viewport, the view defaults to `textmap` and the sidebar collapses, once each; the user can still switch views and reopen the sidebar.
+- The root element carries its viewport class (`app phone | tablet | desktop`), which drives the responsive CSS.
+- On phone the sidebar is a left drawer over the content (with a scrim that dismisses it); Properties and Notes are bottom sheets (full width, scrim-dismissed) rather than side/inline panels; the desktop drag-resizers are hidden.
+- Phone overlays respect the bottom safe-area inset (`env(safe-area-inset-bottom)`), the page never scrolls horizontally, and touch targets (activity-bar, zoom, close buttons) are ≥ 40px.
+- Tablet/desktop keep the visual map default, inline panels, and drag-resizers — unchanged.
 
 **Acceptance Criteria:**
 
 - [x] AC-119-01: `web/src/hooks/useViewport.ts` exposes `{ width, height, kind }` and `classifyWidth`.
 - [x] AC-119-02: A phone-class viewport sets `viewMode` to `textmap` exactly once on mount.
-- [x] AC-119-03: Desktop behaviour is unchanged (no forced view switch).
+- [x] AC-119-03: Desktop behaviour is unchanged (no forced view switch, inline panels, resizers present).
+- [x] AC-119-04: A phone-class viewport collapses the sidebar exactly once on mount; `useUIStore.setSidebarOpen` exists for this.
+- [x] AC-119-05: The root element class includes the viewport kind (`phone`/`tablet`/`desktop`).
+- [x] AC-119-06: On phone the sidebar, Properties, and Notes render as scrim-dismissed overlays and the drag-resizers are not rendered.
 
 ---
 

@@ -22,6 +22,7 @@ interface UIState {
   toggleSidebar: () => void;
   toggleLabelMenu: () => void;
   setNotesOpen: (open: boolean) => void;
+  setSidebarOpen: (open: boolean) => void;
 
   // Search
   searchQuery: string;
@@ -70,6 +71,7 @@ export const useUIStore = create<UIState>((set) => ({
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   toggleLabelMenu: () => set((s) => ({ labelMenuOpen: !s.labelMenuOpen })),
   setNotesOpen: (open) => set({ notesOpen: open }),
+  setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
   searchQuery: '',
   searchFocused: false,

@@ -52,4 +52,43 @@ final class ConceptMapperUITests: XCTestCase {
         sleep(4)
         snapshot("02-map-opened")
     }
+
+    /// Phone responsive overlays (REQ-119): on a phone-width screen the sidebar
+    /// is collapsed by default (the outline gets full width) and opens as a
+    /// drawer *over* the content rather than as an inline column that squeezes
+    /// the outline.
+    ///
+    /// Note: this only drives the sidebar drawer and node selection — both of
+    /// which sit on reliably-hittable web elements. The Properties/Notes bottom
+    /// sheets are toggled from icon-only activity-bar buttons, whose synthetic
+    /// taps the WKWebView does not reliably dispatch to the React handler; those
+    /// sheets are verified by computed-style/screenshot checks at the web layer
+    /// instead (see the responsive CSS in `web/src/App.css`, REQ-119).
+    func testPhoneSidebarDrawer() {
+        let app = XCUIApplication()
+        app.launch()
+
+        XCTAssertTrue(
+            app.staticTexts["Concept Mapper"].waitForExistence(timeout: 20),
+            "Start screen (SPA) did not load"
+        )
+        let map = element(app, label: "tasks-and-notes")
+        XCTAssertTrue(map.waitForExistence(timeout: 10), "Map list item not found")
+        map.tap()
+        sleep(3)
+
+        // Selecting an outline node highlights it (full-width textmap, no sidebar).
+        let node = app.buttons["Write alert runbooks"]
+        XCTAssertTrue(node.waitForExistence(timeout: 10), "Outline node not found")
+        node.tap()
+        sleep(1)
+        snapshot("03-node-selected")
+
+        // Sidebar drawer: opens over the outline (collapsed by default on phone).
+        let toggleSidebar = element(app, label: "Toggle Sidebar")
+        XCTAssertTrue(toggleSidebar.waitForExistence(timeout: 10), "Sidebar toggle not found")
+        toggleSidebar.tap()
+        sleep(1)
+        snapshot("04-sidebar-drawer")
+    }
 }
