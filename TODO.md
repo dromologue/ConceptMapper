@@ -74,7 +74,15 @@ Remaining work is sessioned below.
       covers: inline notes (read/edit, Attach/Detach .md, one-line collapsed
       preview), the add-node (＋) button for building a map from the outline, and
       the layout preset persisting into the map's `<!-- view: … -->` line.
-- [ ] Regenerate + push the public support site with textmap + iOS details.
+- [~] Regenerate + push the public support site with textmap + iOS details.
+      **Drafted (not pushed).** `scripts/gen-support-site.mjs` now emits the iOS
+      + textmap marketing copy: a "navigable outline" feature, an "On the Mac
+      today — iPhone and iPad too" platforms band, Mac+iPhone+iPad title and
+      hero/req copy. The help page already inherits the expanded Textmap
+      section. Generation verified locally (`node scripts/gen-support-site.mjs`
+      → `/support-site`, gitignored). **Still to do at release:** drop an iPhone
+      textmap screenshot into `Previews/`, set that feature's `img` + the iOS
+      App Store URL, regenerate, and push to `dromologue/conceptmapper-support`.
 - [ ] Cut a TestFlight build; test on a real iPhone/iPad.  ← **testable version**
 
 ## Session 6 — Ship
@@ -89,8 +97,13 @@ Remaining work is sessioned below.
       keys and asserts the sets are equal (+ request/event disjoint). A method
       added on one side without the other now fails `npm test`. Since the Swift
       file is shared verbatim into iOS, this covers both apps (REQ-112 follow-up).
-- [ ] CI (Xcode Cloud / branch check): build **both** apps so a change that breaks
-      either platform fails before merge (`build-app.sh --platform all`).
+- [x] CI (branch check): build **both** apps so a change that breaks either
+      platform fails before merge. `.github/workflows/apps.yml` runs on a macOS
+      runner (on pushes to `feature/multiplatform` and PRs into master) and calls
+      `scripts/build-app.sh --platform=all --verify` — unsigned, using committed
+      `Resources/web`, so it gates the Swift shells, `project.yml`, and the
+      bridge↔FileHandler contract. Validated locally: both apps BUILD SUCCEEDED,
+      verify path exits 0. Scoped to branches that carry `ios/` (master doesn't).
 - [ ] When adding a bridge method: edit `BridgeProtocol.swift` + `bridge-protocol.ts`
       together; the shared dispatcher compiling into both targets enforces the
       `FileHandler` contract automatically.
