@@ -66,11 +66,11 @@ enum FileHandler {
 
     // MARK: - Bundled-asset hydration (idempotent, no IO errors propagated)
 
-    /// Copy bundled example .cm maps to the user Maps folder on first run.
     /// One-time flag so we seed the example maps exactly once and never
     /// resurrect an example the user has since deleted.
     static let seededMapsKey = "cm.didSeedExampleMaps.v1"
 
+    /// Copy bundled example .cm maps to the user Maps folder on first run.
     static func copyBundledMaps() {
         let folder = getMapsFolder()
         guard let resourceURL = Bundle.main.resourceURL else { return }
