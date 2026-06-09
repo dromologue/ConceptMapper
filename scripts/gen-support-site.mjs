@@ -263,6 +263,7 @@ function page({ title, body, active, wide }) {
           ${link("index.html", "Overview", "home")}
           ${link("help.html", "Help &amp; Support", "help")}
           ${link("privacy.html", "Privacy", "privacy")}
+          ${link("terms.html", "Terms", "terms")}
         </nav>
       </div>
     </header>`;
@@ -270,7 +271,7 @@ function page({ title, body, active, wide }) {
     <footer class="site-footer">
       <div class="wrap">
         <p>${META.appName} ${META.version} · Support: <a href="mailto:${META.contact}">${META.contact}</a></p>
-        <p class="muted">Documentation and privacy policy for ${META.appName}, a macOS application.</p>
+        <p class="muted"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms &amp; Conditions</a> · Documentation for ${META.appName}.</p>
       </div>
     </footer>`;
   return `<!DOCTYPE html>
@@ -459,6 +460,47 @@ function buildPrivacy() {
   return page({ title: `${META.appName} — Privacy Policy`, body, active: "privacy" });
 }
 
+// ── Terms & Conditions ───────────────────────────────────────────────
+function buildTerms() {
+  const body = `
+    <article class="legal">
+      <h1>Terms &amp; Conditions</h1>
+      <p class="muted">Effective ${META.effectiveDate} · ${META.appName} ${META.version}</p>
+
+      <p>These Terms &amp; Conditions ("Terms") govern your use of ${META.appName} (the "Software"). By downloading, installing, or using the Software you agree to these Terms. If you obtained the Software through the Apple App Store, your use is also subject to Apple's standard Licensed Application End User License Agreement; where these Terms and Apple's agreement conflict, Apple's agreement prevails to the extent of the conflict.</p>
+
+      <h2>Licence</h2>
+      <p>${META.appName} grants you a personal, non-exclusive, non-transferable, revocable licence to install and use the Software on the devices you own or control, in accordance with these Terms and any usage rules set by the platform from which you obtained it. You may not redistribute, sell, sublicense, rent, or lease the Software, nor reverse-engineer, decompile, or disassemble it except to the extent that such restriction is prohibited by applicable law.</p>
+
+      <h2>Your content</h2>
+      <p>You retain all rights to the concept maps, templates, and other files you create or open with the Software ("Your Content"). The Software does not claim any ownership of Your Content. You are solely responsible for Your Content and for maintaining your own backups; the Software is not a backup service.</p>
+
+      <h2>No warranty</h2>
+      <p><strong>The Software is provided "AS IS" and "AS AVAILABLE", without warranty of any kind.</strong> To the fullest extent permitted by applicable law, ${META.appName} and its author disclaim all warranties, whether express, implied, statutory, or otherwise, including without limitation any implied warranties or conditions of merchantability, satisfactory quality, fitness for a particular purpose, title, accuracy, and non-infringement. No advice or information, whether oral or written, obtained from any source shall create any warranty not expressly stated in these Terms.</p>
+      <p>${META.appName} does not warrant that the Software will be uninterrupted, error-free, secure, or free of defects, that defects will be corrected, or that the Software will meet your requirements or be compatible with any particular hardware or software. You use the Software at your own risk.</p>
+
+      <h2>Limitation of liability</h2>
+      <p>To the fullest extent permitted by applicable law, in no event shall ${META.appName} or its author be liable for any indirect, incidental, special, consequential, exemplary, or punitive damages, or for any loss of profits, data, goodwill, or other intangible losses, arising out of or relating to your use of, or inability to use, the Software — whether based on warranty, contract, tort (including negligence), or any other legal theory, and whether or not advised of the possibility of such damage. To the extent liability cannot be excluded but may be limited, the total aggregate liability of ${META.appName} and its author shall not exceed the amount you paid for the Software (which, where the Software was supplied free of charge, is nil).</p>
+      <p>Nothing in these Terms excludes or limits liability that cannot lawfully be excluded or limited, including liability for death or personal injury caused by negligence, or for fraud. Some jurisdictions do not allow the exclusion of certain warranties or the limitation of certain liabilities, so some of the above may not apply to you; in that case those exclusions and limitations apply only to the maximum extent permitted by law, and nothing in these Terms affects your statutory rights as a consumer.</p>
+
+      <h2>Support and updates</h2>
+      <p>The Software is provided without any obligation to furnish support, maintenance, updates, or future versions. Any support that is offered is provided on a reasonable-efforts basis only.</p>
+
+      <h2>Termination</h2>
+      <p>These Terms apply until terminated. Your rights under these Terms end automatically if you fail to comply with them. On termination you must stop using the Software and delete all copies. The "No warranty", "Limitation of liability", and "Governing law" sections survive termination.</p>
+
+      <h2>Changes to these Terms</h2>
+      <p>${META.appName} may update these Terms from time to time. The updated version will be posted on this page with a new effective date, and your continued use of the Software after a change takes effect constitutes acceptance of the revised Terms.</p>
+
+      <h2>Governing law</h2>
+      <p>These Terms are governed by the laws of England and Wales, without regard to its conflict-of-laws rules and without prejudice to any mandatory consumer-protection rights you may have under the laws of your country of residence.</p>
+
+      <h2>Contact</h2>
+      <p>Questions about these Terms: <a href="mailto:${META.contact}">${META.contact}</a>.</p>
+    </article>`;
+  return page({ title: `${META.appName} — Terms & Conditions`, body, active: "terms" });
+}
+
 const STYLES = `:root{
   --bg:#fbfbfd; --panel:#fff; --ink:#1d1d1f; --muted:#6e6e73;
   --accent:#0b6bcb; --border:#e3e3e8; --code-bg:#f4f4f7;
@@ -587,9 +629,10 @@ async function main() {
   await writeFile(resolve(OUT, "index.html"), buildHome());
   await writeFile(resolve(OUT, "help.html"), buildHelp(sections));
   await writeFile(resolve(OUT, "privacy.html"), buildPrivacy());
+  await writeFile(resolve(OUT, "terms.html"), buildTerms());
   await writeFile(resolve(OUT, ".nojekyll"), "");
   console.log(`Generated marketing + ${sections.length} help sections → ${OUT}`);
-  console.log("  index.html  help.html  privacy.html  styles.css  images/  .nojekyll");
+  console.log("  index.html  help.html  privacy.html  terms.html  styles.css  images/  .nojekyll");
 }
 
 main().catch((e) => {
