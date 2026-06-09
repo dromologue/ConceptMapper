@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GraphIR, GraphNode, GraphEdge } from '../types/graph-ir';
+import type { GraphIR, GraphNode, GraphEdge, NodeLink } from '../types/graph-ir';
 import type { FilterState } from '../utils/filters';
 import { createEmptyFilterState } from '../utils/filters';
 import { getDefaultEdgeVisual } from '../utils/edge-registry';
@@ -51,7 +51,7 @@ interface GraphState {
   // Node operations
   handleSelectNode: (node: GraphNode | null) => void;
   handleNodeUpdate: (nodeId: string, updates: Partial<GraphNode>) => void;
-  handleAddNode: (nodeType: string, name: string, classifierValues: Record<string, string>, tags: string[], properties: Record<string, string | undefined>) => void;
+  handleAddNode: (nodeType: string, name: string, classifierValues: Record<string, string>, tags: string[], properties: Record<string, string | undefined>, links?: NodeLink[], template?: { edge_types?: { id: string; directed: boolean; style?: string; color?: string }[] } | null) => void;
   handleDeleteNode: (nodeId: string) => void;
   handleNavigateToNode: (nodeId: string) => void;
   handleCloseNode: () => void;
@@ -178,7 +178,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     });
   },
 
-  handleAddNode: (nodeType, name, classifierValues, tags, properties) => {
+  handleAddNode: (nodeType, name, classifierValues, tags, properties, links, template) => {
     const s = get();
     if (!s.graphData) return;
     s.pushState();
@@ -191,8 +191,26 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       tags: tags.length > 0 ? tags : undefined,
       properties: { ...properties },
     };
+    // Build any links to existing nodes as edges, created in the same action.
+    const existingIds = new Set(s.graphData.nodes.map((n) => n.id));
+    const newEdges: GraphEdge[] = [];
+    for (const link of links ?? []) {
+      if (!link.targetId || !link.edgeType || !existingIds.has(link.targetId)) continue;
+      const cfg = template?.edge_types?.find((e) => e.id === link.edgeType);
+      const directed = cfg ? cfg.directed : !['rivalry', 'alliance', 'institutional', 'opposes'].includes(link.edgeType);
+      const visual = cfg
+        ? { style: cfg.style ?? 'solid', color: cfg.color, show_arrow: cfg.directed }
+        : getEdgeVisual(link.edgeType);
+      const from = link.direction === 'out' ? id : link.targetId;
+      const to = link.direction === 'out' ? link.targetId : id;
+      newEdges.push({ from, to, edge_type: link.edgeType, directed, weight: 1.0, visual });
+    }
     set({
-      graphData: { ...s.graphData, nodes: [...s.graphData.nodes, newNode] },
+      graphData: {
+        ...s.graphData,
+        nodes: [...s.graphData.nodes, newNode],
+        edges: newEdges.length > 0 ? [...s.graphData.edges, ...newEdges] : s.graphData.edges,
+      },
       selectedNode: newNode,
     });
     // Close modal via UI store

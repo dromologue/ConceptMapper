@@ -11,7 +11,8 @@
 
 import { useEffect, useRef } from "react";
 import { installBridgeReceiver, postToSwift, registerSyncGetters, subscribe } from "../utils/swiftBridge";
-import type { ConceptMapData, GraphIR, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
+import { parseViewComment } from "../utils/viewOptions";
+import type { Classifier, ConceptMapData, GraphIR, LayoutPreset, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
 import type { FilterState } from "../utils/filters";
 import type { TaxonomyWizardInitial } from "../ui/TaxonomyWizard";
 
@@ -32,6 +33,7 @@ export interface SwiftBridgeDeps {
   setFilters: (f: FilterState) => void;
   setError: (e: string | null) => void;
   setSourceFilePath: (p: string | null) => void;
+  setLayoutPreset: (p: LayoutPreset) => void;
   setShowTaxonomyWizard: (v: boolean) => void;
   setNativeMaps: (maps: { name: string; path: string }[]) => void;
   setLoadedNativeTemplates: (updater: (prev: Map<string, TaxonomyWizardInitial>) => Map<string, TaxonomyWizardInitial>) => void;
@@ -40,7 +42,8 @@ export interface SwiftBridgeDeps {
   getGraphData: () => GraphIR | null;
   getNodeTypeConfigs: () => NodeTypeConfig[];
   getEdgeColorOverrides: () => Record<string, string>;
-  exportToMarkdown: (data: GraphIR, configs: NodeTypeConfig[], overrides?: Record<string, string>) => string;
+  getLayoutPreset: () => LayoutPreset;
+  exportToMarkdown: (data: GraphIR, configs: NodeTypeConfig[], overrides?: Record<string, string>, layoutPreset?: LayoutPreset) => string;
 
   // Factories
   createEmptyFilterState: () => FilterState;
@@ -64,7 +67,7 @@ export function useSwiftBridge(deps: SwiftBridgeDeps): void {
         const d = depsRef.current;
         const g = d.getGraphData();
         if (!g) return "";
-        return d.exportToMarkdown(g, d.getNodeTypeConfigs(), d.getEdgeColorOverrides());
+        return d.exportToMarkdown(g, d.getNodeTypeConfigs(), d.getEdgeColorOverrides(), d.getLayoutPreset());
       },
       getCanvasImage: () => {
         const canvas = document.querySelector("canvas");
@@ -107,6 +110,21 @@ export function useSwiftBridge(deps: SwiftBridgeDeps): void {
           try { d.setEdgeColorOverrides(JSON.parse(edgeColorsMatch[1]) as Record<string, string>); } catch { /* ignore */ }
         } else {
           d.setEdgeColorOverrides({});
+        }
+        // Restore saved view options: layout preset + per-attribute classifier
+        // layouts (see utils/viewOptions).
+        const view = parseViewComment(decoded);
+        d.setLayoutPreset(view?.layout ?? "force");
+        // When a view was saved it is authoritative for classifier layouts:
+        // apply to the IR (which drives rendering) and the template.
+        if (view) {
+          const layouts = view.classifierLayouts ?? {};
+          const applyTo = (cs?: Classifier[]) =>
+            cs?.map((c) => ({ ...c, layout: layouts[c.id] as Classifier["layout"] }));
+          const reIr = applyTo(ir.metadata.classifiers);
+          if (reIr) ir.metadata.classifiers = reIr;
+          const reTmpl = applyTo(migratedTemplate.classifiers);
+          if (reTmpl) migratedTemplate.classifiers = reTmpl;
         }
         d.loadGraphFresh(ir);
         d.setTemplate(migratedTemplate);

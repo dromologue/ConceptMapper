@@ -5,16 +5,32 @@ import UniformTypeIdentifiers
 @MainActor
 enum FileHandler {
 
-    // MARK: - Base directories (synchronous — pure path math)
+    // MARK: - Base directories
 
-    /// App data directory (sandbox container Documents/).
+    /// The iCloud container the macOS and iOS apps share so Maps + Templates are
+    /// the same files on both. Must match the iOS FileHandler and both
+    /// entitlements / `NSUbiquitousContainers` Info.plist entries.
+    static let iCloudContainerID = "iCloud.com.dromologue.ConceptMapper"
+    private static var cachedBaseFolder: URL?
+
+    /// Base data directory. Prefers the shared iCloud container's `Documents`
+    /// folder (user-visible as "ConceptMapper" in iCloud Drive); falls back to
+    /// the local Documents folder when iCloud is unavailable (not signed in).
+    /// Resolved once and cached — `url(forUbiquityContainerIdentifier:)` does IO.
     static func getBaseFolder() -> URL {
-        let folder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("ConceptMapper")
-        if !FileManager.default.fileExists(atPath: folder.path) {
-            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        if let cached = cachedBaseFolder { return cached }
+        let base: URL
+        if let ubiquity = FileManager.default.url(forUbiquityContainerIdentifier: iCloudContainerID) {
+            base = ubiquity.appendingPathComponent("Documents")
+        } else {
+            base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                .appendingPathComponent("ConceptMapper")
         }
-        return folder
+        if !FileManager.default.fileExists(atPath: base.path) {
+            try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        }
+        cachedBaseFolder = base
+        return base
     }
 
     static func getMapsFolder() -> URL {
@@ -66,9 +82,9 @@ enum FileHandler {
         // Seed each bundled example by name when it's missing — but only on the
         // first launch that runs this code (gated by the flag). The earlier
         // logic seeded only when the Maps folder was *entirely* empty, so a
-        // pre-existing Maps folder meant the examples never arrived. Seeding
-        // missing-by-name guarantees they ship through on first run regardless;
-        // the one-time flag means a later deletion sticks.
+        // pre-existing or iCloud-synced Maps folder meant the examples never
+        // arrived. Seeding missing-by-name guarantees they ship through on first
+        // run regardless; the one-time flag means a later deletion sticks.
         guard !UserDefaults.standard.bool(forKey: seededMapsKey) else { return }
         for file in bundledFiles {
             let dest = folder.appendingPathComponent(file.lastPathComponent)

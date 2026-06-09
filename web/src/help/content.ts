@@ -22,7 +22,7 @@ export const HELP_SECTIONS: HelpSection[] = [
 
 When you first open the app you see the **Start Screen** with three options:
 
-1. **New Taxonomy** -- Opens a step-by-step wizard that walks you through defining your map's structure: a title, node types, categories (streams), and time periods (generations).
+1. **New Taxonomy** -- Opens a step-by-step wizard that walks you through defining your map's structure: a title, node types, classifiers (the grouping dimensions your domain needs), and edge types.
 
 2. **Open File** -- Load an existing .cm or .json concept map file. You can also use File > Open (Cmd+O) from the menu bar.
 
@@ -101,23 +101,41 @@ If you have previously saved templates, they appear below these buttons. Click o
     id: "activity-bar",
     title: "Activity Bar: What Each Button Does",
     tags: ["toolbar", "button", "icon", "activity bar"],
-    content: `The Activity Bar is the narrow vertical strip on the far left. From top to bottom:
+    content: `The Activity Bar is the narrow vertical strip on the far left. Its buttons fall into two groups — a top group for views and canvas tools, and a bottom group for map-wide actions. A few buttons are hidden on iPhone, where the layout is condensed.
 
-**Top group:**
+**Top group — views and canvas tools:**
 
-1. **Full Network** (triangle/graph icon) -- Shows all nodes and edges. This is the default view.
+1. **Full Network** (graph icon) -- Shows all nodes and edges. The default view.
 
-2. **Filtered Views** -- One button per node type in your taxonomy. For example, if you have Person and Concept types, you get a People view and a Concepts view. These are generated dynamically from your taxonomy, not hardcoded.
+2. **Filtered Views** -- One button per node type in your taxonomy (for example a People view and a Concepts view). These are generated dynamically from the template, not hardcoded, and each shows that type's own icon or initial.
 
-3. **Toggle Sidebar** (panel icon) -- Shows or hides the left Explorer sidebar.
+3. **Text Outline** (outline icon) -- Switches to the **Textmap**: the same map rendered as a navigable nested outline. The default on iPhone, one tap away everywhere else. See "Textmap: The Outline View".
 
-4. **Help** (question mark icon) -- Opens the searchable help panel overlay.
+4. **Toggle Sidebar** (panel icon) -- Shows or hides the left Explorer sidebar. (Mac and iPad.)
 
-**Bottom group:**
+5. **Properties** (properties icon) -- Shows or hides the Properties inspector for the selected node. (Mac and iPad.)
 
-5. **Edit Taxonomy** (list icon) -- Re-opens the taxonomy wizard to modify the current map's structure (node types, categories, phases, edge types).
+6. **Notes** (notes icon) -- Shows or hides the Notes editor for the selected node. (Mac and iPad.)
 
-6. **Settings** (gear icon) -- Opens the Settings modal for theme, stream colours, and edge colours.`,
+7. **Fit to View** -- Re-frames the canvas so the whole map is visible.
+
+8. **Export Image** -- Exports the current canvas as an image.
+
+9. **Expand / Collapse level** -- A vertical stepper (\`+\` / depth / \`−\`) that reveals or hides the graph one level of depth at a time; double-click the depth label to toggle fully expanded or fully collapsed. See "Collapse and Expand to Level".
+
+10. **Layout** (layout icon) -- Opens a popover of layout presets: the plain force arrangement, or arrangements driven by a classifier's axis. "Reset Classifiers" clears any axis/region layouts. Your chosen layout is saved with the map.
+
+**Bottom group — map-wide actions:**
+
+11. **Network Analysis** (analysis icon) -- Opens the metrics, node rankings, communities, and path-finder panel. (Mac and iPad.) See "Network Analysis Tools".
+
+12. **Edit Taxonomy** (list icon) -- Re-opens the taxonomy wizard to modify the current map's structure (node types, classifiers, edge types).
+
+13. **Explode / Collapse graph** -- Spreads the nodes apart for an overview, or pulls them back together.
+
+14. **Settings** (gear icon) -- Opens Settings for theme and colour customisation.
+
+15. **Help & FAQ** (question-mark icon) -- Opens this searchable help panel.`,
   },
 
   // ── Adding and Editing Nodes ─────────────────────────────────────
@@ -130,9 +148,8 @@ If you have previously saved templates, they appear below these buttons. Click o
 2. A modal appears asking for:
    - Type (if multiple types are defined)
    - Name (required)
-   - Stream (category)
-   - Generation (time period)
-   - Any required or select-type custom fields
+   - A dropdown for each classifier your template defines (e.g. domain, decade, status)
+   - Tags, and any required or select-type custom fields
 3. Click "Add" to place the node on the canvas.
 
 The node is automatically selected after creation so you can immediately edit its properties.
@@ -141,7 +158,7 @@ The node is automatically selected after creation so you can immediately edit it
 1. Click a node on the canvas or in the sidebar node list.
 2. The Properties panel opens on the right.
 3. Edit the name directly in the header input field.
-4. Change the stream or generation using the dropdown selectors.
+4. Change any classifier value using its dropdown selector.
 5. Edit any custom fields defined by your taxonomy (text inputs, selects, textareas).
 6. Changes auto-save with a short debounce delay.
 
@@ -229,8 +246,7 @@ Navigation: Use Back/Next buttons at the bottom. Press Escape to cancel.`,
 
 Use the Taxonomy Wizard (New Taxonomy on the start screen) to define:
 - Node types with their fields (e.g. Person with importance, dates, tags)
-- Streams/categories with colours
-- Phases/generations with labels
+- Classifiers -- the grouping dimensions your domain needs (e.g. domain, decade, region, status), each with allowed values and an optional colour palette
 - Edge types with styles
 
 Save it as a template (.cmt) for reuse.
@@ -256,12 +272,11 @@ Please analyse the following text and produce a .cm concept map file. The output
 
 Sections required:
 
-1. **## Generations** -- a markdown table with columns: Gen, Period, Label, Attention Space Count
-2. **## Streams** -- a markdown table with columns: Stream ID, Name, Colour, Description
-3. **## [Type] Nodes** -- one section per node type (e.g. "## Task Nodes", "## Person Nodes"). Each node is a fenced code block (\`\`\`) containing key: value pairs. Required keys: id, name, generation, stream. Include ALL fields from the template's node type definition. End with notes: if applicable.
-4. **## Edges** -- fenced code blocks with "from: [id] to: [id] type: [edge_type]" lines, each followed by "  note: [description]"
+1. **## [Type] Nodes** -- one section per node type (e.g. "## Person Nodes", "## Concept Nodes"). Each node is a fenced code block (\`\`\`) containing key: value pairs. Required keys: id and name. Then add the template's classifier fields, using each classifier's id as the key (e.g. \`domain: systems_cybernetics\`), plus any other fields the node type defines. End with notes: if applicable.
+2. **## Edges** -- fenced code blocks with "from: [id] to: [id] type: [edge_type]" lines, each followed by "  note: [description]"
+3. **## Notes** (optional) -- free-form markdown for map-level notes.
 
-Use the stream IDs, generation numbers, and edge types defined in the template. Assign each node to the most appropriate stream and generation.
+Use the classifier ids and their allowed values, and the edge types, exactly as defined in the template. Assign each node the most appropriate classifier values.
 
 Here is the text to analyse:
 
@@ -274,7 +289,7 @@ Save the LLM's output as a .cm file and open it in ConceptMapper (File > Open or
 
 **Tips for better results:**
 - Include the full .cmt template so the LLM knows exact field names and options.
-- Ask the LLM to use the specific stream IDs and generation numbers from the template.
+- Ask the LLM to use the classifier ids and their allowed values from the template.
 - For select-type fields (like importance or status), tell the LLM to use only the defined options.
 - Review and edit the generated .cm file before opening -- fix any formatting issues.
 - Longer, more detailed source text produces richer maps.
@@ -285,8 +300,8 @@ Save the LLM's output as a .cm file and open it in ConceptMapper (File > Open or
 \`\`\`
 id:               my_node_id
 name:             My Node Name
-generation:       2
-stream:           my_stream
+domain:           systems_cybernetics
+decade:           1970s
 priority:         high
 status:           active
 tags:             keyword1, keyword2
@@ -686,13 +701,51 @@ The k-core number indicates which "shell" of the network a node belongs to. It i
 *Practical use:* Filter your rankings by k-core to identify the structural foundation vs. the periphery. If a concept you consider important has a low k-core number, it may be under-connected in your taxonomy.`,
   },
 
+  // ── Textmap (Outline View) ───────────────────────────────────────
+  {
+    id: "textmap",
+    title: "Textmap: The Outline View",
+    tags: ["textmap", "outline", "list", "text", "navigate", "iphone", "mobile", "tree"],
+    content: `The **Textmap** is an alternative to the visual canvas: it renders the same concept map as a navigable nested **outline**. It is the default on small screens (iPhone), where the visual graph is hard to read, and it is available on every platform from the outline button in the Activity Bar.
+
+**What you see**
+Each node is a row. Expand a row (▸) to reveal that node's connections, grouped by relationship:
+- Outgoing directed relationships appear as "Label →".
+- Incoming directed relationships appear as "← Label".
+- Undirected relationships appear under their plain label.
+Each group shows a count, and every connected node is itself a row you can expand — so you can walk the entire graph by outline.
+
+**Navigating**
+- **Tap a node name** to select it — the Properties panel and Notes work exactly as they do on the canvas.
+- **Tap the disclosure arrow** to expand or collapse a node's connections in place.
+- **Tap the focus control (⤢)** to re-root the outline on that node. A breadcrumb trail at the top records your path; tap any crumb (or "All roots") to jump back.
+
+**Roots**
+The top level lists the map's natural roots — nodes with no incoming relationship. If the map has none (for example a fully cyclic or purely undirected map), every node is listed at the top level, and you focus into whichever one you want to explore from.
+
+**Loops**
+Concept maps contain cycles. If a connection points back to a node already above you in the current path, the Textmap shows it as a **loop link (↺)** rather than expanding it forever — tap it to jump to that node. This keeps navigation finite no matter how tangled the graph.
+
+**Notes on a row**
+Every row has a notes button. Tap it to read and edit that node's notes inline, without leaving the outline. Notes open as rendered markdown when they already exist; tap **Edit** for a plain textarea and **Preview** to render it again. Edits save into the map automatically (debounced), exactly as the canvas Notes panel saves. Tap **Attach .md** to back the notes with an external markdown file — once attached, that file is the source of truth and your edits write straight through to it; **Detach** keeps the text but unlinks the file. When a row's notes are collapsed, a one-line preview of the first line sits beneath the row, so you can skim a whole branch without opening each note.
+
+**Adding nodes**
+The outline has an add-node button (＋) in its header, so you can build a map from the Textmap alone — useful on a phone, where the visual canvas isn't practical. It opens the same Add Node form as the canvas: choose a node type from the template, name it, set classifier values, tags, and any template fields, and optionally link it to existing nodes as you create it.
+
+**Your chosen layout is saved with the map**
+The layout you pick — the plain force arrangement, or one driven by a classifier's axis — is written into the .cm file itself as a small \`<!-- view: … -->\` line, alongside any per-classifier axis choices. Re-open the map, on any platform, and it returns to that arrangement instead of resetting to the default force layout. The map carries its preferred presentation with it, the same way it carries its nodes and notes.
+
+**Why it exists**
+A large graph is unreadable on a phone and often busy even on a desktop. The Textmap trades spatial layout for precise, linear navigation: follow one thread of relationships at a time, with the structure always legible as indented text.`,
+  },
+
   // ── FAQ ──────────────────────────────────────────────────────────
   {
     id: "faq",
     title: "Frequently Asked Questions",
     tags: ["faq", "question", "help", "how", "why", "what"],
     content: `**Q: How do I get started with a blank map?**
-A: Click "New Taxonomy" on the start screen and follow the 6-step wizard. At minimum, give it a title, keep the default node types (Person and Concept), add at least one stream/category, and one generation.
+A: Click "New Taxonomy" on the start screen and follow the 6-step wizard. At minimum, give it a title, keep the default node types (Person and Concept), and define at least one classifier with a couple of values.
 
 **Q: What happened to streams and generations? My old maps used them.**
 A: They are no longer privileged dimensions. The current model uses generic **classifiers** defined entirely in the template — pick whatever dimensions your domain needs (e.g. domain, era, region, status). Old .cm files are migrated on load: any \`stream:\` or \`generation:\` keys are lifted into classifier fields, and old "Streams" / "Generations" sections become Notes. Your maps still work.
@@ -713,7 +766,7 @@ A: When you open or create a .cm file, the app auto-saves to that file path with
 A: Yes. Design your taxonomy in the app, export the .cmt template, and use any LLM (Claude, GPT-4, etc.) to generate a .cm file from your source text. See "Using an LLM to Map Content" in this help for detailed instructions and a prompt template.
 
 **Q: What does "Save as Template" do?**
-A: It stores the current taxonomy structure (node types, streams, generations) without any nodes or edges. The template appears on the start screen for quick reuse when creating new maps.
+A: It stores the current taxonomy structure (node types, classifiers, edge types) without any nodes or edges. The template appears on the start screen for quick reuse when creating new maps.
 
 **Q: How do I customise node colours?**
 A: Node colours come from the classifier marked as colour-providing in the template (typically the first one). Each classifier value has its own colour; change it in the template via the Taxonomy wizard.

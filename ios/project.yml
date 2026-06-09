@@ -1,0 +1,79 @@
+name: ConceptMapper
+options:
+  bundleIdPrefix: com.dromologue
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    TARGETED_DEVICE_FAMILY: "1,2"   # iPhone + iPad (universal)
+schemes:
+  ConceptMapper:
+    build:
+      targets:
+        ConceptMapper: all
+        ConceptMapperUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - ConceptMapperUITests
+    archive:
+      config: Release
+targets:
+  ConceptMapper:
+    type: application
+    platform: iOS
+    sources:
+      # iOS shell (app entry, web-view host, file IO, assets)
+      - path: ConceptMapper
+        type: group
+        excludes:
+          - "*.entitlements"
+          - "Info.plist"
+      # Shared bridge core — compiled into both the macOS and iOS targets so the
+      # two shells speak an identical protocol (single source of truth).
+      - path: ../macos/ConceptMapper/BridgeProtocol.swift
+      - path: ../macos/ConceptMapper/WebViewBridge.swift
+      - path: ../macos/ConceptMapper/PlatformURLOpener.swift
+      # Bundled SPA + content (committed; refreshed by scripts/build-app.sh)
+      - path: Resources/web
+        type: folder
+        buildPhase: resources
+      - path: Resources/templates
+        type: folder
+        buildPhase: resources
+      - path: Resources/maps
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        # Distinct bundle id: the iOS app is a SEPARATE, PAID App Store product
+        # (the macOS app stays free). Not a universal purchase — that would
+        # require one shared price across platforms.
+        PRODUCT_BUNDLE_IDENTIFIER: com.dromologue.ConceptMapper.ios
+        INFOPLIST_FILE: ConceptMapper/Info.plist
+        # Shared iCloud container (Maps + Templates) — same container as the
+        # macOS app, so files sync across both. See ConceptMapper.entitlements.
+        CODE_SIGN_ENTITLEMENTS: ConceptMapper/ConceptMapper.entitlements
+        PRODUCT_NAME: ConceptMapper
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        DEVELOPMENT_TEAM: "4EDT4L4DYU"
+        CODE_SIGN_STYLE: Automatic
+  ConceptMapperUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ConceptMapperUITests
+    dependencies:
+      - target: ConceptMapper
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dromologue.ConceptMapper.ios.uitests
+        DEVELOPMENT_TEAM: "4EDT4L4DYU"
+        TEST_TARGET_NAME: ConceptMapper

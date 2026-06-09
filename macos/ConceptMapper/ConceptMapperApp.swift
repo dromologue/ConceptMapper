@@ -37,13 +37,6 @@ struct ConceptMapperApp: App {
                 }
                 .keyboardShortcut("e", modifiers: [.command, .shift])
             }
-
-            CommandGroup(replacing: .help) {
-                Button("ConceptMapper Help") {
-                    NotificationCenter.default.post(name: .showHelp, object: nil)
-                }
-                .keyboardShortcut("?")
-            }
         }
     }
 }
@@ -64,6 +57,5 @@ extension Notification.Name {
     static let saveFile = Notification.Name("saveFile")
     static let exportImage = Notification.Name("exportImage")
     static let exportMarkdown = Notification.Name("exportMarkdown")
-    static let showHelp = Notification.Name("showHelp")
     static let newTaxonomy = Notification.Name("newTaxonomy")
 }

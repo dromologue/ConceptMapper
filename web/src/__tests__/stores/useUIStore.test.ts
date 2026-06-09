@@ -86,6 +86,18 @@ describe('useUIStore', () => {
     });
   });
 
+  describe('setSidebarOpen', () => {
+    it('sets sidebarOpen to an explicit value (idempotent)', () => {
+      useUIStore.getState().setSidebarOpen(false);
+      expect(useUIStore.getState().sidebarOpen).toBe(false);
+      // Idempotent — used by the phone-default effect, which must not toggle.
+      useUIStore.getState().setSidebarOpen(false);
+      expect(useUIStore.getState().sidebarOpen).toBe(false);
+      useUIStore.getState().setSidebarOpen(true);
+      expect(useUIStore.getState().sidebarOpen).toBe(true);
+    });
+  });
+
   describe('toggleNotes', () => {
     it('toggles notesOpen', () => {
       useUIStore.getState().toggleNotes();

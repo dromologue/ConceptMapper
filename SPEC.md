@@ -1970,3 +1970,196 @@ The Rust parser test suite covers error paths and uses golden-file snapshots for
 - [x] AC-117-02: `tests/golden_tests.rs` parses at least two .cm files and asserts structural equality with stored golden JSON.
 - [x] AC-117-03: Volatile fields (`parsed_at`, `source_file`) are stripped before snapshot comparison.
 - [x] AC-117-04: The suite runs deterministically — no time-based or random behaviour.
+
+---
+
+## REQ-118: Textmap (Outline) View
+
+The concept graph can be viewed as a navigable nested outline ("textmap") as an alternative to the visual canvas, available on every platform (the view lives in the shared SPA).
+
+**Preconditions:**
+
+- A graph (`GraphIR`) is loaded.
+
+**Trigger:**
+
+- The user selects the outline view mode (Activity Bar), or a small viewport defaults to it (REQ-119).
+
+**Expected Behavior:**
+
+- The graph is projected to a tree: each node lists its connected nodes grouped by relationship and direction (outgoing "Label →", incoming "← Label", undirected by label) with per-group counts.
+- Each connection is itself expandable, enabling navigation across the whole graph.
+- Selecting a node name uses the same selection handler as the canvas (Properties/Notes behave identically).
+- A node can be focused to re-root the outline; a breadcrumb trail records the path and walks back ("All roots › …").
+- Roots are nodes with no incoming directed edge; if none exist (fully cyclic / undirected) every node is a root.
+- Cycles are finite: a connection back to an ancestor renders as a loop link (↺), never expanding; a depth cap is a backstop.
+
+**Acceptance Criteria:**
+
+- [x] AC-118-01: `web/src/views/textmap.ts` provides pure projection logic (connection grouping by direction/type, root detection, revisit/loop classification) with unit tests.
+- [x] AC-118-02: `TextmapView` renders the outline and is dispatched from `App.tsx` when `viewMode === "textmap"`.
+- [x] AC-118-03: A cyclic graph renders a loop marker and does not recurse infinitely (component test).
+- [x] AC-118-04: The outline reuses the existing node-selection handler.
+
+---
+
+## REQ-119: Responsive Shell — Compact iOS Tab Bar
+
+The SPA adapts its shell to the device. On macOS/desktop it docks the panels inline side by side. On a compact device — any iOS device (iPhone **and** iPad, one shared iOS UX) or a phone-class browser viewport — there is no room for inline panels, so it shows exactly one full-screen surface at a time, switched by a persistent bottom tab bar.
+
+**Preconditions:**
+
+- The SPA is running in any host (browser, macOS/iOS WKWebView).
+
+**Trigger:**
+
+- The viewport is measured at mount and on resize; the device class (iOS vs not) is detected once at mount.
+
+**Expected Behavior:**
+
+- `useViewport` classifies width into phone (`< 700px`), tablet (`< 1024px`), desktop.
+- The compact layout (`isPhone`) is used when the viewport is phone-class **or** the device is iOS (`isIOSDevice()` — iPhone/iPad, incl. iPadOS reporting a Mac UA, disambiguated by `maxTouchPoints`). macOS and desktop browsers keep the inline layout.
+- On first entering the compact layout, the view defaults to `textmap` and the sidebar collapses, once each; the user can still switch.
+- The root element carries `app phone` in the compact layout (else `app tablet | desktop`), which drives the responsive CSS.
+- The compact layout shows a bottom tab bar with five tabs — Map, Explore (sidebar), Details (Properties), Analysis, Notes — each filling the workbench. The activity-bar rail (on the Map tab) hides the sidebar/properties/notes/analysis toggles, since those are tabs. The tab bar owns the home-indicator safe area; the page never scrolls horizontally; touch targets are ≥ 40px.
+- Details/Notes show a "select a node" hint when nothing is selected.
+- Tablet/desktop keep the visual map default, inline panels, and drag-resizers — unchanged.
+
+**Acceptance Criteria:**
+
+- [x] AC-119-01: `web/src/hooks/useViewport.ts` exposes `{ width, height, kind }` and `classifyWidth`.
+- [x] AC-119-02: Entering the compact layout sets `viewMode` to `textmap` exactly once on mount.
+- [x] AC-119-03: Desktop behaviour is unchanged (no forced view switch, inline panels, resizers present).
+- [x] AC-119-04: Entering the compact layout collapses the sidebar exactly once on mount; `useUIStore.setSidebarOpen` exists for this.
+- [x] AC-119-05: The root element class is `phone` in the compact layout (driving the responsive CSS) and the viewport kind otherwise.
+- [x] AC-119-06: The compact layout renders a five-tab bottom tab bar (`PhoneTabBar`); each tab swaps the single full-screen surface; the activity rail hides the redundant toggles.
+- [x] AC-119-07: `isIOSDevice()` is true on iPhone/iPad and false on macOS, so both iOS form factors share the compact layout (verified via XCUITest on iPhone 17 + iPad A16).
+
+---
+
+## REQ-120: Inline Editable Notes in the Textmap
+
+A node's notes can be read and edited inline within the outline, with the same persistence semantics as the canvas Notes pane.
+
+**Preconditions:**
+
+- The outline is shown and an `onNodeUpdate` handler is supplied.
+
+**Trigger:**
+
+- The user opens a node's notes from the outline.
+
+**Expected Behavior:**
+
+- A node with notes shows a clear note icon (accent when present) and a one-line read preview; expanding opens a full view that renders the notes markdown.
+- The expanded view offers Edit (textarea), Attach .md / Detach, and Collapse.
+- Edits save to the map (via `onNodeUpdate` → auto-save) and write through to an attached `.md` file when present; an attached file is the source of truth on open.
+
+**Acceptance Criteria:**
+
+- [x] AC-120-01: Opening notes for a node renders an editor; edits invoke `onNodeUpdate` (debounced) — component test.
+- [x] AC-120-02: Notes edits persist to the map file via the standard auto-save path.
+- [x] AC-120-03: When a `notes_file` is attached, edits also write through via the `writeNotesFile` bridge method.
+
+---
+
+## REQ-121: Map-File Persistence of View Options
+
+The chosen view options travel with the map file (the `.cm`) and are restored on load.
+
+**Preconditions:**
+
+- A map is open with a source file path (native host).
+
+**Trigger:**
+
+- The user changes the layout preset or an attribute (classifier) layout; the map auto-saves.
+
+**Expected Behavior:**
+
+- View options are stored in the `.cm` as a single-line `<!-- view: {...} -->` HTML comment (same parser-safe approach as `edge-colors`), holding the non-default layout preset and any per-attribute classifier layouts (`{classifierId: "region"|"x"|"y"|"region-column"}`).
+- On load the saved view is authoritative for classifier layouts: applied to both the IR (which drives rendering) and the template.
+- The default ("force" preset, no classifier layouts) writes no comment.
+
+**Acceptance Criteria:**
+
+- [x] AC-121-01: `web/src/utils/viewOptions.ts` provides `serializeViewComment` / `parseViewComment` with round-trip tests, including nested objects (greedy match).
+- [x] AC-121-02: `exportToMarkdown` emits the view comment; `useSwiftBridge` restores it on `mapLoaded`.
+- [x] AC-121-03: Changing an attribute layout auto-saves and the map reopens in that layout.
+
+---
+
+## REQ-122: Template-Driven Add-Node with Node Links
+
+Adding a node presents template-driven fields and an option to link the new node to existing nodes, on every surface (canvas and textmap).
+
+**Preconditions:**
+
+- A graph and template are loaded.
+
+**Trigger:**
+
+- The user opens the Add Node dialog (sidebar `+ Type`, or the textmap `+ Node` button).
+
+**Expected Behavior:**
+
+- The dialog presents the node type's required and select fields, classifiers, and tags from the template.
+- A "Link to" section lets the user add one or more links to existing nodes, each choosing a target node, an edge type (from the template's `edge_types`), and a direction (→ to / ← from).
+- Submitting creates the node and the linked edges in one undoable action; edge `directed`/visual are resolved from the template's edge-type config.
+- The same dialog is reachable from the textmap, so the capability exists on all platforms (shared SPA).
+
+**Acceptance Criteria:**
+
+- [x] AC-122-01: `handleAddNode` accepts optional `links` + `template` and creates the corresponding edges (out/in), ignoring links to non-existent targets — store tests.
+- [x] AC-122-02: `AddNodeModal` renders the "Link to" rows when nodes and edge types exist and passes the links to `onAdd`.
+- [x] AC-122-03: The textmap `+ Node` button opens the same dialog (modal render gated on `activeModal === 'addNode'`).
+
+## REQ-123: Shared iCloud Documents Container (cross-device sync)
+
+The macOS and iOS apps store Maps and Templates in one shared iCloud Documents container, so a map created on one device appears on the other and edits sync, with a graceful local fallback when iCloud is unavailable.
+
+**Preconditions:**
+
+- Both apps are signed into the same iCloud account and the iCloud container `iCloud.com.dromologue.ConceptMapper` is provisioned.
+
+**Trigger:**
+
+- The app resolves its base data directory on first file access (`FileHandler.getBaseFolder`).
+
+**Expected Behavior:**
+
+- `getBaseFolder()` prefers the shared ubiquity container's `Documents` folder (user-visible as "ConceptMapper" in iCloud Drive) via `url(forUbiquityContainerIdentifier:)`.
+- When iCloud is unavailable (not signed in, or the simulator), it falls back to the app's local Documents folder; the result is resolved once and cached (the ubiquity lookup performs IO).
+- Both platforms declare the same container in their entitlements (`com.apple.developer.icloud-*`, `ubiquity-container-identifiers`) and `NSUbiquitousContainers` Info.plist entry, so they read and write the same files.
+- Maps and Templates folders are created under the resolved base on demand; existing reads/writes (REQ-116) are unchanged.
+
+**Acceptance Criteria:**
+
+- [x] AC-123-01: `getBaseFolder()` returns the ubiquity container's `Documents` path when `url(forUbiquityContainerIdentifier:)` is non-nil, else the local Documents path — identical logic on iOS and macOS `FileHandler`.
+- [x] AC-123-02: The container id constant (`iCloudContainerID`) matches both entitlements files and both `NSUbiquitousContainers` Info.plist entries.
+- [x] AC-123-03: Both apps build with the iCloud entitlements (macOS + iOS, unsigned simulator/Debug build verified); the simulator falls back to local Documents.
+
+## REQ-124: Web E2E Verification of File-Feature Flows
+
+The file-feature flows that are triggered from web content — attaching a markdown note and exporting an image — are verified end-to-end against the production web build with a stubbed bridge, because XCUITest cannot reliably drive elements inside the WKWebView.
+
+**Preconditions:**
+
+- The web app is built (`vite build`); the e2e harness serves `web/dist`.
+
+**Trigger:**
+
+- `npm run test:e2e` (Playwright) at a phone viewport (< 700px → the compact iOS layout).
+
+**Expected Behavior:**
+
+- A fake Swift bridge (`web/e2e/bridge-stub.ts`) records every JS→Swift request and answers `listMaps`/`listTemplates`/`loadMap` so a real bundled map loads.
+- Selecting an outline node, opening its Notes tab, and clicking "Attach .md" posts an `attachNotesFile` request carrying the node id.
+- Exporting PNG and PDF from a network view posts `saveToDownloads` requests with the matching filenames.
+- The native presentation those requests reach (`UIDocumentPicker`, `UIActivityViewController`) is covered separately by the iOS `testOpenFilePresentsDocumentPicker` XCUITest (shared `present(...)` path).
+
+**Acceptance Criteria:**
+
+- [x] AC-124-01: `attach .md` e2e asserts an `attachNotesFile` bridge request with a non-empty `nodeId`.
+- [x] AC-124-02: `export image` e2e asserts `saveToDownloads` bridge requests for both a `.png` and a `.pdf` filename.
+- [x] AC-124-03: Vitest is scoped to `src/` so it does not collect the Playwright `*.spec.ts` files; `test:e2e` builds then runs Playwright.

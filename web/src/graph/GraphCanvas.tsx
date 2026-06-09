@@ -135,6 +135,7 @@ function drawMindmapBlob(
 
 // Animation durations (ms)
 const COLLAPSE_FIT_DELAY = 600;
+const EXPLODE_FIT_DELAY = 1100;
 const RESIZE_FIT_DELAY = 500;
 
 // Canvas defaults
@@ -454,10 +455,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     const vh = height * factor;
     applyLayoutForces(simulation, vw, vh, cls, isExploded, layoutPresetRef.current);
     simulation.alpha(ALPHA_RESTART).restart();
-    if (!isExploded) {
-      // When collapsing back, fit to view after settling
-      setTimeout(() => fitToView(), COLLAPSE_FIT_DELAY);
-    }
+    // Fit to view after settling in both directions: exploding should bring the
+    // fully-spread map back into frame (the one-shot on("end") fit already fired
+    // on first load), and collapsing should re-frame the tighter layout. Explode
+    // takes longer to settle, so give it a longer delay.
+    setTimeout(() => fitToView(), isExploded ? EXPLODE_FIT_DELAY : COLLAPSE_FIT_DELAY);
   }, [exploded]);
 
   // Re-apply forces when layout preset changes
@@ -614,6 +616,24 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
               n.vy = (n.vy ?? 0) * 0.9;
             }
           }
+        }
+      }
+      // Containment (explode only): keep every node inside the virtual canvas
+      // so a stray, usually low-degree, node can't be flung far outside by the
+      // strong exploded repulsion. This keeps the exploded shape even and the
+      // fit tight. Skipped when not exploded — normal layouts intentionally
+      // overflow the canvas and rely on fitToView to zoom out.
+      if (explodedRef.current) {
+        const { width: cw, height: ch } = canvasSizeRef.current;
+        const factor = explodedFactor(true, nodesRef.current.length);
+        const vw = cw * factor;
+        const vh = ch * factor;
+        const m = 40; // margin from the virtual edge
+        for (const n of nodesRef.current) {
+          if (n.x < m) { n.x = m; if ((n.vx ?? 0) < 0) n.vx = 0; }
+          else if (n.x > vw - m) { n.x = vw - m; if ((n.vx ?? 0) > 0) n.vx = 0; }
+          if (n.y < m) { n.y = m; if ((n.vy ?? 0) < 0) n.vy = 0; }
+          else if (n.y > vh - m) { n.y = vh - m; if ((n.vy ?? 0) > 0) n.vy = 0; }
         }
       }
       const c = ctxRef.current;

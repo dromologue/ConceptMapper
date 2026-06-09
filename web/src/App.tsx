@@ -1,10 +1,13 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import type { GraphIR, GraphNode, NodeTypeConfig, TaxonomyTemplate } from "./types/graph-ir";
+import type { GraphIR, GraphNode, NodeTypeConfig, TaxonomyTemplate, LayoutPreset } from "./types/graph-ir";
 import { GraphCanvas } from "./graph/GraphCanvas";
+import { TextmapView } from "./views/TextmapView";
+import { useViewport } from "./hooks/useViewport";
 import { DetailPanel } from "./ui/DetailPanel";
 import { NotesPane } from "./ui/NotesPane";
 import { ActivityBar } from "./ui/ActivityBar";
 import { Sidebar } from "./ui/Sidebar";
+import { PhoneTabBar } from "./ui/PhoneTabBar";
 import { StatusBar } from "./ui/StatusBar";
 import { AddNodeModal } from "./ui/AddNodeModal";
 import { collectAllTags } from "./utils/tags";
@@ -30,9 +33,10 @@ import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { DEFAULT_NODE_TYPES, migrateFromParser, graphIRFromData, getTemplateClassifiers } from "./migration";
 import { createEmptyFilterState } from "./utils/filters";
 import { normalizeFencedKV } from "./utils/normalize";
+import { serializeViewComment } from "./utils/viewOptions";
 import { escapeKVValue } from "./utils/kv-escape";
 import { useFileLoader } from "./hooks/useFileLoader";
-import { isNativeApp as detectNativeApp, postToSwift } from "./utils/swiftBridge";
+import { isNativeApp as detectNativeApp, isIOSDevice, postToSwift } from "./utils/swiftBridge";
 import { useSwiftBridge } from "./hooks/useSwiftBridge";
 import { useGraphStore } from "./stores/useGraphStore";
 import { useUIStore } from "./stores/useUIStore";
@@ -78,6 +82,9 @@ function AppInner() {
   const setNotesOpen = useUIStore((s) => s.setNotesOpen);
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
+  const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
+  const phoneTab = useUIStore((s) => s.phoneTab);
+  const setPhoneTab = useUIStore((s) => s.setPhoneTab);
   const analysisOpen = useUIStore((s) => s.analysisOpen);
   const toggleAnalysis = useUIStore((s) => s.toggleAnalysis);
   const labelMenuOpen = useUIStore((s) => s.labelMenuOpen);
@@ -172,7 +179,7 @@ function AppInner() {
   const showExportImage = activeModal === 'exportImage';
 
   const [exploded, setExploded] = useState(false);
-  const [layoutPreset, setLayoutPreset] = useState<import("./types/graph-ir").LayoutPreset>("force");
+  const [layoutPreset, setLayoutPreset] = useState<LayoutPreset>("force");
   const [fontScale, setFontScale] = useState(1);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -285,6 +292,8 @@ function AppInner() {
     getGraphData: () => useGraphStore.getState().graphData,
     getNodeTypeConfigs: () => nodeTypeConfigs,
     getEdgeColorOverrides: () => edgeColorOverrides,
+    getLayoutPreset: () => layoutPreset,
+    setLayoutPreset,
     exportToMarkdown,
     createEmptyFilterState,
   });
@@ -292,6 +301,37 @@ function AppInner() {
   const handleViewModeChange = useCallback((mode: string) => {
     setViewModeStore(mode); // store clears revealedNodes too
   }, [setViewModeStore]);
+
+  // `isPhone` drives the compact, single-surface, tab-bar UX. It applies to a
+  // phone-class browser viewport AND to every iOS device — iPhone *and* iPad
+  // share one iOS layout, so an iPad (which is tablet/desktop by width) still
+  // gets the tabbed shell. macOS and desktop browsers keep the inline panels.
+  const viewport = useViewport();
+  const [iosDevice] = useState(isIOSDevice);
+  const isPhone = viewport.kind === "phone" || iosDevice;
+
+  // First time we enter the compact layout, default to the textmap (the visual
+  // canvas is cramped) and collapse the sidebar. Fires once; the user can still
+  // switch views afterwards.
+  const didPhoneDefaultRef = useRef(false);
+  useEffect(() => {
+    if (didPhoneDefaultRef.current) return;
+    if (isPhone) {
+      didPhoneDefaultRef.current = true;
+      setViewModeStore("textmap");
+      setSidebarOpen(false);
+    }
+  }, [isPhone, setViewModeStore, setSidebarOpen]);
+
+  // Which workbench surface is visible. On tablet/desktop the panels dock
+  // inline (driven by their own open flags); on phone exactly one full-screen
+  // surface shows, chosen by the bottom tab bar (REQ-119).
+  const showMap = !isPhone || phoneTab === "map";
+  const showExplorer = isPhone ? phoneTab === "explorer" : sidebarOpen;
+  const showProperties = isPhone ? phoneTab === "properties" : (!!selectedNode && propertiesOpen);
+  const showAnalysis = isPhone ? phoneTab === "analysis" : analysisOpen;
+  // Notes render differently per platform (desktop bottom pane vs phone tab),
+  // so each path uses its own condition below rather than a shared flag.
 
   const handleSelectNode = useCallback(
     (node: GraphNode | null) => {
@@ -343,10 +383,10 @@ function AppInner() {
   // Unified add node handler — store handles graphData mutation, undo push,
   // selectedNode update, and modal close.
   const handleAddNode = useCallback(
-    (nodeType: string, name: string, classifierValues: Record<string, string>, tags: string[], properties: Record<string, string | undefined>) => {
-      useGraphStore.getState().handleAddNode(nodeType, name, classifierValues, tags, properties);
+    (nodeType: string, name: string, classifierValues: Record<string, string>, tags: string[], properties: Record<string, string | undefined>, links: import("./types/graph-ir").NodeLink[] = []) => {
+      useGraphStore.getState().handleAddNode(nodeType, name, classifierValues, tags, properties, links, template ?? null);
     },
-    []
+    [template]
   );
 
   const handleAddEdge = useCallback(
@@ -502,12 +542,12 @@ function AppInner() {
     if (!graphData || !sourceFilePath || !isNativeApp) return;
     clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      const md = exportToMarkdown(graphData, nodeTypeConfigs, edgeColorOverrides);
+      const md = exportToMarkdown(graphData, nodeTypeConfigs, edgeColorOverrides, layoutPreset);
       postToSwift("saveToPath", { path: sourceFilePath, content: md });
       setSaveIndicator(true);
       setTimeout(() => setSaveIndicator(false), 2000);
     }, 2000);
-  }, [graphData, sourceFilePath, isNativeApp, nodeTypeConfigs, edgeColorOverrides]);
+  }, [graphData, sourceFilePath, isNativeApp, nodeTypeConfigs, edgeColorOverrides, layoutPreset]);
 
   // Trigger auto-save when graph data or edge colors change
   const graphDataRef = useRef(graphData);
@@ -524,6 +564,14 @@ function AppInner() {
     }
     edgeColorsRef.current = edgeColorOverrides;
   }, [edgeColorOverrides, graphData, autoSave]);
+  // Persist the view option (layout preset) to the map file when it changes.
+  const layoutPresetRef = useRef(layoutPreset);
+  useEffect(() => {
+    if (graphData && layoutPresetRef.current !== layoutPreset) {
+      autoSave();
+    }
+    layoutPresetRef.current = layoutPreset;
+  }, [layoutPreset, graphData, autoSave]);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1076,7 +1124,7 @@ function AppInner() {
     : [];
 
   return (
-    <div className="app">
+    <div className={`app ${isPhone ? "phone" : viewport.kind}`}>
       {/* Titlebar */}
       <div className="titlebar">
         <span className="titlebar-title">{graphData.metadata.title || "Concept Map"}</span>
@@ -1132,7 +1180,9 @@ function AppInner() {
 
       {/* Workbench */}
       <div className="workbench">
+        {showMap && (
         <ActivityBar
+          isPhone={isPhone}
           viewMode={viewMode}
           onViewModeChange={handleViewModeChange}
           sidebarOpen={sidebarOpen}
@@ -1158,8 +1208,9 @@ function AppInner() {
           maxExpandLevel={hierarchy?.maxDepth ?? 0}
           onExpandLevelChange={handleExpandLevelChange}
         />
+        )}
 
-        {sidebarOpen && (
+        {showExplorer && (
           <Sidebar
             nodes={graphData.nodes}
             classifiers={graphData.metadata.classifiers ?? []}
@@ -1192,6 +1243,7 @@ function AppInner() {
           />
         )}
 
+        {showMap && (
         <div className="editor-area">
           {loadWarnings.length > 0 && (
             <div className="load-warnings-banner">
@@ -1203,6 +1255,17 @@ function AppInner() {
             </div>
           )}
           <div className="canvas-container">
+            {viewMode === "textmap" ? (
+            <TextmapView
+              data={graphData}
+              selectedNodeId={selectedNode?.id ?? null}
+              onSelectNode={handleSelectNode}
+              onNodeUpdate={handleNodeUpdate}
+              onAddNode={() => openModal('addNode')}
+              nodeTypeConfigs={nodeTypeConfigs}
+              edgeTypeConfigs={template?.edge_types}
+            />
+            ) : (
             <GraphCanvas
               data={graphData}
               onSelectNode={handleSelectNode}
@@ -1263,6 +1326,8 @@ function AppInner() {
               edgeTypeConfigs={template?.edge_types}
               focusMode={focusMode}
             />
+            )}
+            {viewMode !== "textmap" && (
             <div className="zoom-controls">
               <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomIn()} title="Zoom in">+</button>
               <button className="zoom-btn" onClick={() => zoomFnsRef.current?.zoomOut()} title="Zoom out">-</button>
@@ -1317,6 +1382,7 @@ function AppInner() {
                 </div>
               )}
             </div>
+            )}
             {selectedEdge && edgePopoverPos && (
               <EdgePopover
                 edge={selectedEdge}
@@ -1331,7 +1397,9 @@ function AppInner() {
               />
             )}
           </div>
-          {selectedNode && notesOpen && (
+          {/* Desktop docks Notes as a resizable bottom pane under the canvas;
+              on phone Notes is its own full-screen tab (rendered below). */}
+          {!isPhone && selectedNode && notesOpen && (
             <>
               <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />
               <div className="notes-bottom-pane" style={{ height: notesHeight }}>
@@ -1344,7 +1412,7 @@ function AppInner() {
               </div>
             </>
           )}
-          {!selectedNode && selectedEdge && notesOpen && (
+          {!isPhone && !selectedNode && selectedEdge && notesOpen && (
             <>
               <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />
               <div className="notes-bottom-pane" style={{ height: notesHeight }}>
@@ -1356,7 +1424,7 @@ function AppInner() {
               </div>
             </>
           )}
-          {!selectedNode && !selectedEdge && notesOpen && (
+          {!isPhone && !selectedNode && !selectedEdge && notesOpen && (
             <>
               <div className="pane-resizer-h" onMouseDown={makeVerticalResizeHandler(setNotesHeight, notesHeight)} />
               <div className="notes-bottom-pane" style={{ height: notesHeight }}>
@@ -1367,34 +1435,41 @@ function AppInner() {
             </>
           )}
         </div>
+        )}
 
-        {selectedNode && propertiesOpen && (
+        {showProperties && (
           <>
-            <div className="pane-resizer" onMouseDown={makeResizeHandler(setAuxPanelWidth, auxPanelWidth)} />
-            <div className="auxiliary-panel" style={{ width: auxPanelWidth }}>
+            {!isPhone && (
+              <div className="pane-resizer" onMouseDown={makeResizeHandler(setAuxPanelWidth, auxPanelWidth)} />
+            )}
+            <div className="auxiliary-panel" style={isPhone ? undefined : { width: auxPanelWidth }}>
               <div className="aux-panel-header">
                 <span className="aux-panel-title">Properties</span>
-                <button className="close-btn" onClick={() => setPropertiesOpen(false)}>&times;</button>
+                {!isPhone && <button className="close-btn" onClick={() => setPropertiesOpen(false)}>&times;</button>}
               </div>
-              <DetailPanel
-                node={selectedNode}
-                edges={selectedEdges}
-                nodes={graphData.nodes}
-                classifiers={graphData.metadata.classifiers ?? []}
-                nodeTypeConfigs={nodeTypeConfigs}
-                template={template}
-                onNodeUpdate={handleNodeUpdate}
-                onNavigateToNode={handleNavigateToNode}
-                onOpenNotes={() => setNotesOpen(!notesOpen)}
-                notesOpen={notesOpen}
-                onNodeDelete={handleDeleteNode}
-                analysis={analysis}
-              />
+              {selectedNode ? (
+                <DetailPanel
+                  node={selectedNode}
+                  edges={selectedEdges}
+                  nodes={graphData.nodes}
+                  classifiers={graphData.metadata.classifiers ?? []}
+                  nodeTypeConfigs={nodeTypeConfigs}
+                  template={template}
+                  onNodeUpdate={handleNodeUpdate}
+                  onNavigateToNode={handleNavigateToNode}
+                  onOpenNotes={() => (isPhone ? setPhoneTab("notes") : setNotesOpen(!notesOpen))}
+                  notesOpen={notesOpen}
+                  onNodeDelete={handleDeleteNode}
+                  analysis={analysis}
+                />
+              ) : (
+                <div className="panel-empty-hint">Select a node in the Map to see its properties.</div>
+              )}
             </div>
           </>
         )}
 
-        {analysisOpen && (
+        {showAnalysis && (
           <AnalysisPanel
             analysis={analysis}
             nodes={graphData.nodes}
@@ -1428,6 +1503,29 @@ function AppInner() {
             onSetPathTo={setPathTo}
           />
         )}
+
+        {/* Phone-only: Notes as its own full-screen tab. Desktop docks Notes
+            inside the editor area instead (above). */}
+        {isPhone && phoneTab === "notes" && (
+          <div className="notes-bottom-pane">
+            {selectedNode ? (
+              <NotesPane
+                node={selectedNode}
+                edges={selectedEdges}
+                nodes={graphData.nodes}
+                onNodeUpdate={handleNodeUpdate}
+              />
+            ) : selectedEdge ? (
+              <EdgeNotesPane
+                edge={selectedEdge}
+                nodes={graphData.nodes}
+                onEdgeUpdate={handleEdgeUpdate}
+              />
+            ) : (
+              <div className="panel-empty-hint">Select a node or edge in the Map to see its notes.</div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Status Bar */}
@@ -1439,14 +1537,20 @@ function AppInner() {
         themeName={theme.name}
       />
 
-      {showAddNode && (
+      {/* Phone: bottom tab bar is the primary navigation (lives below the
+          status bar so it owns the home-indicator safe area). */}
+      {isPhone && <PhoneTabBar active={phoneTab} onChange={setPhoneTab} />}
+
+      {activeModal === 'addNode' && (
         <AddNodeModal
           nodeTypeConfigs={nodeTypeConfigs}
           classifiers={graphData.metadata.classifiers ?? []}
           existingTags={collectAllTags(graphData.nodes)}
+          nodes={graphData.nodes}
+          edgeTypes={template?.edge_types}
           onAdd={handleAddNode}
           onCancel={closeModal}
-          initialNodeType={showAddNode}
+          initialNodeType={showAddNode ?? undefined}
         />
       )}
       {showAddEdgeModal && edgeSource && edgeTarget && (
@@ -1494,7 +1598,7 @@ function AppInner() {
   );
 }
 
-function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[], edgeColorOverrides?: Record<string, string>): string {
+function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[], edgeColorOverrides?: Record<string, string>, layoutPreset?: LayoutPreset): string {
   const lines: string[] = [];
   const title = data.metadata.title || "Concept Map";
   lines.push(`# ${title}\n`);
@@ -1505,6 +1609,10 @@ function exportToMarkdown(data: GraphIR, nodeTypeConfigs: NodeTypeConfig[], edge
   if (edgeColorOverrides && Object.keys(edgeColorOverrides).length > 0) {
     lines.push(`<!-- edge-colors: ${JSON.stringify(edgeColorOverrides)} -->`);
   }
+  // Persist view options (layout preset + per-attribute classifier layouts) so
+  // the chosen view travels with the map file. See utils/viewOptions.
+  const viewComment = serializeViewComment({ layoutPreset, classifiers: data.metadata.classifiers });
+  if (viewComment) lines.push(viewComment);
   lines.push(`<!-- Exported from concept-mapper, ${new Date().toISOString().split("T")[0]}. -->\n`);
 
   // Structure (classifiers, node types, edge types) lives in the .cmt template.

@@ -14,6 +14,9 @@ cd "$ROOT"
 
 CONFIGURATION="Release"
 SKIP_TESTS=false
+SKIP_WEB=false
+VERIFY=false
+PLATFORM="mac"   # mac | ios | all
 DO_ARCHIVE=false
 DO_OPEN=false
 BUILD_DIR="$ROOT/macos/build"
@@ -26,10 +29,17 @@ for arg in "$@"; do
     --skip-tests) SKIP_TESTS=true ;;
     --archive) DO_ARCHIVE=true; CONFIGURATION="Release" ;;
     --open) DO_OPEN=true ;;
+    # Fast build-only gate: skip tests and the web/WASM rebuild, build the
+    # macOS app with signing disabled. Proves the Xcode project compiles and
+    # links (use before any release-bearing merge). Reuses existing Resources/web.
+    --verify) VERIFY=true; SKIP_TESTS=true; SKIP_WEB=true; CONFIGURATION="Debug" ;;
+    --platform=*) PLATFORM="${arg#*=}" ;;
     --help|-h)
       echo "Usage: scripts/build-app.sh [options]"
-      echo "  --debug       Build Debug configuration"
-      echo "  --skip-tests  Skip cargo test and npm test"
+      echo "  --debug          Build Debug configuration"
+      echo "  --skip-tests     Skip cargo test and npm test"
+      echo "  --verify         Build-only check: no tests, no web rebuild, no signing"
+      echo "  --platform=P     mac (default) | ios | all — which app(s) to build"
       echo "  --archive     Produce .xcarchive for App Store submission"
       echo "  --open        Open the app after building"
       echo "  -h, --help    Show this help"
@@ -41,7 +51,12 @@ done
 
 # --- Prerequisites ---
 echo "=== Checking prerequisites ==="
-for cmd in cargo wasm-pack npm xcodebuild xcodegen; do
+if [ "$SKIP_WEB" = true ]; then
+  REQUIRED_CMDS="xcodebuild xcodegen"
+else
+  REQUIRED_CMDS="cargo wasm-pack npm xcodebuild xcodegen"
+fi
+for cmd in $REQUIRED_CMDS; do
   if ! command -v "$cmd" &>/dev/null; then
     echo "ERROR: $cmd not found. Install it first."
     exit 1
@@ -67,6 +82,10 @@ else
   echo "=== Skipping tests (--skip-tests) ==="
 fi
 
+if [ "$SKIP_WEB" = true ]; then
+  echo ""
+  echo "=== Skipping web/WASM build (--verify); using existing macos/Resources/web ==="
+else
 # --- Step 2: Build WASM ---
 echo ""
 echo "=== Step 2: Build WASM parser ==="
@@ -97,27 +116,83 @@ rm -rf macos/Resources/web/maps macos/Resources/maps
 mkdir -p macos/Resources/web/maps macos/Resources/maps
 [ -d Maps ] && cp Maps/*.cm macos/Resources/web/maps/ 2>/dev/null || true
 [ -d Maps ] && cp Maps/*.cm macos/Resources/maps/ 2>/dev/null || true
-echo "Web assets, templates, and maps copied."
+echo "Web assets, templates, and maps copied (macOS)."
 
-# --- Step 5: Regenerate Xcode project ---
-echo ""
-echo "=== Step 5: Regenerate Xcode project ==="
-cd macos
-xcodegen generate
-cd "$ROOT"
-echo "Xcode project generated."
+# Mirror the same bundled assets into the iOS target so the two shells can
+# never ship different SPA builds (committed-artifacts rule, both platforms).
+if [ -d ios ]; then
+  rm -rf ios/Resources/web ios/Resources/templates ios/Resources/maps
+  mkdir -p ios/Resources
+  cp -r macos/Resources/web ios/Resources/web
+  cp -r macos/Resources/templates ios/Resources/templates
+  cp -r macos/Resources/maps ios/Resources/maps
+  echo "Web assets, templates, and maps copied (iOS)."
+fi
+fi
 
-# --- Step 6: Build macOS app ---
-echo ""
-echo "=== Step 6: Build macOS app ($CONFIGURATION) ==="
-cd macos
-xcodebuild \
-  -scheme ConceptMapper \
-  -configuration "$CONFIGURATION" \
-  -derivedDataPath build \
-  build \
-  | tail -5
-cd "$ROOT"
+# --- Which platforms to build ---
+BUILD_MAC=false; BUILD_IOS=false
+case "$PLATFORM" in
+  mac) BUILD_MAC=true ;;
+  ios) BUILD_IOS=true ;;
+  all) BUILD_MAC=true; BUILD_IOS=true ;;
+  *) echo "ERROR: --platform must be mac | ios | all (got '$PLATFORM')"; exit 1 ;;
+esac
+SIGN_FLAGS=""
+[ "$VERIFY" = true ] && SIGN_FLAGS="CODE_SIGNING_ALLOWED=NO"
+
+# --- Step 5/6: macOS app ---
+if [ "$BUILD_MAC" = true ]; then
+  echo ""
+  echo "=== Step 5: Regenerate macOS Xcode project ==="
+  (cd macos && xcodegen generate)
+  echo "Xcode project generated."
+  echo ""
+  echo "=== Step 6: Build macOS app ($CONFIGURATION) ==="
+  # -allowProvisioningUpdates lets automatic signing register the shared iCloud
+  # container and refresh the provisioning profile (the iCloud entitlement adds a
+  # capability the cached profile lacks). Harmless when signing is disabled.
+  (cd macos && xcodebuild \
+    -scheme ConceptMapper \
+    -configuration "$CONFIGURATION" \
+    -derivedDataPath build \
+    -allowProvisioningUpdates \
+    -allowProvisioningDeviceRegistration \
+    $SIGN_FLAGS \
+    build \
+    | tail -5)
+fi
+
+# --- Step 5/6: iOS app (simulator) ---
+if [ "$BUILD_IOS" = true ]; then
+  echo ""
+  echo "=== Step 5: Regenerate iOS Xcode project ==="
+  (cd ios && xcodegen generate)
+  echo "Xcode project generated."
+  echo ""
+  echo "=== Step 6: Build iOS app ($CONFIGURATION, simulator) ==="
+  (cd ios && xcodebuild \
+    -scheme ConceptMapper \
+    -configuration "$CONFIGURATION" \
+    -destination 'generic/platform=iOS Simulator' \
+    -derivedDataPath build \
+    CODE_SIGNING_ALLOWED=NO \
+    build \
+    | tail -5)
+fi
+
+if [ "$VERIFY" = true ]; then
+  echo ""
+  echo "=== Verify build OK ($CONFIGURATION, unsigned) ==="
+  exit 0
+fi
+
+# Archive / open / signature checks below are macOS-only.
+if [ "$BUILD_MAC" != true ]; then
+  echo ""
+  echo "=== Build complete (iOS) ==="
+  exit 0
+fi
 
 APP_PATH="$BUILD_DIR/Build/Products/$CONFIGURATION/ConceptMapper.app"
 echo "App built: $APP_PATH"

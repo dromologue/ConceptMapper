@@ -93,6 +93,33 @@ describe('useGraphStore', () => {
       useGraphStore.getState().handleAddNode('person', 'Charlie', {}, [], {});
       expect(useGraphStore.getState().graphData).toBeNull();
     });
+
+    it('creates linked edges (out/in) to existing nodes using the template', () => {
+      useGraphStore.getState().setGraphData(sampleGraph);
+      const template = { edge_types: [{ id: 'chain', directed: true }, { id: 'alliance', directed: false }] };
+      useGraphStore.getState().handleAddNode(
+        'person', 'Charlie', {}, [], {},
+        [
+          { targetId: 'n1', edgeType: 'chain', direction: 'out' },   // charlie -> n1
+          { targetId: 'n2', edgeType: 'alliance', direction: 'in' }, // n2 -> charlie
+        ],
+        template,
+      );
+      const edges = useGraphStore.getState().graphData!.edges;
+      expect(edges).toHaveLength(3); // original chain + 2 new
+      expect(edges).toContainEqual(expect.objectContaining({ from: 'charlie', to: 'n1', edge_type: 'chain', directed: true }));
+      expect(edges).toContainEqual(expect.objectContaining({ from: 'n2', to: 'charlie', edge_type: 'alliance', directed: false }));
+    });
+
+    it('ignores links to non-existent targets', () => {
+      useGraphStore.getState().setGraphData(sampleGraph);
+      useGraphStore.getState().handleAddNode(
+        'person', 'Charlie', {}, [], {},
+        [{ targetId: 'ghost', edgeType: 'chain', direction: 'out' }],
+        { edge_types: [{ id: 'chain', directed: true }] },
+      );
+      expect(useGraphStore.getState().graphData!.edges).toHaveLength(1); // only the original
+    });
   });
 
   describe('handleDeleteNode', () => {

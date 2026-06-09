@@ -1,0 +1,459 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		000499D6156FED349975DDA7 /* web in Resources */ = {isa = PBXBuildFile; fileRef = 5D23A438FC2C974DF67E4BDA /* web */; };
+		38E9AA9FBC67BF71E858CA0F /* ConceptMapperUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A05B4AA3DB9F961BD2071C7C /* ConceptMapperUITests.swift */; };
+		4338E2C9F95E7C64D79F5DBC /* BridgeProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66C15D423DF7F7BB34E065FE /* BridgeProtocol.swift */; };
+		6E342D2A9D206E15A9B2C26A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2C3567E674CDFED2E82AAB8E /* Assets.xcassets */; };
+		7F76235BAB5D97F019DBC04F /* maps in Resources */ = {isa = PBXBuildFile; fileRef = 392F07B8E1820E6E075DEA65 /* maps */; };
+		A4B288A5966457EBAB60CDE1 /* PlatformURLOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91FBB75EBFDDBAD158F62B4D /* PlatformURLOpener.swift */; };
+		BD9B8A2E418469BCEDDD630E /* templates in Resources */ = {isa = PBXBuildFile; fileRef = 555250C8427F9FF833BED94E /* templates */; };
+		C85405584C0D30842F8FBAB9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F5DFB83F370B9EE44460E9 /* ContentView.swift */; };
+		EB9990F095FC012F0614F40E /* ConceptMapperApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBE0B67E12E0D0E6E68A04D /* ConceptMapperApp.swift */; };
+		F29E818FA3CA5CC4E8ACCE93 /* FileHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 929C0401AA285ECA332553E0 /* FileHandler.swift */; };
+		F8040851C9ABDCB29BC09CE0 /* WebViewBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D78E94017116FC4875ED38 /* WebViewBridge.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		CE0994F7F391BFD7D16B0DA4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 30B30D85223A394DAAB439A6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 280B263EFB1E2887460CD68A;
+			remoteInfo = ConceptMapper;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		10D78E94017116FC4875ED38 /* WebViewBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewBridge.swift; sourceTree = "<group>"; };
+		13F5DFB83F370B9EE44460E9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		2C3567E674CDFED2E82AAB8E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		392F07B8E1820E6E075DEA65 /* maps */ = {isa = PBXFileReference; lastKnownFileType = folder; name = maps; path = Resources/maps; sourceTree = SOURCE_ROOT; };
+		555250C8427F9FF833BED94E /* templates */ = {isa = PBXFileReference; lastKnownFileType = folder; name = templates; path = Resources/templates; sourceTree = SOURCE_ROOT; };
+		5B90E77E74A0608F9A066041 /* ConceptMapper.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ConceptMapper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D23A438FC2C974DF67E4BDA /* web */ = {isa = PBXFileReference; lastKnownFileType = folder; name = web; path = Resources/web; sourceTree = SOURCE_ROOT; };
+		66C15D423DF7F7BB34E065FE /* BridgeProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeProtocol.swift; sourceTree = "<group>"; };
+		8FBE0B67E12E0D0E6E68A04D /* ConceptMapperApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConceptMapperApp.swift; sourceTree = "<group>"; };
+		91FBB75EBFDDBAD158F62B4D /* PlatformURLOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformURLOpener.swift; sourceTree = "<group>"; };
+		929C0401AA285ECA332553E0 /* FileHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileHandler.swift; sourceTree = "<group>"; };
+		A05B4AA3DB9F961BD2071C7C /* ConceptMapperUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConceptMapperUITests.swift; sourceTree = "<group>"; };
+		C61C328693C9E8BBED52436E /* ConceptMapperUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ConceptMapperUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		1809F3D62ED689C709EC071D /* ConceptMapper */ = {
+			isa = PBXGroup;
+			children = (
+				2C3567E674CDFED2E82AAB8E /* Assets.xcassets */,
+				8FBE0B67E12E0D0E6E68A04D /* ConceptMapperApp.swift */,
+				13F5DFB83F370B9EE44460E9 /* ContentView.swift */,
+				929C0401AA285ECA332553E0 /* FileHandler.swift */,
+			);
+			path = ConceptMapper;
+			sourceTree = "<group>";
+		};
+		203C7B03D8FA8498039C45D2 = {
+			isa = PBXGroup;
+			children = (
+				392F07B8E1820E6E075DEA65 /* maps */,
+				555250C8427F9FF833BED94E /* templates */,
+				5D23A438FC2C974DF67E4BDA /* web */,
+				1809F3D62ED689C709EC071D /* ConceptMapper */,
+				30D0EF87097CF20DEB04E52D /* ConceptMapper */,
+				29A95CED28B397DB311D5A32 /* ConceptMapperUITests */,
+				8D71358A068D477D1B27C537 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		29A95CED28B397DB311D5A32 /* ConceptMapperUITests */ = {
+			isa = PBXGroup;
+			children = (
+				A05B4AA3DB9F961BD2071C7C /* ConceptMapperUITests.swift */,
+			);
+			path = ConceptMapperUITests;
+			sourceTree = "<group>";
+		};
+		30D0EF87097CF20DEB04E52D /* ConceptMapper */ = {
+			isa = PBXGroup;
+			children = (
+				66C15D423DF7F7BB34E065FE /* BridgeProtocol.swift */,
+				91FBB75EBFDDBAD158F62B4D /* PlatformURLOpener.swift */,
+				10D78E94017116FC4875ED38 /* WebViewBridge.swift */,
+			);
+			name = ConceptMapper;
+			path = ../macos/ConceptMapper;
+			sourceTree = "<group>";
+		};
+		8D71358A068D477D1B27C537 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5B90E77E74A0608F9A066041 /* ConceptMapper.app */,
+				C61C328693C9E8BBED52436E /* ConceptMapperUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		06B6555C8DAA0C029C411D6C /* ConceptMapperUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 37B6C2EC51AC2500236D930F /* Build configuration list for PBXNativeTarget "ConceptMapperUITests" */;
+			buildPhases = (
+				BC15EDFA7DECCE21515AC396 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				328EF9F81BD42CE43F75E99C /* PBXTargetDependency */,
+			);
+			name = ConceptMapperUITests;
+			packageProductDependencies = (
+			);
+			productName = ConceptMapperUITests;
+			productReference = C61C328693C9E8BBED52436E /* ConceptMapperUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		280B263EFB1E2887460CD68A /* ConceptMapper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4A086E6A58EEACCAE4766BA1 /* Build configuration list for PBXNativeTarget "ConceptMapper" */;
+			buildPhases = (
+				962E3567732EDDC6C50C9DE1 /* Sources */,
+				250187F68779DF2AC564F155 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ConceptMapper;
+			packageProductDependencies = (
+			);
+			productName = ConceptMapper;
+			productReference = 5B90E77E74A0608F9A066041 /* ConceptMapper.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		30B30D85223A394DAAB439A6 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					06B6555C8DAA0C029C411D6C = {
+						DevelopmentTeam = 4EDT4L4DYU;
+						TestTargetID = 280B263EFB1E2887460CD68A;
+					};
+					280B263EFB1E2887460CD68A = {
+						DevelopmentTeam = 4EDT4L4DYU;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 139ADF3C821E873C1C75BFC5 /* Build configuration list for PBXProject "ConceptMapper" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 203C7B03D8FA8498039C45D2;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 8D71358A068D477D1B27C537 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				280B263EFB1E2887460CD68A /* ConceptMapper */,
+				06B6555C8DAA0C029C411D6C /* ConceptMapperUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		250187F68779DF2AC564F155 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6E342D2A9D206E15A9B2C26A /* Assets.xcassets in Resources */,
+				7F76235BAB5D97F019DBC04F /* maps in Resources */,
+				BD9B8A2E418469BCEDDD630E /* templates in Resources */,
+				000499D6156FED349975DDA7 /* web in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		962E3567732EDDC6C50C9DE1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4338E2C9F95E7C64D79F5DBC /* BridgeProtocol.swift in Sources */,
+				EB9990F095FC012F0614F40E /* ConceptMapperApp.swift in Sources */,
+				C85405584C0D30842F8FBAB9 /* ContentView.swift in Sources */,
+				F29E818FA3CA5CC4E8ACCE93 /* FileHandler.swift in Sources */,
+				A4B288A5966457EBAB60CDE1 /* PlatformURLOpener.swift in Sources */,
+				F8040851C9ABDCB29BC09CE0 /* WebViewBridge.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BC15EDFA7DECCE21515AC396 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				38E9AA9FBC67BF71E858CA0F /* ConceptMapperUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		328EF9F81BD42CE43F75E99C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 280B263EFB1E2887460CD68A /* ConceptMapper */;
+			targetProxy = CE0994F7F391BFD7D16B0DA4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1E94F011EE22C2C48761436C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ConceptMapper/ConceptMapper.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4EDT4L4DYU;
+				INFOPLIST_FILE = ConceptMapper/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dromologue.ConceptMapper.ios;
+				PRODUCT_NAME = ConceptMapper;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		405F43415D929185EC179360 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		60D84D943AB620F53825DA83 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = 4EDT4L4DYU;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dromologue.ConceptMapper.ios.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ConceptMapper;
+			};
+			name = Release;
+		};
+		70F9C70DF2F0ED56A1939431 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ConceptMapper/ConceptMapper.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4EDT4L4DYU;
+				INFOPLIST_FILE = ConceptMapper/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dromologue.ConceptMapper.ios;
+				PRODUCT_NAME = ConceptMapper;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7CBA491D37C963DD13342D8A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		DE0928BEE7B16B0568EDA6F6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = 4EDT4L4DYU;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dromologue.ConceptMapper.ios.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ConceptMapper;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		139ADF3C821E873C1C75BFC5 /* Build configuration list for PBXProject "ConceptMapper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7CBA491D37C963DD13342D8A /* Debug */,
+				405F43415D929185EC179360 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		37B6C2EC51AC2500236D930F /* Build configuration list for PBXNativeTarget "ConceptMapperUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DE0928BEE7B16B0568EDA6F6 /* Debug */,
+				60D84D943AB620F53825DA83 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4A086E6A58EEACCAE4766BA1 /* Build configuration list for PBXNativeTarget "ConceptMapper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				70F9C70DF2F0ED56A1939431 /* Debug */,
+				1E94F011EE22C2C48761436C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 30B30D85223A394DAAB439A6 /* Project object */;
+}
