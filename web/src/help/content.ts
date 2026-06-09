@@ -488,8 +488,8 @@ Switch between modes using the Activity Bar buttons. When you switch modes, prev
 **Theme**
 Choose from available themes. Each theme changes the background, panel colours, text colours, and accent colours across the entire UI. Themes include dark options (Midnight, Obsidian, Solarized Dark, Nord) and light options (Ivory, Paper).
 
-**Stream Colours**
-Override the default colour for any stream/category. Click the colour swatch to pick a new colour. Click the X button to reset to the taxonomy default.
+**Classifier Colours**
+Override the default colour for any classifier value. The app shows one colour group per classifier defined in your template (e.g. Domain Colours, Decade Colours). Click a colour swatch to pick a new colour, or the X button to reset to the taxonomy default.
 
 **Edge Type Colours**
 Override colours for specific edge types (e.g. make "rivalry" edges bright red, "alliance" edges blue). Only edge types present in your current map appear here.
@@ -519,14 +519,14 @@ The app auto-saves to the source .cm file as you make changes (with a short debo
 
 **.json** -- The app can open plain .json files if they follow the concept map data schema.
 
-**Markdown Export** -- Use File > Export (Cmd+Shift+E) to export a human-readable markdown version of your map, with tables for generations and streams, fenced code blocks for nodes, and structured edge listings.
+**Markdown Export** -- Use File > Export (Cmd+Shift+E) to export a human-readable markdown version of your map: nodes grouped by type in fenced \`key: value\` code blocks (carrying each node's classifier values, tags, and fields), followed by the edges and any notes. This is the same structured-markdown format the app saves as .cm.
 
 **Image Export** -- Use File > Export Image (Cmd+E) to save the current canvas view as a PNG image.
 
 **Opening files:**
 - File > Open (Cmd+O) or the "Open File" button on the start screen
 - The app accepts .cm, .cmt, and .json files
-- Legacy markdown (.cm) files from older versions are automatically migrated to the new JSON format`,
+- Older .cm files from earlier versions — including the retired \`stream:\` / \`generation:\` keys — are automatically migrated to the current classifier model when opened`,
   },
 
   // ── Keyboard Shortcuts ───────────────────────────────────────────
@@ -754,7 +754,7 @@ A: They are no longer privileged dimensions. The current model uses generic **cl
 A: Yes. Click the taxonomy/list icon at the bottom of the Activity Bar to re-open the wizard in edit mode. Changes to the taxonomy apply to the existing map.
 
 **Q: How do I delete a node?**
-A: Node deletion is not yet available through the UI. You can edit the .cm file directly (it is JSON) and remove the node entry.
+A: Node deletion is not yet available through the UI. You can edit the .cm file directly (it is plain-text markdown) and remove the node's fenced block.
 
 **Q: How do I delete an edge?**
 A: Edge deletion is not yet available through the UI. You can edit the .cm file directly.
@@ -781,7 +781,7 @@ A: Yes. In the taxonomy wizard (Step 2), click "+ Add Type" to create as many no
 A: If a node type has a select-type field (e.g. "Importance" with options major, minor, etc.), you can designate that field to control the visual size of nodes on the canvas. Higher-ranked options produce larger nodes.
 
 **Q: How do I share a map with someone?**
-A: Send them the .cm file. They can open it in ConceptMapper. The file is self-contained JSON. You can also export a markdown version or a PNG image for people who do not have the app.
+A: Send them the .cm file together with its .cmt template (the .cm references the template by name). They can open it in ConceptMapper — the .cm is plain-text markdown. For people who do not have the app, export a PNG image instead.
 
 **Q: What happens if I close the app without saving?**
 A: If you opened a file, the app auto-saves changes as you work (2-second debounce). If you created a new taxonomy and never saved the file, the data may be lost.`,
@@ -793,7 +793,7 @@ A: If you opened a file, the app auto-saves changes as you work (2-second deboun
     title: "Troubleshooting",
     tags: ["trouble", "error", "problem", "fix", "issue", "bug", "not working"],
     content: `**"No nodes found" error when opening a file**
-The file may not be in a recognised format. ConceptMapper expects either a v2 JSON data file (.cm) or a legacy structured markdown file. Check that the file has the correct structure.
+The file may not be in a recognised format. ConceptMapper expects a structured-markdown .cm map file or a JSON .cmt template (older .cm files are migrated automatically on open). Check that the file has the correct structure.
 
 **Canvas is blank after creating a taxonomy**
 This is expected -- a new taxonomy has no nodes yet. Use the sidebar's "+ [Type]" buttons to add nodes, or use Map Text to populate from a text source.
