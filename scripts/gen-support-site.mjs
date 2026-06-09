@@ -35,7 +35,7 @@ const META = {
   effectiveDate: "31 May 2026",
   // Set once the app is live on the Mac App Store; until then the hero shows
   // a "coming soon" note instead of a dead button.
-  appStoreUrl: "",
+  appStoreUrl: "https://apps.apple.com/gb/app/conceptmapper/id6775185615?mt=12",
   // The iPhone + iPad app is a SEPARATE, paid App Store product (the macOS app
   // is free) — its own record and URL. Set at the iOS release.
   iosAppStoreUrl: "",
@@ -93,7 +93,7 @@ const FEATURES = [
     img: null,
     kicker: "Read it as an outline",
     title: "The same map, as a navigable outline",
-    body: "Every map also opens as a textmap: a nested, expandable outline of the very same nodes and typed relationships. Follow one thread of connections at a time, read and edit a node's notes inline, and add nodes without ever touching the canvas. It is the default on iPhone, where a force-directed graph is unreadable, and it is one tap away on Mac and iPad.",
+    body: "Every map also opens as a textmap: a nested, expandable outline of the very same nodes and typed relationships. Follow one thread of connections at a time, read and edit a node's notes inline, and add nodes without ever touching the canvas. It is one tap away from the canvas on the Mac today, and it will be the default on iPhone — where a force-directed graph is unreadable — once the iPhone and iPad app arrives.",
   },
 ];
 
@@ -296,17 +296,27 @@ ${footer}
 
 // ── Marketing landing page ───────────────────────────────────────────
 function buildHome() {
+  const iosLive = Boolean(META.iosAppStoreUrl);
   const cta = META.appStoreUrl
     ? `<a class="btn" href="${META.appStoreUrl}">Download on the Mac App Store</a>`
     : `<span class="btn btn-soft">Coming to the Mac App Store</span>`;
+
+  // iPhone/iPad messaging flips from "coming soon" to "available" once
+  // META.iosAppStoreUrl is set at the iOS release — no hand-edit needed.
+  const heroLede = iosLive
+    ? `${META.appName} is a tool for building, editing, and reasoning over concept maps where every node and edge has a type — on the Mac, and on iPhone and iPad. Maps are plain-text Markdown; the schema they obey lives in a separate template. Your thinking stays portable, greppable, and yours.`
+    : `${META.appName} is a tool for building, editing, and reasoning over concept maps where every node and edge has a type, on the Mac — with iPhone and iPad on the way. Maps are plain-text Markdown; the schema they obey lives in a separate template. Your thinking stays portable, greppable, and yours.`;
+  const req = iosLive
+    ? `Requires ${META.minOS} or later. iPhone &amp; iPad app requires ${META.minIOS} or later.`
+    : `Requires ${META.minOS} or later.`;
 
   const hero = `
     <section class="hero">
       <div class="wrap hero-inner">
         <img class="hero-icon" src="images/icon.png" alt="${META.appName} app icon" width="112" height="112">
         <h1>Think in typed graphs.</h1>
-        <p class="lede">${META.appName} is a tool for building, editing, and reasoning over concept maps where every node and edge has a type — on the Mac, and on iPhone and iPad. Maps are plain-text Markdown; the schema they obey lives in a separate template. Your thinking stays portable, greppable, and yours.</p>
-        <div class="cta-row">${cta}<span class="req">Requires ${META.minOS} or later. iPhone &amp; iPad app requires ${META.minIOS} or later.</span></div>
+        <p class="lede">${heroLede}</p>
+        <div class="cta-row">${cta}<span class="req">${req}</span></div>
         <img class="hero-shot" src="images/${FEATURES[0].img}" alt="${FEATURES[0].alt}" loading="eager">
       </div>
     </section>`;
@@ -339,8 +349,8 @@ function buildHome() {
   const platforms = `
     <section class="platforms">
       <div class="wrap">
-        <h2>On the Mac today — iPhone and iPad too.</h2>
-        <p>${META.appName} runs on ${META.minOS} and later. A separate iPhone and iPad app — universal, ${META.minIOS} and later — brings the same maps to a touch device: the visual canvas on iPad, the textmap outline on iPhone, and your <code>.cm</code> files in iCloud Drive across all three. It is one codebase, so a feature lands everywhere at once rather than drifting between platforms.</p>
+        <h2>${iosLive ? "On the Mac today — iPhone and iPad too." : "On the Mac today — iPhone and iPad on the way."}</h2>
+        <p>${META.appName} runs on ${META.minOS} and later. A separate iPhone and iPad app — universal, ${META.minIOS} and later — ${iosLive ? "brings" : "is on the way, and will bring"} the same maps to a touch device: the visual canvas on iPad, the textmap outline on iPhone, and your <code>.cm</code> files in iCloud Drive across all three. It is one codebase, so a feature lands everywhere at once rather than drifting between platforms.</p>
       </div>
     </section>`;
 
