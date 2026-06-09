@@ -28,3 +28,6 @@ playwright-report
 *.sln
 *.sw?
 node_modules/
+
+# Vitest coverage output
+coverage

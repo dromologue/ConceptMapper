@@ -1,0 +1,15 @@
+{
+  "name": "concept-mapper-core",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "concept_mapper_core_bg.wasm",
+    "concept_mapper_core.js",
+    "concept_mapper_core.d.ts"
+  ],
+  "main": "concept_mapper_core.js",
+  "types": "concept_mapper_core.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
