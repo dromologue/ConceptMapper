@@ -58,7 +58,8 @@ export function TextmapView({
   const toggle = useCallback((pathKey: string) => {
     setExpanded((prev) => {
       const next = new Set(prev);
-      next.has(pathKey) ? next.delete(pathKey) : next.add(pathKey);
+      if (next.has(pathKey)) next.delete(pathKey);
+      else next.add(pathKey);
       return next;
     });
   }, []);
@@ -68,7 +69,8 @@ export function TextmapView({
   const toggleNotes = useCallback((pathKey: string) => {
     setNotesOpen((prev) => {
       const next = new Set(prev);
-      next.has(pathKey) ? next.delete(pathKey) : next.add(pathKey);
+      if (next.has(pathKey)) next.delete(pathKey);
+      else next.add(pathKey);
       return next;
     });
   }, []);
@@ -263,6 +265,7 @@ function TextmapRow({
 
       {notesShown && onNodeUpdate && (
         <TextmapNotes
+          key={node.id}
           node={node}
           onNodeUpdate={onNodeUpdate}
           onCollapse={() => onToggleNotes(pathKey)}
@@ -344,11 +347,9 @@ function TextmapNotes({
   );
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Re-seed when the node instance changes.
-  useEffect(() => {
-    setContent(node.notes ?? "");
-    setAttachedPath(node.notes_file);
-  }, [node.id]);
+  // No re-seed effect needed: the parent renders this with `key={node.id}`, so
+  // a different node remounts the component and the useState initializers above
+  // re-seed content/attachedPath from the new node.
 
   // File is the source of truth: pull its contents when opened / path changes.
   useEffect(() => {
