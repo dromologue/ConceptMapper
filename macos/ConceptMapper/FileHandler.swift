@@ -8,8 +8,13 @@ enum FileHandler {
     // MARK: - Base directories
 
     /// The iCloud container the macOS and iOS apps share so Maps + Templates are
-    /// the same files on both. Must match the iOS FileHandler and both
-    /// entitlements / `NSUbiquitousContainers` Info.plist entries.
+    /// the same files on both. NOTE: the macOS App Store build currently ships
+    /// WITHOUT the iCloud entitlement / `NSUbiquitousContainers` Info.plist entry
+    /// (App Store Connect delivery rejected the unprovisioned production
+    /// container), so on macOS `url(forUbiquityContainerIdentifier:)` returns nil
+    /// and `getBaseFolder()` falls back to local Documents. iOS keeps iCloud. To
+    /// re-enable macOS iCloud, restore both the entitlement and the Info.plist
+    /// entry and deploy the container to production first.
     static let iCloudContainerID = "iCloud.com.dromologue.ConceptMapper"
     private static var cachedBaseFolder: URL?
 
