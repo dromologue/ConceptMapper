@@ -1,5 +1,12 @@
 import { useState, useRef, useCallback } from "react";
 import type { GraphNode, GraphEdge, Classifier, NodeTypeConfig, TaxonomyTemplate } from "../types/graph-ir";
+
+const NODE_ICONS = [
+  "💡", "⭐", "🎯", "👤", "🏢",
+  "📋", "🔒", "💬", "📊", "🔗",
+  "⚠️", "✅", "❌", "🔍", "💰",
+  "📅", "🌐", "🔧", "📌", "🚀",
+];
 import { getNodeTypeConfig } from "../migration";
 import { EDGE_LABELS } from "../utils/edge-labels";
 import type { NetworkAnalysis } from "../utils/graph-analysis";
@@ -82,6 +89,7 @@ export function DetailPanel({
   const [localName, setLocalName] = useState(node.name);
   const [attrsOpen, setAttrsOpen] = useState(true);
   const [connectionsOpen, setConnectionsOpen] = useState(true);
+  const [showIconPicker, setShowIconPicker] = useState(false);
 
   // Reset name only when switching to a different node (derived state from props)
   const [prevNodeId, setPrevNodeId] = useState(node.id);
@@ -167,6 +175,52 @@ export function DetailPanel({
               <div className="editor-field">
                 <label>Type</label>
                 <span className="editor-field-value">{config?.label ?? node.node_type}</span>
+              </div>
+              {/* Icon picker */}
+              <div className="editor-field editor-field-icon">
+                <label>Icon</label>
+                <div className="node-icon-field">
+                  <span className="node-icon-preview">
+                    {node.properties?.node_icon ?? <span className="node-icon-none">—</span>}
+                  </span>
+                  <button
+                    className="node-icon-toggle-btn"
+                    onClick={() => setShowIconPicker((v) => !v)}
+                  >
+                    {showIconPicker ? "Close" : "Change"}
+                  </button>
+                  {node.properties?.node_icon && (
+                    <button
+                      className="node-icon-clear-btn"
+                      onClick={() => {
+                        const props = { ...node.properties };
+                        delete props.node_icon;
+                        onNodeUpdate(node.id, { properties: props });
+                        setShowIconPicker(false);
+                      }}
+                      title="Remove icon"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {showIconPicker && (
+                  <div className="node-icon-picker-grid">
+                    {NODE_ICONS.map((ic) => (
+                      <button
+                        key={ic}
+                        className={`node-icon-option ${node.properties?.node_icon === ic ? "active" : ""}`}
+                        onClick={() => {
+                          onNodeUpdate(node.id, { properties: { ...node.properties, node_icon: ic } });
+                          setShowIconPicker(false);
+                        }}
+                        title={ic}
+                      >
+                        {ic}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               {/* Classifiers */}
               {classifiers.map((cls) => (

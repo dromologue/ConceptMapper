@@ -45,7 +45,7 @@ struct WebView: NSViewRepresentable {
     let bridge: WebViewBridge
 
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(bridge: bridge)
     }
 
     func makeNSView(context: Context) -> WKWebView {
@@ -101,6 +101,12 @@ struct WebView: NSViewRepresentable {
     func updateNSView(_ nsView: WKWebView, context: Context) {}
 
     class Coordinator: NSObject, WKNavigationDelegate {
+        let bridge: WebViewBridge
+
+        init(bridge: WebViewBridge) {
+            self.bridge = bridge
+        }
+
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             logger.info("Page loaded successfully")
 
@@ -111,6 +117,10 @@ struct WebView: NSViewRepresentable {
                 if let error = error {
                     logger.error("JS eval error: \(error.localizedDescription)")
                 }
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.bridge.emitSecondBrainReady()
             }
         }
 

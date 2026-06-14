@@ -17,6 +17,10 @@
 *.xcuserstate
 .env
 .env.local
+.env.test
+*.credentials
+test-credentials*
+.workflowy-key
 .DS_Store
 .claude/settings.local.json
 /support-site

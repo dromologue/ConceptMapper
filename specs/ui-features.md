@@ -256,7 +256,7 @@ Edge type colors can be changed via the Settings modal and are saved in the .cm 
 Three layout presets control the D3 force simulation. Presets configure forces (not absolute positions) so nodes settle naturally. Classifier-based layouts (x/y/region/column) override presets on the axes they claim.
 
 **AC-061C-01**: Layout presets are session-level state (not persisted to .cm files).
-**AC-061C-02**: The Activity Bar has a Layout button that opens a popover with three options: Force, Flow, Radial.
+**AC-061C-02**: Layout preset selection lives inside the Advanced Tools flyout popover (REQ-117). The flyout shows a labelled row of three buttons: Force, Flow, Radial.
 **AC-061C-03**: Force layout (default): standard force-directed with weak centering. Unchanged from previous behaviour.
 **AC-061C-04**: Flow layout: computes topological depth from directed edges (modified Kahn's algorithm, longest-path semantics). Sources at top, sinks at bottom. Fixed 200px depth gaps, 120px node gaps. Separate connected components arranged in horizontal lanes. Uses `edge.directed` from parsed data; if no edges are directed, treats all edges as directed for flow purposes. Strong forces (Y: 0.8, X: 0.5) pull nodes firmly to computed positions.
 **AC-061C-05**: Radial layout: computes degree centrality. Highest-degree nodes at center, lowest at periphery. Fixed 150px ring spacing with golden-angle offset. Weaker charge (-350).
@@ -317,7 +317,7 @@ Editing the taxonomy via the wizard automatically saves both the .cm map file an
 ### REQ-062: Image Export (PNG/PDF)
 Export the current canvas view as PNG or PDF with configurable background.
 
-**AC-062-01**: Export Image button in the activity bar opens an export modal.
+**AC-062-01**: Export Image is accessible via the Advanced Tools flyout in the activity bar (REQ-117); clicking it opens the export modal.
 **AC-062-02**: Modal offers format options: PNG and PDF.
 **AC-062-03**: Modal offers background options: "As viewed" (current theme bg) or custom color picker.
 **AC-062-04**: Modal offers resolution options: 1x and 2x (retina).
@@ -633,6 +633,7 @@ The Notes pane is a wrapping markdown editor with an attachable external `.md` f
 **AC-111-06**: A **Detach** button clears `node.notes_file` but leaves the loaded text on `node.notes` so no work is lost. The user can re-attach later.
 **AC-111-07**: The .cm file round-trips `notes_file:` as a key inside the node fence. The Rust parser already treats unknown keys as generic fields; `migrateFromParser` lifts `notes_file` from `properties` to the dedicated `GraphNode.notes_file` field so it does not pollute the Properties panel.
 **AC-111-08**: The exporter (`exportToMarkdown`) writes `notes_file: <abs path>` immediately after `notes:` on any node that has the field set.
+**AC-111-09**: When a `notes_file` path is passed to the bridge on a device where the stored absolute path does not exist, `FileHandler.resolveNotesFilePath(_:)` rebases the suffix after the last `ConceptMapper/` segment onto the local `getBaseFolder()` — allowing a `.cm` saved on macOS to load its attached notes on iOS (REQ-119).
 
 ### REQ-110: Depth-Based Colour Lightness
 Node colours are layered with a depth ramp so deeper nodes appear paler than roots, preserving hue and varying the visual field on large maps.
@@ -642,3 +643,86 @@ Node colours are layered with a depth ramp so deeper nodes appear paler than roo
 **AC-110-03**: The depth used is BFS distance from any root along directed edges — the same `computeHierarchy` already used for REQ-088.
 **AC-110-04**: The ramp is always on (no toggle) and applies in formal and mindmap looks. It is suppressed when the community-overlay colour scheme is active, since those colours are categorical.
 **AC-110-05**: Hue is preserved — only lightness changes. Relative channel ordering of the base RGB is maintained.
+
+---
+
+## Hierarchy Depth Controls (2026-05)
+
+### REQ-088: Expand-Level Hierarchy Stepper
+A compact stepper in the Advanced Tools flyout (REQ-117) controls how many BFS levels of the directed-edge hierarchy are visible at once.
+
+**AC-088-01**: The stepper renders only when `onExpandLevelChange` is provided and `maxExpandLevel > 0`. It is absent when the graph has no directed hierarchy.
+**AC-088-02**: The stepper shows a `−` button, a `current/max` label, and a `+` button arranged horizontally inside the Advanced flyout.
+**AC-088-03**: Clicking `−` decrements `expandLevel` to a minimum of 0 (root nodes only); clicking `+` increments it to `maxExpandLevel` (all nodes visible).
+**AC-088-04**: Double-clicking the level label toggles between showing all levels (`maxExpandLevel`) and the minimum (0).
+**AC-088-05**: The `−` button is disabled at level 0; the `+` button is disabled at `maxExpandLevel`.
+**AC-088-06**: `computeHierarchy` computes BFS depth from all root nodes along directed edges; nodes not reachable via directed edges receive depth 0.
+**AC-088-07**: Nodes with `depth > expandLevel` are suppressed from the canvas (treated as collapsed); edges whose source or target is suppressed are also hidden.
+
+---
+
+## Activity Bar Consolidation (2026-05)
+
+### REQ-117: Activity Bar Advanced Tools Flyout
+All advanced and infrequent actions are consolidated into a single "Advanced Tools" flyout popover triggered by one button in the activity bar rail. This keeps the rail short and predictable across device sizes.
+
+**AC-117-01**: The Advanced Tools button renders only when at least one advanced action is available (`onToggleAnalysis`, `onToggleSecondBrain`, `onExportImage`, `onLayoutPresetChange`, `onExplode`, or the expand-level stepper).
+**AC-117-02**: The flyout opens as an absolutely-positioned popover anchored to the right of the Advanced button, computed via `getBoundingClientRect` in a `useLayoutEffect`. It closes on `mousedown` outside both the button and the popover.
+**AC-117-03**: The flyout renders in order: panel toggles (Network Analysis, Second Brain) → divider → actions (Export Image) → divider → Layout section → divider → graph controls (Explode Graph toggle, Expand-Level stepper).
+**AC-117-04**: The Advanced button shows an active state when any flyout-hosted feature is active (`analysisOpen || secondBrainOpen || exploded || layoutPreset !== "force"`).
+**AC-117-05**: The flyout is available on all platforms, including iPhone (`isPhone`). The `!isPhone` guard applies only to the sidebar, properties, and notes toggle buttons in the rail — it does not suppress the Advanced flyout.
+**AC-117-06**: Layout Reset ("Reset Classifiers") appears as a sub-item under the Layout section in the flyout; it is only rendered when `onResetLayout` is provided.
+
+---
+
+## iCloud Data Directories (2026-06)
+
+### REQ-118: iCloud as Default Data Store
+Maps and Templates are stored in the shared iCloud container `iCloud.com.dromologue.ConceptMapper`, visible as "ConceptMapper" in iCloud Drive on both macOS and iOS. This makes user content available across devices without any manual sync step.
+
+**AC-118-01**: `FileHandler.getBaseFolder()` on both platforms returns the `Documents/` subdirectory of the `iCloud.com.dromologue.ConceptMapper` ubiquity container when iCloud is available; it falls back to `~/Documents/ConceptMapper` (macOS) or the local Documents folder (iOS) when the container is unavailable (iCloud not signed in, simulator).
+**AC-118-02**: Maps are stored in `<base>/Maps/`, templates in `<base>/Templates/`. Both subdirectories are created on first access.
+**AC-118-03**: The macOS app declares the iCloud container in `ConceptMapper.entitlements` (`com.apple.developer.icloud-container-identifiers`, `com.apple.developer.icloud-services: CloudDocuments`, `com.apple.developer.ubiquity-container-identifiers`) and in `Info.plist` (`NSUbiquitousContainers`), matching the iOS entitlements so both apps share the same container.
+**AC-118-04**: `NSUbiquitousContainerIsDocumentScopePublic = true` and `NSUbiquitousContainerName = ConceptMapper` ensure the folder is user-visible at the top level of iCloud Drive on both platforms.
+**AC-118-05**: The base folder resolution is cached after the first call — `url(forUbiquityContainerIdentifier:)` performs IO and must not be called on every file operation.
+
+### REQ-119: Cross-Platform Notes File Path Resolution
+A `.cm` map file stores `notes_file:` as an absolute path set on the device that attached the file. When the same map is opened on a different device or platform, the stored path does not exist locally. The bridge resolves it transparently.
+
+**AC-119-01**: `FileHandler.resolveNotesFilePath(_ path: String) -> String` is implemented identically in both `macos/ConceptMapper/FileHandler.swift` and `ios/ConceptMapper/FileHandler.swift`.
+**AC-119-02**: If the file exists at the stored path, the path is returned unchanged.
+**AC-119-03**: If the file does not exist at the stored path, the method extracts the suffix after the last occurrence of `"ConceptMapper/"` in the stored path and attempts to locate the file at `getBaseFolder().path + "/" + suffix`. If found, the resolved path is returned.
+**AC-119-04**: If neither resolution succeeds, the original path is returned and the bridge responds with `exists: false` in the `notesFileRead` event, allowing the UI to display a "file not found" notice without crashing.
+**AC-119-05**: Both `readNotesFile` and `writeNotesFile` bridge cases call `resolveNotesFilePath` before attempting IO.
+
+---
+
+## Second Brain Feature (2026-06)
+
+### REQ-120: Second Brain Directory Scanning
+The Second Brain panel lets the user register local directories of Markdown files. Scanning those directories produces a force-directed graph — Folder and Note nodes connected by `contains` (parent-child) and `shares-tag` (co-occurrence) edges — rendered in the main canvas using the existing graph pipeline.
+
+**AC-120-01**: `SecondBrainManager.shared` (macOS) manages a persisted list of watched folder paths (stored in `UserDefaults` under `"secondBrainFolders"`).
+**AC-120-02**: The `addFolder` bridge request presents an `NSOpenPanel` restricted to directories; the chosen path is added to the watched list and the updated list is returned via `secondBrainFoldersChanged`.
+**AC-120-03**: The `removeSecondBrainFolder` bridge request removes a path by value and fires `secondBrainFoldersChanged` with the updated list.
+**AC-120-04**: The `scanSecondBrain` bridge request walks all watched folders recursively via `FileManager`, collecting `.md` files. For each file it extracts `#[\w-]+` tags using `NSRegularExpression`.
+**AC-120-05**: Scanning produces: one `folder` node per unique directory (id: `folder_<path-hash>`), one `note` node per file (id: `note_<path-hash>`) with `path` and `tags` properties; `contains` edges from each folder node to its direct child note nodes; `shares-tag` edges between every pair of notes that share at least one tag.
+**AC-120-06**: The `secondBrainScanned` bridge event carries `graphJson` (GraphIR JSON string), `templateJson` (contents of the bundled `second-brain.cmt`), and `fileCount`.
+**AC-120-07**: On receiving `secondBrainScanned`, the React app loads the graph and template identically to how it handles `mapLoaded` — the existing rendering pipeline is reused without modification.
+**AC-120-08**: The `secondBrainReady` event fires once on app init, hydrating `useSecondBrainStore` with persisted folder list and a `hasWorkflowyKey` boolean.
+**AC-120-09**: The Second Brain panel (`SecondBrainPanel.tsx`) is toggled via the Advanced Tools flyout (REQ-117) and replaces the sidebar when open. It shows the folder list, an Add/Remove UI, a Workflowy key field, and a Scan button with last-scan status.
+**AC-120-10**: The `second-brain.cmt` template (in `templates/`) defines `folder` and `note` node types and `contains` and `shares-tag` edge types. It is bundled with the app and loaded from `Bundle.main` at scan time.
+**AC-120-11**: Each `note` node carries `created` and `modified` date properties (format `yyyy-MM-dd`) sourced from the file's `creationDate` and `contentModificationDate` resource values. Both fields are declared in the template and displayed in the Properties panel.
+**AC-120-12**: The node name for a `note` is inferred from the markdown content: the text of the first ATX H1 heading (`# Title`) is used when present; otherwise the filename (without extension) is used as a fallback. This allows files whose first line is a heading to appear with a meaningful label in the graph without requiring the filename to match the document title.
+
+### REQ-121: Workflowy Per-Node Integration
+Any node in any map (not only Second Brain notes) can be linked to a Workflowy outline node. The linked subtree is fetched and rendered read-only inside the Notes pane.
+
+**AC-121-01**: `SecondBrainManager.shared` persists a `[String: String]` dictionary of `nodeId → workflowyUrl` in `UserDefaults` under `"secondBrainWorkflowyUrls"`. The `setNodeWorkflowyUrl` bridge request updates this map.
+**AC-121-02**: `WorkflowyClient` fetches the outline subtree for a given Workflowy node URL. It parses the node hash from the URL fragment (`#/abc123` → `abc123`), calls the Workflowy REST API with a Bearer token (read from Keychain via `SecondBrainManager`), and returns a `[WorkflowyOutlineNode]` tree.
+**AC-121-03**: The Workflowy API key is stored in the macOS Keychain (service `"com.dromologue.ConceptMapper"`, account `"workflowy_api_key"`) via `SecItemAdd`/`SecItemCopyMatching`. The `saveWorkflowyKey` bridge request writes it; `hasWorkflowyKey()` checks for its presence without reading the value.
+**AC-121-04**: The `fetchWorkflowyOutline` bridge request fires the `workflowyOutlineLoaded` event carrying `nodeUrl` and the fetched `nodes` tree.
+**AC-121-05**: `WorkflowyOutlinePane.tsx` in the Notes pane (below the notes editor) is visible only when running as a native app (`isNativeApp()`) on macOS (`!isIOSDevice()`). On iOS it renders a one-line notice: "Workflowy integration is available on macOS only."
+**AC-121-06**: The URL input in `WorkflowyOutlinePane` is pre-populated from `node.properties?.workflowy_url`. On change it calls `setNodeWorkflowyUrl` (persisted in `SecondBrainManager`) and `fetchWorkflowyOutline` (re-fetches the tree).
+**AC-121-07**: The outline tree renders recursively: each `WorkflowyOutlineNode` shows its name (bold) and optional description, indented by depth. The tree is read-only; a "Read-only — edit in Workflowy" footer is shown.
+**AC-121-08**: Outline results are cached in `useSecondBrainStore.outlineCache` keyed by `nodeUrl` so navigating between nodes does not refetch unless the URL changes.

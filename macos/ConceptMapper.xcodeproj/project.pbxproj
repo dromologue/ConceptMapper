@@ -12,8 +12,10 @@
 		6E342D2A9D206E15A9B2C26A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2C3567E674CDFED2E82AAB8E /* Assets.xcassets */; };
 		7F76235BAB5D97F019DBC04F /* maps in Resources */ = {isa = PBXBuildFile; fileRef = 392F07B8E1820E6E075DEA65 /* maps */; };
 		863D3B46924AE8887816B662 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B29B44593851CA3F48ABE3F7 /* PrivacyInfo.xcprivacy */; };
+		966A58DFE046C676F8A6BDD0 /* WorkflowyClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2CC3869F744E9104775EF0 /* WorkflowyClient.swift */; };
 		A4B288A5966457EBAB60CDE1 /* PlatformURLOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91FBB75EBFDDBAD158F62B4D /* PlatformURLOpener.swift */; };
 		BD9B8A2E418469BCEDDD630E /* templates in Resources */ = {isa = PBXBuildFile; fileRef = 555250C8427F9FF833BED94E /* templates */; };
+		C68CEA784F3BAD43F57B92E3 /* SecondBrainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17E888D2E2E35FBA69390F56 /* SecondBrainManager.swift */; };
 		C85405584C0D30842F8FBAB9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13F5DFB83F370B9EE44460E9 /* ContentView.swift */; };
 		EB9990F095FC012F0614F40E /* ConceptMapperApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBE0B67E12E0D0E6E68A04D /* ConceptMapperApp.swift */; };
 		F29E818FA3CA5CC4E8ACCE93 /* FileHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 929C0401AA285ECA332553E0 /* FileHandler.swift */; };
@@ -23,6 +25,8 @@
 /* Begin PBXFileReference section */
 		10D78E94017116FC4875ED38 /* WebViewBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewBridge.swift; sourceTree = "<group>"; };
 		13F5DFB83F370B9EE44460E9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		17E888D2E2E35FBA69390F56 /* SecondBrainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondBrainManager.swift; sourceTree = "<group>"; };
+		2C2CC3869F744E9104775EF0 /* WorkflowyClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkflowyClient.swift; sourceTree = "<group>"; };
 		2C3567E674CDFED2E82AAB8E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		392F07B8E1820E6E075DEA65 /* maps */ = {isa = PBXFileReference; lastKnownFileType = folder; name = maps; path = Resources/maps; sourceTree = SOURCE_ROOT; };
 		555250C8427F9FF833BED94E /* templates */ = {isa = PBXFileReference; lastKnownFileType = folder; name = templates; path = Resources/templates; sourceTree = SOURCE_ROOT; };
@@ -46,7 +50,9 @@
 				929C0401AA285ECA332553E0 /* FileHandler.swift */,
 				91FBB75EBFDDBAD158F62B4D /* PlatformURLOpener.swift */,
 				B29B44593851CA3F48ABE3F7 /* PrivacyInfo.xcprivacy */,
+				17E888D2E2E35FBA69390F56 /* SecondBrainManager.swift */,
 				10D78E94017116FC4875ED38 /* WebViewBridge.swift */,
+				2C2CC3869F744E9104775EF0 /* WorkflowyClient.swift */,
 			);
 			path = ConceptMapper;
 			sourceTree = "<group>";
@@ -150,7 +156,9 @@
 				C85405584C0D30842F8FBAB9 /* ContentView.swift in Sources */,
 				F29E818FA3CA5CC4E8ACCE93 /* FileHandler.swift in Sources */,
 				A4B288A5966457EBAB60CDE1 /* PlatformURLOpener.swift in Sources */,
+				C68CEA784F3BAD43F57B92E3 /* SecondBrainManager.swift in Sources */,
 				F8040851C9ABDCB29BC09CE0 /* WebViewBridge.swift in Sources */,
+				966A58DFE046C676F8A6BDD0 /* WorkflowyClient.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -172,7 +180,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dromologue.ConceptMapper;
 				PRODUCT_NAME = ConceptMapper;
 				SDKROOT = macosx;
@@ -250,7 +258,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dromologue.ConceptMapper;
 				PRODUCT_NAME = ConceptMapper;
 				SDKROOT = macosx;

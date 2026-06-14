@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import type { GraphNode, GraphEdge } from "../types/graph-ir";
 import { EDGE_LABELS } from "../utils/edge-labels";
-import { postToSwift, subscribe } from "../utils/swiftBridge";
+import { postToSwift, subscribe, isNativeApp, isIOSDevice } from "../utils/swiftBridge";
+import { WorkflowyOutlinePane } from "./WorkflowyOutlinePane";
 
 interface Props {
   node: GraphNode;
@@ -27,6 +28,19 @@ function NotesPaneInner({ node, edges, nodes, onNodeUpdate }: Props) {
   const [mode, setMode] = useState<Mode>("preview");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const currentWfUrl: string = (node.properties as Record<string, string>)?.workflowy_url ?? "";
+  const [wfUrlDraft, setWfUrlDraft] = useState(currentWfUrl);
+
+  const commitWfUrl = useCallback((url: string) => {
+    const trimmed = url.trim();
+    if (trimmed === currentWfUrl) return;
+    postToSwift("setNodeWorkflowyUrl", { nodeId: node.id, url: trimmed });
+    onNodeUpdate(node.id, { properties: { ...(node.properties as Record<string, string>), workflowy_url: trimmed || undefined } });
+    if (trimmed) {
+      postToSwift("fetchWorkflowyOutline", { nodeUrl: trimmed });
+    }
+  }, [node.id, node.properties, currentWfUrl, onNodeUpdate]);
 
   // Persist debounced edits. When a file is attached we also write through to
   // the source file; otherwise the text lives inline on the node.
@@ -112,6 +126,25 @@ function NotesPaneInner({ node, edges, nodes, onNodeUpdate }: Props) {
       <div className="notes-pane-header">
         <span className="notes-pane-title">Notes: {node.name}</span>
         <div className="notes-pane-actions">
+          {isNativeApp() && !isIOSDevice() && (
+            <div className="notes-workflowy-url-row">
+              <input
+                className="notes-workflowy-url-input"
+                type="url"
+                placeholder="Workflowy URL…"
+                value={wfUrlDraft}
+                onChange={(e) => setWfUrlDraft(e.target.value)}
+                onBlur={() => commitWfUrl(wfUrlDraft)}
+                onKeyDown={(e) => { if (e.key === "Enter") commitWfUrl(wfUrlDraft); }}
+                title="Link a Workflowy node to this map node"
+              />
+              <button
+                className="notes-pane-btn"
+                onClick={() => commitWfUrl(wfUrlDraft)}
+                title="Fetch outline"
+              >↓</button>
+            </div>
+          )}
           {attachedPath ? (
             <>
               <span className="notes-attached-file" title={attachedPath}>
@@ -168,6 +201,9 @@ function NotesPaneInner({ node, edges, nodes, onNodeUpdate }: Props) {
           </div>
         )}
       </div>
+      {isNativeApp() && !isIOSDevice() && currentWfUrl && (
+        <WorkflowyOutlinePane nodeId={node.id} nodeUrl={currentWfUrl} />
+      )}
     </div>
   );
 }

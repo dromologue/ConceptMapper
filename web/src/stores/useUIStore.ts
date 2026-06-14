@@ -18,6 +18,7 @@ interface UIState {
   analysisOpen: boolean;
   sidebarOpen: boolean;
   labelMenuOpen: boolean;
+  secondBrainOpen: boolean;
 
   // Phone-only: active full-screen tab (the bottom tab bar). Ignored on
   // tablet/desktop, which show panels inline.
@@ -29,6 +30,7 @@ interface UIState {
   toggleAnalysis: () => void;
   toggleSidebar: () => void;
   toggleLabelMenu: () => void;
+  toggleSecondBrain: () => void;
   setNotesOpen: (open: boolean) => void;
   setSidebarOpen: (open: boolean) => void;
 
@@ -72,6 +74,7 @@ export const useUIStore = create<UIState>((set) => ({
   analysisOpen: false,
   sidebarOpen: true,
   labelMenuOpen: false,
+  secondBrainOpen: false,
 
   phoneTab: 'map',
   setPhoneTab: (tab) => set({ phoneTab: tab }),
@@ -81,6 +84,7 @@ export const useUIStore = create<UIState>((set) => ({
   toggleAnalysis: () => set((s) => ({ analysisOpen: !s.analysisOpen })),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   toggleLabelMenu: () => set((s) => ({ labelMenuOpen: !s.labelMenuOpen })),
+  toggleSecondBrain: () => set((s) => ({ secondBrainOpen: !s.secondBrainOpen })),
   setNotesOpen: (open) => set({ notesOpen: open }),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 

@@ -26,6 +26,18 @@
 	<string>Copyright 2026 dromologue. All rights reserved.</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
+	<key>NSUbiquitousContainers</key>
+	<dict>
+		<key>iCloud.com.dromologue.ConceptMapper</key>
+		<dict>
+			<key>NSUbiquitousContainerIsDocumentScopePublic</key>
+			<true/>
+			<key>NSUbiquitousContainerName</key>
+			<string>ConceptMapper</string>
+			<key>NSUbiquitousContainerSupportedFolderLevels</key>
+			<string>Any</string>
+		</dict>
+	</dict>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CFBundleDocumentTypes</key>

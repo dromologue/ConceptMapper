@@ -787,6 +787,54 @@ A: Send them the .cm file together with its .cmt template (the .cm references th
 A: If you opened a file, the app auto-saves changes as you work (2-second debounce). If you created a new taxonomy and never saved the file, the data may be lost.`,
   },
 
+  // ── Second Brain ─────────────────────────────────────────────────
+  {
+    id: "second-brain",
+    title: "Second Brain: Scanning Folders & Workflowy Integration",
+    tags: ["second brain", "workflowy", "folders", "markdown", "tags", "api key", "scan", "outline"],
+    content: `The Second Brain panel (brain icon in the activity bar, macOS only) connects ConceptMapper to your existing notes and Workflowy outlines.
+
+**Scanning Markdown Folders**
+
+1. Click the brain icon in the activity bar to open the Second Brain panel.
+2. Click "+ Add Folder" and choose a directory that contains .md files.
+3. Click "Scan Now". ConceptMapper walks the directory recursively, extracts #tags from each file, and builds a concept map automatically.
+4. Folder nodes (F) and Note nodes (N) appear in the canvas. Notes that share at least one tag are connected by dashed "Shares Tag" edges.
+
+You can add multiple folders. The scan always replaces the current graph — save any open map first with File > Save if needed.
+
+**Workflowy Integration**
+
+Any node in any map can be linked to a Workflowy subtree, which is then displayed read-only in the notes pane. This is macOS only.
+
+**Getting your Workflowy API key:**
+1. Sign in to Workflowy at workflowy.com.
+2. Open your account settings (click your avatar or initials → Settings).
+3. Go to the "API" or "Integrations" tab.
+4. Click "Generate API Key" (or copy the existing key if one is shown).
+5. Copy the key -- it looks like a long alphanumeric string.
+
+**Linking a node to Workflowy:**
+1. Select a node on the canvas.
+2. Open the Notes pane (notes icon in the activity bar).
+3. In the Workflowy section at the bottom, paste the Workflowy node URL. These look like: https://workflowy.com/#/abc123def456
+4. Press Enter or click the ↓ button. The app fetches the outline and displays it read-only beneath the URL field.
+5. To edit the linked content, open it in Workflowy directly.
+
+**Where credentials are stored**
+
+Your Workflowy API key is stored in the macOS Keychain -- it never touches disk as a plain text file. Watched folder paths are stored in the app's preferences (UserDefaults) and persist between restarts. Nothing is synced to iCloud or any external service.
+
+**Q: Why is Workflowy integration macOS only?**
+A: The integration uses direct REST API calls to Workflowy from the native layer. The iOS version of ConceptMapper does not include this feature in the current release.
+
+**Q: Will scanning replace my current map?**
+A: Yes. Scanning loads the generated graph as the active map, in the same way as opening a file. Save any unsaved work first.
+
+**Q: Can I edit notes that are linked to Workflowy from within the app?**
+A: No. The outline view is strictly read-only. Use Workflowy to edit content; the app re-fetches on each link.`,
+  },
+
   // ── Troubleshooting ──────────────────────────────────────────────
   {
     id: "troubleshooting",

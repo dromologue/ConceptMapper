@@ -14,6 +14,11 @@ const defaultProps = {
   nodeTypeConfigs: defaultNodeTypeConfigs,
 };
 
+/** Open the Advanced Tools flyout. Only callable when an advanced tool prop is provided. */
+async function openAdvanced(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTitle("Advanced Tools"));
+}
+
 describe("ActivityBar", () => {
   it("renders full network button and dynamic node type buttons", () => {
     render(<ActivityBar {...defaultProps} />);
@@ -92,80 +97,94 @@ describe("ActivityBar", () => {
     expect(screen.getByText("W")).toBeInTheDocument();
   });
 
-  // SPEC: REQ-075 (Explode View — moved from Sidebar)
-  it("renders explode button when onExplode is provided (AC-075-01)", () => {
+  // SPEC: REQ-075 (Explode View — inside Advanced flyout)
+  it("renders Advanced Tools button when onExplode is provided (AC-075-01)", () => {
     render(<ActivityBar {...defaultProps} onExplode={vi.fn()} />);
-    expect(screen.getByTitle("Explode graph")).toBeInTheDocument();
+    expect(screen.getByTitle("Advanced Tools")).toBeInTheDocument();
   });
 
-  it("does not render explode button when onExplode is not provided", () => {
+  it("does not render Advanced Tools button when no advanced tools are provided", () => {
     render(<ActivityBar {...defaultProps} />);
-    expect(screen.queryByTitle("Explode graph")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Advanced Tools")).not.toBeInTheDocument();
   });
 
-  it("shows active state when exploded (AC-075-01)", () => {
+  it("shows Explode Graph item in Advanced flyout when onExplode is provided (AC-075-01)", async () => {
+    const user = userEvent.setup();
+    render(<ActivityBar {...defaultProps} onExplode={vi.fn()} />);
+    await openAdvanced(user);
+    expect(screen.getByText("Explode Graph")).toBeInTheDocument();
+  });
+
+  it("shows active state on Advanced button when exploded (AC-075-01)", () => {
     render(<ActivityBar {...defaultProps} onExplode={vi.fn()} exploded={true} />);
-    const btn = screen.getByTitle("Collapse graph");
-    expect(btn.className).toContain("active");
+    expect(screen.getByTitle("Advanced Tools").className).toContain("active");
   });
 
-  it("calls onExplode when button is clicked", async () => {
+  it("shows Collapse Graph label in flyout when exploded", async () => {
+    const user = userEvent.setup();
+    render(<ActivityBar {...defaultProps} onExplode={vi.fn()} exploded={true} />);
+    await openAdvanced(user);
+    expect(screen.getByText("Collapse Graph")).toBeInTheDocument();
+  });
+
+  it("calls onExplode when Explode Graph is clicked in Advanced flyout", async () => {
     const user = userEvent.setup();
     const onExplode = vi.fn();
     render(<ActivityBar {...defaultProps} onExplode={onExplode} />);
-    await user.click(screen.getByTitle("Explode graph"));
+    await openAdvanced(user);
+    await user.click(screen.getByText("Explode Graph"));
     expect(onExplode).toHaveBeenCalled();
   });
 
-  // SPEC: REQ-061C (Layout Presets)
-  it("renders layout button when onLayoutPresetChange is provided (AC-061C-02)", () => {
+  // SPEC: REQ-061C (Layout Presets — inside Advanced flyout)
+  it("shows Advanced Tools button when onLayoutPresetChange is provided (AC-061C-02)", () => {
     render(<ActivityBar {...defaultProps} layoutPreset="force" onLayoutPresetChange={vi.fn()} />);
-    expect(screen.getByTitle("Layout")).toBeInTheDocument();
+    expect(screen.getByTitle("Advanced Tools")).toBeInTheDocument();
   });
 
-  it("does not render layout button when onLayoutPresetChange is not provided", () => {
+  it("does not render a standalone Layout button (layout is in Advanced flyout)", () => {
     render(<ActivityBar {...defaultProps} />);
     expect(screen.queryByTitle("Layout")).not.toBeInTheDocument();
   });
 
-  it("shows layout popover with three options when clicked (AC-061C-02)", async () => {
+  it("shows layout section with three presets in Advanced flyout (AC-061C-02)", async () => {
     const user = userEvent.setup();
     render(<ActivityBar {...defaultProps} layoutPreset="force" onLayoutPresetChange={vi.fn()} />);
-    await user.click(screen.getByTitle("Layout"));
+    await openAdvanced(user);
     expect(screen.getByText("Force")).toBeInTheDocument();
     expect(screen.getByText("Flow")).toBeInTheDocument();
     expect(screen.getByText("Radial")).toBeInTheDocument();
   });
 
-  it("calls onLayoutPresetChange when a preset is selected", async () => {
+  it("calls onLayoutPresetChange when a preset is selected in Advanced flyout", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     render(<ActivityBar {...defaultProps} layoutPreset="force" onLayoutPresetChange={onChange} />);
-    await user.click(screen.getByTitle("Layout"));
+    await openAdvanced(user);
     await user.click(screen.getByText("Flow"));
     expect(onChange).toHaveBeenCalledWith("flow");
   });
 
-  it("shows Reset Classifiers button when onResetLayout is provided (AC-061C-07)", async () => {
+  it("shows Reset Classifiers in Advanced flyout when onResetLayout is provided (AC-061C-07)", async () => {
     const user = userEvent.setup();
     render(<ActivityBar {...defaultProps} layoutPreset="force" onLayoutPresetChange={vi.fn()} onResetLayout={vi.fn()} />);
-    await user.click(screen.getByTitle("Layout"));
+    await openAdvanced(user);
     expect(screen.getByText("Reset Classifiers")).toBeInTheDocument();
   });
 
-  it("calls onResetLayout when Reset Classifiers is clicked", async () => {
+  it("calls onResetLayout when Reset Classifiers is clicked in Advanced flyout", async () => {
     const user = userEvent.setup();
     const onReset = vi.fn();
     render(<ActivityBar {...defaultProps} layoutPreset="force" onLayoutPresetChange={vi.fn()} onResetLayout={onReset} />);
-    await user.click(screen.getByTitle("Layout"));
+    await openAdvanced(user);
     await user.click(screen.getByText("Reset Classifiers"));
     expect(onReset).toHaveBeenCalled();
   });
 
-  it("highlights active layout preset", async () => {
+  it("highlights active layout preset in Advanced flyout", async () => {
     const user = userEvent.setup();
     render(<ActivityBar {...defaultProps} layoutPreset="radial" onLayoutPresetChange={vi.fn()} />);
-    await user.click(screen.getByTitle("Layout"));
+    await openAdvanced(user);
     const radialBtn = screen.getByText("Radial").closest("button")!;
     expect(radialBtn.className).toContain("active");
   });
@@ -207,25 +226,29 @@ describe("ActivityBar", () => {
     expect(onToggle).toHaveBeenCalled();
   });
 
-  // REQ-088 — expand level stepper
+  // REQ-088 — expand level stepper (inside Advanced flyout)
   describe("expand level stepper", () => {
-    it("hides the stepper when the graph has no hierarchy (maxExpandLevel = 0)", () => {
+    it("hides the stepper and Advanced button when the graph has no hierarchy (maxExpandLevel = 0)", () => {
       render(<ActivityBar {...defaultProps} expandLevel={0} maxExpandLevel={0} onExpandLevelChange={vi.fn()} />);
-      expect(screen.queryByLabelText("Expand one level")).not.toBeInTheDocument();
-      expect(screen.queryByLabelText("Collapse one level")).not.toBeInTheDocument();
+      // maxExpandLevel=0 → hasAdvancedTools=false → Advanced button absent
+      expect(screen.queryByTitle("Advanced Tools")).not.toBeInTheDocument();
     });
 
-    it("renders +, depth label, and − when hierarchy is present", () => {
+    it("renders +, depth label, and − inside Advanced flyout when hierarchy is present", async () => {
+      const user = userEvent.setup();
       render(<ActivityBar {...defaultProps} expandLevel={1} maxExpandLevel={4} onExpandLevelChange={vi.fn()} />);
+      await openAdvanced(user);
       expect(screen.getByLabelText("Expand one level")).toBeInTheDocument();
       expect(screen.getByLabelText("Collapse one level")).toBeInTheDocument();
       expect(screen.getByText("1/4")).toBeInTheDocument();
     });
 
-    it("disables the − button at level 0 and the + button at maxExpandLevel", () => {
+    it("disables the − button at level 0 and the + button at maxExpandLevel", async () => {
+      const user = userEvent.setup();
       const { rerender } = render(
         <ActivityBar {...defaultProps} expandLevel={0} maxExpandLevel={3} onExpandLevelChange={vi.fn()} />
       );
+      await openAdvanced(user);
       expect(screen.getByLabelText("Collapse one level")).toBeDisabled();
       expect(screen.getByLabelText("Expand one level")).not.toBeDisabled();
       rerender(<ActivityBar {...defaultProps} expandLevel={3} maxExpandLevel={3} onExpandLevelChange={vi.fn()} />);
@@ -237,6 +260,7 @@ describe("ActivityBar", () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
       render(<ActivityBar {...defaultProps} expandLevel={1} maxExpandLevel={4} onExpandLevelChange={onChange} />);
+      await openAdvanced(user);
       await user.click(screen.getByLabelText("Expand one level"));
       expect(onChange).toHaveBeenCalledWith(2);
     });
@@ -245,6 +269,7 @@ describe("ActivityBar", () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
       render(<ActivityBar {...defaultProps} expandLevel={2} maxExpandLevel={4} onExpandLevelChange={onChange} />);
+      await openAdvanced(user);
       await user.click(screen.getByLabelText("Collapse one level"));
       expect(onChange).toHaveBeenCalledWith(1);
     });
@@ -256,6 +281,7 @@ describe("ActivityBar", () => {
       const { rerender } = render(
         <ActivityBar {...defaultProps} expandLevel={1} maxExpandLevel={4} onExpandLevelChange={onChange} />
       );
+      await openAdvanced(user);
       await user.dblClick(screen.getByText("1/4"));
       expect(onChange).toHaveBeenLastCalledWith(4);
       // From fully expanded → 0

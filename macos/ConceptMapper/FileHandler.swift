@@ -54,6 +54,23 @@ enum FileHandler {
         return folder
     }
 
+    /// Resolve a `notes_file` path stored on a different platform (e.g. a
+    /// macOS absolute path opened on iOS). Finds the "ConceptMapper/" anchor
+    /// in the stored path, strips the platform-specific prefix, and rebasees
+    /// the remainder onto the local `getBaseFolder()` root — the same iCloud
+    /// container path on every device that has iCloud signed in.
+    static func resolveNotesFilePath(_ path: String) -> String {
+        guard !FileManager.default.fileExists(atPath: path) else { return path }
+        let base = getBaseFolder().path
+        let marker = "ConceptMapper/"
+        if let range = path.range(of: marker, options: .backwards) {
+            let suffix = String(path[range.upperBound...])
+            let candidate = base + "/" + suffix
+            if FileManager.default.fileExists(atPath: candidate) { return candidate }
+        }
+        return path
+    }
+
     /// Sandbox path whitelist for read operations.
     private static func isPathAllowed(_ path: String) -> Bool {
         let resolved = URL(fileURLWithPath: path).standardizedFileURL.path

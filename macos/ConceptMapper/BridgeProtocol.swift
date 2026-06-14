@@ -41,6 +41,14 @@ enum BridgeMethod: String, Codable {
     case readNotesFile
     case writeNotesFile
 
+    // Second Brain methods (JS → Swift requests)
+    case addSecondBrainFolder
+    case removeSecondBrainFolder
+    case scanSecondBrain
+    case saveWorkflowyKey
+    case fetchWorkflowyOutline
+    case setNodeWorkflowyUrl
+
     // Swift → JS event methods (only used in outgoing envelopes)
     case fileLoaded
     case mapLoaded
@@ -51,6 +59,12 @@ enum BridgeMethod: String, Codable {
     case showTaxonomyWizard
     case notesFileAttached
     case notesFileRead
+
+    // Second Brain events (Swift → JS)
+    case secondBrainReady
+    case secondBrainFoldersChanged
+    case secondBrainScanned
+    case workflowyOutlineLoaded
 }
 
 /// Structured error returned across the bridge instead of a thrown Swift error
@@ -261,4 +275,38 @@ struct NotesFileReadPayload: Codable {
     let path: String
     let content: String
     let exists: Bool
+}
+
+// MARK: - Second Brain request payloads (JS → Swift)
+
+struct RemoveSecondBrainFolderPayload: Codable { let path: String }
+struct SaveWorkflowyKeyPayload: Codable { let key: String }
+struct FetchWorkflowyOutlinePayload: Codable { let nodeUrl: String }
+struct SetNodeWorkflowyUrlPayload: Codable { let nodeId: String; let url: String }
+
+// MARK: - Second Brain event payloads (Swift → JS)
+
+struct SecondBrainFolderItem: Codable {
+    let path: String
+    let name: String
+}
+
+struct SecondBrainReadyPayload: Codable {
+    let folders: [SecondBrainFolderItem]
+    let hasWorkflowyKey: Bool
+}
+
+struct SecondBrainFoldersChangedPayload: Codable {
+    let folders: [SecondBrainFolderItem]
+}
+
+struct SecondBrainScannedPayload: Codable {
+    let graphJson: String
+    let templateJson: String
+    let fileCount: Int
+}
+
+struct WorkflowyOutlineLoadedPayload: Codable {
+    let nodeUrl: String
+    let nodes: [WorkflowyOutlineNode]
 }

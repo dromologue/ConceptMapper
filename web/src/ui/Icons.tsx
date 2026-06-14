@@ -159,6 +159,20 @@ export function IconProperties({ size = defaults.size, className }: IconProps) {
   );
 }
 
+export function IconBrain({ size = defaults.size, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <circle cx="5" cy="6" r="1.5" stroke="currentColor" strokeWidth="1.1" />
+      <circle cx="11" cy="6" r="1.5" stroke="currentColor" strokeWidth="1.1" />
+      <circle cx="8" cy="11" r="1.5" stroke="currentColor" strokeWidth="1.1" />
+      <path d="M5 7.5c0 1.5 1.3 2.5 3 2.5s3-1 3-2.5" stroke="currentColor" strokeWidth="1.1" fill="none" />
+      <line x1="5" y1="4.5" x2="5" y2="2" stroke="currentColor" strokeWidth="1" />
+      <line x1="11" y1="4.5" x2="11" y2="2" stroke="currentColor" strokeWidth="1" />
+      <line x1="6.5" y1="6" x2="9.5" y2="6" stroke="currentColor" strokeWidth="1" />
+    </svg>
+  );
+}
+
 export function IconLayout({ size = defaults.size, className }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
@@ -168,6 +182,19 @@ export function IconLayout({ size = defaults.size, className }: IconProps) {
       <circle cx="11" cy="11" r="1.2" fill="currentColor" />
       <line x1="8" y1="7.5" x2="5" y2="9.8" stroke="currentColor" strokeWidth="1" />
       <line x1="8" y1="7.5" x2="11" y2="9.8" stroke="currentColor" strokeWidth="1" />
+    </svg>
+  );
+}
+
+export function IconAdvanced({ size = defaults.size, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <line x1="2" y1="4" x2="14" y2="4" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="5" cy="4" r="2" fill="currentColor" />
+      <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="10" cy="8" r="2" fill="currentColor" />
+      <line x1="2" y1="12" x2="14" y2="12" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="6" cy="12" r="2" fill="currentColor" />
     </svg>
   );
 }

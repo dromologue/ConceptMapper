@@ -78,57 +78,6 @@ function drawOrganicCircle(ctx: CanvasRenderingContext2D, cx: number, cy: number
 
 // --- Mind map rendering helpers ---
 
-/** Catmull-Rom smoothing factor for blob control handles (0–1, higher = rounder) */
-const MINDMAP_BLOB_SMOOTH = 0.55;
-
-/**
- * Draw a smooth closed blob shape through guide points using cubic Bézier splines.
- * Uses Catmull-Rom-to-Bézier conversion for C2-continuous curves.
- * Wobble is applied radially from centroid for a hand-drawn feel.
- */
-function drawMindmapBlob(
-  ctx: CanvasRenderingContext2D,
-  guidePoints: Array<[number, number]>,
-  seed: number,
-  wobbleAmount: number,
-) {
-  const n = guidePoints.length;
-  // Compute centroid
-  let centX = 0, centY = 0;
-  for (const p of guidePoints) { centX += p[0]; centY += p[1]; }
-  centX /= n; centY /= n;
-
-  // Apply radial wobble to each guide point
-  const pts: Array<[number, number]> = guidePoints.map((p, i) => {
-    const dx = p[0] - centX;
-    const dy = p[1] - centY;
-    const wobble = 1 + seededRandom(seed, i) * wobbleAmount;
-    return [centX + dx * wobble, centY + dy * wobble];
-  });
-
-  // Build smooth closed cubic Bézier spline via Catmull-Rom tangents
-  ctx.beginPath();
-  for (let i = 0; i < n; i++) {
-    const prev = pts[(i - 1 + n) % n];
-    const curr = pts[i];
-    const next = pts[(i + 1) % n];
-    const next2 = pts[(i + 2) % n];
-
-    // Catmull-Rom tangent at curr → cp1, tangent at next → cp2
-    const t1x = (next[0] - prev[0]) * MINDMAP_BLOB_SMOOTH / 3;
-    const t1y = (next[1] - prev[1]) * MINDMAP_BLOB_SMOOTH / 3;
-    const t2x = (next2[0] - curr[0]) * MINDMAP_BLOB_SMOOTH / 3;
-    const t2y = (next2[1] - curr[1]) * MINDMAP_BLOB_SMOOTH / 3;
-
-    if (i === 0) ctx.moveTo(curr[0], curr[1]);
-    ctx.bezierCurveTo(
-      curr[0] + t1x, curr[1] + t1y,
-      next[0] - t2x, next[1] - t2y,
-      next[0], next[1],
-    );
-  }
-  ctx.closePath();
-}
 
 // --- Configuration constants (rendering-only; layout / zoom / simulation
 // constants live in their own modules) ---
@@ -208,10 +157,6 @@ const MINDMAP_EDGE_TGT_WIDTH = 0.15;
 const MINDMAP_EDGE_CURVE_FACTOR = 0.18;
 const MINDMAP_EDGE_CURVE_MAX = 50;
 const MINDMAP_EDGE_S_CURVE_MIX = 0.3;
-
-// Visual: mindmap blob wobble
-const MINDMAP_BLOB_SEGMENTS = 8;
-const MINDMAP_BLOB_WOBBLE = 0.12;
 
 // Visual: marquee rectangle
 const MARQUEE_LINE_WIDTH = 1.5;
@@ -1350,102 +1295,39 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
       const shape = getNodeShape(node, configs);
 
       // Draw shape path
-      const isMindmap = lookRef.current === "mindmap";
-      const nodeSeed = hashCode(node.id);
-
-      if (isMindmap) {
-        // Mindmap: smooth blob shapes via cubic Bézier splines
-        if (shape === "rectangle" || shape === "pill") {
-          const w = effectiveR * (shape === "pill" ? PILL_WIDTH_SCALE : RECT_WIDTH_SCALE);
-          const h = effectiveR * (shape === "pill" ? PILL_HEIGHT_SCALE : RECT_HEIGHT_SCALE);
-          const hw = w / 2, hh = h / 2;
-          const ins = 0.15; // corners pulled inward for pillow effect
-          drawMindmapBlob(ctx, [
-            [node.x, node.y - hh],
-            [node.x + hw * (1 - ins), node.y - hh * (1 - ins)],
-            [node.x + hw, node.y],
-            [node.x + hw * (1 - ins), node.y + hh * (1 - ins)],
-            [node.x, node.y + hh],
-            [node.x - hw * (1 - ins), node.y + hh * (1 - ins)],
-            [node.x - hw, node.y],
-            [node.x - hw * (1 - ins), node.y - hh * (1 - ins)],
-          ], nodeSeed, MINDMAP_BLOB_WOBBLE);
-        } else if (shape === "diamond") {
-          const s = effectiveR * DIAMOND_SCALE;
-          drawMindmapBlob(ctx, [
-            [node.x, node.y - s],
-            [node.x + s * 0.5, node.y - s * 0.5],
-            [node.x + s, node.y],
-            [node.x + s * 0.5, node.y + s * 0.5],
-            [node.x, node.y + s],
-            [node.x - s * 0.5, node.y + s * 0.5],
-            [node.x - s, node.y],
-            [node.x - s * 0.5, node.y - s * 0.5],
-          ], nodeSeed, MINDMAP_BLOB_WOBBLE);
-        } else if (shape === "hexagon") {
-          const s = effectiveR * HEXAGON_SCALE;
-          const pts: Array<[number, number]> = [];
-          for (let i = 0; i < 12; i++) {
-            const angle = (Math.PI / 6) * i - Math.PI / 6;
-            const rr = (i % 2 === 0) ? s : s * 0.97;
-            pts.push([node.x + rr * Math.cos(angle), node.y + rr * Math.sin(angle)]);
-          }
-          drawMindmapBlob(ctx, pts, nodeSeed, MINDMAP_BLOB_WOBBLE);
-        } else if (shape === "triangle") {
-          const s = effectiveR * TRIANGLE_SCALE;
-          drawMindmapBlob(ctx, [
-            [node.x, node.y - s],
-            [node.x + s * 0.435, node.y - s * 0.25],
-            [node.x + s * 0.87, node.y + s * 0.5],
-            [node.x, node.y + s * 0.5],
-            [node.x - s * 0.87, node.y + s * 0.5],
-            [node.x - s * 0.435, node.y - s * 0.25],
-          ], nodeSeed, MINDMAP_BLOB_WOBBLE);
-        } else {
-          // Circle: equidistant points → amoeba blob
-          const pts: Array<[number, number]> = [];
-          for (let i = 0; i < MINDMAP_BLOB_SEGMENTS; i++) {
-            const angle = (Math.PI * 2 / MINDMAP_BLOB_SEGMENTS) * i;
-            pts.push([node.x + effectiveR * Math.cos(angle), node.y + effectiveR * Math.sin(angle)]);
-          }
-          drawMindmapBlob(ctx, pts, nodeSeed, MINDMAP_BLOB_WOBBLE);
+      ctx.beginPath();
+      if (shape === "rectangle") {
+        const w = effectiveR * RECT_WIDTH_SCALE;
+        const h = effectiveR * RECT_HEIGHT_SCALE;
+        ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, RECT_CORNER_RADIUS);
+      } else if (shape === "diamond") {
+        const s = effectiveR * DIAMOND_SCALE;
+        ctx.moveTo(node.x, node.y - s);
+        ctx.lineTo(node.x + s, node.y);
+        ctx.lineTo(node.x, node.y + s);
+        ctx.lineTo(node.x - s, node.y);
+        ctx.closePath();
+      } else if (shape === "hexagon") {
+        const s = effectiveR * HEXAGON_SCALE;
+        for (let i = 0; i < 6; i++) {
+          const angle = (Math.PI / 3) * i - Math.PI / 6;
+          const px = node.x + s * Math.cos(angle);
+          const py = node.y + s * Math.sin(angle);
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
         }
+        ctx.closePath();
+      } else if (shape === "triangle") {
+        const s = effectiveR * TRIANGLE_SCALE;
+        ctx.moveTo(node.x, node.y - s);
+        ctx.lineTo(node.x + s * 0.87, node.y + s * 0.5);
+        ctx.lineTo(node.x - s * 0.87, node.y + s * 0.5);
+        ctx.closePath();
+      } else if (shape === "pill") {
+        const w = effectiveR * PILL_WIDTH_SCALE;
+        const h = effectiveR * PILL_HEIGHT_SCALE;
+        ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, h / 2);
       } else {
-        // Formal: precise geometry
-        ctx.beginPath();
-        if (shape === "rectangle") {
-          const w = effectiveR * RECT_WIDTH_SCALE;
-          const h = effectiveR * RECT_HEIGHT_SCALE;
-          ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, RECT_CORNER_RADIUS);
-        } else if (shape === "diamond") {
-          const s = effectiveR * DIAMOND_SCALE;
-          ctx.moveTo(node.x, node.y - s);
-          ctx.lineTo(node.x + s, node.y);
-          ctx.lineTo(node.x, node.y + s);
-          ctx.lineTo(node.x - s, node.y);
-          ctx.closePath();
-        } else if (shape === "hexagon") {
-          const s = effectiveR * HEXAGON_SCALE;
-          for (let i = 0; i < 6; i++) {
-            const angle = (Math.PI / 3) * i - Math.PI / 6;
-            const px = node.x + s * Math.cos(angle);
-            const py = node.y + s * Math.sin(angle);
-            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-          }
-          ctx.closePath();
-        } else if (shape === "triangle") {
-          const s = effectiveR * TRIANGLE_SCALE;
-          ctx.moveTo(node.x, node.y - s);
-          ctx.lineTo(node.x + s * 0.87, node.y + s * 0.5);
-          ctx.lineTo(node.x - s * 0.87, node.y + s * 0.5);
-          ctx.closePath();
-        } else if (shape === "pill") {
-          const w = effectiveR * PILL_WIDTH_SCALE;
-          const h = effectiveR * PILL_HEIGHT_SCALE;
-          ctx.roundRect(node.x - w / 2, node.y - h / 2, w, h, h / 2);
-        } else {
-          ctx.arc(node.x, node.y, effectiveR, 0, Math.PI * 2);
-        }
+        ctx.arc(node.x, node.y, effectiveR, 0, Math.PI * 2);
       }
       ctx.fillStyle = color;
       ctx.fill();
@@ -1467,6 +1349,19 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
           ctx.lineWidth = SELECTION_STROKE_WIDTH;
           ctx.stroke();
         }
+      }
+
+      // Per-node ideographic icon (stored in node.properties.node_icon)
+      const nodeIcon = node.properties?.node_icon;
+      if (nodeIcon && typeof nodeIcon === "string") {
+        const iconSize = Math.max(10, effectiveR * 0.85);
+        ctx.font = `${iconSize}px -apple-system, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.globalAlpha = 0.9;
+        ctx.fillText(nodeIcon, node.x, node.y);
+        ctx.textBaseline = "alphabetic";
+        ctx.globalAlpha = 1;
       }
 
       // Notes indicator

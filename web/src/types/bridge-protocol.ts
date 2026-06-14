@@ -27,6 +27,17 @@ export interface BridgeErrorPayload {
 }
 
 // ---------------------------------------------------------------------------
+// Shared domain types
+// ---------------------------------------------------------------------------
+
+export interface WorkflowyOutlineNode {
+  id: string;
+  name: string;
+  description?: string;
+  children: WorkflowyOutlineNode[];
+}
+
+// ---------------------------------------------------------------------------
 // Request methods: JS → Swift, with payload type
 // ---------------------------------------------------------------------------
 
@@ -53,6 +64,13 @@ export interface BridgeRequestMap {
   attachNotesFile: { nodeId: string };
   readNotesFile: { nodeId: string; path: string };
   writeNotesFile: { path: string; content: string };
+  // Second Brain
+  addSecondBrainFolder: void;
+  removeSecondBrainFolder: { path: string };
+  scanSecondBrain: void;
+  saveWorkflowyKey: { key: string };
+  fetchWorkflowyOutline: { nodeUrl: string };
+  setNodeWorkflowyUrl: { nodeId: string; url: string };
 }
 
 export type BridgeRequestMethod = keyof BridgeRequestMap;
@@ -76,6 +94,11 @@ export interface BridgeEventMap {
   showTaxonomyWizard: Record<string, never>;
   notesFileAttached: { nodeId: string; path: string; content: string };
   notesFileRead: { nodeId: string; path: string; content: string; exists: boolean };
+  // Second Brain events
+  secondBrainReady: { folders: Array<{ path: string; name: string }>; hasWorkflowyKey: boolean };
+  secondBrainFoldersChanged: { folders: Array<{ path: string; name: string }> };
+  secondBrainScanned: { graphJson: string; templateJson: string; fileCount: number };
+  workflowyOutlineLoaded: { nodeUrl: string; nodes: WorkflowyOutlineNode[] };
 }
 
 export type BridgeEventMethod = keyof BridgeEventMap;

@@ -36,10 +36,12 @@ import { normalizeFencedKV } from "./utils/normalize";
 import { serializeViewComment } from "./utils/viewOptions";
 import { escapeKVValue } from "./utils/kv-escape";
 import { useFileLoader } from "./hooks/useFileLoader";
-import { isNativeApp as detectNativeApp, isIOSDevice, postToSwift } from "./utils/swiftBridge";
+import { isNativeApp as detectNativeApp, isIOSDevice, postToSwift, subscribe } from "./utils/swiftBridge";
 import { useSwiftBridge } from "./hooks/useSwiftBridge";
 import { useGraphStore } from "./stores/useGraphStore";
 import { useUIStore } from "./stores/useUIStore";
+import { useSecondBrainStore } from "./stores/useSecondBrainStore";
+import { SecondBrainPanel } from "./ui/SecondBrainPanel";
 import "./App.css";
 
 export type ViewMode = string; // "full" or a node type id
@@ -101,6 +103,8 @@ function AppInner() {
   const setNotesHeight = useUIStore((s) => s.setNotesHeight);
   const hiddenLabelTypes = useUIStore((s) => s.hiddenLabelTypes);
   const setHiddenLabelTypes = useUIStore((s) => s.setHiddenLabelTypes);
+  const secondBrainOpen = useUIStore((s) => s.secondBrainOpen);
+  const toggleSecondBrain = useUIStore((s) => s.toggleSecondBrain);
 
   // Search query wrapper — also resets highlight as before.
   const setSearchQuery = useCallback((q: string) => {
@@ -298,6 +302,35 @@ function AppInner() {
     createEmptyFilterState,
   });
 
+  // ── Second Brain bridge subscriptions ───────────────────────────────────
+  useEffect(() => {
+    const unsubs = [
+      subscribe("secondBrainReady", (p) => {
+        useSecondBrainStore.getState().setFolders(p.folders);
+        useSecondBrainStore.getState().setHasWorkflowyKey(p.hasWorkflowyKey);
+      }),
+      subscribe("secondBrainFoldersChanged", (p) => {
+        useSecondBrainStore.getState().setFolders(p.folders);
+      }),
+      subscribe("secondBrainScanned", (p) => {
+        try {
+          const graph = JSON.parse(p.graphJson) as GraphIR;
+          const tmpl = JSON.parse(p.templateJson) as TaxonomyTemplate;
+          setTemplate(tmpl);
+          loadGraphFresh(graph);
+          useSecondBrainStore.getState().setLastScanned(new Date(), p.fileCount);
+        } catch {
+          // malformed payload — ignore
+        }
+      }),
+      subscribe("workflowyOutlineLoaded", (p) => {
+        useSecondBrainStore.getState().setOutline(p.nodeUrl, p.nodes);
+      }),
+    ];
+    return () => unsubs.forEach((u) => u());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleViewModeChange = useCallback((mode: string) => {
     setViewModeStore(mode); // store clears revealedNodes too
   }, [setViewModeStore]);
@@ -349,7 +382,14 @@ function AppInner() {
 
       setSelectedNode(node);
 
-      if (node && viewMode !== "full" && graphData) {
+      if (!node) {
+        setRevealedNodes(new Set());
+        setCommunityOverlay(false);
+        setHighlightedCommunity(null);
+        return;
+      }
+
+      if (viewMode !== "full" && graphData) {
         const connected = new Set<string>();
         graphData.edges.forEach((e) => {
           if (e.from === node.id) connected.add(e.to);
@@ -362,7 +402,7 @@ function AppInner() {
         });
       }
     },
-    [interactionMode, viewMode, graphData, setEdgeSource, setEdgeTarget, setInteractionMode, openModal, setSelectedNode, setRevealedNodes]
+    [interactionMode, viewMode, graphData, setEdgeSource, setEdgeTarget, setInteractionMode, openModal, setSelectedNode, setRevealedNodes, setCommunityOverlay, setHighlightedCommunity]
   );
 
   const handleNodeUpdate = useCallback(
@@ -1192,7 +1232,14 @@ function AppInner() {
           onOpenHelp={() => openModal('help')}
           onFitToView={() => fitToViewRef.current?.()}
           onExportImage={() => openModal('exportImage')}
-          onToggleAnalysis={toggleAnalysis}
+          onToggleAnalysis={() => {
+            if (analysisOpen) {
+              setCommunityOverlay(false);
+              setHighlightedCommunity(null);
+              setRevealedNodes(new Set());
+            }
+            toggleAnalysis();
+          }}
           analysisOpen={analysisOpen}
           nodeTypeConfigs={nodeTypeConfigs}
           onExplode={() => setExploded((v) => !v)}
@@ -1204,6 +1251,8 @@ function AppInner() {
           propertiesOpen={propertiesOpen}
           onToggleNotes={() => setNotesOpen(!notesOpen)}
           notesOpen={notesOpen}
+          onToggleSecondBrain={toggleSecondBrain}
+          secondBrainOpen={secondBrainOpen}
           expandLevel={expandLevel}
           maxExpandLevel={hierarchy?.maxDepth ?? 0}
           onExpandLevelChange={handleExpandLevelChange}
@@ -1242,7 +1291,6 @@ function AppInner() {
             }}
           />
         )}
-
         {showMap && (
         <div className="editor-area">
           {loadWarnings.length > 0 && (
@@ -1485,11 +1533,9 @@ function AppInner() {
             onDeselectNode={() => { setSelectedNode(null); }}
             onHighlightCommunity={(idx) => { setHighlightedCommunity(idx); if (idx != null) setSelectedNode(null); }}
             onFocusCommunity={(memberIds) => {
-              // Reveal only community members and their inter-connections, then fit to view
               setRevealedNodes(new Set(memberIds));
               setCommunityOverlay(true);
               setHighlightedCommunity(analysis?.communities.get(memberIds[0]) ?? null);
-              // Brief delay to let render update, then fit to view
               setTimeout(() => fitToViewRef.current?.(), 100);
             }}
             highlightedCommunity={highlightedCommunity}
@@ -1502,6 +1548,21 @@ function AppInner() {
             onSetPathFrom={setPathFrom}
             onSetPathTo={setPathTo}
           />
+        )}
+
+        {secondBrainOpen && (
+          <>
+            {!isPhone && (
+              <div className="pane-resizer" onMouseDown={makeResizeHandler(setAuxPanelWidth, auxPanelWidth)} />
+            )}
+            <div className="auxiliary-panel" style={isPhone ? undefined : { width: auxPanelWidth }}>
+              <div className="aux-panel-header">
+                <span className="aux-panel-title">Second Brain</span>
+                {!isPhone && <button className="close-btn" onClick={toggleSecondBrain}>&times;</button>}
+              </div>
+              <SecondBrainPanel />
+            </div>
+          </>
         )}
 
         {/* Phone-only: Notes as its own full-screen tab. Desktop docks Notes

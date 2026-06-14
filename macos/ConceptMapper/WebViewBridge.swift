@@ -198,20 +198,63 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
 
         case .readNotesFile:
             let p = try env.decodePayload(as: ReadNotesFilePayload.self)
-            let url = URL(fileURLWithPath: p.path)
-            let content = try? String(contentsOf: url, encoding: .utf8)
+            let resolved = FileHandler.resolveNotesFilePath(p.path)
+            let content = try? String(contentsOf: URL(fileURLWithPath: resolved), encoding: .utf8)
             sendEvent(method: .notesFileRead, payload: NotesFileReadPayload(
-                nodeId: p.nodeId, path: p.path, content: content ?? "", exists: content != nil
+                nodeId: p.nodeId, path: resolved, content: content ?? "", exists: content != nil
             ))
 
         case .writeNotesFile:
             let p = try env.decodePayload(as: WriteNotesFilePayload.self)
-            try await FileHandler.writeText(content: p.content, toPath: p.path)
+            let resolved = FileHandler.resolveNotesFilePath(p.path)
+            try await FileHandler.writeText(content: p.content, toPath: resolved)
+
+        // MARK: Second Brain requests
+        case .addSecondBrainFolder:
+            guard let updated = await SecondBrainManager.shared.addFolder() else { return }
+            sendEvent(method: .secondBrainFoldersChanged, payload: SecondBrainFoldersChangedPayload(
+                folders: updated.map { SecondBrainFolderItem(path: $0.path, name: $0.name) }
+            ))
+
+        case .removeSecondBrainFolder:
+            let p = try env.decodePayload(as: RemoveSecondBrainFolderPayload.self)
+            let updated = SecondBrainManager.shared.removeFolder(path: p.path)
+            sendEvent(method: .secondBrainFoldersChanged, payload: SecondBrainFoldersChangedPayload(
+                folders: updated.map { SecondBrainFolderItem(path: $0.path, name: $0.name) }
+            ))
+
+        case .scanSecondBrain:
+            let result = SecondBrainManager.shared.scanFolders()
+            sendEvent(method: .secondBrainScanned, payload: SecondBrainScannedPayload(
+                graphJson: result.graphJson,
+                templateJson: result.templateJson,
+                fileCount: result.fileCount
+            ))
+
+        case .saveWorkflowyKey:
+            let p = try env.decodePayload(as: SaveWorkflowyKeyPayload.self)
+            SecondBrainManager.shared.saveWorkflowyKey(p.key)
+
+        case .fetchWorkflowyOutline:
+            let p = try env.decodePayload(as: FetchWorkflowyOutlinePayload.self)
+            guard let key = SecondBrainManager.shared.loadWorkflowyKey(), !key.isEmpty else {
+                throw BridgeError.io("No Workflowy API key set. Add it in the Second Brain panel.")
+            }
+            let client = WorkflowyClient()
+            let nodes = try await client.fetchSubtree(nodeUrl: p.nodeUrl, apiKey: key)
+            sendEvent(method: .workflowyOutlineLoaded, payload: WorkflowyOutlineLoadedPayload(
+                nodeUrl: p.nodeUrl, nodes: nodes
+            ))
+
+        case .setNodeWorkflowyUrl:
+            let p = try env.decodePayload(as: SetNodeWorkflowyUrlPayload.self)
+            SecondBrainManager.shared.setNodeWorkflowyUrl(nodeId: p.nodeId, url: p.url)
 
         // Event-only methods should never appear as requests
         case .fileLoaded, .mapLoaded, .templatesAvailable, .templateAvailable,
              .mapsAvailable, .taxonomySaved, .showTaxonomyWizard,
-             .notesFileAttached, .notesFileRead:
+             .notesFileAttached, .notesFileRead,
+             .secondBrainReady, .secondBrainFoldersChanged, .secondBrainScanned, .workflowyOutlineLoaded:
             throw BridgeError.unknownMethod(env.method.rawValue)
         }
     }
@@ -243,6 +286,15 @@ class WebViewBridge: NSObject, ObservableObject, WKScriptMessageHandler {
     /// Bare event used by ContentView for command-driven flows (menu items).
     func emitShowTaxonomyWizard() {
         sendEnvelope(kind: .event, id: nil, method: .showTaxonomyWizard, payload: EmptyPayload())
+    }
+
+    /// Emitted once on app init to hydrate the Second Brain store with persisted state.
+    func emitSecondBrainReady() {
+        let sbm = SecondBrainManager.shared
+        sendEvent(method: .secondBrainReady, payload: SecondBrainReadyPayload(
+            folders: sbm.watchedFolders.map { SecondBrainFolderItem(path: $0.path, name: $0.name) },
+            hasWorkflowyKey: sbm.hasWorkflowyKey()
+        ))
     }
 
     private func sendEnvelope<P: Encodable>(kind: BridgeKind, id: String?, method: BridgeMethod, payload: P) {

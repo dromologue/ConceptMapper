@@ -52,6 +52,22 @@ enum FileHandler {
         return folder
     }
 
+    /// Resolve a `notes_file` path stored on a different platform.
+    /// Extracts the suffix after "ConceptMapper/" and rebasees it onto the
+    /// current device's `getBaseFolder()`, which resolves to the same iCloud
+    /// container on every device that has iCloud signed in.
+    static func resolveNotesFilePath(_ path: String) -> String {
+        guard !FileManager.default.fileExists(atPath: path) else { return path }
+        let base = getBaseFolder().path
+        let marker = "ConceptMapper/"
+        if let range = path.range(of: marker, options: .backwards) {
+            let suffix = String(path[range.upperBound...])
+            let candidate = base + "/" + suffix
+            if FileManager.default.fileExists(atPath: candidate) { return candidate }
+        }
+        return path
+    }
+
     private static func isPathAllowed(_ path: String) -> Bool {
         let resolved = URL(fileURLWithPath: path).standardizedFileURL.path
         var allowedDirs = [

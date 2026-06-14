@@ -176,6 +176,92 @@ body {
   margin: 4px 0;
 }
 
+/* ===== Advanced flyout popover ===== */
+.advanced-popover {
+  position: fixed;
+  margin-left: 4px;
+  background: var(--bg-secondary, #1e1e3a);
+  border: 1px solid var(--bg-hover, #2a2a4a);
+  border-radius: 6px;
+  padding: 4px;
+  min-width: 200px;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+.advanced-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #ccc);
+  cursor: pointer;
+  border-radius: 4px;
+  text-align: left;
+  font-size: 12px;
+}
+.advanced-item:hover {
+  background: var(--bg-hover, #2a2a4a);
+}
+.advanced-item.active {
+  color: var(--accent, #4A90D9);
+}
+.advanced-item-sub {
+  padding-left: 24px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+.advanced-separator {
+  height: 1px;
+  background: var(--bg-hover, #2a2a4a);
+  margin: 4px 2px;
+}
+.advanced-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #888);
+  padding: 4px 10px 2px;
+}
+.advanced-layout-group {
+  display: flex;
+  gap: 4px;
+  padding: 2px 8px 4px;
+}
+.advanced-layout-btn {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid var(--bg-hover, #2a2a4a);
+  background: transparent;
+  color: var(--text-secondary, #ccc);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.advanced-layout-btn:hover {
+  background: var(--bg-hover, #2a2a4a);
+}
+.advanced-layout-btn.active {
+  background: var(--accent, #4A90D9);
+  border-color: var(--accent, #4A90D9);
+  color: #fff;
+}
+.advanced-expand-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 4px 10px;
+}
+.advanced-expand-label {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-secondary, #ccc);
+}
+
 /* ===== Sidebar ===== */
 .sidebar {
   width: 250px;
@@ -3675,3 +3761,288 @@ select.settings-input {
     gap: 16px;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Second Brain Panel                                                    */
+/* ------------------------------------------------------------------ */
+.second-brain-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.second-brain-section {
+  padding: 8px 12px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.second-brain-section:last-child {
+  border-bottom: none;
+}
+
+.second-brain-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.second-brain-empty {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 4px 0;
+}
+
+.second-brain-folder-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.second-brain-folder-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.second-brain-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+  border-radius: 3px;
+}
+.second-brain-remove-btn:hover {
+  color: var(--danger, #e55);
+  background: var(--hover-bg);
+}
+
+.second-brain-add-btn {
+  margin-top: 6px;
+  font-size: 12px;
+  padding: 4px 10px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.second-brain-add-btn:hover { opacity: 0.85; }
+
+.second-brain-key-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.second-brain-key-input {
+  flex: 1;
+  font-size: 12px;
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input-bg, var(--bg-panel));
+  color: var(--text);
+}
+.second-brain-key-input:focus { outline: none; border-color: var(--accent); }
+
+.second-brain-key-status {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.second-brain-scan-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.second-brain-scan-btn {
+  font-size: 12px;
+  padding: 5px 12px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.second-brain-scan-btn:disabled { opacity: 0.5; cursor: default; }
+.second-brain-scan-btn:hover:not(:disabled) { opacity: 0.85; }
+
+.second-brain-scan-status {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* ------------------------------------------------------------------ */
+/* Workflowy Outline Pane                                               */
+/* ------------------------------------------------------------------ */
+.workflowy-outline-pane {
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  padding-top: 8px;
+  font-size: 12px;
+  color: var(--text);
+  overflow-y: auto;
+  max-height: 260px;
+}
+
+.workflowy-outline-empty {
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 4px 0;
+}
+
+.workflowy-outline-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.workflowy-readonly-notice {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.outline-node {
+  display: flex;
+  flex-direction: column;
+}
+
+.outline-node-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+
+.outline-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 8px;
+  color: var(--text-dim);
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+.outline-toggle:hover { color: var(--text); }
+
+.outline-toggle-spacer { width: 14px; flex-shrink: 0; }
+
+.outline-node-name {
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.outline-node-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 1px 0 3px;
+  line-height: 1.4;
+}
+
+/* ------------------------------------------------------------------ */
+/* Workflowy URL input in NotesPane header                              */
+/* ------------------------------------------------------------------ */
+.notes-workflowy-url-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.notes-workflowy-url-input {
+  font-size: 11px;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input-bg, var(--bg-panel));
+  color: var(--text);
+  width: 140px;
+  min-width: 0;
+}
+.notes-workflowy-url-input:focus { outline: none; border-color: var(--accent); }
+.notes-workflowy-url-input::placeholder { color: var(--text-dim); opacity: 0.7; }
+
+/* ------------------------------------------------------------------ */
+/* Node icon picker (DetailPanel)                                       */
+/* ------------------------------------------------------------------ */
+.editor-field-icon {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.node-icon-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.node-icon-preview {
+  font-size: 18px;
+  line-height: 1;
+  min-width: 24px;
+  text-align: center;
+}
+
+.node-icon-none {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.node-icon-toggle-btn,
+.node-icon-clear-btn {
+  font-size: 11px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-panel);
+  color: var(--text);
+  cursor: pointer;
+}
+.node-icon-toggle-btn:hover { background: var(--hover-bg); }
+.node-icon-clear-btn { color: var(--text-dim); }
+.node-icon-clear-btn:hover { color: var(--danger, #e55); background: var(--hover-bg); }
+
+.node-icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 6px 0 2px;
+  width: 100%;
+}
+
+.node-icon-option {
+  aspect-ratio: 1;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--bg-panel);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+.node-icon-option:hover { background: var(--hover-bg); border-color: var(--border); }
+.node-icon-option.active { border-color: var(--accent); background: var(--accent-subtle, rgba(79,140,255,0.12)); }
