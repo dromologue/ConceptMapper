@@ -412,6 +412,11 @@ export function GraphCanvas({ data, onSelectNode, selectedNodeId, viewMode, reve
     layoutPresetRef.current = layoutPreset ?? "force";
     const simulation = simRef.current;
     if (!simulation || !simInitializedRef.current) return;
+    // Clear any pins left by drag-and-drop so the new layout can reposition all nodes
+    for (const node of nodesRef.current) {
+      node.fx = null;
+      node.fy = null;
+    }
     const { width, height } = canvasSizeRef.current;
     const cls = classifiersRef.current;
     const isExploded = explodedRef.current;

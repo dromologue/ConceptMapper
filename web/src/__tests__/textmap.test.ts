@@ -5,8 +5,10 @@ import {
   connectionsOf,
   groupConnections,
   findRoots,
+  groupByNodeType,
   revisitKind,
 } from "../views/textmap";
+import type { NodeTypeConfig } from "../types/graph-ir";
 
 function node(id: string, name = id): GraphNode {
   return { id, node_type: "concept", name };
@@ -91,6 +93,66 @@ describe("findRoots", () => {
   it("returns all nodes for a purely undirected graph", () => {
     const g = graph([node("b", "B"), node("a", "A")], [edge("a", "b", "rel", false)]);
     expect(findRoots(g).map((n) => n.id)).toEqual(["a", "b"]); // sorted by name
+  });
+});
+
+describe("groupByNodeType", () => {
+  const cfg = (id: string, label: string, icon?: string): NodeTypeConfig => ({
+    id,
+    label,
+    icon,
+    shape: "circle",
+    fields: [],
+  });
+
+  function typedNode(id: string, node_type: string, name = id): GraphNode {
+    return { id, node_type, name };
+  }
+
+  it("groups nodes by type and sorts alphabetically within each group", () => {
+    const nodes = [
+      typedNode("b1", "book", "Zotero"),
+      typedNode("p1", "person", "Argyris"),
+      typedNode("b2", "book", "Aesthetics"),
+      typedNode("p2", "person", "Senge"),
+    ];
+    const groups = groupByNodeType(nodes);
+    // No config → sorted by typeId: "book" before "person"
+    expect(groups.map((g) => g.typeId)).toEqual(["book", "person"]);
+    expect(groups[0].nodes.map((n) => n.name)).toEqual(["Aesthetics", "Zotero"]);
+    expect(groups[1].nodes.map((n) => n.name)).toEqual(["Argyris", "Senge"]);
+  });
+
+  it("follows template order when nodeTypeConfigs supplied", () => {
+    const nodes = [
+      typedNode("c1", "concept", "C"),
+      typedNode("t1", "thinker", "T"),
+    ];
+    const cfgs = [cfg("thinker", "Thinker", "T"), cfg("concept", "Concept", "C")];
+    const groups = groupByNodeType(nodes, cfgs);
+    expect(groups.map((g) => g.typeId)).toEqual(["thinker", "concept"]);
+    expect(groups[0].label).toBe("Thinker");
+    expect(groups[1].label).toBe("Concept");
+  });
+
+  it("uses cfg.icon when available, falls back to cfg.label[0]", () => {
+    const nodes = [typedNode("x", "thing", "X")];
+    const groups = groupByNodeType(nodes, [cfg("thing", "Thing")]);
+    expect(groups[0].icon).toBe("T"); // label[0] fallback
+    const groups2 = groupByNodeType(nodes, [cfg("thing", "Thing", "🔷")]);
+    expect(groups2[0].icon).toBe("🔷");
+  });
+
+  it("places types not in the template at the end, sorted by id", () => {
+    const nodes = [typedNode("z", "zebra", "Z"), typedNode("a", "apple", "A")];
+    const cfgs = [cfg("other", "Other")]; // neither node matches
+    const groups = groupByNodeType(nodes, cfgs);
+    // "other" has no nodes so it's skipped; apple and zebra are unknown, sorted
+    expect(groups.map((g) => g.typeId)).toEqual(["apple", "zebra"]);
+  });
+
+  it("returns an empty array for an empty node list", () => {
+    expect(groupByNodeType([])).toEqual([]);
   });
 });
 

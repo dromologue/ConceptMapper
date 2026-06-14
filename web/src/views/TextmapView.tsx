@@ -7,9 +7,10 @@ import {
   indexNodes,
   connectionsOf,
   groupConnections,
-  findRoots,
+  groupByNodeType,
   MAX_TEXTMAP_DEPTH,
 } from "./textmap";
+import type { NodeTypeGroup } from "./textmap";
 
 interface Props {
   data: GraphIR;
@@ -49,11 +50,23 @@ export function TextmapView({
   );
 
   // Current focus root (null = show all roots) and the trail that led here.
+  // Current focus root (null = show all types) and the trail that led here.
   const [rootId, setRootId] = useState<string | null>(null);
   const [trail, setTrail] = useState<GraphNode[]>([]);
   // Expanded rows keyed by full ancestor path so the same node can be open
   // independently in different branches.
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Type group sections collapsed by the user (start empty = all open).
+  const [collapsedTypes, setCollapsedTypes] = useState<Set<string>>(new Set());
+
+  const toggleType = useCallback((typeId: string) => {
+    setCollapsedTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(typeId)) next.delete(typeId);
+      else next.add(typeId);
+      return next;
+    });
+  }, []);
 
   const toggle = useCallback((pathKey: string) => {
     setExpanded((prev) => {
@@ -101,19 +114,21 @@ export function TextmapView({
     [trail],
   );
 
-  const roots: GraphNode[] = useMemo(() => {
-    if (rootId) {
-      const r = byId.get(rootId);
-      return r ? [r] : [];
-    }
-    return findRoots(data);
-  }, [rootId, byId, data]);
+  const focusedNode: GraphNode | null = useMemo(
+    () => (rootId ? (byId.get(rootId) ?? null) : null),
+    [rootId, byId],
+  );
+
+  const typeGroups = useMemo(
+    () => groupByNodeType(data.nodes, nodeTypeConfigs),
+    [data.nodes, nodeTypeConfigs],
+  );
 
   return (
     <div className="textmap" role="tree" aria-label="Concept outline">
       <div className="textmap-breadcrumb">
         <button className="textmap-crumb" onClick={() => goToTrail(-1)}>
-          All roots
+          All
         </button>
         {trail.map((n, i) => (
           <span key={`${n.id}-${i}`}>
@@ -131,15 +146,34 @@ export function TextmapView({
       </div>
 
       <div className="textmap-body">
-        {roots.length === 0 ? (
+        {focusedNode ? (
+          <TextmapRow
+            key={focusedNode.id}
+            node={focusedNode}
+            ancestors={[]}
+            depth={0}
+            byId={byId}
+            edges={data.edges}
+            edgeTypeConfigs={edgeTypeConfigs}
+            iconFor={iconFor}
+            selectedNodeId={selectedNodeId}
+            expanded={expanded}
+            onToggle={toggle}
+            onSelect={onSelectNode}
+            onFocus={focus}
+            notesOpen={notesOpen}
+            onToggleNotes={toggleNotes}
+            onNodeUpdate={onNodeUpdate}
+          />
+        ) : typeGroups.length === 0 ? (
           <p className="textmap-empty">No nodes to outline.</p>
         ) : (
-          roots.map((r) => (
-            <TextmapRow
-              key={r.id}
-              node={r}
-              ancestors={[]}
-              depth={0}
+          typeGroups.map((group) => (
+            <TypeGroupSection
+              key={group.typeId}
+              group={group}
+              collapsed={collapsedTypes.has(group.typeId)}
+              onTypeToggle={toggleType}
               byId={byId}
               edges={data.edges}
               edgeTypeConfigs={edgeTypeConfigs}
@@ -156,6 +190,86 @@ export function TextmapView({
           ))
         )}
       </div>
+    </div>
+  );
+}
+
+interface TypeGroupSectionProps {
+  group: NodeTypeGroup;
+  collapsed: boolean;
+  onTypeToggle: (typeId: string) => void;
+  byId: Map<string, GraphNode>;
+  edges: GraphIR["edges"];
+  edgeTypeConfigs?: EdgeTypeConfig[];
+  iconFor: (typeId: string) => string;
+  selectedNodeId: string | null;
+  expanded: Set<string>;
+  onToggle: (pathKey: string) => void;
+  onSelect: (node: GraphNode) => void;
+  onFocus: (node: GraphNode) => void;
+  notesOpen: Set<string>;
+  onToggleNotes: (pathKey: string) => void;
+  onNodeUpdate?: (nodeId: string, updates: Partial<GraphNode>) => void;
+}
+
+function TypeGroupSection({
+  group,
+  collapsed,
+  onTypeToggle,
+  byId,
+  edges,
+  edgeTypeConfigs,
+  iconFor,
+  selectedNodeId,
+  expanded,
+  onToggle,
+  onSelect,
+  onFocus,
+  notesOpen,
+  onToggleNotes,
+  onNodeUpdate,
+}: TypeGroupSectionProps) {
+  return (
+    <div className="textmap-type-group">
+      <button
+        className="textmap-type-group-header"
+        onClick={() => onTypeToggle(group.typeId)}
+        aria-expanded={!collapsed}
+        aria-label={`${group.label} type group`}
+      >
+        <span className="textmap-disclosure" aria-hidden="true">
+          {collapsed ? "▸" : "▾"}
+        </span>
+        <span className="textmap-badge" aria-hidden="true">
+          {group.icon}
+        </span>
+        <span className="textmap-type-label">{group.label}</span>
+        <span className="textmap-count">({group.nodes.length})</span>
+      </button>
+      {!collapsed && (
+        <div className="textmap-type-nodes">
+          {group.nodes.map((n) => (
+            <TextmapRow
+              key={n.id}
+              node={n}
+              ancestors={[]}
+              depth={0}
+              byId={byId}
+              edges={edges}
+              edgeTypeConfigs={edgeTypeConfigs}
+              iconFor={iconFor}
+              selectedNodeId={selectedNodeId}
+              expanded={expanded}
+              onToggle={onToggle}
+              onSelect={onSelect}
+              onFocus={onFocus}
+              notesOpen={notesOpen}
+              onToggleNotes={onToggleNotes}
+              onNodeUpdate={onNodeUpdate}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

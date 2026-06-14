@@ -2,7 +2,7 @@
 // React component so it can be unit-tested. The graph is a directed/undirected
 // graph with cycles; the textmap is a tree projection of it.
 
-import type { GraphIR, GraphNode, GraphEdge, EdgeTypeConfig } from "../types/graph-ir";
+import type { GraphIR, GraphNode, GraphEdge, EdgeTypeConfig, NodeTypeConfig } from "../types/graph-ir";
 
 export type ConnectionDirection = "out" | "in" | "undirected";
 
@@ -123,3 +123,52 @@ export function revisitKind(
 
 /** Backstop recursion depth for pathological graphs. */
 export const MAX_TEXTMAP_DEPTH = 50;
+
+export interface NodeTypeGroup {
+  typeId: string;
+  label: string;
+  icon: string;
+  nodes: GraphNode[];
+}
+
+/**
+ * Group all nodes by node_type, ordered by the template's nodeTypeConfigs.
+ * Types not in the template come last (sorted by id). Nodes within each
+ * group are sorted alphabetically by name.
+ */
+export function groupByNodeType(
+  nodes: GraphNode[],
+  nodeTypeConfigs?: NodeTypeConfig[],
+): NodeTypeGroup[] {
+  const byType = new Map<string, GraphNode[]>();
+  for (const n of nodes) {
+    const bucket = byType.get(n.node_type);
+    if (bucket) bucket.push(n);
+    else byType.set(n.node_type, [n]);
+  }
+  for (const arr of byType.values()) arr.sort((a, b) => a.name.localeCompare(b.name));
+
+  const result: NodeTypeGroup[] = [];
+
+  if (nodeTypeConfigs) {
+    for (const cfg of nodeTypeConfigs) {
+      const groupNodes = byType.get(cfg.id);
+      if (groupNodes && groupNodes.length > 0) {
+        result.push({
+          typeId: cfg.id,
+          label: cfg.label,
+          icon: cfg.icon ?? cfg.label[0] ?? "•",
+          nodes: groupNodes,
+        });
+        byType.delete(cfg.id);
+      }
+    }
+  }
+
+  // Types not in the template (shouldn't normally occur; sorted for stability).
+  for (const [id, groupNodes] of [...byType.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    result.push({ typeId: id, label: id, icon: id[0] ?? "•", nodes: groupNodes });
+  }
+
+  return result;
+}

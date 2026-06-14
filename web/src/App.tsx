@@ -35,6 +35,7 @@ import { createEmptyFilterState } from "./utils/filters";
 import { normalizeFencedKV } from "./utils/normalize";
 import { serializeViewComment } from "./utils/viewOptions";
 import { escapeKVValue } from "./utils/kv-escape";
+import { searchNodes } from "./utils/search";
 import { useFileLoader } from "./hooks/useFileLoader";
 import { isNativeApp as detectNativeApp, isIOSDevice, postToSwift, subscribe } from "./utils/swiftBridge";
 import { useSwiftBridge } from "./hooks/useSwiftBridge";
@@ -1049,9 +1050,7 @@ function AppInner() {
   };
 
   const searchResults = searchQuery.trim().length > 0 && graphData
-    ? graphData.nodes
-        .filter((n) => n.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        .slice(0, 10)
+    ? searchNodes(graphData.nodes, searchQuery)
     : [];
 
   const handleSearchSelect = useCallback(

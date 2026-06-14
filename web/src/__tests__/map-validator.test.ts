@@ -63,7 +63,7 @@ describe("findStructuralSections", () => {
 });
 
 describe("repository-wide .cm compliance with REQ-085", () => {
-  const mapDirs = [join(REPO_ROOT, "Maps"), join(REPO_ROOT, "examples")];
+  const mapDirs = [join(REPO_ROOT, "Maps"), join(REPO_ROOT, "macos/Resources/maps")];
 
   for (const dir of mapDirs) {
     for (const path of listCmFiles(dir)) {

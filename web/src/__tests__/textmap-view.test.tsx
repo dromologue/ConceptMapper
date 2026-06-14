@@ -20,7 +20,7 @@ const graph = (nodes: GraphNode[], edges: GraphEdge[]): GraphIR => ({
 });
 
 describe("TextmapView", () => {
-  it("shows roots, expands to reveal connections, and selects on click", () => {
+  it("groups nodes by type, shows all nodes by default, and expands connections", () => {
     const g = graph(
       [node("a", "Alpha"), node("b", "Beta"), node("c", "Gamma")],
       [edge("a", "b"), edge("a", "c")],
@@ -28,17 +28,20 @@ describe("TextmapView", () => {
     const onSelect = vi.fn();
     render(<TextmapView data={g} selectedNodeId={null} onSelectNode={onSelect} />);
 
-    // Root present; children not yet rendered.
+    // All nodes are visible in the type group (groups start expanded).
     expect(screen.getByText("Alpha")).toBeInTheDocument();
-    expect(screen.queryByText("Beta")).not.toBeInTheDocument();
-
-    // Expand the only expandable row (Alpha).
-    fireEvent.click(screen.getByLabelText("Expand"));
     expect(screen.getByText("Beta")).toBeInTheDocument();
     expect(screen.getByText("Gamma")).toBeInTheDocument();
 
-    // Selecting a child calls the handler with that node.
-    fireEvent.click(screen.getByText("Beta"));
+    // Expand Alpha's connections by clicking the disclosure in its row.
+    const alphaRow = screen.getByText("Alpha").closest(".textmap-row") as HTMLElement;
+    fireEvent.click(within(alphaRow).getByLabelText("Expand"));
+
+    // Beta now appears twice: once in the type group and once under Alpha's connections.
+    expect(screen.getAllByText("Beta").length).toBeGreaterThanOrEqual(2);
+
+    // Selecting any Beta calls the handler.
+    fireEvent.click(screen.getAllByText("Beta")[0]);
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: "b" }));
   });
 
@@ -47,7 +50,7 @@ describe("TextmapView", () => {
     render(<TextmapView data={g} selectedNodeId={null} onSelectNode={() => {}} />);
 
     fireEvent.click(screen.getByLabelText("Focus on Alpha"));
-    expect(screen.getByText("All roots")).toBeInTheDocument();
+    expect(screen.getByText("All")).toBeInTheDocument();
     // Alpha now appears both as a breadcrumb crumb and as the focused row.
     expect(screen.getAllByText("Alpha").length).toBeGreaterThanOrEqual(2);
   });
@@ -70,7 +73,7 @@ describe("TextmapView", () => {
   });
 
   it("renders a loop marker for a cycle instead of recursing forever", () => {
-    // Alpha → Beta → Gamma → Beta (cycle). Single root: Alpha.
+    // Alpha → Beta → Gamma → Beta (cycle). All nodes visible in type group.
     const g = graph(
       [node("a", "Alpha"), node("b", "Beta"), node("c", "Gamma")],
       [edge("a", "b"), edge("b", "c"), edge("c", "b")],
@@ -79,12 +82,15 @@ describe("TextmapView", () => {
       <TextmapView data={g} selectedNodeId={null} onSelectNode={() => {}} />,
     );
 
-    // Expand Alpha, then Beta. Beta's incoming edge from Gamma is fine, but the
-    // path Alpha›Beta means expanding Gamma later would loop on Beta; more
-    // directly, expanding Beta surfaces Alpha as an ancestor loop-link.
-    fireEvent.click(screen.getByLabelText("Expand")); // Alpha
-    const betaRow = screen.getByText("Beta").closest(".textmap-row") as HTMLElement;
-    fireEvent.click(within(betaRow).getByLabelText("Expand")); // Beta
+    // Expand Alpha's connections via its own row's disclosure button.
+    const alphaRow = screen.getByText("Alpha").closest(".textmap-row") as HTMLElement;
+    fireEvent.click(within(alphaRow).getByLabelText("Expand")); // Alpha → Beta child
+
+    // Beta now appears as both a type-group item and a child of Alpha.
+    // Find the child Beta (inside Alpha's .textmap-node, after the row).
+    const alphaNode = screen.getByText("Alpha").closest(".textmap-node") as HTMLElement;
+    const childBetaRow = within(alphaNode).getAllByText("Beta")[0].closest(".textmap-row") as HTMLElement;
+    fireEvent.click(within(childBetaRow).getByLabelText("Expand")); // Beta at path a>b → surfaces Alpha as loop
 
     const loops = container.querySelectorAll(".textmap-loop");
     expect(loops.length).toBeGreaterThanOrEqual(1);

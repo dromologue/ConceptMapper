@@ -1,0 +1,32 @@
+{
+  "title": "Second Brain",
+  "classifiers": [],
+  "node_types": [
+    {
+      "id": "folder",
+      "label": "Folder",
+      "shape": "rect",
+      "icon": "F",
+      "fields": [
+        { "key": "path", "label": "Path", "type": "text" }
+      ]
+    },
+    {
+      "id": "note",
+      "label": "Note",
+      "shape": "circle",
+      "icon": "N",
+      "fields": [
+        { "key": "path",          "label": "File Path",      "type": "text" },
+        { "key": "tags",          "label": "Tags",           "type": "text" },
+        { "key": "created",       "label": "Created",        "type": "text" },
+        { "key": "modified",      "label": "Modified",       "type": "text" },
+        { "key": "workflowy_url", "label": "Workflowy Link", "type": "text" }
+      ]
+    }
+  ],
+  "edge_types": [
+    { "id": "contains",   "label": "Contains",   "color": "#888888", "directed": true,  "style": "solid"  },
+    { "id": "shares-tag", "label": "Shares Tag", "color": "#4a90d9", "directed": false, "style": "dashed" }
+  ]
+}

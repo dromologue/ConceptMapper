@@ -25,3 +25,6 @@ test-credentials*
 .claude/settings.local.json
 /support-site
 /ios/build
+
+# Local Netlify folder
+.netlify

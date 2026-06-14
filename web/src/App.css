@@ -3407,6 +3407,28 @@ select.settings-input {
   border-left: 1px solid var(--bg-hover, rgba(127,127,127,0.18));
   padding-left: 6px;
 }
+.textmap-type-group { margin: 0 0 4px; }
+.textmap-type-group-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 5px 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 6px;
+  color: var(--text-primary, #1d1d1f);
+}
+.textmap-type-group-header:hover { background: var(--bg-hover, rgba(127,127,127,0.08)); }
+.textmap-type-label {
+  flex: 1 1 auto;
+  font-size: 13px;
+  font-weight: 600;
+}
+.textmap-type-nodes { padding-left: 8px; }
+
 .textmap-group { margin: 2px 0; }
 .textmap-group-label {
   font-size: 11px;
@@ -3859,6 +3881,32 @@ select.settings-input {
   color: var(--text);
 }
 .second-brain-key-input:focus { outline: none; border-color: var(--accent); }
+
+.second-brain-save-key-btn {
+  flex-shrink: 0;
+  font-size: 12px;
+  padding: 4px 10px;
+  background: var(--bg-hover, #2a2a4a);
+  color: var(--accent, #4A90D9);
+  border: 1px solid var(--accent, #4A90D9);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: filter 0.15s;
+  white-space: nowrap;
+}
+.second-brain-save-key-btn:hover:not(:disabled) { filter: brightness(1.25); }
+.second-brain-save-key-btn:disabled { opacity: 0.4; cursor: default; }
+
+.second-brain-key-badge {
+  margin-left: 6px;
+  font-size: 10px;
+  padding: 1px 5px;
+  background: var(--accent, #4A90D9);
+  color: #fff;
+  border-radius: 10px;
+  font-weight: 500;
+  vertical-align: middle;
+}
 
 .second-brain-key-status {
   font-size: 11px;

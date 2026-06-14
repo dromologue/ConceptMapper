@@ -70,12 +70,13 @@ If you have previously saved templates, they appear below these buttons. Click o
     tags: ["layout", "ui", "interface", "screen", "panel", "area"],
     content: `The app follows a VS Code-inspired layout with five main areas:
 
-**Title Bar** (top) -- Shows the map title and a search field. Use the search to find nodes by name (Cmd+K to focus).
+**Title Bar** (top) -- Shows the map title and a search field. Use the search to find nodes across all taxonomy attributes — name, node type, tags, classifier values, property values, and inline notes (Cmd+K to focus). Wrap a phrase in double quotes for exact matching: \`"double-loop learning"\`. [New in v1.2]
 
 **Activity Bar** (left edge, narrow icon strip) -- Vertical toolbar with view mode buttons at the top and settings/taxonomy at the bottom:
 - Network icon: Full view (all nodes)
 - Filtered view icons: One per node type defined in your taxonomy (dynamically generated, not hardcoded)
 - Sidebar icon: Toggle the sidebar panel
+- Second Brain icon (brain): Open the Second Brain panel for folder scanning and Workflowy integration (macOS only) [New in v1.2]
 - (Map Text and Chat icons will appear in a future release when built-in LLM support is enabled)
 - Help icon: Open the searchable help panel
 - Taxonomy icon (bottom): Edit the current taxonomy structure
@@ -133,9 +134,11 @@ If you have previously saved templates, they appear below these buttons. Click o
 
 13. **Explode / Collapse graph** -- Spreads the nodes apart for an overview, or pulls them back together.
 
-14. **Settings** (gear icon) -- Opens Settings for theme and colour customisation.
+14. **Second Brain** (brain icon, macOS only) [New in v1.2] -- Opens the Second Brain panel for scanning markdown folder collections and linking nodes to Workflowy outlines. See "Second Brain: Scanning Folders & Workflowy Integration".
 
-15. **Help & FAQ** (question-mark icon) -- Opens this searchable help panel.`,
+15. **Settings** (gear icon) -- Opens Settings for theme and colour customisation.
+
+16. **Help & FAQ** (question-mark icon) -- Opens this searchable help panel.`,
   },
 
   // ── Adding and Editing Nodes ─────────────────────────────────────
@@ -164,6 +167,14 @@ The node is automatically selected after creation so you can immediately edit it
 
 **Node notes:**
 Click "Edit Notes" in the Properties panel header to open the Notes pane below the canvas. This is a live markdown editor -- type headings (#), bold (**text**), italic (*text*), code (\`text\`), lists (- item), and blockquotes (> text). Notes auto-save.
+
+**Node icon [New in v1.2]:**
+You can assign an emoji icon to any node. The icon appears on the canvas overlaid on the node shape.
+1. Select a node.
+2. In the Properties panel, click the icon button (shows the current emoji or "—" if none is set).
+3. Click "Change" to open the emoji picker (20 options).
+4. Click an emoji to apply it, or click "Clear" to remove the current icon.
+Icons are stored in the node's properties and saved with the map.
 
 **Tip:** The node type badge in the Properties header shows whether a node is a circle type (thinker) or rectangle type (concept). Node size can be driven by a select field if configured in the taxonomy (e.g. eminence controls circle size).`,
   },
@@ -542,7 +553,7 @@ The app auto-saves to the source .cm file as you make changes (with a short debo
 - Cmd+N -- New Taxonomy (from menu)
 
 **Navigation:**
-- Cmd+K -- Focus search field
+- Cmd+K -- Focus search field (searches name, node type, tags, classifiers, properties, notes; use "quoted phrase" for exact match) [New in v1.2: all-attribute search]
 - Escape -- Cancel edge drawing / close modals
 
 **Canvas:**
@@ -556,6 +567,40 @@ The app auto-saves to the source .cm file as you make changes (with a short debo
 
 **General:**
 - Cmd+? -- Toggle help overlay (native macOS help)`,
+  },
+
+  // ── Search ──────────────────────────────────────────────────
+  {
+    id: "search",
+    title: "Search: All Attributes & Exact Phrases [New in v1.2]",
+    tags: ["search", "find", "filter", "query", "phrase", "tag", "classifier", "attribute", "exact"],
+    content: `Press Cmd+K (or click the search field in the title bar) to search the map.
+
+**What is searched:**
+- Node name
+- Node type (e.g. "person", "concept")
+- Tags
+- Classifier values (e.g. the value "systems" under a "condition" classifier — note: classifier *keys* are not searched, only their values)
+- All custom property values
+- Inline notes
+
+**How tokens work:**
+Unquoted words are treated as individual substring tokens. A node matches when every token appears somewhere in its attributes (AND semantics). Tokens are case-insensitive.
+
+\`\`\`
+argyris harvard       → nodes where BOTH "argyris" and "harvard" appear
+psychology systems    → nodes with BOTH values present (across any attribute)
+\`\`\`
+
+**Exact phrase matching:**
+Wrap any phrase in double quotes to require it as a verbatim substring:
+
+\`\`\`
+"double-loop learning"   → exact phrase in tags or notes
+"systems thinking" 1923  → exact phrase AND the token "1923"
+\`\`\`
+
+Results are limited to 20 matches and returned in map order.`,
   },
 
   // ── Network Analysis ────────────────────────────────────────
@@ -790,7 +835,7 @@ A: If you opened a file, the app auto-saves changes as you work (2-second deboun
   // ── Second Brain ─────────────────────────────────────────────────
   {
     id: "second-brain",
-    title: "Second Brain: Scanning Folders & Workflowy Integration",
+    title: "Second Brain: Scanning Folders & Workflowy Integration [New in v1.2]",
     tags: ["second brain", "workflowy", "folders", "markdown", "tags", "api key", "scan", "outline"],
     content: `The Second Brain panel (brain icon in the activity bar, macOS only) connects ConceptMapper to your existing notes and Workflowy outlines.
 
@@ -807,12 +852,13 @@ You can add multiple folders. The scan always replaces the current graph — sav
 
 Any node in any map can be linked to a Workflowy subtree, which is then displayed read-only in the notes pane. This is macOS only.
 
-**Getting your Workflowy API key:**
+**Getting and saving your Workflowy API key:**
 1. Sign in to Workflowy at workflowy.com.
 2. Open your account settings (click your avatar or initials → Settings).
 3. Go to the "API" or "Integrations" tab.
 4. Click "Generate API Key" (or copy the existing key if one is shown).
 5. Copy the key -- it looks like a long alphanumeric string.
+6. Back in ConceptMapper: open the Second Brain panel (brain icon in the activity bar), scroll to the "Workflowy API Key" section, paste the key into the field, and click "Save". A "saved" badge appears when the key is stored.
 
 **Linking a node to Workflowy:**
 1. Select a node on the canvas.
