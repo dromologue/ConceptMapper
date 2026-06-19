@@ -46,7 +46,7 @@ Maps must not contain `## Generations`, `## Streams`, or any other structural se
 
 This runs the full pipeline (Rust tests, web tests, WASM build, web build, asset copy, Xcode build) and opens the resulting `.app`. Use `--debug` for a debug build and `--skip-tests` to skip the test step.
 
-To produce a signed, notarised DMG for distribution (the official release path), use [`scripts/release-macos.sh`](scripts/release-macos.sh) — it archives, exports with a Developer ID certificate, builds the DMG, submits it to Apple's notary service, staples the ticket, and verifies Gatekeeper acceptance. See [RELEASING.md](RELEASING.md) for the one-time signing/notarisation setup.
+To produce a signed, notarised DMG for distribution, use [`scripts/release-macos.sh`](scripts/release-macos.sh) — it archives, exports with a Developer ID certificate, builds the DMG, submits it to Apple's notary service, staples the ticket, and verifies Gatekeeper acceptance. The one-time signing/notarisation setup (a Developer ID Application certificate and a `notarytool` keychain profile) is documented in that script's header comments.
 
 Manual steps if you want to drive parts independently:
 
@@ -75,22 +75,19 @@ web/                React + TypeScript SPA, D3 visualisation, Zustand state, WAS
 macos/              SwiftUI shell; WKWebView hosts the React SPA; native file I/O
 templates/          .cmt taxonomy templates (JSON)
 Maps/               .cm concept maps (Markdown)
-specs/              Specification source files
 tests/              Rust integration tests (cargo test)
-SPEC.md             Numbered requirements (REQ-001 ... REQ-085) with acceptance criteria
-TRACEABILITY.md     Maps code and tests back to requirements
 ```
 
 ## Development
 
-`cargo fmt --all -- --check`, `cargo clippy --all -- -D warnings`, `cargo test --all`, `npm run lint`, `npm test`, `npm run build` all gate CI. The convention is conventional commits; commits should never go to `master` without the test step passing. The template-owned-structure rule (REQ-085) is enforced by both unit tests (`web/src/__tests__/map-validator.test.ts`) and an integration test (`tests/integration_tests.rs`) that walks the `.cm` maps in `Maps/`.
+`cargo fmt --all -- --check`, `cargo clippy --all -- -D warnings`, `cargo test --all`, `npm run lint`, `npm test`, `npm run build` all gate CI. The convention is conventional commits; commits should never go to `master` without the test step passing. The template-owned-structure rule is enforced by both unit tests (`web/src/__tests__/map-validator.test.ts`) and an integration test (`tests/integration_tests.rs`) that walks the `.cm` maps in `Maps/`.
 
 ## Contributing
 
 Contributions are welcome. Concept Mapper is MIT-licensed, so by contributing you agree your changes are released under the same terms.
 
 1. **Fork** the repository and create a topic branch off `master` (`git checkout -b feat/my-change`). Don't commit directly to `master`.
-2. **Make your change** and keep it focused. The architecture is documented above and in [CLAUDE.md](CLAUDE.md); the structural rules live in [specs/](specs/) and [SPEC.md](SPEC.md). Never hardcode node or edge types — structure is always template-driven (REQ-085).
+2. **Make your change** and keep it focused. The architecture is documented above and in [CLAUDE.md](CLAUDE.md). Never hardcode node or edge types — structure is always template-driven (the template is the single source of structural truth).
 3. **Verify locally** before opening a PR — these gate CI:
 
    ```bash

@@ -34,3 +34,13 @@ test-credentials*
 # maintainer's binary-hosting setup. These stay local to the release machine.
 /fly/
 /scripts/deploy-downloads.sh
+
+# Internal planning, task, spec, and release-process docs — kept local, never
+# shipped to the public repo. Only the code needed to build and run the app ships.
+/TODO.md
+/tasks/
+/APP_STORE_LAUNCH.md
+/SPEC.md
+/TRACEABILITY.md
+/RELEASING.md
+/specs/
