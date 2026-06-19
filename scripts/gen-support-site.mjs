@@ -37,6 +37,10 @@ const META = {
   // The app is no longer distributed through the Mac App Store.
   downloadUrl: "https://conceptmapper-downloads.fly.dev/ConceptMapper.dmg",
   minOS: "macOS 14 Sonoma",
+  // Canonical/public site root — used for canonical URLs, Open Graph, and the sitemap.
+  siteUrl: "https://conceptmapper.dromologue.com",
+  ogImage: "images/preview1.jpg", // landscape hero shot, good for link previews
+  twitter: "@dromologue",
 };
 
 // Marketing feature blocks, each tied to a real screenshot in Previews/.
@@ -267,7 +271,31 @@ function renderMarkdown(md) {
 }
 
 // ── Page shell ───────────────────────────────────────────────────────
-function page({ title, body, active, wide }) {
+function page({ title, body, active, wide, description, path = "index.html", jsonLd }) {
+  const desc =
+    description ||
+    `${META.appName} — build, edit, and reason over typed concept maps on macOS. Plain-text maps, a separate schema, and graph analysis built in.`;
+  const canonical =
+    path === "index.html" ? `${META.siteUrl}/` : `${META.siteUrl}/${path}`;
+  const ogImageAbs = `${META.siteUrl}/${META.ogImage}`;
+  const seo = `
+<meta name="description" content="${escapeHtml(desc)}">
+<link rel="canonical" href="${canonical}">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0b1020">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="${META.appName}">
+<meta property="og:title" content="${escapeHtml(title)}">
+<meta property="og:description" content="${escapeHtml(desc)}">
+<meta property="og:url" content="${canonical}">
+<meta property="og:image" content="${ogImageAbs}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="${META.twitter}">
+<meta name="twitter:title" content="${escapeHtml(title)}">
+<meta name="twitter:description" content="${escapeHtml(desc)}">
+<meta name="twitter:image" content="${ogImageAbs}">${
+    jsonLd ? `\n<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>` : ""
+  }`;
   const link = (href, label, key) =>
     `<a href="${href}"${active === key ? ' class="on"' : ""}>${label}</a>`;
   const nav = `
@@ -296,7 +324,7 @@ function page({ title, body, active, wide }) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${title}</title>
-<meta name="description" content="${META.appName} — build, edit, and reason over typed concept maps on macOS. Plain-text maps, a separate schema, and graph analysis built in.">
+${seo}
 <link rel="icon" type="image/png" href="images/icon.png">
 <link rel="apple-touch-icon" href="images/icon.png">
 <link rel="stylesheet" href="styles.css">
@@ -373,6 +401,23 @@ function buildHome() {
 
   return page({
     title: `${META.appName} — Typed concept maps for Mac`,
+    description: `${META.appName} is a free, open-source macOS app for building typed concept maps: plain-text Markdown maps, a separate JSON schema, a force-directed canvas, and built-in graph analysis. Free direct download for ${META.minOS} and later.`,
+    path: "index.html",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: META.appName,
+      operatingSystem: "macOS 14.0+",
+      applicationCategory: "BusinessApplication",
+      softwareVersion: META.version,
+      url: META.siteUrl,
+      downloadUrl: META.downloadUrl,
+      softwareLicense: "https://opensource.org/licenses/MIT",
+      image: `${META.siteUrl}/images/icon.png`,
+      description: `Build, edit, and reason over concept maps where every node and edge has a type. Plain-text Markdown maps, a separate schema, and graph analysis built in.`,
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      author: { "@type": "Organization", name: "dromologue", url: "https://dromologue.com" },
+    },
     body: hero + `<div class="wrap features">${features}</div>` + platforms + closer,
     active: "home",
     wide: true,
@@ -397,7 +442,13 @@ function buildChangelog(entries) {
       <p class="muted">Plain-English notes on what has changed in each release of ${META.appName}.</p>
       ${releases}
     </article>`;
-  return page({ title: `${META.appName} — What's New`, body, active: "changelog" });
+  return page({
+    title: `${META.appName} — What's New`,
+    description: `Release notes for ${META.appName}: what has changed and improved in each version, in plain English.`,
+    path: "changelog.html",
+    body,
+    active: "changelog",
+  });
 }
 
 // ── Help hub ─────────────────────────────────────────────────────────
@@ -449,7 +500,13 @@ function buildHelp(sections) {
         });
       })();
     </script>`;
-  return page({ title: `${META.appName} — Help & Support`, body, active: "help" });
+  return page({
+    title: `${META.appName} — Help & Support`,
+    description: `Help and documentation for ${META.appName}: getting started, building taxonomies, the canvas, the textmap outline, network analysis, and troubleshooting.`,
+    path: "help.html",
+    body,
+    active: "help",
+  });
 }
 
 // ── Privacy policy ───────────────────────────────────────────────────
@@ -485,7 +542,13 @@ function buildPrivacy() {
       <h2>Contact</h2>
       <p>Questions about this policy or the app: <a href="mailto:${META.contact}">${META.contact}</a>.</p>
     </article>`;
-  return page({ title: `${META.appName} — Privacy Policy`, body, active: "privacy" });
+  return page({
+    title: `${META.appName} — Privacy Policy`,
+    description: `${META.appName} privacy policy: the app runs entirely on your Mac, collects nothing, and makes no outbound network connections.`,
+    path: "privacy.html",
+    body,
+    active: "privacy",
+  });
 }
 
 // ── Terms & Conditions ───────────────────────────────────────────────
@@ -526,7 +589,13 @@ function buildTerms() {
       <h2>Contact</h2>
       <p>Questions about these Terms: <a href="mailto:${META.contact}">${META.contact}</a>.</p>
     </article>`;
-  return page({ title: `${META.appName} — Terms & Conditions`, body, active: "terms" });
+  return page({
+    title: `${META.appName} — Terms & Conditions`,
+    description: `${META.appName} terms and conditions: free, open-source software released under the MIT licence, provided "as is".`,
+    path: "terms.html",
+    body,
+    active: "terms",
+  });
 }
 
 const STYLES = `:root{
@@ -667,8 +736,30 @@ async function main() {
   await writeFile(resolve(OUT, "privacy.html"), buildPrivacy());
   await writeFile(resolve(OUT, "terms.html"), buildTerms());
   await writeFile(resolve(OUT, ".nojekyll"), "");
+
+  // SEO: robots.txt + sitemap.xml
+  await writeFile(
+    resolve(OUT, "robots.txt"),
+    `User-agent: *\nAllow: /\nSitemap: ${META.siteUrl}/sitemap.xml\n`
+  );
+  const pages = [
+    { loc: `${META.siteUrl}/`, priority: "1.0" },
+    { loc: `${META.siteUrl}/changelog.html`, priority: "0.8" },
+    { loc: `${META.siteUrl}/help.html`, priority: "0.7" },
+    { loc: `${META.siteUrl}/privacy.html`, priority: "0.3" },
+    { loc: `${META.siteUrl}/terms.html`, priority: "0.3" },
+  ];
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${pages
+    .map((p) => `  <url><loc>${p.loc}</loc><changefreq>monthly</changefreq><priority>${p.priority}</priority></url>`)
+    .join("\n")}
+</urlset>
+`;
+  await writeFile(resolve(OUT, "sitemap.xml"), sitemap);
+
   console.log(`Generated marketing + ${sections.length} help sections + ${changelog.length} changelog entries → ${OUT}`);
-  console.log("  index.html  changelog.html  help.html  privacy.html  terms.html  styles.css  images/  .nojekyll");
+  console.log("  index.html  changelog.html  help.html  privacy.html  terms.html  styles.css  sitemap.xml  robots.txt  images/  .nojekyll");
 }
 
 main().catch((e) => {
