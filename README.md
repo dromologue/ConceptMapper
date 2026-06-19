@@ -7,7 +7,7 @@ Concept Mapper is free and open source (MIT), and runs on macOS 14 (Sonoma) or l
 ## Install
 
 **Download the app (recommended).** Get the latest notarised build from
-**[conceptmapper-downloads.fly.dev/ConceptMapper.dmg](https://conceptmapper-downloads.fly.dev/ConceptMapper.dmg)**
+**[download.conceptmapper.dromologue.com](https://download.conceptmapper.dromologue.com/ConceptMapper.dmg)**
 (linked from [conceptmapper.dromologue.com](https://conceptmapper.dromologue.com)). Open the
 disk image and drag **ConceptMapper** to your Applications folder. The build is signed with a
 Developer ID certificate and notarised by Apple, so it launches with no security prompt — no

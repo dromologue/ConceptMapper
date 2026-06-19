@@ -35,7 +35,11 @@ const META = {
   effectiveDate: "31 May 2026",
   // Direct download: a free, notarised Developer ID DMG hosted on fly.io.
   // The app is no longer distributed through the Mac App Store.
+  // The actual notarised DMG (fly.io) — also the target of the branded redirect below.
   downloadUrl: "https://conceptmapper-downloads.fly.dev/ConceptMapper.dmg",
+  // Branded download URL on the dromologue.com domain (Netlify alias → 301 → downloadUrl).
+  // This is what users click; keep it DISTINCT from downloadUrl or the redirect loops.
+  brandedDownloadUrl: "https://download.conceptmapper.dromologue.com/ConceptMapper.dmg",
   minOS: "macOS 14 Sonoma",
   // Canonical/public site root — used for canonical URLs, Open Graph, and the sitemap.
   siteUrl: "https://conceptmapper.dromologue.com",
@@ -341,7 +345,7 @@ ${footer}
 
 // ── Marketing landing page ───────────────────────────────────────────
 function buildHome() {
-  const cta = `<a class="btn" href="${META.downloadUrl}">Download for Mac</a>`;
+  const cta = `<a class="btn" href="${META.brandedDownloadUrl}">Download for Mac</a>`;
 
   const heroLede = `${META.appName} is a tool for building, editing, and reasoning over concept maps where every node and edge has a type. Maps are plain-text Markdown; the schema they obey lives in a separate template. Your thinking stays portable, greppable, and yours.`;
   const req = `Requires ${META.minOS} or later. Open the disk image and drag ${META.appName} to your Applications folder.`;
@@ -411,7 +415,7 @@ function buildHome() {
       applicationCategory: "BusinessApplication",
       softwareVersion: META.version,
       url: META.siteUrl,
-      downloadUrl: META.downloadUrl,
+      downloadUrl: META.brandedDownloadUrl,
       softwareLicense: "https://opensource.org/licenses/MIT",
       image: `${META.siteUrl}/images/icon.png`,
       description: `Build, edit, and reason over concept maps where every node and edge has a type. Plain-text Markdown maps, a separate schema, and graph analysis built in.`,
@@ -757,6 +761,17 @@ ${pages
 </urlset>
 `;
   await writeFile(resolve(OUT, "sitemap.xml"), sitemap);
+
+  // Branded download URL on Netlify → the notarised DMG (hosted on fly.io).
+  // download.conceptmapper.dromologue.com is a domain alias of this site.
+  await writeFile(
+    resolve(OUT, "_redirects"),
+    [
+      `https://download.conceptmapper.dromologue.com/*  ${META.downloadUrl}  301!`,
+      `/download  ${META.downloadUrl}  301`,
+      "",
+    ].join("\n")
+  );
 
   console.log(`Generated marketing + ${sections.length} help sections + ${changelog.length} changelog entries → ${OUT}`);
   console.log("  index.html  changelog.html  help.html  privacy.html  terms.html  styles.css  sitemap.xml  robots.txt  images/  .nojekyll");
