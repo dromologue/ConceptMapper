@@ -30,17 +30,13 @@ const APP_ICON = resolve(
 
 const META = {
   appName: "Concept Mapper",
-  version: "1.0",
+  version: "1.3",
   contact: "dromologue@gmail.com",
   effectiveDate: "31 May 2026",
-  // Set once the app is live on the Mac App Store; until then the hero shows
-  // a "coming soon" note instead of a dead button.
-  appStoreUrl: "https://apps.apple.com/gb/app/conceptmapper/id6775185615?mt=12",
-  // The iPhone + iPad app is a SEPARATE, paid App Store product (the macOS app
-  // is free) — its own record and URL. Set at the iOS release.
-  iosAppStoreUrl: "",
+  // Direct download: a free, notarised Developer ID DMG hosted on fly.io.
+  // The app is no longer distributed through the Mac App Store.
+  downloadUrl: "https://conceptmapper-downloads.fly.dev/ConceptMapper.dmg",
   minOS: "macOS 14 Sonoma",
-  minIOS: "iOS 16",
 };
 
 // Marketing feature blocks, each tied to a real screenshot in Previews/.
@@ -88,12 +84,11 @@ const FEATURES = [
     body: "Re-open the taxonomy at any time, even with a populated map behind it. Region layouts group nodes by classifier into labelled zones; the tag list filters the canvas to the themes you discover as you work. Switching layout is a re-projection of the same data, never a rebuild.",
   },
   {
-    // No screenshot tied to this one yet — the renderer shows it as a text-only
-    // band. Drop in an iPhone textmap shot and set `img` at the iOS release.
+    // No screenshot tied to this one yet — the renderer shows it as a text-only band.
     img: null,
     kicker: "Read it as an outline",
     title: "The same map, as a navigable outline",
-    body: "Every map also opens as a textmap: a nested, expandable outline of the very same nodes and typed relationships. Follow one thread of connections at a time, read and edit a node's notes inline, and add nodes without ever touching the canvas. It is one tap away from the canvas on the Mac today, and it will be the default on iPhone — where a force-directed graph is unreadable — once the iPhone and iPad app arrives.",
+    body: "Every map also opens as a textmap: a nested, expandable outline of the very same nodes and typed relationships. Follow one thread of connections at a time, read and edit a node's notes inline, and add nodes without ever touching the canvas — one click away from the visual canvas.",
   },
 ];
 
@@ -108,6 +103,26 @@ async function loadSections() {
   const mod = await import(pathToFileURL(tmp).href);
   await rm(tmp, { force: true });
   return mod.default;
+}
+
+// ── Load the user-facing changelog from CHANGELOG.md ─────────────────
+// Each release is a `## <version> — <date>` heading followed by plain-English
+// bullets. Add a new entry at the top of CHANGELOG.md for every release.
+async function loadChangelog() {
+  const raw = await readFile(resolve(ROOT, "CHANGELOG.md"), "utf8");
+  const entries = [];
+  for (const block of raw.split(/\n(?=## )/)) {
+    const m = block.match(/^##\s+(.+)$/m);
+    if (!m) continue; // intro block (the top-level # title) has no ## heading
+    const heading = m[1].trim();
+    const dm = heading.match(/^(\S+)\s+—\s+(.+)$/);
+    entries.push({
+      version: dm ? dm[1] : heading,
+      date: dm ? dm[2] : "",
+      body: block.slice(block.indexOf(m[0]) + m[0].length).trim(),
+    });
+  }
+  return entries;
 }
 
 // ── Resize the Previews screenshots for the web (macOS `sips`) ────────
@@ -261,6 +276,7 @@ function page({ title, body, active, wide }) {
         <a class="brand" href="index.html"><img class="brand-icon" src="images/icon.png" alt=""> ${META.appName}</a>
         <nav>
           ${link("index.html", "Overview", "home")}
+          ${link("changelog.html", "What&rsquo;s New", "changelog")}
           ${link("help.html", "Help &amp; Support", "help")}
           ${link("privacy.html", "Privacy", "privacy")}
           ${link("terms.html", "Terms", "terms")}
@@ -297,19 +313,10 @@ ${footer}
 
 // ── Marketing landing page ───────────────────────────────────────────
 function buildHome() {
-  const iosLive = Boolean(META.iosAppStoreUrl);
-  const cta = META.appStoreUrl
-    ? `<a class="btn" href="${META.appStoreUrl}">Download on the Mac App Store</a>`
-    : `<span class="btn btn-soft">Coming to the Mac App Store</span>`;
+  const cta = `<a class="btn" href="${META.downloadUrl}">Download for Mac</a>`;
 
-  // iPhone/iPad messaging flips from "coming soon" to "available" once
-  // META.iosAppStoreUrl is set at the iOS release — no hand-edit needed.
-  const heroLede = iosLive
-    ? `${META.appName} is a tool for building, editing, and reasoning over concept maps where every node and edge has a type — on the Mac, and on iPhone and iPad. Maps are plain-text Markdown; the schema they obey lives in a separate template. Your thinking stays portable, greppable, and yours.`
-    : `${META.appName} is a tool for building, editing, and reasoning over concept maps where every node and edge has a type, on the Mac — with iPhone and iPad on the way. Maps are plain-text Markdown; the schema they obey lives in a separate template. Your thinking stays portable, greppable, and yours.`;
-  const req = iosLive
-    ? `Requires ${META.minOS} or later. iPhone &amp; iPad app requires ${META.minIOS} or later.`
-    : `Requires ${META.minOS} or later.`;
+  const heroLede = `${META.appName} is a tool for building, editing, and reasoning over concept maps where every node and edge has a type. Maps are plain-text Markdown; the schema they obey lives in a separate template. Your thinking stays portable, greppable, and yours.`;
+  const req = `Requires ${META.minOS} or later. Open the disk image and drag ${META.appName} to your Applications folder.`;
 
   const hero = `
     <section class="hero">
@@ -350,8 +357,8 @@ function buildHome() {
   const platforms = `
     <section class="platforms">
       <div class="wrap">
-        <h2>${iosLive ? "On the Mac today — iPhone and iPad too." : "On the Mac today — iPhone and iPad on the way."}</h2>
-        <p>${META.appName} runs on ${META.minOS} and later. A separate iPhone and iPad app — universal, ${META.minIOS} and later — ${iosLive ? "brings" : "is on the way, and will bring"} the same maps to a touch device: the visual canvas on iPad, the textmap outline on iPhone, and your <code>.cm</code> files in iCloud Drive across all three. It is one codebase, so a feature lands everywhere at once rather than drifting between platforms.</p>
+        <h2>Built for the Mac.</h2>
+        <p>${META.appName} is a native macOS app for ${META.minOS} and later, distributed as a free, notarised direct download — no App Store account required. Your <code>.cm</code> maps and <code>.cmt</code> templates are ordinary files on your own Mac: greppable, version-controllable, and yours to keep.</p>
       </div>
     </section>`;
 
@@ -365,11 +372,32 @@ function buildHome() {
     </section>`;
 
   return page({
-    title: `${META.appName} — Typed concept maps for Mac, iPhone, and iPad`,
+    title: `${META.appName} — Typed concept maps for Mac`,
     body: hero + `<div class="wrap features">${features}</div>` + platforms + closer,
     active: "home",
     wide: true,
   });
+}
+
+// ── What's New (changelog) ───────────────────────────────────────────
+function buildChangelog(entries) {
+  const releases = entries
+    .map(
+      (e) => `
+      <section class="release">
+        <h2 id="v${escapeHtml(e.version)}">Version ${escapeHtml(e.version)}</h2>
+        ${e.date ? `<p class="muted release-date">${escapeHtml(e.date)}</p>` : ""}
+        ${renderMarkdown(e.body)}
+      </section>`
+    )
+    .join("\n");
+  const body = `
+    <article class="legal changelog">
+      <h1>What&rsquo;s New</h1>
+      <p class="muted">Plain-English notes on what has changed in each release of ${META.appName}.</p>
+      ${releases}
+    </article>`;
+  return page({ title: `${META.appName} — What's New`, body, active: "changelog" });
 }
 
 // ── Help hub ─────────────────────────────────────────────────────────
@@ -467,10 +495,10 @@ function buildTerms() {
       <h1>Terms &amp; Conditions</h1>
       <p class="muted">Effective ${META.effectiveDate} · ${META.appName} ${META.version}</p>
 
-      <p>These Terms &amp; Conditions ("Terms") govern your use of ${META.appName} (the "Software"). By downloading, installing, or using the Software you agree to these Terms. If you obtained the Software through the Apple App Store, your use is also subject to Apple's standard Licensed Application End User License Agreement; where these Terms and Apple's agreement conflict, Apple's agreement prevails to the extent of the conflict.</p>
+      <p>These Terms &amp; Conditions ("Terms") govern your use of ${META.appName} (the "Software"). By downloading, installing, or using the Software you agree to these Terms. The Software is distributed as a free direct download from ${META.appName}; it is not obtained through any app store, and no separate platform licence applies.</p>
 
       <h2>Licence</h2>
-      <p>${META.appName} grants you a personal, non-exclusive, non-transferable, revocable licence to install and use the Software on the devices you own or control, in accordance with these Terms and any usage rules set by the platform from which you obtained it. You may not redistribute, sell, sublicense, rent, or lease the Software, nor reverse-engineer, decompile, or disassemble it except to the extent that such restriction is prohibited by applicable law.</p>
+      <p>${META.appName} is free and open-source software, released under the <strong>MIT License</strong>. You are free to use, copy, modify, merge, publish, distribute, sublicense, and sell copies of the Software, subject to including the copyright notice and the MIT permission notice in all copies or substantial portions. The full licence text ships with the app and is in the <code>LICENSE</code> file in the source repository. The warranty disclaimer below restates the MIT "as is" terms.</p>
 
       <h2>Your content</h2>
       <p>You retain all rights to the concept maps, templates, and other files you create or open with the Software ("Your Content"). The Software does not claim any ownership of Your Content. You are solely responsible for Your Content and for maintaining your own backups; the Software is not a backup service.</p>
@@ -611,6 +639,12 @@ pre code{background:none;padding:0;font-size:13px}
 .site-footer .wrap{padding-top:20px;padding-bottom:28px}
 .site-footer p{margin:4px 0;font-size:14px;color:var(--muted)}
 
+/* Changelog / What's New */
+.changelog .release{border-top:1px solid var(--border);margin-top:30px;padding-top:18px}
+.changelog .release:first-of-type{border-top:none;margin-top:14px;padding-top:0}
+.changelog .release h2{margin:0 0 2px}
+.changelog .release-date{margin:0 0 12px;font-size:14px}
+
 @media (max-width:820px){
   .hero h1{font-size:38px}
   .feature{grid-template-columns:1fr;gap:22px;margin-bottom:52px}
@@ -622,17 +656,19 @@ pre code{background:none;padding:0;font-size:13px}
 
 async function main() {
   const sections = await loadSections();
+  const changelog = await loadChangelog();
   await rm(OUT, { recursive: true, force: true });
   await mkdir(OUT, { recursive: true });
   await processImages();
   await writeFile(resolve(OUT, "styles.css"), STYLES);
   await writeFile(resolve(OUT, "index.html"), buildHome());
+  await writeFile(resolve(OUT, "changelog.html"), buildChangelog(changelog));
   await writeFile(resolve(OUT, "help.html"), buildHelp(sections));
   await writeFile(resolve(OUT, "privacy.html"), buildPrivacy());
   await writeFile(resolve(OUT, "terms.html"), buildTerms());
   await writeFile(resolve(OUT, ".nojekyll"), "");
-  console.log(`Generated marketing + ${sections.length} help sections → ${OUT}`);
-  console.log("  index.html  help.html  privacy.html  terms.html  styles.css  images/  .nojekyll");
+  console.log(`Generated marketing + ${sections.length} help sections + ${changelog.length} changelog entries → ${OUT}`);
+  console.log("  index.html  changelog.html  help.html  privacy.html  terms.html  styles.css  images/  .nojekyll");
 }
 
 main().catch((e) => {

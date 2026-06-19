@@ -115,7 +115,7 @@ fn run_golden(fixture_rel: &str, golden_rel: &str) {
 #[test]
 fn golden_organisational_learning() {
     run_golden(
-        "examples/organisational-learning.cm",
+        "Maps/organisational-learning.cm",
         "tests/golden/organisational-learning.json",
     );
 }

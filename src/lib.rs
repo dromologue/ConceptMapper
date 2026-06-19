@@ -18,9 +18,9 @@
 //! ```no_run
 //! use concept_mapper_core::{parse_document, ParseOutput};
 //!
-//! let input = std::fs::read_to_string("examples/organisational-learning.cm").unwrap();
+//! let input = std::fs::read_to_string("Maps/organisational-learning.cm").unwrap();
 //! let ParseOutput { graph, warnings } =
-//!     parse_document(&input, Some("examples/organisational-learning.cm"))
+//!     parse_document(&input, Some("Maps/organisational-learning.cm"))
 //!         .expect("parse failed");
 //!
 //! for w in &warnings {

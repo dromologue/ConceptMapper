@@ -1,8 +1,14 @@
 # Multiplatform Plan — iPad & iPhone, plus the Textmap view
 
-Status: PLAN (not yet implemented). Author-driven; no code committed against this
-document yet. This plan deliberately front-loads release safety because the macOS
-app auto-deploys to the App Store.
+> **SUPERSEDED (2026-06).** The iOS/iPadOS product has been dropped and Concept
+> Mapper now ships only on macOS as a direct-download DMG (see
+> [`RELEASING.md`](../RELEASING.md)). The two-app no-drift invariant no longer
+> applies and the `ios/` shell has been removed. This document is retained for the
+> **Textmap** design rationale (which shipped on macOS); the iPhone/iPad sections
+> are historical.
+
+Status: SUPERSEDED. Originally a PLAN; never shipped as a second app. The
+release-safety framing below assumed App Store auto-deploy, which no longer holds.
 
 ## 0. Guardrails (read first)
 

@@ -4,8 +4,8 @@ use concept_mapper_core::graph::assemble::parse_document;
 
 #[test]
 fn parse_organisational_learning_example() {
-    let input = include_str!("../examples/organisational-learning.cm");
-    let result = parse_document(input, Some("examples/organisational-learning.cm"))
+    let input = include_str!("../Maps/organisational-learning.cm");
+    let result = parse_document(input, Some("Maps/organisational-learning.cm"))
         .expect("should parse organisational-learning.cm without errors");
 
     let graph = &result.graph;
@@ -39,7 +39,7 @@ fn parse_organisational_learning_example() {
 
 #[test]
 fn example_nodes_have_generic_fields() {
-    let input = include_str!("../examples/organisational-learning.cm");
+    let input = include_str!("../Maps/organisational-learning.cm");
     let result = parse_document(input, None).expect("should parse");
     let graph = &result.graph;
 
@@ -88,7 +88,7 @@ fn example_nodes_have_generic_fields() {
 
 #[test]
 fn example_edge_types_are_strings() {
-    let input = include_str!("../examples/organisational-learning.cm");
+    let input = include_str!("../Maps/organisational-learning.cm");
     let result = parse_document(input, None).expect("should parse");
 
     // AC-046-06: Edge types are free-form strings
@@ -114,12 +114,12 @@ fn example_has_template_reference_and_no_structural_sections() {
     // SPEC: REQ-085 (Template-Owned Structure)
     // The example .cm file must reference its .cmt template via an HTML comment
     // and must NOT contain ## Generations or ## Streams sections.
-    let input = include_str!("../examples/organisational-learning.cm");
+    let input = include_str!("../Maps/organisational-learning.cm");
 
     // AC-085-01: template reference present
     assert!(
         input.contains("<!-- template: organisational-learning.cmt -->"),
-        "examples/organisational-learning.cm must reference its .cmt template"
+        "Maps/organisational-learning.cm must reference its .cmt template"
     );
 
     // AC-085-02: no structural section headers in the map body
@@ -138,7 +138,7 @@ fn example_has_template_reference_and_no_structural_sections() {
 
 #[test]
 fn example_has_no_parse_warnings_for_known_nodes() {
-    let input = include_str!("../examples/organisational-learning.cm");
+    let input = include_str!("../Maps/organisational-learning.cm");
     let result = parse_document(input, None).expect("should parse");
 
     // Check that most edges reference known nodes (warnings are for unknown refs)

@@ -102,7 +102,7 @@ If you have previously saved templates, they appear below these buttons. Click o
     id: "activity-bar",
     title: "Activity Bar: What Each Button Does",
     tags: ["toolbar", "button", "icon", "activity bar"],
-    content: `The Activity Bar is the narrow vertical strip on the far left. Its buttons fall into two groups — a top group for views and canvas tools, and a bottom group for map-wide actions. A few buttons are hidden on iPhone, where the layout is condensed.
+    content: `The Activity Bar is the narrow vertical strip on the far left. Its buttons fall into two groups — a top group for views and canvas tools, and a bottom group for map-wide actions.
 
 **Top group — views and canvas tools:**
 
@@ -110,13 +110,13 @@ If you have previously saved templates, they appear below these buttons. Click o
 
 2. **Filtered Views** -- One button per node type in your taxonomy (for example a People view and a Concepts view). These are generated dynamically from the template, not hardcoded, and each shows that type's own icon or initial.
 
-3. **Text Outline** (outline icon) -- Switches to the **Textmap**: the same map rendered as a navigable nested outline. The default on iPhone, one tap away everywhere else. See "Textmap: The Outline View".
+3. **Text Outline** (outline icon) -- Switches to the **Textmap**: the same map rendered as a navigable nested outline, one click away from the visual canvas. See "Textmap: The Outline View".
 
-4. **Toggle Sidebar** (panel icon) -- Shows or hides the left Explorer sidebar. (Mac and iPad.)
+4. **Toggle Sidebar** (panel icon) -- Shows or hides the left Explorer sidebar.
 
-5. **Properties** (properties icon) -- Shows or hides the Properties inspector for the selected node. (Mac and iPad.)
+5. **Properties** (properties icon) -- Shows or hides the Properties inspector for the selected node.
 
-6. **Notes** (notes icon) -- Shows or hides the Notes editor for the selected node. (Mac and iPad.)
+6. **Notes** (notes icon) -- Shows or hides the Notes editor for the selected node.
 
 7. **Fit to View** -- Re-frames the canvas so the whole map is visible.
 
@@ -128,7 +128,7 @@ If you have previously saved templates, they appear below these buttons. Click o
 
 **Bottom group — map-wide actions:**
 
-11. **Network Analysis** (analysis icon) -- Opens the metrics, node rankings, communities, and path-finder panel. (Mac and iPad.) See "Network Analysis Tools".
+11. **Network Analysis** (analysis icon) -- Opens the metrics, node rankings, communities, and path-finder panel. See "Network Analysis Tools".
 
 12. **Edit Taxonomy** (list icon) -- Re-opens the taxonomy wizard to modify the current map's structure (node types, classifiers, edge types).
 
@@ -750,8 +750,8 @@ The k-core number indicates which "shell" of the network a node belongs to. It i
   {
     id: "textmap",
     title: "Textmap: The Outline View",
-    tags: ["textmap", "outline", "list", "text", "navigate", "iphone", "mobile", "tree"],
-    content: `The **Textmap** is an alternative to the visual canvas: it renders the same concept map as a navigable nested **outline**. It is the default on small screens (iPhone), where the visual graph is hard to read, and it is available on every platform from the outline button in the Activity Bar.
+    tags: ["textmap", "outline", "list", "text", "navigate", "tree"],
+    content: `The **Textmap** is an alternative to the visual canvas: it renders the same concept map as a navigable nested **outline**. It is one click away from the canvas, via the outline button in the Activity Bar.
 
 **What you see**
 Each node is a row. Expand a row (▸) to reveal that node's connections, grouped by relationship:
@@ -903,5 +903,17 @@ Try closing and re-opening Settings. Colour overrides are stored in local storag
 
 **Filters seem to have no effect**
 If clicking a filter value does not change the visible nodes, the filter may only have one unique value (all nodes match). Check the filter section -- if there is only one option, unchecking it hides all nodes of that type.`,
+  },
+
+  // ── License ──────────────────────────────────────────────────────
+  {
+    id: "license",
+    title: "License",
+    tags: ["license", "mit", "open source", "copyright", "source", "free"],
+    content: `Concept Mapper is free and open source, released under the **MIT License**.
+
+Copyright © 2026 dromologue. You may use, copy, modify, and redistribute the software freely, provided the copyright notice and the MIT permission notice are kept with any substantial portion you redistribute. The software is provided "as is", without warranty of any kind.
+
+The full licence text is in the \`LICENSE\` file at the root of the project's source repository.`,
   },
 ];

@@ -28,3 +28,9 @@ test-credentials*
 
 # Local Netlify folder
 .netlify
+
+# Deployment infrastructure for hosting the release DMG on fly.io.
+# The public repo only needs what's required to build and run the app, not the
+# maintainer's binary-hosting setup. These stay local to the release machine.
+/fly/
+/scripts/deploy-downloads.sh

@@ -16,7 +16,7 @@ CONFIGURATION="Release"
 SKIP_TESTS=false
 SKIP_WEB=false
 VERIFY=false
-PLATFORM="mac"   # mac | ios | all
+PLATFORM="mac"   # mac (only macOS ships)
 DO_ARCHIVE=false
 DO_OPEN=false
 BUILD_DIR="$ROOT/macos/build"
@@ -39,8 +39,8 @@ for arg in "$@"; do
       echo "  --debug          Build Debug configuration"
       echo "  --skip-tests     Skip cargo test and npm test"
       echo "  --verify         Build-only check: no tests, no web rebuild, no signing"
-      echo "  --platform=P     mac (default) | ios | all — which app(s) to build"
-      echo "  --archive     Produce .xcarchive for App Store submission"
+      echo "  --platform=P     mac (default) — only macOS ships"
+      echo "  --archive     Produce .xcarchive (for a notarised release, prefer scripts/release-macos.sh)"
       echo "  --open        Open the app after building"
       echo "  -h, --help    Show this help"
       exit 0
@@ -117,26 +117,16 @@ mkdir -p macos/Resources/web/maps macos/Resources/maps
 [ -d Maps ] && cp Maps/*.cm macos/Resources/web/maps/ 2>/dev/null || true
 [ -d Maps ] && cp Maps/*.cm macos/Resources/maps/ 2>/dev/null || true
 echo "Web assets, templates, and maps copied (macOS)."
-
-# Mirror the same bundled assets into the iOS target so the two shells can
-# never ship different SPA builds (committed-artifacts rule, both platforms).
-if [ -d ios ]; then
-  rm -rf ios/Resources/web ios/Resources/templates ios/Resources/maps
-  mkdir -p ios/Resources
-  cp -r macos/Resources/web ios/Resources/web
-  cp -r macos/Resources/templates ios/Resources/templates
-  cp -r macos/Resources/maps ios/Resources/maps
-  echo "Web assets, templates, and maps copied (iOS)."
-fi
 fi
 
 # --- Which platforms to build ---
-BUILD_MAC=false; BUILD_IOS=false
+# macOS is the only shipping platform (the app is distributed as a direct-download
+# DMG — see scripts/release-macos.sh). The --platform flag is retained for
+# compatibility but only `mac` is supported.
+BUILD_MAC=false
 case "$PLATFORM" in
   mac) BUILD_MAC=true ;;
-  ios) BUILD_IOS=true ;;
-  all) BUILD_MAC=true; BUILD_IOS=true ;;
-  *) echo "ERROR: --platform must be mac | ios | all (got '$PLATFORM')"; exit 1 ;;
+  *) echo "ERROR: --platform must be mac (got '$PLATFORM')"; exit 1 ;;
 esac
 SIGN_FLAGS=""
 [ "$VERIFY" = true ] && SIGN_FLAGS="CODE_SIGNING_ALLOWED=NO"
@@ -163,34 +153,9 @@ if [ "$BUILD_MAC" = true ]; then
     | tail -5)
 fi
 
-# --- Step 5/6: iOS app (simulator) ---
-if [ "$BUILD_IOS" = true ]; then
-  echo ""
-  echo "=== Step 5: Regenerate iOS Xcode project ==="
-  (cd ios && xcodegen generate)
-  echo "Xcode project generated."
-  echo ""
-  echo "=== Step 6: Build iOS app ($CONFIGURATION, simulator) ==="
-  (cd ios && xcodebuild \
-    -scheme ConceptMapper \
-    -configuration "$CONFIGURATION" \
-    -destination 'generic/platform=iOS Simulator' \
-    -derivedDataPath build \
-    CODE_SIGNING_ALLOWED=NO \
-    build \
-    | tail -5)
-fi
-
 if [ "$VERIFY" = true ]; then
   echo ""
   echo "=== Verify build OK ($CONFIGURATION, unsigned) ==="
-  exit 0
-fi
-
-# Archive / open / signature checks below are macOS-only.
-if [ "$BUILD_MAC" != true ]; then
-  echo ""
-  echo "=== Build complete (iOS) ==="
   exit 0
 fi
 

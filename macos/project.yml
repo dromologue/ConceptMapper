@@ -37,7 +37,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: ConceptMapper/ConceptMapper.entitlements
         PRODUCT_NAME: ConceptMapper
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        MARKETING_VERSION: "1.1"
+        MARKETING_VERSION: "1.3"
         CURRENT_PROJECT_VERSION: "1"
         DEVELOPMENT_TEAM: "4EDT4L4DYU"
         CODE_SIGN_STYLE: Automatic

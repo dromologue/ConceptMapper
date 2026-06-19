@@ -1,19 +1,15 @@
-name: Apps (drift guard)
+name: App (build guard)
 
-# No-drift invariant: one codebase, two thin shells (macOS + iOS). This job
-# builds BOTH apps so a change that breaks either platform fails before it can
-# merge to master. It runs on the multiplatform branch and on PRs into master.
+# Compile guard for the macOS app: an unsigned, build-only check so a change
+# that breaks the Swift shell, project.yml, or the bridge↔FileHandler contract
+# fails before it can merge to master. Tests (rust/web) run in the separate
+# ci.yml jobs.
 #
-# Unsigned, build-only: `--verify` uses the committed Resources/web (the bundled
-# SPA) rather than rebuilding it, so this gate exercises the Swift shells,
-# project.yml, and the bridge↔FileHandler contract — exactly the surface that
-# can drift between platforms. Tests (rust/web) run in the separate ci.yml jobs.
-#
-# Scoped to branches that actually carry ios/ (master does not), so it never
-# tries to build an iOS target that isn't there.
+# `--verify` uses the committed Resources/web (the bundled SPA) rather than
+# rebuilding it, so this gate exercises exactly the Swift/Xcode surface.
 on:
   push:
-    branches: [feature/multiplatform]
+    branches: [master]
     paths-ignore:
       - '**/*.md'
       - '**/*.markdown'
@@ -24,7 +20,7 @@ on:
       - '**/*.markdown'
 
 jobs:
-  build-both:
+  build-mac:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6
@@ -33,5 +29,5 @@ jobs:
           xcode-version: latest-stable
       - name: Install XcodeGen
         run: brew install xcodegen
-      - name: Build macOS + iOS apps (unsigned)
-        run: scripts/build-app.sh --platform=all --verify
+      - name: Build macOS app (unsigned)
+        run: scripts/build-app.sh --platform=mac --verify

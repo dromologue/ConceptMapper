@@ -1,20 +1,17 @@
 # TODO
 
 Live plan to a testable, shippable build. Completed tasks are deleted, not
-checked off. Branch: `feature/multiplatform` — nothing merges to `master` until
-build-verified (`master` auto-ships the **free** macOS app to the App Store).
+checked off.
 
-**Pricing:** macOS app is **free**; iOS app is a **separate, paid** App Store
-product (distinct bundle id `com.dromologue.ConceptMapper.ios` — not a universal
-purchase).
+> **Distribution change (2026-06):** Concept Mapper has left the Mac App Store.
+> It now ships as a **free, notarised Developer ID DMG** (direct download, hosted
+> on fly.io) — see [`RELEASING.md`](RELEASING.md). The planned **iOS App Store
+> product has been dropped**; the `ios/` shell and the two-app no-drift invariant
+> are retired. **Sessions 4–6 below (signing for App Store, paid iOS, Xcode Cloud,
+> TestFlight) are cancelled** and kept only as history.
 
-**No-drift invariant.** One codebase; the two apps differ **only** in (a) bundle
-id + price, and (b) the thin native shell (`ContentView`/`FileHandler`/app entry/
-`Info.plist`/`project.yml`/assets). The React SPA (`web/`), Rust core (`src/`),
-and Swift bridge core (`BridgeProtocol`/`WebViewBridge`/`PlatformURLOpener`, shared
-into iOS via `ios/project.yml`) are single-source-of-truth — a feature or bridge
-change lands in one place and reaches both. Anything else diverging is a bug.
-Full drift surface in `specs/multiplatform-plan.md` §3.1.
+**Distribution:** free macOS app, direct download. No App Store, no iOS product,
+no payment. Updates are manual re-download, so the app stays fully offline.
 
 ## Status
 
