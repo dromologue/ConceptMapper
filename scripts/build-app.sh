@@ -168,7 +168,11 @@ if [ "$DO_ARCHIVE" = true ]; then
   echo "=== Step 7: Archive for App Store ==="
 
   # Auto-increment build number
-  CURRENT_BUILD=$(/usr/libexec/PlistBuddy -c "Print :CURRENT_PROJECT_VERSION" macos/ConceptMapper/Info.plist 2>/dev/null || echo "1")
+  # Read from project.yml, the single source of truth for both version numbers.
+  # Info.plist carries $(MARKETING_VERSION)/$(CURRENT_PROJECT_VERSION) and is
+  # substituted at build time, so it cannot be read for the current value.
+  CURRENT_BUILD=$(sed -n 's/^ *CURRENT_PROJECT_VERSION: *"\{0,1\}\([0-9][0-9]*\)"\{0,1\} *$/\1/p' macos/project.yml | head -1)
+  CURRENT_BUILD=${CURRENT_BUILD:-1}
   if [[ "$CURRENT_BUILD" =~ ^[0-9]+$ ]]; then
     NEXT_BUILD=$((CURRENT_BUILD + 1))
   else

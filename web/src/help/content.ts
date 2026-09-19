@@ -909,11 +909,13 @@ If clicking a filter value does not change the visible nodes, the filter may onl
   {
     id: "license",
     title: "License",
-    tags: ["license", "mit", "open source", "copyright", "source", "free"],
-    content: `Concept Mapper is free and open source, released under the **MIT License**.
+    tags: ["license", "apache", "open source", "copyright", "source", "free", "attribution"],
+    content: `Concept Mapper is free and open source, released under the **Apache License 2.0**.
 
-Copyright © 2026 dromologue. You may use, copy, modify, and redistribute the software freely, provided the copyright notice and the MIT permission notice are kept with any substantial portion you redistribute. The software is provided "as is", without warranty of any kind.
+Copyright © 2026 dromologue. You may use, copy, modify, and redistribute the software, and build commercial products on it, without a fee and without asking permission. What the licence asks in return is credit: if you redistribute Concept Mapper or a work derived from it, you must carry the attribution notice with it. In a commercial product, the usual place is an About, Credits, or Open source screen.
 
-The full licence text is in the \`LICENSE\` file at the root of the project's source repository.`,
+The licence grants no rights in the Concept Mapper name or icon beyond that attribution, so a fork ships under a different name. The software is provided "as is", without warranty of any kind.
+
+The full licence text is in the \`LICENSE\` file at the root of the project's source repository, and the attribution notice is in \`NOTICE\` beside it.`,
   },
 ];

@@ -30,16 +30,18 @@ const APP_ICON = resolve(
 
 const META = {
   appName: "Concept Mapper",
-  version: "1.3.1",
+  version: "1.4",
   contact: "dromologue@gmail.com",
   effectiveDate: "31 May 2026",
-  // Direct download: a free, notarised Developer ID DMG hosted on fly.io.
-  // The app is no longer distributed through the Mac App Store.
-  // The actual notarised DMG (fly.io) — also the target of the branded redirect below.
-  downloadUrl: "https://conceptmapper-downloads.fly.dev/ConceptMapper.dmg",
-  // Branded download URL on the dromologue.com domain (Netlify alias → 301 → downloadUrl).
-  // This is what users click; keep it DISTINCT from downloadUrl or the redirect loops.
-  brandedDownloadUrl: "https://download.conceptmapper.dromologue.com/ConceptMapper.dmg",
+  // Concept Mapper ships as SOURCE from GitHub, not as a hosted binary. The
+  // fly.io DMG and its branded download alias are retired: the app is open
+  // source under Apache-2.0, you clone the repo and run scripts/build-app.sh.
+  // Building locally also signs with the builder's own identity, which sidesteps
+  // the first-launch Gatekeeper warning an unnotarised download would raise.
+  repoUrl: "https://github.com/dromologue/ConceptMapper",
+  // The legacy /download and download.conceptmapper.dromologue.com links still
+  // resolve; they now 301 to the repository rather than 404 or serve a stale DMG.
+  downloadUrl: "https://github.com/dromologue/ConceptMapper",
   minOS: "macOS 14 Sonoma",
   // Canonical/public site root — used for canonical URLs, Open Graph, and the sitemap.
   siteUrl: "https://conceptmapper.dromologue.com",
@@ -345,10 +347,10 @@ ${footer}
 
 // ── Marketing landing page ───────────────────────────────────────────
 function buildHome() {
-  const cta = `<a class="btn" href="${META.brandedDownloadUrl}">Download for Mac</a>`;
+  const cta = `<a class="btn" href="${META.repoUrl}">Get it on GitHub</a>`;
 
   const heroLede = `${META.appName} is a tool for building, editing, and reasoning over concept maps where every node and edge has a type. Maps are plain-text Markdown; the schema they obey lives in a separate template. Your thinking stays portable, greppable, and yours.`;
-  const req = `Requires ${META.minOS} or later. Open the disk image and drag ${META.appName} to your Applications folder. On first launch, macOS will say it cannot verify the developer: open System Settings ▸ Privacy &amp; Security, find ${META.appName} under Security, and choose Open Anyway. You only need to do this once.`;
+  const req = `Free and open source under the Apache&nbsp;2.0 licence. Requires ${META.minOS} or later, plus Xcode and the Rust toolchain. Clone the repository and run <code>./scripts/build-app.sh --open</code>: one command runs the tests, builds the app, and opens it. Because you build it yourself, the app is signed with your own developer identity, so macOS raises none of the "cannot verify the developer" friction a downloaded binary would.`;
 
   const hero = `
     <section class="hero">
@@ -390,7 +392,7 @@ function buildHome() {
     <section class="platforms">
       <div class="wrap">
         <h2>Built for the Mac.</h2>
-        <p>${META.appName} is a native macOS app for ${META.minOS} and later, distributed as a free direct download, signed with an Apple Developer ID — no App Store account required. Your <code>.cm</code> maps and <code>.cmt</code> templates are ordinary files on your own Mac: greppable, version-controllable, and yours to keep.</p>
+        <p>${META.appName} is a native macOS app for ${META.minOS} and later, distributed as source you build yourself — no App Store account, no installer, nothing hosted between you and the code. Your <code>.cm</code> maps and <code>.cmt</code> templates are ordinary files on your own Mac: greppable, version-controllable, and yours to keep. So is the app that reads them.</p>
       </div>
     </section>`;
 
@@ -405,7 +407,7 @@ function buildHome() {
 
   return page({
     title: `${META.appName} — Typed concept maps for Mac`,
-    description: `${META.appName} is a free, open-source macOS app for building typed concept maps: plain-text Markdown maps, a separate JSON schema, a force-directed canvas, and built-in graph analysis. Free direct download for ${META.minOS} and later.`,
+    description: `${META.appName} is a free, open-source macOS app for building typed concept maps: plain-text Markdown maps, a separate JSON schema, a force-directed canvas, and built-in graph analysis. Apache-2.0 licensed — clone it from GitHub and build it yourself. Requires ${META.minOS} or later.`,
     path: "index.html",
     jsonLd: {
       "@context": "https://schema.org",
@@ -415,8 +417,11 @@ function buildHome() {
       applicationCategory: "BusinessApplication",
       softwareVersion: META.version,
       url: META.siteUrl,
-      downloadUrl: META.brandedDownloadUrl,
-      softwareLicense: "https://opensource.org/licenses/MIT",
+      downloadUrl: META.repoUrl,
+      installUrl: META.repoUrl,
+      codeRepository: META.repoUrl,
+      softwareLicense: "https://www.apache.org/licenses/LICENSE-2.0",
+      isAccessibleForFree: true,
       image: `${META.siteUrl}/images/icon.png`,
       description: `Build, edit, and reason over concept maps where every node and edge has a type. Plain-text Markdown maps, a separate schema, and graph analysis built in.`,
       offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
@@ -562,10 +567,13 @@ function buildTerms() {
       <h1>Terms &amp; Conditions</h1>
       <p class="muted">Effective ${META.effectiveDate} · ${META.appName} ${META.version}</p>
 
-      <p>These Terms &amp; Conditions ("Terms") govern your use of ${META.appName} (the "Software"). By downloading, installing, or using the Software you agree to these Terms. The Software is distributed as a free direct download from ${META.appName}; it is not obtained through any app store, and no separate platform licence applies.</p>
+      <p>These Terms &amp; Conditions ("Terms") govern your use of ${META.appName} (the "Software"). By downloading, building, installing, or using the Software you agree to these Terms. The Software is distributed as free and open-source code from its public repository, which you build yourself; it is not obtained through any app store, and no separate platform licence applies.</p>
 
       <h2>Licence</h2>
-      <p>${META.appName} is free and open-source software, released under the <strong>MIT License</strong>. You are free to use, copy, modify, merge, publish, distribute, sublicense, and sell copies of the Software, subject to including the copyright notice and the MIT permission notice in all copies or substantial portions. The full licence text ships with the app and is in the <code>LICENSE</code> file in the source repository. The warranty disclaimer below restates the MIT "as is" terms.</p>
+      <p>${META.appName} is free and open-source software, released under the <strong>Apache License, Version 2.0</strong>. You are free to use, copy, modify, merge, publish, distribute, sublicense, and sell copies of the Software, including commercially, without a fee and without asking permission. The licence also grants an express patent licence from its contributors, on the terms in section 3.</p>
+      <p>The condition is attribution. Under section 4(d), anyone distributing the Software or a work derived from it must reproduce the attribution notice that ships with it — in a <code>NOTICE</code> file, in the accompanying documentation, or in a notice the product itself displays. If you ship ${META.appName} inside a commercial product or service, put it where a user can find it, such as an About, Credits, Licences, or Open source screen, in substantially this form:</p>
+      <p class="muted">Built with ${META.appName} — ${META.siteUrl}<br>Copyright 2026 dromologue, used under the Apache License 2.0.</p>
+      <p>That obligation applies whether or not you charge for the result. The licence grants no rights in the "${META.appName}" or "dromologue" names, logos, or app icon beyond that attribution (section 6), so a fork is distributed under a different name. The full licence text and the attribution notice are in the <code>LICENSE</code> and <code>NOTICE</code> files in the source repository. The warranty disclaimer below restates the licence's "as is" terms (sections 7 and 8).</p>
 
       <h2>Your content</h2>
       <p>You retain all rights to the concept maps, templates, and other files you create or open with the Software ("Your Content"). The Software does not claim any ownership of Your Content. You are solely responsible for Your Content and for maintaining your own backups; the Software is not a backup service.</p>
@@ -595,7 +603,7 @@ function buildTerms() {
     </article>`;
   return page({
     title: `${META.appName} — Terms & Conditions`,
-    description: `${META.appName} terms and conditions: free, open-source software released under the MIT licence, provided "as is".`,
+    description: `${META.appName} terms and conditions: free, open-source software released under the Apache 2.0 licence, requiring attribution on redistribution, provided "as is".`,
     path: "terms.html",
     body,
     active: "terms",
@@ -762,8 +770,9 @@ ${pages
 `;
   await writeFile(resolve(OUT, "sitemap.xml"), sitemap);
 
-  // Branded download URL on Netlify → the notarised DMG (hosted on fly.io).
-  // download.conceptmapper.dromologue.com is a domain alias of this site.
+  // Legacy download URLs → the GitHub repository. The hosted DMG is retired,
+  // but these links are in the wild (old site copy, release notes, inbound
+  // links), so they 301 to the source rather than dead-ending.
   await writeFile(
     resolve(OUT, "_redirects"),
     [

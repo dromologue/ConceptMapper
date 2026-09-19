@@ -2,6 +2,14 @@
 
 Plain-English notes on what has changed in each release. Newest first.
 
+## 1.4 — 19 September 2026
+
+Concept Mapper moves to GitHub and changes its licence.
+
+- **Now installed from source.** The hosted disk image is retired. Concept Mapper lives at [github.com/dromologue/ConceptMapper](https://github.com/dromologue/ConceptMapper): clone the repository and run `./scripts/build-app.sh --open`, which runs the tests, builds the app, and opens it. Because you build it on your own Mac it is signed with your own developer identity, so the "cannot verify the developer" warning the download used to raise no longer applies. Old download links redirect to the repository.
+- **Relicensed to Apache 2.0, with attribution.** Concept Mapper was MIT-licensed; it is now released under the Apache License 2.0. You can still use it, change it, and build commercial products on it for free and without asking. What the licence now asks in return is credit: anyone redistributing Concept Mapper, or something built from it, carries the attribution notice with it — in a commercial product, on an About or Credits screen. The licence also adds an express patent grant, which MIT does not have. See `LICENSE` and `NOTICE` in the repository.
+- **Updated internals.** Every dependency brought up to date, clearing four security advisories in the build tooling. The test suite runs about three times faster.
+
 ## 1.3.1 — 4 August 2026
 
 A maintenance release. Nothing changes in how the app looks or works.

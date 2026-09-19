@@ -2,20 +2,21 @@
 
 A desktop tool for building, editing, and reasoning over typed concept maps. A native macOS shell hosts a React canvas backed by a Rust parser compiled to WebAssembly. Maps are plain-text Markdown; the structure they conform to is declared in a separate JSON template. The split is deliberate: instance data and the schema it satisfies should not co-evolve in the same file.
 
-Concept Mapper is free and open source (MIT), and runs on macOS 14 (Sonoma) or later.
+Concept Mapper is open source under the [Apache License 2.0](LICENSE) and runs on macOS 14 (Sonoma) or later. You can use it, fork it, and build commercial products on it without a fee and without asking permission; what the licence asks in return is attribution. See [Licence](#licence) below.
 
 ## Install
 
-**Download the app (recommended).** Get the latest notarised build from
-**[download.conceptmapper.dromologue.com](https://download.conceptmapper.dromologue.com/ConceptMapper.dmg)**
-(linked from [conceptmapper.dromologue.com](https://conceptmapper.dromologue.com)). Open the
-disk image and drag **ConceptMapper** to your Applications folder. The build is signed with a
-Developer ID certificate and notarised by Apple, so it launches with no security prompt — no
-App Store account required. There is no auto-updater; to update, download the latest DMG and
-replace the app. See **[What's New](https://conceptmapper.dromologue.com/changelog.html)** for
-release notes.
+Concept Mapper is distributed as source from this repository. Clone it and run the build script — one command produces a signed `.app` you can drag to Applications:
 
-**Or build it yourself** from source — see [Build from source](#build-from-source) below.
+```bash
+git clone https://github.com/dromologue/ConceptMapper.git
+cd ConceptMapper
+./scripts/build-app.sh --open
+```
+
+The pipeline runs the Rust and web test suites, compiles the parser to WebAssembly, builds the React SPA, copies it into the macOS resource bundle, and builds the app. The result lands in `macos/build/Build/Products/Release/ConceptMapper.app`. See [Build prerequisites](#build-prerequisites) for the toolchain it expects, and [What's New](https://conceptmapper.dromologue.com/changelog.html) for release notes.
+
+Building from source means the app is signed with your own developer identity rather than someone else's, so the first-launch Gatekeeper warning that a downloaded binary would raise does not apply.
 
 ## What it does
 
@@ -36,7 +37,7 @@ Two file types, with strict separation of concerns.
 <!-- template: my-taxonomy.cmt -->
 ```
 
-Maps must not contain `## Generations`, `## Streams`, or any other structural section heading — those define the schema and belong in the template. The loader emits warnings if it finds them; see `REQ-085` in [SPEC.md](SPEC.md).
+Maps must not contain `## Generations`, `## Streams`, or any other structural section heading — those define the schema and belong in the template. The loader emits warnings if it finds them.
 
 ## Build from source
 
@@ -46,7 +47,7 @@ Maps must not contain `## Generations`, `## Streams`, or any other structural se
 
 This runs the full pipeline (Rust tests, web tests, WASM build, web build, asset copy, Xcode build) and opens the resulting `.app`. Use `--debug` for a debug build and `--skip-tests` to skip the test step.
 
-To produce a signed, notarised DMG for distribution, use [`scripts/release-macos.sh`](scripts/release-macos.sh) — it archives, exports with a Developer ID certificate, builds the DMG, submits it to Apple's notary service, staples the ticket, and verifies Gatekeeper acceptance. The one-time signing/notarisation setup (a Developer ID Application certificate and a `notarytool` keychain profile) is documented in that script's header comments.
+To produce a signed, notarised DMG for redistribution, use [`scripts/release-macos.sh`](scripts/release-macos.sh) — it archives, exports with a Developer ID certificate, builds the DMG, submits it to Apple's notary service, staples the ticket, and verifies Gatekeeper acceptance. The one-time signing/notarisation setup (a Developer ID Application certificate and a `notarytool` keychain profile) is documented in that script's header comments. Notarising under your own Apple Developer account is the supported path for anyone redistributing a build.
 
 Manual steps if you want to drive parts independently:
 
@@ -65,7 +66,7 @@ cd macos && xcodebuild -scheme ConceptMapper
 
 - Rust toolchain via `rustup` (the Homebrew rust formula does not ship the `wasm32-unknown-unknown` stdlib, which `wasm-pack` requires).
 - `wasm-pack`, `xcodegen`, `xcodebuild`, Node 20+, npm.
-- For `--archive`: an Apple Developer account with team ID `4EDT4L4DYU` configured in Xcode. The build script passes `-allowProvisioningUpdates`, so Xcode will fetch missing certificates and provisioning profiles automatically the first time.
+- An Apple Developer account for a signed build. `macos/project.yml` carries the upstream team ID; change `DEVELOPMENT_TEAM` to your own before building, or build unsigned. The build script passes `-allowProvisioningUpdates`, so Xcode fetches missing certificates and provisioning profiles automatically the first time.
 
 ## Project layout
 
@@ -76,6 +77,7 @@ macos/              SwiftUI shell; WKWebView hosts the React SPA; native file I/
 templates/          .cmt taxonomy templates (JSON)
 Maps/               .cm concept maps (Markdown)
 tests/              Rust integration tests (cargo test)
+scripts/            Build pipeline, macOS release, and the site generator
 ```
 
 ## Development
@@ -84,7 +86,7 @@ tests/              Rust integration tests (cargo test)
 
 ## Contributing
 
-Contributions are welcome. Concept Mapper is MIT-licensed, so by contributing you agree your changes are released under the same terms.
+Contributions are welcome. Concept Mapper is Apache-2.0 licensed, so by contributing you agree your changes are released under the same terms, including the patent grant in section 3 of that licence.
 
 1. **Fork** the repository and create a topic branch off `master` (`git checkout -b feat/my-change`). Don't commit directly to `master`.
 2. **Make your change** and keep it focused. The architecture is documented above and in [CLAUDE.md](CLAUDE.md). Never hardcode node or edge types — structure is always template-driven (the template is the single source of structural truth).
@@ -103,6 +105,15 @@ Contributions are welcome. Concept Mapper is MIT-licensed, so by contributing yo
 
 Bug reports and feature ideas are equally welcome — open an issue with steps to reproduce (and a sample `.cm`/`.cmt` pair where relevant).
 
-## License
+## Licence
 
-[MIT](LICENSE) © 2026 dromologue. You're free to use, modify, and redistribute the software, provided the copyright and permission notice travel with substantial portions. The software is provided "as is", without warranty of any kind.
+[Apache License 2.0](LICENSE) © 2026 dromologue. Commercial use, modification, redistribution, and private use are all permitted, and the licence carries an express patent grant.
+
+The condition is attribution. Section 4(d) of the licence requires anyone distributing Concept Mapper, or a work derived from it, to reproduce the attribution notice in [NOTICE](NOTICE) — in a `NOTICE` file, in the documentation, or in a notice the product itself displays. If you ship Concept Mapper inside a commercial product or service, put it somewhere a user can find it: an About, Credits, Licences, or Open source screen, in substantially this form:
+
+```
+Built with Concept Mapper — https://conceptmapper.dromologue.com
+Copyright 2026 dromologue, used under the Apache License 2.0.
+```
+
+That obligation applies whether or not you charge for the result. Two limits worth stating plainly, because they are where people trip: the licence grants no rights in the "Concept Mapper" or "dromologue" names, logos, or app icon beyond the attribution itself (section 6), so a fork ships under a different name; and the software comes with no warranty and no support obligation (sections 7 and 8).
